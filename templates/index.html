@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBAT Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+</head>
+<body data-theme="default">
+    <header class="top-nav">
+        <div class="logo">ORBAT // COMMAND CENTER</div>
+        <nav>
+            <button class="nav-btn active" data-target="view-orbat">Visor ORBAT</button>
+            <button class="nav-btn" data-target="view-mapa">Mapa Táctico</button>
+            {% if user_role == 'admin' %}
+            <button class="nav-btn" data-target="view-equipos">Gestión Equipos</button>
+            <button class="nav-btn" data-target="view-misiones">Gestión Misiones</button>
+            {% endif %}
+            <a href="/logout" class="btn-power" title="Cerrar Sesión" style="margin-left: auto;">⏻</a>
+        </nav>
+        <div class="faction-tabs" style="margin-bottom: 0;">
+            {% if user_role == 'admin' or user_faction == 'Syldavia' %}
+            <button class="faction-tab {% if user_faction == 'Syldavia' or user_role == 'admin' %}active{% endif %}" data-faction="Syldavia">Syldavia</button>
+            {% endif %}
+            {% if user_role == 'admin' or user_faction == 'Volkovia' %}
+            <button class="faction-tab {% if user_faction == 'Volkovia' and user_role != 'admin' %}active{% endif %}" data-faction="Volkovia">Volkovia</button>
+            {% endif %}
+            {% if user_role == 'admin' or user_faction == 'Khemed' %}
+            <button class="faction-tab {% if user_faction == 'Khemed' and user_role != 'admin' %}active{% endif %}" data-faction="Khemed">Khemed</button>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="dashboard-container">
+        
+        <!-- VISTA ORBAT -->
+        <section id="view-orbat" class="view-section active">
+            
+            <div class="orbat-content-wrapper">
+                
+                <div id="orbat-total-pax-container" style="text-align: center; margin-bottom: 1rem; font-family: var(--font-mono); font-size: 1.2rem; font-weight: bold; padding: 0.5rem; background: rgba(0,0,0,0.3); color: #fff; border-radius: 4px; border: 1px solid var(--theme-color);">
+                    TOTAL EFECTIVOS ASIGNADOS: <span id="orbat-total-pax-value">0</span>
+                </div>
+
+                <div class="orbat-tree-container" id="orbat-tree-container">
+                    <!-- Se llenará mediante JS dependiendo de la facción seleccionada -->
+                </div>
+            </div>
+
+            <!-- Panel lateral derecho -->
+            <aside class="sidebar-panel">
+                <div class="sidebar-tabs">
+                    <button class="sidebar-tab active" data-target="panel-equipos">Equipos</button>
+                    <button class="sidebar-tab" data-target="panel-misiones">Misiones</button>
+                </div>
+                
+                <!-- Equipos disponibles -->
+                <div id="panel-equipos" class="sidebar-content active">
+                    <h3>Sin Asignar</h3>
+                    <div id="unassigned-teams" class="droppable-area" data-grupo-id="null" data-type="equipo">
+                        <!-- Equipos disponibles -->
+                    </div>
+                </div>
+
+                <!-- Misiones disponibles -->
+                <div id="panel-misiones" class="sidebar-content">
+                    <h3>Disponibles</h3>
+                    <div id="unassigned-missions" class="droppable-area" data-grupo-id="null" data-type="mision">
+                        <!-- Misiones disponibles -->
+                    </div>
+                </div>
+            </aside>
+        </section>
+
+        <!-- VISTA GESTIÓN DE EQUIPOS -->
+        <section id="view-equipos" class="view-section">
+            <div class="panel management-panel">
+                <div class="panel-header">
+                    <h2>Inventario de Equipos</h2>
+                    <button id="btn-nuevo-equipo" class="btn primary">Registrar Equipo</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Facción</th>
+                                <th>Jugadores</th>
+                                <th>Perfil</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="equipos-tbody">
+                            <!-- Llenado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA GESTIÓN DE MISIONES -->
+        <section id="view-misiones" class="view-section">
+            <div class="panel management-panel">
+                <div class="panel-header">
+                    <h2>Inventario de Misiones</h2>
+                    <div style="display: flex; gap: 1rem;">
+                        <button id="btn-toggle-all-misiones" class="btn warning">Revelar Todas (Global)</button>
+                        <button id="btn-nueva-mision" class="btn primary">Registrar Misión</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                                <th>Etiquetas</th>
+                                <th>Oficial Resp.</th>
+                                <th>Secreta</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="misiones-tbody">
+                            <!-- Llenado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        </section>
+
+        <!-- VISTA MAPA TÁCTICO -->
+        <section id="view-mapa" class="view-section" style="display: flex; height: 100%;">
+            <!-- Map Side Panel -->
+            {% if user_role in ['admin', 'mando'] %}
+            <aside class="sidebar-panel" style="width: 250px; min-width: 250px; flex: none; border-right: 1px solid var(--border-color); background: rgba(0,0,0,0.1);">
+                <div style="padding: 1rem;">
+                    <h3 style="margin-bottom: 1rem; border-bottom: 1px solid var(--theme-color); padding-bottom: 0.5rem;">Fichas Disponibles</h3>
+                    <div id="map-units-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <!-- JS will populate unplaced units here -->
+                    </div>
+                </div>
+                <div style="padding: 1rem; border-top: 1px solid var(--border-color); margin-top: auto;">
+                    <h3 style="margin-bottom: 1rem; font-size: 0.9rem;">Herramientas</h3>
+                    <button id="btn-draw-route" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem;">⬈ Trazar Ruta</button>
+                    <button id="btn-draw-zone" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem;">🟩 Trazar Zona</button>
+                    <button id="btn-measure" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem;">📏 Medir (50m/cuadricula)</button>
+                    <button id="btn-add-marker" class="btn warning" style="width: 100%; font-size: 0.85rem; margin-bottom: 0.5rem;">📍 Añadir Intel</button>
+                    <button id="btn-add-tl-marker" class="btn primary" style="width: 100%; font-size: 0.85rem;">🛡️ Mi Posición (TL)</button>
+                </div>
+            </aside>
+            {% endif %}
+            <!-- Map Canvas -->
+            <div id="tactical-map" style="flex: 1; height: 100%; background-color: #111;"></div>
+        </section>
+
+    </main>
+
+    <!-- Modal CRUD Equipo -->
+    <div id="modal-equipo" class="modal">
+        <div class="modal-content military-report" style="max-width: 1300px; width: 95%; display: flex; flex-direction: column; gap: 1rem;">
+            <h2 id="modal-title" style="text-align: center; border-bottom: 2px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Expediente de Equipo</h2>
+            <form id="form-equipo" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" id="eq-id">
+                
+                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                    <!-- Columna Izquierda: Historial y Valoración -->
+                    <div style="flex: 1.5; min-width: 300px; display: flex; flex-direction: column; gap: 1rem;">
+                        <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem;">[1] Historial de Servicio</h3>
+                        <div class="form-group" style="flex: 1;">
+                            <label>Operaciones y Misiones Cumplidas</label>
+                            <div id="historial-container" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+                                <!-- JS will populate history rows -->
+                            </div>
+                            <button type="button" class="btn secondary" id="btn-add-historial" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;">+ Añadir Misión</button>
+                        </div>
+                        <div class="form-group">
+                            <label>Valoración de Organización (Rating)</label>
+                            <select id="eq-valoracion" style="width: 100%; padding: 0.5rem; font-family: var(--font-ui);">
+                                <option value="A (Excelente)">A (Excelente)</option>
+                                <option value="B (Bueno)">B (Bueno)</option>
+                                <option value="C (Estándar)">C (Estándar)</option>
+                                <option value="D (Problemático)">D (Problemático)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Columna Central: Datos Básicos -->
+                    <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 1rem;">
+                        <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem;">[2] Datos Base</h3>
+                        <div class="form-group">
+                            <label>Nombre del Equipo</label>
+                            <input type="text" id="eq-nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Facción</label>
+                            <select id="eq-faccion" required>
+                                <!-- Options cargadas desde la BD -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; justify-content: space-between; align-items: center;">
+                                Número de Jugadores 
+                                <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; font-weight: normal;">
+                                    <input type="checkbox" id="eq-jugadores-manual"> Forzar manual
+                                </label>
+                            </label>
+                            <input type="number" id="eq-jugadores" min="0" required readonly style="background: rgba(0,0,0,0.1);">
+                        </div>
+                        <div class="form-group">
+                            <label>Perfil Preferido</label>
+                            <select id="eq-tipo">
+                                <option value="GOE">GOE (Rol, Especifico)</option>
+                                <option value="GAD">GAD (Acción Directa)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Columna Derecha: Miembros -->
+                    <div style="flex: 1.5; min-width: 300px; display: flex; flex-direction: column; gap: 1rem;">
+                        <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem;">[3] Desglose Miembros</h3>
+                        <div id="miembros-container" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
+                            <!-- JS will populate member rows -->
+                        </div>
+                        <button type="button" class="btn secondary" id="btn-add-miembro" style="align-self: flex-start; padding: 0.25rem 0.5rem; font-size: 0.8rem;">+ Añadir Miembro</button>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 1rem; justify-content: center;">
+                    <button type="button" class="btn secondary" id="btn-cancel-modal">Cancelar</button>
+                    <button type="submit" class="btn primary">Guardar Expediente</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-crud-mision" class="modal">
+        <div id="mis-document-container" class="modal-content military-document" style="max-width: 900px; width: 95%; background-color: var(--mission-bg, #dfbd73); color: #000; padding: 2rem; border: 2px solid #000; box-shadow: 10px 10px 0px rgba(0,0,0,0.5); font-family: 'Courier New', Courier, monospace;">
+            <form id="form-mision" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <input type="hidden" id="mis-id">
+                
+                <!-- Header del Documento -->
+                <div style="text-align: center; border: 2px solid #000; padding: 1rem; background: #fff; position: relative;">
+                    <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); border: 3px solid #b22222; color: #b22222; padding: 0.25rem 1rem; font-weight: bold; font-family: sans-serif; font-size: 0.9rem; background: var(--mission-bg, #dfbd73); letter-spacing: 2px;">
+                        SECRETO / ALTO MANDO / ORDEN OPERATIVA
+                    </div>
+                    <h2 id="mis-header-ejercito" style="font-family: 'Times New Roman', Times, serif; margin: 1.5rem 0 0.5rem 0; font-size: 2.2rem; letter-spacing: 3px;">EJÉRCITO DE SYLDAVIA</h2>
+                    <div id="mis-header-capitania" style="font-family: sans-serif; font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 1rem;">CAPITANÍA GENERAL DE HERTZPLATZ • MANDO DE TEATRO</div>
+                    
+                    <div style="background: var(--mission-dark, #2b2b2b); color: var(--mission-bg, #dfbd73); display: inline-block; padding: 0.5rem 2rem; font-weight: bold; font-family: sans-serif; letter-spacing: 2px; margin-bottom: 0.5rem;">
+                        ORDEN DE OPERACIONES
+                    </div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: #b22222; margin-top: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                        <span>OPERACIÓN: </span>
+                        <input type="text" id="mis-nombre" required placeholder="NOMBRE DE LA MISIÓN" style="background: transparent; border: none; border-bottom: 2px dashed #b22222; color: #b22222; font-size: 1.5rem; font-weight: bold; text-align: center; font-family: 'Courier New', Courier, monospace; width: 60%; outline: none;">
+                    </div>
+                </div>
+
+                <!-- Tabla de Datos Base -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; border: 2px solid #000; background: rgba(255,255,255,0.7);">
+                    <div style="border-right: 2px solid #000; border-bottom: 2px solid #000; padding: 0.5rem;">
+                        <div style="font-size: 0.7rem; font-family: sans-serif; font-weight: bold;">FUERZA DESIGNADA (TIPO)</div>
+                        <input type="text" id="mis-tipo" required placeholder="Ej: GOE, GAD" style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1rem; font-weight: bold; outline: none; margin-top: 0.25rem;">
+                    </div>
+                    <div style="border-bottom: 2px solid #000; padding: 0.5rem;">
+                        <div style="font-size: 0.7rem; font-family: sans-serif; font-weight: bold;">OFICIAL DE OPERACIONES</div>
+                        <input type="text" id="mis-oficial" placeholder="Ej: Cmdt. Rivas" style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1rem; font-weight: bold; outline: none; margin-top: 0.25rem;">
+                    </div>
+                    <div style="border-right: 2px solid #000; padding: 0.5rem;">
+                        <div style="font-size: 0.7rem; font-family: sans-serif; font-weight: bold;">ETIQUETAS TÁCTICAS</div>
+                        <input type="text" id="mis-etiquetas" placeholder="Ej: [Infiltración] [Sigilo]" style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1rem; font-weight: bold; outline: none; margin-top: 0.25rem;">
+                    </div>
+                    <div style="padding: 0.5rem;">
+                        <div style="font-size: 0.7rem; font-family: sans-serif; font-weight: bold;">ASIGNACIÓN</div>
+                        <div style="margin-top: 0.25rem; display: flex; align-items: center; gap: 0.5rem; font-weight: bold;">
+                            <input type="checkbox" id="mis-persistente"> <label for="mis-persistente" style="margin: 0; color: #4CAF50; cursor: pointer; margin-right: 1rem;">Misión Persistente (Varias unidades)</label>
+                            <input type="checkbox" id="mis-revelada"> <label for="mis-revelada" style="margin: 0; color: #2196F3; cursor: pointer;">Misión Revelada / Pública</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 1 -->
+                <div>
+                    <div style="background: var(--mission-dark, #2b2b2b); color: #fff; padding: 0.25rem 1rem; font-family: sans-serif; font-weight: bold; letter-spacing: 1px;">
+                        1. SITUACIÓN TÁCTICA Y CONTEXTO
+                    </div>
+                    <div style="border: 2px solid #000; background: rgba(255,255,255,0.7); padding: 0.5rem;">
+                        <textarea id="mis-contexto" rows="5" required placeholder="Redacte el contexto operacional aquí..." style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1rem; outline: none; resize: vertical;"></textarea>
+                    </div>
+                </div>
+
+                <!-- Sección 2 -->
+                <div>
+                    <div style="background: var(--mission-dark, #2b2b2b); color: #fff; padding: 0.25rem 1rem; font-family: sans-serif; font-weight: bold; letter-spacing: 1px;">
+                        2. MISIÓN E INSTRUCCIONES
+                    </div>
+                    <div style="border: 2px solid #000; background: rgba(255,255,255,0.7); padding: 0.5rem; border-bottom: none;">
+                        <textarea id="mis-instrucciones" rows="4" required placeholder="Redacte las instrucciones tácticas específicas aquí..." style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1rem; outline: none; resize: vertical;"></textarea>
+                    </div>
+                    <div style="background: var(--mission-dark, #2b2b2b); color: #fff; padding: 0.25rem 1rem; font-family: sans-serif; font-weight: bold; letter-spacing: 1px;">
+                        3. CONSIDERACIONES
+                    </div>
+                    <div style="border: 2px solid #000; background: rgba(255,255,255,0.7); padding: 0.5rem;">
+                        <textarea id="mis-consideraciones" rows="3" placeholder="Consideraciones adicionales, reglas de enfrentamiento, etc..." style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1rem; outline: none; resize: vertical;"></textarea>
+                    </div>
+                </div>
+
+                <!-- Footer/Botones -->
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid #000; display: flex; justify-content: space-between; align-items: center;">
+                    <div id="mis-footer-firma" style="font-size: 0.8rem; font-weight: bold;">FDO: ALTO MANDO // HERTZPLATZ</div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button type="button" id="btn-cancel-modal-mision" style="background: transparent; border: 2px solid #000; color: #000; padding: 0.5rem 1.5rem; font-family: 'Courier New', Courier, monospace; font-weight: bold; cursor: pointer; transition: all 0.2s;">ABORTAR</button>
+                        <button type="submit" style="background: var(--mission-dark, #2b2b2b); border: 2px solid var(--mission-dark, #2b2b2b); color: var(--mission-bg, #dfbd73); padding: 0.5rem 1.5rem; font-family: 'Courier New', Courier, monospace; font-weight: bold; cursor: pointer; transition: all 0.2s;">AUTORIZAR DESPLIEGUE</button>
+                    </div>
+                </div>
+
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Informe Militar -->
+    <div id="modal-mision" class="modal">
+        <div class="modal-content military-report">
+            <div class="report-header">
+                <h2>INFORME CLASIFICADO</h2>
+                <div class="report-stamp">TOP SECRET</div>
+            </div>
+            <div class="report-body">
+                <div class="report-row">
+                    <strong>OPERACIÓN:</strong> <span id="rm-operacion">Tormenta Fase 3</span>
+                </div>
+                <div class="report-row">
+                    <strong>OBJETIVO:</strong> <span id="rm-nombre"></span>
+                </div>
+                <div class="report-row">
+                    <strong>TIPO / ETIQUETAS:</strong> <span id="rm-tipo"></span> <span id="rm-tags" class="tags"></span>
+                </div>
+                <div class="report-row">
+                    <strong>OFICIAL AL MANDO:</strong> <span id="rm-oficial"></span>
+                </div>
+                
+                <div class="report-section">
+                    <h3>I. CONTEXTO OPERACIONAL</h3>
+                    <div id="rm-contexto" class="report-text redacted-content"></div>
+                </div>
+                
+                <div class="report-section">
+                    <h3>II. INSTRUCCIONES TÁCTICAS</h3>
+                    <div id="rm-instrucciones" class="report-text redacted-content"></div>
+                </div>
+
+                <div class="report-section" id="rm-consideraciones-section" style="display:none;">
+                    <h3>III. CONSIDERACIONES</h3>
+                    <div id="rm-consideraciones" class="report-text redacted-content"></div>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top: 1rem; border-top: 2px solid #555; padding-top: 1rem;">
+                <button type="button" class="btn secondary" id="btn-cerrar-mision">Cerrar Informe</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Modal Zonas -->
+    <div id="modal-zona" class="modal" style="z-index: 2000;">
+        <div class="modal-content military-report" style="max-width: 400px; width: 90%;">
+            <h2 style="text-align: center; border-bottom: 2px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Designar Zona</h2>
+            <form id="form-zona" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div class="form-group">
+                    <label>Nombre/Etiqueta (Opcional)</label>
+                    <input type="text" id="zona-nombre" placeholder="Ej: ZONA OBJ">
+                </div>
+                <div class="form-group">
+                    <label>Color de Área</label>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="color" id="zona-color" style="width: 50px; height: 30px; padding: 0; border: 1px solid var(--border-color);">
+                        <span style="font-size: 0.8rem; color: #ccc;">Selecciona el color del polígono.</span>
+                    </div>
+                </div>
+                <div class="modal-actions" style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button type="button" class="btn secondary" id="btn-cancel-zona">Cancelar</button>
+                    <button type="submit" class="btn primary">Confirmar Zona</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+    <script>
+        window.userRole = "{{ user_role }}";
+        window.userFaction = "{{ user_faction }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}?v=11"></script>
+</body>
+</html>
