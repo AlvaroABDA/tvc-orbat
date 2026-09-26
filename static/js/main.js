@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // --- NAVIGATION & TABS ---
 function initNavigation() {
-    const btns = document.querySelectorAll('.nav-btn');
+    const btns = document.querySelectorAll('.nav-icon-btn');
     const sections = document.querySelectorAll('.view-section');
 
     btns.forEach(btn => {
@@ -159,9 +159,9 @@ function renderCard(g, isMando) {
     let imgSrc = null;
     
     if (isMando) {
-        if (currentFaction === 'Syldavia') imgSrc = '/static/imgs/syldavia.png';
-        if (currentFaction === 'Volkovia') imgSrc = '/static/imgs/vokovia.png';
-        if (currentFaction === 'Khemed') imgSrc = '/static/imgs/khemed.png';
+        if (currentFaction === 'Syldavia') imgSrc = '/static/imgs/syldavia_blanco.png';
+        if (currentFaction === 'Volkovia') imgSrc = '/static/imgs/vokovia_blanco.png';
+        if (currentFaction === 'Khemed') imgSrc = '/static/imgs/khemed_blanco.png';
     } else {
         const nameParts = g.nombre.split(' '); // e.g. "Sierra Alfa" -> ["Sierra", "Alfa"]
         if (nameParts.length === 2) {
@@ -257,8 +257,13 @@ function renderCard(g, isMando) {
                     ${bigLogoHtml}
                 </div>
                 <div class="mando-content" style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem; border-left: 1px solid var(--border-color); padding-left: 1.5rem;">
-                    <div class="mando-title" style="font-size: 1.4rem; font-family: var(--font-mono); font-weight: bold; background: rgba(0,0,0,0.4); color: #fff; padding: 0.25rem 0.75rem; border-radius: 4px; display: inline-block; align-self: flex-start; margin-bottom: 0.5rem;">
-                        ${g.nombre}
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
+                        <div class="mando-title" style="font-size: 1.4rem; font-family: var(--font-mono); font-weight: bold; background: rgba(0,0,0,0.4); color: #fff; padding: 0.25rem 0.75rem; border-radius: 4px; display: inline-block; margin-bottom: 0.5rem;">
+                            ${g.nombre}
+                        </div>
+                        <div style="font-family: var(--font-mono); font-size: 1.2rem; color: var(--theme-color); font-weight: bold; background: rgba(0,0,0,0.5); padding: 0.25rem 0.75rem; border: 1px solid var(--theme-color);">
+                            TOTAL EFECTIVOS: <span id="orbat-total-pax-value">0</span>
+                        </div>
                     </div>
                     <div class="grupo-info">
                         <div class="editable-field">

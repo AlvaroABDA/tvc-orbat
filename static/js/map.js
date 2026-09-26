@@ -28,7 +28,39 @@ function initMap() {
 
     const bounds = [[0, 0], [2000, 3000]]; 
     imageOverlay = L.imageOverlay('/static/map/Full_Mapa%20Oct24.png', bounds).addTo(map);
-    map.fitBounds(bounds);
+    
+    // Set higher initial zoom instead of fitBounds
+    map.setView([1000, 1500], 0);
+
+    // Add zoom percentage label
+    setTimeout(() => {
+        const zoomContainer = document.querySelector('.leaflet-control-zoom');
+        if (zoomContainer) {
+            const zoomLabel = document.createElement('div');
+            zoomLabel.id = 'zoom-percentage-label';
+            zoomLabel.style.background = 'rgba(0,0,0,0.8)';
+            zoomLabel.style.color = 'white';
+            zoomLabel.style.textAlign = 'center';
+            zoomLabel.style.fontFamily = 'var(--font-mono)';
+            zoomLabel.style.fontSize = '0.75rem';
+            zoomLabel.style.padding = '4px 0';
+            zoomLabel.style.borderTop = '1px solid #444';
+            zoomLabel.style.borderBottom = '1px solid #444';
+            zoomLabel.style.width = '30px';
+            
+            const zoomOutBtn = document.querySelector('.leaflet-control-zoom-out');
+            zoomContainer.insertBefore(zoomLabel, zoomOutBtn);
+
+            const updateZoomLabel = () => {
+                const z = map.getZoom();
+                // Map zoom levels to percentage (0 = 100%)
+                const percentage = Math.round(Math.pow(2, z) * 100);
+                zoomLabel.innerText = `${percentage}%`;
+            };
+            map.on('zoomend', updateZoomLabel);
+            updateZoomLabel();
+        }
+    }, 100);
 
     // Interaction handling
     map.on('click', handleMapClick);
@@ -126,8 +158,8 @@ async function loadMapData() {
         const isTL = m.tipo === 'tl_pos';
         const className = isTL ? 'tl-marker' : 'intel-marker';
         const htmlIcon = isTL 
-            ? `<div style="width: 14px; height: 14px; border-radius: 50%; background-color: ${getFactionColor()}; border: 2px solid white; box-shadow: 0 0 5px black; margin: auto;"></div>` 
-            : `<div style="font-size: 24px;">📍</div>`;
+            ? `<div style="display:flex; justify-content:center; align-items:center; width: 28px; height: 28px; border-radius: 50%; background-color: ${getFactionColor()}; border: 2px solid white; box-shadow: 0 0 5px black; color: white; margin: auto;"><span class="material-symbols-outlined" style="font-size: 18px;">my_location</span></div>` 
+            : `<div style="display:flex; justify-content:center; align-items:center; width: 28px; height: 28px; background: rgba(220, 38, 38, 0.9); border: 2px solid white; box-shadow: 0 0 5px black; color: white; border-radius: 4px; transform: rotate(45deg);"><span class="material-symbols-outlined" style="transform: rotate(-45deg); font-size: 18px;">warning</span></div>`;
 
         const intel = L.marker([m.lat, m.lng], {
             icon: L.divIcon({
@@ -200,9 +232,9 @@ function createGroupMarker(g) {
     if (letter) {
         imgSrc = `/static/imgs/${prefix}${letter}.png`;
     } else {
-        if (currentFaction === 'Syldavia') imgSrc = '/static/imgs/syldavia.png';
-        if (currentFaction === 'Volkovia') imgSrc = '/static/imgs/vokovia.png';
-        if (currentFaction === 'Khemed') imgSrc = '/static/imgs/khemed.png';
+        if (currentFaction === 'Syldavia') imgSrc = '/static/imgs/syldavia_negro.png';
+        if (currentFaction === 'Volkovia') imgSrc = '/static/imgs/vokovia_negro.png';
+        if (currentFaction === 'Khemed') imgSrc = '/static/imgs/khemed_negro.png';
     }
 
     const teamsInGroup = typeof todasAsignaciones !== 'undefined' ? todasAsignaciones.filter(a => a.grupo_batalla_id === g.id) : [];
@@ -500,9 +532,10 @@ function renderZoneOnMap(pts, color, name, id) {
     drawnZonas.push({ polygon, labelMarker, id });
 }
 
-document.querySelectorAll('.nav-btn').forEach(btn => {
+document.querySelectorAll('.nav-icon-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
-        if (e.target.dataset.target === 'view-mapa') {
+        const target = e.target.closest('button').dataset.target;
+        if (target === 'view-mapa') {
             setTimeout(() => {
                 initMap();
                 map.invalidateSize();

@@ -6,43 +6,50 @@
     <title>ORBAT Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 </head>
 <body data-theme="default">
-    <header class="top-nav">
-        <div class="logo">ORBAT // COMMAND CENTER</div>
-        <nav>
-            <button class="nav-btn active" data-target="view-orbat">Visor ORBAT</button>
-            <button class="nav-btn" data-target="view-mapa">Mapa Táctico</button>
-            {% if user_role == 'admin' %}
-            <button class="nav-btn" data-target="view-equipos">Gestión Equipos</button>
-            <button class="nav-btn" data-target="view-misiones">Gestión Misiones</button>
-            {% endif %}
-            <a href="/logout" class="btn-power" title="Cerrar Sesión" style="margin-left: auto;">⏻</a>
-        </nav>
-        <div class="faction-tabs" style="margin-bottom: 0;">
-            {% if user_role == 'admin' or user_faction == 'Syldavia' %}
-            <button class="faction-tab {% if user_faction == 'Syldavia' or user_role == 'admin' %}active{% endif %}" data-faction="Syldavia">Syldavia</button>
-            {% endif %}
-            {% if user_role == 'admin' or user_faction == 'Volkovia' %}
-            <button class="faction-tab {% if user_faction == 'Volkovia' and user_role != 'admin' %}active{% endif %}" data-faction="Volkovia">Volkovia</button>
-            {% endif %}
-            {% if user_role == 'admin' or user_faction == 'Khemed' %}
-            <button class="faction-tab {% if user_faction == 'Khemed' and user_role != 'admin' %}active{% endif %}" data-faction="Khemed">Khemed</button>
-            {% endif %}
-        </div>
-    </header>
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar-nav">
+            <div class="logo-min">OR</div>
+            <nav class="nav-menu">
+                <button class="nav-icon-btn active" data-target="view-orbat" title="Visor ORBAT"><span class="material-symbols-outlined">account_tree</span></button>
+                <button class="nav-icon-btn" data-target="view-mapa" title="Mapa Táctico"><span class="material-symbols-outlined">radar</span></button>
+                {% if user_role == 'admin' %}
+                <button class="nav-icon-btn" data-target="view-equipos" title="Gestión Equipos"><span class="material-symbols-outlined">groups</span></button>
+                <button class="nav-icon-btn" data-target="view-misiones" title="Gestión Misiones"><span class="material-symbols-outlined">assignment</span></button>
+                {% endif %}
+            </nav>
+        </aside>
 
-    <main class="dashboard-container">
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <div class="faction-tabs">
+                    {% if user_role == 'admin' or user_faction == 'Syldavia' %}
+                    <button class="faction-tab {% if user_faction == 'Syldavia' or user_role == 'admin' %}active{% endif %}" data-faction="Syldavia">Syldavia</button>
+                    {% endif %}
+                    {% if user_role == 'admin' or user_faction == 'Volkovia' %}
+                    <button class="faction-tab {% if user_faction == 'Volkovia' and user_role != 'admin' %}active{% endif %}" data-faction="Volkovia">Volkovia</button>
+                    {% endif %}
+                    {% if user_role == 'admin' or user_faction == 'Khemed' %}
+                    <button class="faction-tab {% if user_faction == 'Khemed' and user_role != 'admin' %}active{% endif %}" data-faction="Khemed">Khemed</button>
+                    {% endif %}
+                </div>
+                <a href="/logout" class="btn-power" title="Cerrar Sesión"><span class="material-symbols-outlined">power_settings_new</span></a>
+            </header>
+
+            <main class="dashboard-container">
         
         <!-- VISTA ORBAT -->
         <section id="view-orbat" class="view-section active">
             
             <div class="orbat-content-wrapper">
                 
-                <div id="orbat-total-pax-container" style="text-align: center; margin-bottom: 1rem; font-family: var(--font-mono); font-size: 1.2rem; font-weight: bold; padding: 0.5rem; background: rgba(0,0,0,0.3); color: #fff; border-radius: 4px; border: 1px solid var(--theme-color);">
-                    TOTAL EFECTIVOS ASIGNADOS: <span id="orbat-total-pax-value">0</span>
-                </div>
+                <!-- Total PAX will now be rendered inside the Mando card -->
 
                 <div class="orbat-tree-container" id="orbat-tree-container">
                     <!-- Se llenará mediante JS dependiendo de la facción seleccionada -->
@@ -130,10 +137,8 @@
             </div>
         </section>
 
-        </section>
-
         <!-- VISTA MAPA TÁCTICO -->
-        <section id="view-mapa" class="view-section" style="display: flex; height: 100%;">
+        <section id="view-mapa" class="view-section" style="height: 100%; padding: 0;">
             <!-- Map Side Panel -->
             {% if user_role in ['admin', 'mando'] %}
             <aside class="sidebar-panel" style="width: 250px; min-width: 250px; flex: none; border-right: 1px solid var(--border-color); background: rgba(0,0,0,0.1);">
@@ -145,11 +150,11 @@
                 </div>
                 <div style="padding: 1rem; border-top: 1px solid var(--border-color); margin-top: auto;">
                     <h3 style="margin-bottom: 1rem; font-size: 0.9rem;">Herramientas</h3>
-                    <button id="btn-draw-route" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem;">⬈ Trazar Ruta</button>
-                    <button id="btn-draw-zone" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem;">🟩 Trazar Zona</button>
-                    <button id="btn-measure" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem;">📏 Medir (50m/cuadricula)</button>
-                    <button id="btn-add-marker" class="btn warning" style="width: 100%; font-size: 0.85rem; margin-bottom: 0.5rem;">📍 Añadir Intel</button>
-                    <button id="btn-add-tl-marker" class="btn primary" style="width: 100%; font-size: 0.85rem;">🛡️ Mi Posición (TL)</button>
+                    <button id="btn-draw-route" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">timeline</span> Trazar Ruta</button>
+                    <button id="btn-draw-zone" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">polyline</span> Trazar Zona</button>
+                    <button id="btn-measure" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">straighten</span> Medir (50m)</button>
+                    <button id="btn-add-marker" class="btn warning" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">warning</span> Añadir Intel</button>
+                    <button id="btn-add-tl-marker" class="btn primary" style="width: 100%; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">my_location</span> Mi Posición (TL)</button>
                 </div>
             </aside>
             {% endif %}
@@ -395,5 +400,7 @@
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}?v=13"></script>
     <script src="{{ url_for('static', filename='js/map.js') }}?v=11"></script>
+        </div>
+    </div>
 </body>
 </html>
