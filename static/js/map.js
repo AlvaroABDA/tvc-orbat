@@ -16,17 +16,20 @@ let tempPolygon = null;
 function initMap() {
     if (map) return; // Already initialized
 
+    const bounds = [[0, 0], [2000, 3000]]; 
+    
     // Setup map
     map = L.map('tactical-map', {
         crs: L.CRS.Simple,
         minZoom: -2,
         maxZoom: 2,
         zoomControl: false,
-        doubleClickZoom: false // Disable so we can use double click for drawing
+        doubleClickZoom: false, // Disable so we can use double click for drawing
+        maxBounds: bounds,      // Prevent panning outside map
+        maxBoundsViscosity: 1.0 // Make bounds completely solid
     });
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    const bounds = [[0, 0], [2000, 3000]]; 
     imageOverlay = L.imageOverlay('/static/map/Full_Mapa%20Oct24.png', bounds).addTo(map);
     
     // Set higher initial zoom instead of fitBounds
