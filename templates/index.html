@@ -285,8 +285,8 @@
         <!-- VISTA MORTERO -->
         <section id="view-mortero" class="view-section view-column" style="overflow-y: auto;">
             <div id="mortero-main-ui" class="panel management-panel" style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; height: 85vh;">
-                <div class="panel-header" style="justify-content: space-between; display: flex;">
-                    <h2>Control de Fuego - Batería Principal</h2>
+                <div id="mortero-panel-header" class="panel-header" style="justify-content: space-between; display: flex;">
+                    <h2 id="mortero-title">Control de Fuego - Batería Principal</h2>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         {% if user_role == 'admin' %}
                         <select id="admin-sim-faccion" class="form-control" style="background: #2b2b2b; color: #ff4d4d; border: 1px solid #ff4d4d; font-weight: bold;">
@@ -305,14 +305,21 @@
                     .mortero-hud-panel .btn, .mortero-hud-panel input { pointer-events: auto; }
                     
                     @media (max-width: 896px) {
-                        /* El contenedor principal fluye en columna */
-                        #view-mortero { padding: 0 !important; }
-                        #mortero-main-ui { min-height: 0 !important; height: auto !important; margin: 0 !important; padding: 0 !important; border: none !important; }
+                        /* El contenedor principal debe tomar toda la pantalla sin desbordar */
+                        #view-mortero { padding: 0 !important; height: 100vh !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+                        #mortero-main-ui { min-height: 0 !important; height: 100% !important; flex: 1 !important; margin: 0 !important; padding: 0 !important; border: none !important; }
                         
+                        /* Cabecera compacta en movil */
+                        #mortero-panel-header { padding: 5px 10px !important; margin-bottom: 0 !important; }
+                        #mortero-title { font-size: 1rem !important; margin: 0 !important; }
+                        #admin-sim-faccion { padding: 2px !important; font-size: 0.8rem !important; }
+                        #mortero-status { padding: 2px 5px !important; font-size: 0.8rem !important; }
+
                         #mortero-mobile-wrapper {
                             display: flex !important;
                             flex-direction: column !important;
-                            height: 100vh !important;
+                            flex: 1 !important; /* Ocupa lo que queda tras la cabecera */
+                            min-height: 0 !important;
                             margin: 0 !important;
                             border: none !important;
                             border-radius: 0 !important;
@@ -366,6 +373,7 @@
                         #mortero-hud-dpad { width: 40% !important; }
                         .mortero-dpad-grid { height: 100px !important; }
                         #mortero-hud-fuego label { display: none !important; }
+                        #mortero-title { display: none !important; } /* Ocultar titulo para ahorrar altura */
                     }
                 </style>
                 <div id="mortero-mobile-wrapper" style="position: relative; margin-top: 1rem; flex: 1; min-height: 0; border: 2px solid var(--theme-color); border-radius: 5px; overflow: hidden; display: flex;">
