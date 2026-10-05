@@ -299,42 +299,76 @@
                 </div>
                 
                 <style>
-                    /* Mortero Mobile Optimization */
+                    /* Mortero Mobile Optimization (Inspired by TVC-Contador) */
                     .mortero-hud-container { pointer-events: none; }
                     .mortero-hud-panel { background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border-radius: 8px; padding: 10px; pointer-events: auto; border: 1px solid rgba(255,255,255,0.2); }
                     .mortero-hud-panel .btn, .mortero-hud-panel input { pointer-events: auto; }
                     
-                    /* Any Mobile Device */
                     @media (max-width: 896px) {
-                        #mortero-main-ui { min-height: 85vh !important; height: auto !important; margin: 0 !important; border: none !important; }
-                        .mortero-hud-panel { padding: 6px !important; }
-                        #mortero-hud-top { gap: 5px !important; top: 5px !important; left: 5px !important; right: 5px !important; }
+                        /* El contenedor principal fluye en columna */
+                        #view-mortero { padding: 0 !important; }
+                        #mortero-main-ui { min-height: 0 !important; height: auto !important; margin: 0 !important; padding: 0 !important; border: none !important; }
+                        
+                        #mortero-mobile-wrapper {
+                            display: flex !important;
+                            flex-direction: column !important;
+                            height: 100vh !important;
+                            margin: 0 !important;
+                            border: none !important;
+                            border-radius: 0 !important;
+                            background: #000 !important;
+                            overflow-y: auto !important; /* Permite hacer scroll de los controles */
+                        }
+                        
+                        /* El mapa deja de ser absoluto, ocupa un espacio fijo superior */
+                        #mortero-leaflet-map {
+                            position: relative !important;
+                            width: 100% !important;
+                            height: 45vh !important; /* Altura fija para el mapa, como en TVC-Contador */
+                            flex: none !important;
+                            z-index: 1 !important;
+                        }
+                        
+                        /* Los HUDs dejan de ser absolutos y se colocan debajo del mapa */
+                        .mortero-hud-container {
+                            position: relative !important;
+                            top: auto !important; bottom: auto !important; left: auto !important; right: auto !important;
+                            width: 100% !important;
+                            padding: 5px 10px !important;
+                            margin: 0 !important;
+                            pointer-events: auto !important;
+                        }
+                        
+                        .mortero-hud-panel {
+                            background: rgba(30,30,30,1) !important; /* Menos transparente */
+                            padding: 8px !important;
+                            margin-bottom: 5px !important;
+                        }
+                        
+                        #mortero-hud-dpad {
+                            flex-direction: row !important;
+                            align-items: center !important;
+                        }
+                        .mortero-dpad-grid {
+                            height: 120px !important;
+                            flex: 1 !important;
+                        }
+                        .dpad-btn { font-size: 1.8rem !important; }
+                        #mortero-hover-coord { font-size: 0.9rem !important; }
                     }
-
-                    /* Portrait specifics */
-                    @media (max-width: 896px) and (orientation: portrait) {
-                        #mortero-hud-fuego { left: 5px !important; right: 5px !important; bottom: 120px !important; width: auto !important; }
-                        #mortero-hud-dpad { left: 5px !important; right: 5px !important; bottom: 5px !important; width: auto !important; flex-direction: row !important; }
-                        .mortero-dpad-grid { height: 90px !important; gap: 4px !important; flex: 1; }
-                        .dpad-btn { font-size: 1.5rem !important; }
-                    }
-
-                    /* Landscape specifics */
-                    @media (max-width: 896px) and (orientation: landscape), (max-height: 500px) {
-                        #mortero-main-ui { min-height: 95vh !important; } 
-                        #mortero-hud-top { top: 0 !important; left: 0 !important; right: 0 !important; border-radius: 0 !important; }
-                        #mortero-hud-fuego { width: 250px !important; bottom: 5px !important; left: 5px !important; }
-                        #mortero-hud-dpad { width: 180px !important; bottom: 5px !important; right: 5px !important; }
-                        .mortero-dpad-grid { height: 110px !important; gap: 2px !important; }
-                        .dpad-btn { font-size: 1.2rem !important; }
-                        /* Hide labels and borders to save space */
-                        #mortero-hud-fuego label, #mortero-hud-top label { display: none !important; }
-                        #btn-ubicar-mortero { padding: 5px 10px !important; font-size: 0.8rem !important; }
-                        #mortero_coord_display { font-size: 0.9rem !important; padding: 2px !important; }
-                        #mortero-hud-dpad > div:first-child { display: none !important; } /* Hide tracker on landscape mobile */
+                    
+                    /* Modo Horizontal para Móviles */
+                    @media (max-width: 896px) and (orientation: landscape) {
+                        #mortero-leaflet-map { height: 60vh !important; }
+                        .mortero-hud-container { display: inline-flex !important; }
+                        #mortero-hud-top { width: 100% !important; }
+                        #mortero-hud-fuego { width: 60% !important; }
+                        #mortero-hud-dpad { width: 40% !important; }
+                        .mortero-dpad-grid { height: 100px !important; }
+                        #mortero-hud-fuego label { display: none !important; }
                     }
                 </style>
-                <div style="position: relative; margin-top: 1rem; flex: 1; min-height: 0; border: 2px solid var(--theme-color); border-radius: 5px; overflow: hidden; display: flex;">
+                <div id="mortero-mobile-wrapper" style="position: relative; margin-top: 1rem; flex: 1; min-height: 0; border: 2px solid var(--theme-color); border-radius: 5px; overflow: hidden; display: flex;">
                       
                       <!-- El Mapa Leaflet Ocupa Todo -->
                       <div id="mortero-leaflet-map" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 1;"></div>
