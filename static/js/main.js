@@ -1135,8 +1135,7 @@ function updateJugadoresCount() {
     const activos = validRows.filter(r => r.querySelector('.miembro-activo').checked).length;
     document.getElementById('eq-jugadores').value = `${activos} / ${total}`;
 }
-
-document.getElementById('eq-jugadores-manual').addEventListener('change', updateJugadoresState);
+document.getElementById('eq-jugadores-manual')?.addEventListener('change', updateJugadoresState);
 
 
 
@@ -1247,11 +1246,11 @@ function addHistorialRow(h = null) {
     container.appendChild(div);
 }
 
-document.getElementById('btn-add-miembro').addEventListener('click', () => {
+document.getElementById('btn-add-miembro')?.addEventListener('click', () => {
     addMiembroRow();
 });
 
-document.getElementById('btn-add-historial').addEventListener('click', () => {
+document.getElementById('btn-add-historial')?.addEventListener('click', () => {
     addHistorialRow();
 });
 
