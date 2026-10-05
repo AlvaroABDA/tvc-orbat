@@ -74,14 +74,16 @@
             }
             .tactical-box {
                 background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.15); padding: 10px 12px; backdrop-filter: blur(4px); position: relative;
+                pointer-events: auto;
             }
             .c-tl { position: absolute; top: -1px; left: -1px; width: 8px; height: 8px; border-top: 2px solid #ccc; border-left: 2px solid #ccc; }
             .c-tr { position: absolute; top: -1px; right: -1px; width: 8px; height: 8px; border-top: 2px solid #ccc; border-right: 2px solid #ccc; }
             .c-bl { position: absolute; bottom: -1px; left: -1px; width: 8px; height: 8px; border-bottom: 2px solid #ccc; border-left: 2px solid #ccc; }
             .c-br { position: absolute; bottom: -1px; right: -1px; width: 8px; height: 8px; border-bottom: 2px solid #ccc; border-right: 2px solid #ccc; }
             .hud-col {
-                grid-area: 1 / 1; margin: 15px; display: flex; flex-direction: column; gap: 10px; width: 190px; z-index: 10; align-self: start;
+                grid-area: 1 / 1; margin: 15px; display: flex; flex-direction: column; gap: 10px; width: 190px; z-index: 10; align-self: start; pointer-events: none;
             }
+            .hud-col .btn { pointer-events: auto; }
         </style>
         
         {% if active_targets %}
@@ -95,7 +97,9 @@
                 
                 <div class="hud-wrapper" style="min-height: 450px;">
                     {% if tgt.image_url %}
-                    <img src="{{ tgt.image_url }}" alt="Objetivo" style="grid-area: 1 / 1; width: 100%; height: 100%; object-fit: cover; display: block; filter: grayscale(50%) contrast(120%) brightness(0.5);">
+                    <div style="grid-area: 1 / 1; width: 100%; height: 100%; overflow: auto; position: relative; z-index: 1;">
+                        <img src="{{ tgt.image_url }}" alt="Objetivo" style="width: 200%; height: auto; min-height: 100%; display: block; filter: grayscale(50%) contrast(120%) brightness(0.5); transform-origin: top left;">
+                    </div>
                     {% else %}
                     <div style="grid-area: 1 / 1; width: 100%; height: 100%; background: #111; display: flex; align-items: center; justify-content: center; color: #555;">[ NO VIDEO FEED ]</div>
                     {% endif %}
