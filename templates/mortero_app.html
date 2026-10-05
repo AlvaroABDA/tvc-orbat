@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ORBAT - Control de Mortero</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100vw; height: 100vh; overflow: hidden; background: #000; }
+        
+        #view-mortero { padding: 0 !important; height: 100vh !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; }
+        #mortero-main-ui { min-height: 0 !important; height: 100% !important; flex: 1 !important; margin: 0 !important; padding: 0 !important; border: none !important; }
+        
+        #mortero-panel-header { padding: 10px !important; margin-bottom: 0 !important; display: flex; justify-content: space-between; align-items: center; background: #111; }
+        #mortero-title { font-size: 1.2rem !important; margin: 0 !important; color: var(--theme-color); font-family: 'Orbitron', sans-serif; }
+        #admin-sim-faccion { padding: 5px !important; font-size: 0.9rem !important; }
+        #mortero-status { padding: 5px 10px !important; font-size: 0.9rem !important; }
+        .btn-volver { padding: 5px 15px; border-radius: 5px; font-weight: bold; background: #333; color: white; border: 1px solid #555; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+        
+        /* Estilos base de los componentes del mortero */
+        .mortero-hud-container { pointer-events: none; }
+        .mortero-hud-panel { background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); border-radius: 8px; padding: 10px; pointer-events: auto; border: 1px solid rgba(255,255,255,0.2); }
+        .mortero-hud-panel .btn, .mortero-hud-panel input { pointer-events: auto; }
+
+        @media (max-width: 896px) {
+            #mortero-panel-header { padding: 5px 10px !important; }
+            #mortero-title { font-size: 1rem !important; display: none !important; } /* Oculto en movil para ganar espacio */
+            .btn-volver span { display: none; } /* Solo el icono en movil */
+            
+            #mortero-mobile-wrapper {
+                display: flex !important;
+                flex-direction: column !important;
+                flex: 1 !important;
+                min-height: 0 !important;
+                margin: 0 !important;
+                border: none !important;
+                border-radius: 0 !important;
+                background: #000 !important;
+                overflow-y: auto !important;
+            }
+            
+            #mortero-leaflet-map {
+                position: relative !important;
+                width: 100% !important;
+                height: 45vh !important;
+                flex: none !important;
+                z-index: 1 !important;
+            }
+            
+            .mortero-hud-container {
+                position: relative !important;
+                top: auto !important; bottom: auto !important; left: auto !important; right: auto !important;
+                width: 100% !important;
+                padding: 5px 10px !important;
+                margin: 0 !important;
+                pointer-events: auto !important;
+            }
+            
+            .mortero-hud-panel { background: rgba(20,20,20,1) !important; padding: 8px !important; margin-bottom: 5px !important; }
+            #mortero-hud-dpad { flex-direction: row !important; align-items: center !important; }
+            .mortero-dpad-grid { height: 120px !important; flex: 1 !important; }
+            .dpad-btn { font-size: 1.8rem !important; }
+            #mortero-hover-coord { font-size: 0.9rem !important; }
+        }
+        
+        @media (max-width: 896px) and (orientation: landscape) {
+            #mortero-leaflet-map { height: 60vh !important; }
+            .mortero-hud-container { display: inline-flex !important; }
+            #mortero-hud-top { width: 100% !important; }
+            #mortero-hud-fuego { width: 60% !important; }
+            #mortero-hud-dpad { width: 40% !important; }
+            .mortero-dpad-grid { height: 100px !important; }
+            #mortero-hud-fuego label { display: none !important; }
+        }
+    </style>
+</head>
+<body data-theme="default">
+
+    <!-- Store global variables needed by main.js and map.js -->
+    <div id="app-data" 
+         data-role="{{ user_role }}" 
+         data-faction="{{ user_faction }}" 
+         data-team="{{ equipo_id if equipo_id else '' }}">
+    </div>
+
+    <section id="view-mortero" class="view-section" style="display: flex;">
+        <div id="mortero-main-ui" style="width: 100%; display: flex; flex-direction: column;">
+            
+            <!-- HEADER AISLADO -->
+            <div id="mortero-panel-header">
+                <button class="btn-volver" onclick="window.location.href='/'">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    <span>VOLVER</span>
+                </button>
+                <h2 id="mortero-title">ARTILLERÍA</h2>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    {% if user_role == 'admin' %}
+                    <select id="admin-sim-faccion" class="form-control" style="background: #2b2b2b; color: #ff4d4d; border: 1px solid #ff4d4d; font-weight: bold;">
+                        <option value="Syldavia">SYLDAVIA</option>
+                        <option value="Volkovia">VOLKOVIA</option>
+                    </select>
+                    {% endif %}
+                    <div id="mortero-status" style="padding: 5px 15px; border-radius: 5px; font-weight: bold; background: #4CAF50; color: white;">OPERATIVO</div>
+                    <button class="btn-volver" onclick="toggleFullScreen()" title="Pantalla Completa">
+                        <span class="material-symbols-outlined">fullscreen</span>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- CONTENEDOR MORTERO -->
+            <div id="mortero-mobile-wrapper" style="position: relative; flex: 1; min-height: 0; overflow: hidden; display: flex; background: #111;">
+                  
+                  <!-- El Mapa Leaflet Ocupa Todo -->
+                  <div id="mortero-leaflet-map" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 1;"></div>
+                  
+                  <!-- HUD Superior: Batería -->
+                  <div id="mortero-hud-top" class="mortero-hud-container" style="position: absolute; top: 10px; left: 10px; right: 10px; z-index: 1000; display: flex; align-items: center; gap: 10px;">
+                      <div class="mortero-hud-panel" style="flex: 1; display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 5px 10px;">
+                      <div style="flex: 1; display: flex; flex-direction: column;">
+                          <label style="font-size: 0.8rem; color: #aaa; margin-bottom: 2px;">CUADRÍCULA DESPLIEGUE</label>
+                          <input type="text" id="mortero_coord_display" class="form-control" style="width: 100%; font-family: var(--font-mono); font-weight: bold; text-align: center; font-size: 1.1rem; padding: 5px;" placeholder="Ej: AP 45 C">
+                      </div>
+                      </div>
+                      <button id="btn-ubicar-mortero" class="btn" style="pointer-events: auto; font-weight: bold; height: 100%; white-space: nowrap; background: #000; border: 2px solid #fff; color: #fff; border-radius: 8px; padding: 10px 15px;">DESPLEGAR</button>
+                  </div>
+
+                  <!-- HUD Inferior Izquierdo: Fuego -->
+                  <div id="mortero-hud-fuego" class="mortero-hud-container" style="position: absolute; bottom: 10px; left: 10px; width: 320px; z-index: 1000;">
+                      <div class="mortero-hud-panel" style="border-color: var(--danger-color); display: flex; flex-direction: column; gap: 10px;">
+                      <div style="display: flex; gap: 10px;">
+                          <div style="flex: 1; display: flex; flex-direction: column;">
+                              <label style="font-size: 0.8rem; color: #aaa; margin-bottom: 2px;">AZIMUT (0-360)</label>
+                              <input type="number" id="azimut" value="0" class="form-control" style="width: 100%; font-size: 1.2rem; text-align: center;">
+                          </div>
+                          <div style="flex: 1; display: flex; flex-direction: column;">
+                              <label style="font-size: 0.8rem; color: #aaa; margin-bottom: 2px;">ELEVACIÓN (45-85)</label>
+                              <input type="number" id="angulo" value="85" class="form-control" style="width: 100%; font-size: 1.2rem; text-align: center;">
+                          </div>
+                      </div>
+                      
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                          <div style="flex: 1;">
+                              <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 2px;">
+                                  <span>CAÑÓN</span> <span id="mortero-heat-text" style="color: #4CAF50; font-weight: bold;">LISTO</span>
+                              </div>
+                              <div style="width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden;">
+                                  <div id="mortero-heat-bar" style="height: 100%; width: 0%; background: #4CAF50; transition: width 0.3s, background-color 0.3s;"></div>
+                              </div>
+                          </div>
+                          <button id="btn-fuego-mortero" class="btn danger" style="font-size: 1.2rem; font-weight: 900; padding: 10px 20px;">FUEGO</button>
+                      </div>
+                      </div>
+                  </div>
+
+                  <!-- HUD Inferior Derecho: D-PAD y Hover -->
+                  <div id="mortero-hud-dpad" class="mortero-hud-container" style="position: absolute; bottom: 10px; right: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; width: 220px; align-items: stretch;">
+                      <!-- Tracker Widget -->
+                      <div class="mortero-hud-panel" style="border-color: #0f0; padding: 5px; text-align: center; color: #0f0;">
+                          <div id="mortero-hover-coord" style="font-family: var(--font-mono); font-weight: bold; font-size: 1.1rem;">--</div>
+                      </div>
+                      
+                      <!-- D-PAD -->
+                        <div class="mortero-hud-panel mortero-dpad-grid" style="padding: 5px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 8px; height: 140px;">
+                            <button class="btn dpad-btn" id="dpad-zoom-out" style="grid-column: 1; grid-row: 1; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">-</button>
+                            <button class="btn dpad-btn" id="dpad-up" style="grid-column: 2; grid-row: 1; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">▲</button>
+                            <button class="btn dpad-btn" id="dpad-zoom-in" style="grid-column: 3; grid-row: 1; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">+</button>
+                            
+                            <button class="btn dpad-btn" id="dpad-left" style="grid-column: 1; grid-row: 2; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">◀</button>
+                            <button class="btn dpad-btn" id="dpad-down" style="grid-column: 2; grid-row: 2; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">▼</button>
+                            <button class="btn dpad-btn" id="dpad-right" style="grid-column: 3; grid-row: 2; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">▶</button>
+                        </div>
+                  </div>
+
+                  <!-- Overlay inhabilitado -->
+                  <div id="overlay-mortero-inhabilitado" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,0,0,0.85); z-index:2000; flex-direction:column; justify-content:center; align-items:center; text-align: center;">
+                      <h2 style="color:white; font-size:3rem; font-weight:bold; margin: 0;">SISTEMA DESTRUIDO</h2>
+                      <p style="color:white; font-size: 1.2rem;">Impacto directo de contrabatería enemiga.</p>
+                      <p style="color:white; font-size: 0.9rem; margin-top: 2rem;">A la espera de reparaciones de Alto Mando.</p>
+                  </div>
+              </div>
+        </div>
+    </section>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}?v=2"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=2"></script>
+    <script>
+        // Force the app to initialize the mortar directly
+        window.addEventListener('DOMContentLoaded', () => {
+            if(typeof initMorteroMap === 'function') {
+                setTimeout(initMorteroMap, 200); // Give it some time to layout
+            }
+        });
+
+        // Fullscreen Toggle
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log("Error intentando activar pantalla completa:", err);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+    </script>
+</body>
+</html>

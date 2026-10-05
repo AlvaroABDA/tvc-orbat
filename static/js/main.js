@@ -146,7 +146,12 @@ function initNavigation() {
             
             btn.classList.add('active');
             const targetId = btn.dataset.target;
-            document.getElementById(targetId).classList.add('active');
+            if (targetId) {
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    targetElement.classList.add('active');
+                }
+            }
             
             if (targetId === 'view-mortero' && typeof morteroMap !== 'undefined' && morteroMap) {
                 setTimeout(() => morteroMap.invalidateSize(), 100);

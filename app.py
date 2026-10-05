@@ -130,6 +130,15 @@ def index():
                            user_faction=session['faction'],
                            unlocked_minigames=session.get('unlocked_minigames', []))
 
+@app.route('/mortero_app')
+def mortero_app():
+    if 'role' not in session:
+        return redirect(url_for('login'))
+    return render_template('mortero_app.html', 
+                           user_role=session['role'], 
+                           user_faction=session['faction'],
+                           equipo_id=session.get('equipo_id'))
+
 @app.route('/api/facciones', methods=['GET'])
 def get_facciones():
     conn = get_db_connection()
