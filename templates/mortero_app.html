@@ -185,6 +185,12 @@
     </section>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script>
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            alert('JS Error: ' + msg + '\nLínea: ' + lineNo);
+            return false;
+        };
+    </script>
     <script src="{{ url_for('static', filename='js/map.js') }}?v=51"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}?v=51"></script>
     <script>
