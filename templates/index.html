@@ -304,19 +304,34 @@
                     .mortero-hud-panel { background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border-radius: 8px; padding: 10px; pointer-events: auto; border: 1px solid rgba(255,255,255,0.2); }
                     .mortero-hud-panel .btn, .mortero-hud-panel input { pointer-events: auto; }
                     
-                    @media (max-width: 768px) and (orientation: portrait) {
-                        #mortero-main-ui { height: 100% !important; }
-                        #mortero-hud-fuego { bottom: 140px !important; left: 5px !important; right: 5px !important; width: auto !important; }
-                        #mortero-hud-dpad { bottom: 5px !important; left: 5px !important; right: 5px !important; width: auto !important; flex-direction: row !important; }
-                        .mortero-dpad-grid { height: 90px !important; gap: 4px !important; }
+                    /* Any Mobile Device */
+                    @media (max-width: 896px) {
+                        #mortero-main-ui { min-height: 85vh !important; height: auto !important; margin: 0 !important; border: none !important; }
+                        .mortero-hud-panel { padding: 6px !important; }
+                        #mortero-hud-top { gap: 5px !important; top: 5px !important; left: 5px !important; right: 5px !important; }
+                    }
+
+                    /* Portrait specifics */
+                    @media (max-width: 896px) and (orientation: portrait) {
+                        #mortero-hud-fuego { left: 5px !important; right: 5px !important; bottom: 120px !important; width: auto !important; }
+                        #mortero-hud-dpad { left: 5px !important; right: 5px !important; bottom: 5px !important; width: auto !important; flex-direction: row !important; }
+                        .mortero-dpad-grid { height: 90px !important; gap: 4px !important; flex: 1; }
                         .dpad-btn { font-size: 1.5rem !important; }
                     }
-                    @media (max-height: 500px) and (orientation: landscape) {
-                        #mortero-main-ui { height: calc(100vh - 60px) !important; }
-                        #mortero-hud-top { transform: scale(0.75); transform-origin: top center; }
-                        #mortero-hud-fuego { transform: scale(0.75); transform-origin: bottom left; bottom: 5px !important; left: 5px !important; width: 280px !important; }
-                        #mortero-hud-dpad { transform: scale(0.75); transform-origin: bottom right; bottom: 5px !important; right: 5px !important; width: 200px !important; }
-                        .mortero-hud-panel { padding: 5px !important; gap: 5px !important; }
+
+                    /* Landscape specifics */
+                    @media (max-width: 896px) and (orientation: landscape), (max-height: 500px) {
+                        #mortero-main-ui { min-height: 95vh !important; } 
+                        #mortero-hud-top { top: 0 !important; left: 0 !important; right: 0 !important; border-radius: 0 !important; }
+                        #mortero-hud-fuego { width: 250px !important; bottom: 5px !important; left: 5px !important; }
+                        #mortero-hud-dpad { width: 180px !important; bottom: 5px !important; right: 5px !important; }
+                        .mortero-dpad-grid { height: 110px !important; gap: 2px !important; }
+                        .dpad-btn { font-size: 1.2rem !important; }
+                        /* Hide labels and borders to save space */
+                        #mortero-hud-fuego label, #mortero-hud-top label { display: none !important; }
+                        #btn-ubicar-mortero { padding: 5px 10px !important; font-size: 0.8rem !important; }
+                        #mortero_coord_display { font-size: 0.9rem !important; padding: 2px !important; }
+                        #mortero-hud-dpad > div:first-child { display: none !important; } /* Hide tracker on landscape mobile */
                     }
                 </style>
                 <div style="position: relative; margin-top: 1rem; flex: 1; min-height: 0; border: 2px solid var(--theme-color); border-radius: 5px; overflow: hidden; display: flex;">
