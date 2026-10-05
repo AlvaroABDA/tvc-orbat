@@ -112,6 +112,17 @@ def init_db():
     ''')
     
     cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Esquema_Tactico (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            faccion_id INTEGER,
+            datos_json TEXT,
+            fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
+        )
+    ''')
+    
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS Operacion (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT NOT NULL,
@@ -132,7 +143,10 @@ def init_db():
             consideraciones TEXT,
             persistente BOOLEAN,
             revelada BOOLEAN DEFAULT 0,
-            FOREIGN KEY (operacion_id) REFERENCES Operacion (id)
+            map_snapshot TEXT,
+            esquema_id INTEGER,
+            FOREIGN KEY (operacion_id) REFERENCES Operacion (id),
+            FOREIGN KEY (esquema_id) REFERENCES Esquema_Tactico (id)
         )
     ''')
     
@@ -261,7 +275,66 @@ def init_db():
             team_id = res[0]
             cursor.execute('UPDATE Equipo SET jugadores = ? WHERE id = ?', (len(members), team_id))
             for name, role in members:
-                cursor.execute('INSERT INTO Miembro (equipo_id, nombre_jugador, rol) VALUES (?, ?, ?)', (team_id, name, role))    conn.commit()
+                cursor.execute('INSERT INTO Miembro (equipo_id, nombre_jugador, rol) VALUES (?, ?, ?)', (team_id, name, role))
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS puntos_control (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            poi_id INTEGER NOT NULL, 
+            faccion_id INTEGER, 
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS respawn (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            poi_id INTEGER, 
+            faccion_id INTEGER, 
+            equipo_id INTEGER, 
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Mortero_Config (
+            id INTEGER PRIMARY KEY,
+            alcance_base INTEGER DEFAULT 800,
+            radio_explosion INTEGER DEFAULT 15,
+            disparos_por_minuto INTEGER DEFAULT 5
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Mortero_Estado (
+            faccion_id INTEGER PRIMARY KEY,
+            activo BOOLEAN DEFAULT 1,
+            lat REAL,
+            lng REAL,
+            ultimo_disparo DATETIME
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS dynamic_targets (
+            id TEXT PRIMARY KEY,
+            faccion_id INTEGER,
+            lat REAL,
+            lng REAL,
+            grid_reference TEXT,
+            bearing TEXT,
+            linked_pc_id INTEGER,
+            source_op_id INTEGER,
+            status TEXT,
+            is_fake BOOLEAN DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            expires_at DATETIME,
+            image_url TEXT,
+            intel_text TEXT,
+            entorno_text TEXT
+        )
+    ''')
+
+    conn.commit()
     conn.close()
     print("Base de datos recreada y poblada con éxito para la Fase 2.")
 

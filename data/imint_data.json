@@ -1,0 +1,71 @@
+{
+  "contextos": {
+    "urbano": [
+      "Viviendas", "Bloques residenciales", "Carretera urbana", "Calle secundaria", 
+      "Avenida principal", "Colegio", "Centro médico", "Comercio", "Gasolinera", 
+      "Polígono industrial", "Almacén", "Estación de transporte", "Edificio administrativo", 
+      "Instalación eléctrica", "Depósito de agua", "Aparcamiento", "Mercado", 
+      "Zona deportiva", "Parque público", "Iglesia / edificio religioso"
+    ],
+    "rural": [
+      "Granja", "Explotación ganadera", "Vivienda aislada", "Almacén agrícola", 
+      "Cooperativa agrícola", "Campo de cultivo", "Carretera secundaria", "Camino rural", 
+      "Puente", "Depósito de agua", "Estación de bombeo", "Instalación eléctrica", 
+      "Subestación eléctrica", "Torre de comunicaciones", "Cantera", "Instalación industrial aislada", 
+      "Área de almacenamiento"
+    ],
+    "monte": [
+      "Vivienda aislada", "Refugio", "Explotación ganadera", "Cantera", "Torre de comunicaciones", 
+      "Torre de vigilancia", "Antena", "Depósito de agua", "Camino de montaña", 
+      "Carretera de montaña", "Puente", "Instalación forestal", "Zona de extracción", 
+      "Línea eléctrica", "Subestación eléctrica", "Puesto de observación"
+    ],
+    "bosque": [
+      "Explotación maderera", "Aserradero", "Campamento forestal", "Refugio forestal", 
+      "Vivienda aislada", "Camino forestal", "Pista forestal", "Cortafuegos", 
+      "Torre de vigilancia", "Torre de comunicaciones", "Antena", "Línea eléctrica", 
+      "Depósito de agua", "Puente", "Zona recreativa", "Instalación de mantenimiento forestal"
+    ]
+  },
+  "supuestos": [
+    {
+      "id_supuesto": "SUP-01-CRUCE",
+      "titulo_interno": "Cruce de Caminos Estratégico",
+      "opciones": [
+        {
+          "imagen_filtro": "vlk_vehiculo",
+          "es_objetivo_valido_para": ["Syldavia", "Khemed"], 
+          "informe": {
+            "referencia": "OBJ-014-A",
+            "cuadricula_base": "AB-17",
+            "contacto": "Vehículo pesado artillado, parado en el margen de la pista.",
+            "confianza": "Alta"
+          },
+          "genera_colateral": false
+        },
+        {
+          "imagen_filtro": "civil_vehiculo",
+          "es_objetivo_valido_para": [],
+          "informe": {
+            "referencia": "OBJ-014-B",
+            "cuadricula_base": "AB-17",
+            "contacto": "Vehículo civil no identificado. Posible furgoneta.",
+            "confianza": "Baja - Posible uso civil"
+          },
+          "genera_colateral": true
+        },
+        {
+          "imagen_filtro": "syl_vehiculo",
+          "es_objetivo_valido_para": ["Volkovia", "Khemed"],
+          "informe": {
+            "referencia": "OBJ-014-C",
+            "cuadricula_base": "AB-17",
+            "contacto": "Camión de transporte medio, lona verde.",
+            "confianza": "Media"
+          },
+          "genera_colateral": false
+        }
+      ]
+    }
+  ]
+}

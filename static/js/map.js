@@ -1,3 +1,44 @@
+
+// --- TACTICAL TRACKER LOGIC ---
+const trackerCoord = document.getElementById('tracker-coord');
+const trackerGps = document.getElementById('tracker-gps');
+
+function getGridCoordinate(mapLat, mapLng) {
+    // Leaflet Lat crece de abajo arriba (0 a 2000). Canvas Y crece de arriba abajo.
+    const canvasY = 2000 - mapLat;
+    const canvasX = mapLng;
+
+    // Calibración exacta (Los datos proporcionados eran Lat, Lng = Y, X)
+    // Columnas (X) = Letras (AA, AB...), Filas (Y) = Números (01, 02...)
+    const ORIGIN_X = 66.15; 
+    const ORIGIN_Y = 59.5;  
+    const GRID_SIZE_X = 31.71;
+    const GRID_SIZE_Y = 29.9435;
+    
+    const colIdx = Math.floor((canvasX - ORIGIN_X) / GRID_SIZE_X) + 1; // Eje X -> Letras
+    const rowIdx = Math.floor((canvasY - ORIGIN_Y) / GRID_SIZE_Y) + 1; // Eje Y -> Números
+    
+    if (colIdx < 1 || rowIdx < 1 || colIdx > 100 || rowIdx > 100) return "FUERA MAPA";
+
+    const first_letter = String.fromCharCode(65 + Math.floor((colIdx - 1) / 26));
+    const second_letter = String.fromCharCode(65 + ((colIdx - 1) % 26));
+    const letters = first_letter + second_letter;
+    
+    const numbers = rowIdx.toString().padStart(2, '0');
+    
+    const fracX = ((canvasX - ORIGIN_X) % GRID_SIZE_X) / GRID_SIZE_X;
+    const fracY = ((canvasY - ORIGIN_Y) % GRID_SIZE_Y) / GRID_SIZE_Y;
+    
+    let sub = "";
+    if (fracX > 0.33 && fracX < 0.67 && fracY > 0.33 && fracY < 0.67) {
+        sub = "C"; // Centro
+    } else {
+        sub = (fracY < 0.5 ? "N" : "S") + (fracX < 0.5 ? "O" : "E");
+    }
+    
+    return `${letters}${numbers}-${sub}`;
+}
+
 let map;
 let imageOverlay;
 let groupMarkers = {};
@@ -10,8 +51,53 @@ let currentZonePoints = [];
 let drawnRoutes = [];
 let drawnZonas = [];
 let intelMarkers = [];
+let drawnPOIs = [];
 let tempPolygon = null;
 
+class GPSMapper {
+    constructor(p1, p2, p3) {
+        const u1 = p1.gps.lng, v1 = p1.gps.lat, x1 = p1.px.lng, y1 = p1.px.lat;
+        const u2 = p2.gps.lng, v2 = p2.gps.lat, x2 = p2.px.lng, y2 = p2.px.lat;
+        const u3 = p3.gps.lng, v3 = p3.gps.lat, x3 = p3.px.lng, y3 = p3.px.lat;
+
+        const det = u1*(v2 - v3) - v1*(u2 - u3) + (u2*v3 - u3*v2);
+
+        this.A = (x1*(v2 - v3) - v1*(x2 - x3) + (x2*v3 - x3*v2)) / det;
+        this.B = (u1*(x2 - x3) - x1*(u2 - u3) + (u2*x3 - u3*x2)) / det;
+        this.C = x1 - this.A * u1 - this.B * v1;
+
+        this.D = (y1*(v2 - v3) - v1*(y2 - y3) + (y2*v3 - y3*v2)) / det;
+        this.E = (u1*(y2 - y3) - y1*(u2 - u3) + (u2*y3 - u3*y2)) / det;
+        this.F = y1 - this.D * u1 - this.E * v1;
+        
+        const detInv = this.A * this.E - this.B * this.D;
+        this.invA = this.E / detInv;
+        this.invB = -this.B / detInv;
+        this.invC = (this.B * this.F - this.C * this.E) / detInv;
+        
+        this.invD = -this.D / detInv;
+        this.invE = this.A / detInv;
+        this.invF = (this.C * this.D - this.A * this.F) / detInv;
+    }
+
+    gpsToMap(lat, lng) {
+        const x = this.A * lng + this.B * lat + this.C;
+        const y = this.D * lng + this.E * lat + this.F;
+        return { lat: y, lng: x };
+    }
+
+    mapToGps(pxLat, pxLng) {
+        const u = this.invA * pxLng + this.invB * pxLat + this.invC;
+        const v = this.invD * pxLng + this.invE * pxLat + this.invF;
+        return { lat: v, lng: u };
+    }
+}
+
+window.mapProjector = new GPSMapper(
+    { gps: { lat: 41.95586014650798, lng: -6.256770847102261 }, px: { lat: 1139, lng: 1244.75 } },
+    { gps: { lat: 41.95764427861231, lng: -6.2679631830511005 }, px: { lat: 1257.75, lng: 674 } },
+    { gps: { lat: 41.96462525160695, lng: -6.2547713027579865 }, px: { lat: 1727.75, lng: 1343.75 } }
+);
 // Initialize map only when the tab is shown to prevent rendering issues
 function initMap() {
     if (map) return; // Already initialized
@@ -71,13 +157,27 @@ function initMap() {
     map.on('dblclick', handleMapDoubleClick); 
     map.on('contextmenu', handleMapRightClick); 
 
-    // Buttons
-    if (window.userRole === 'admin' || window.userRole === 'mando') {
+    if (['admin', 'mando', 'equipo'].includes(window.userRole)) {
         document.getElementById('btn-draw-route').addEventListener('click', () => setMode('draw_route'));
         document.getElementById('btn-draw-zone').addEventListener('click', () => setMode('draw_zone'));
         document.getElementById('btn-measure').addEventListener('click', () => setMode('measure'));
         document.getElementById('btn-add-marker').addEventListener('click', () => setMode('add_marker'));
         document.getElementById('btn-add-tl-marker').addEventListener('click', () => setMode('add_tl_marker'));
+        const btnPoiMap = document.getElementById('btn-add-poi-map');
+        if(btnPoiMap) btnPoiMap.addEventListener('click', () => setMode('add_poi_map'));
+        
+        const btnDrawOk = document.getElementById('btn-draw-ok');
+        const btnDrawCancel = document.getElementById('btn-draw-cancel');
+        if (btnDrawOk) {
+            btnDrawOk.addEventListener('click', () => {
+                if (currentMode === 'draw_route' && currentRoutePoints.length > 0) saveRoute(currentRoutePoints);
+                else if (currentMode === 'draw_zone' && currentZonePoints.length > 0) saveZone(currentZonePoints);
+                else setMode('pan');
+            });
+        }
+        if (btnDrawCancel) {
+            btnDrawCancel.addEventListener('click', () => setMode('pan'));
+        }
     }
 
     loadMapData();
@@ -96,6 +196,9 @@ function setMode(mode) {
     if (mode === 'measure') document.getElementById('btn-measure').classList.add('active');
     if (mode === 'add_marker') document.getElementById('btn-add-marker').classList.add('active');
     if (mode === 'add_tl_marker') document.getElementById('btn-add-tl-marker').classList.add('active');
+    const btnPoiMap = document.getElementById('btn-add-poi-map');
+    if (btnPoiMap) btnPoiMap.classList.remove('active');
+    if (mode === 'add_poi_map' && btnPoiMap) btnPoiMap.classList.add('active');
 
     if (mode === 'pan') {
         document.getElementById('tactical-map').style.cursor = 'grab';
@@ -108,6 +211,21 @@ function setMode(mode) {
     currentZonePoints = [];
     if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
     if (tempPolygon) { map.removeLayer(tempPolygon); tempPolygon = null; }
+    
+    // Floating Toolbar for Mobile/Tablets
+    const drawingToolbar = document.getElementById('drawing-toolbar');
+    const modeText = document.getElementById('drawing-mode-text');
+    if (drawingToolbar && modeText) {
+        if (mode === 'draw_route') {
+            drawingToolbar.style.display = 'flex';
+            modeText.innerText = 'Trazando Ruta...';
+        } else if (mode === 'draw_zone') {
+            drawingToolbar.style.display = 'flex';
+            modeText.innerText = 'Trazando Zona...';
+        } else {
+            drawingToolbar.style.display = 'none';
+        }
+    }
     if (measureLine) { map.removeLayer(measureLine); measureLine = null; }
     if (measurePopup) { map.removeLayer(measurePopup); measurePopup = null; }
 }
@@ -171,12 +289,12 @@ async function loadMapData() {
                 iconSize: [24, 24],
                 iconAnchor: [12, 12]
             }),
-            draggable: window.userRole === 'admin' || window.userRole === 'mando'
+            draggable: ['admin', 'mando', 'equipo'].includes(window.userRole)
         }).addTo(map);
 
-        intel.bindTooltip(m.descripcion, { permanent: true, direction: 'right', className: isTL ? 'tl-tooltip' : '' });
+        intel.bindTooltip(m.descripcion, { permanent: false, direction: 'right', className: isTL ? 'tl-tooltip' : '' });
 
-        if (window.userRole === 'admin' || window.userRole === 'mando') {
+        if (['admin', 'mando', 'equipo'].includes(window.userRole)) {
             intel.on('dragend', async (e) => {
                 const pos = e.target.getLatLng();
                 await fetch(`/api/mapa/marcadores/${m.id}`, {
@@ -186,18 +304,97 @@ async function loadMapData() {
                 });
             });
 
-            intel.on('contextmenu', async () => {
+            const deleteMarker = async () => {
                 if(confirm(`¿Borrar marcador ${isTL ? 'de posición (TL)' : 'Intel'}?`)) {
                     await fetch(`/api/mapa/marcadores/${m.id}`, { method: 'DELETE' });
                     loadMapData();
                 }
-            });
+            };
+            intel.on('contextmenu', deleteMarker);
+            intel.on('dblclick', deleteMarker);
         }
         intelMarkers.push(intel);
     });
 
     const resZ = await fetch(`/api/mapa/zonas?faccion_id=${facciones.find(f => f.nombre === currentFaction).id}`);
     const zonas = await resZ.json();
+
+    // Render POIs
+    const resPOI = await fetch('/api/pois');
+    const pois = await resPOI.json();
+    drawnPOIs.forEach(m => map.removeLayer(m));
+    drawnPOIs = [];
+    
+    pois.forEach(poi => {
+        const currentFaccionId = facciones.find(f => f.nombre === currentFaction)?.id;
+        
+        // Fog of War: If not Admin, hide enemy POIs (keep neutral and own)
+        if (window.userRole !== 'admin') {
+            if (poi.tipo === 'OP') {
+                if (poi.faccion_id !== currentFaccionId) {
+                    return; // Hide OP if not assigned strictly to my faction
+                }
+            } else {
+                if (poi.faccion_id !== null && poi.faccion_id !== currentFaccionId) {
+                    return; // Hide enemy POI
+                }
+            }
+        }
+        
+        let iconHtml = '';
+        let color = '#777'; // Neutral
+        if (poi.faccion_id) {
+            const fac = facciones.find(f => f.id === poi.faccion_id);
+            if (fac) {
+                if(fac.nombre === 'Syldavia') color = '#DAA520';
+                if(fac.nombre === 'Volkovia') color = '#1E90FF';
+                if(fac.nombre === 'Khemed') color = '#2E7D32';
+            }
+        }
+
+        if (poi.tipo === 'RESPAWN') {
+            iconHtml = `<div style="background-color: ${color}; width: 32px; height: 32px; border-radius: 5px; border: 2px solid white; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px ${color};"><span class="material-symbols-outlined" style="color:white; font-size: 20px;">home</span></div>`;
+        } else if (poi.tipo === 'PC') {
+            iconHtml = `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px ${color};"><span class="material-symbols-outlined" style="color:white; font-size: 16px;">tour</span></div>`;
+        } else if (poi.tipo === 'MISION') {
+            iconHtml = `<div style="background-color: #ff9800; width: 28px; height: 28px; transform: rotate(45deg); border: 2px solid white; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px #ff9800;"><span class="material-symbols-outlined" style="color:white; font-size: 16px; transform: rotate(-45deg);">star</span></div>`;
+        } else if (poi.tipo === 'OP') {
+            iconHtml = `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 5px; border: 2px solid white; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px ${color};"><span class="material-symbols-outlined" style="color:white; font-size: 18px;">visibility</span></div>`;
+        }
+
+        // Project Real GPS to Leaflet CRS.Simple
+        let mapPx = {lat: 0, lng: 0};
+        if(window.mapProjector) {
+            mapPx = window.mapProjector.gpsToMap(poi.lat, poi.lng);
+        }
+        
+        const m = L.marker([mapPx.lat, mapPx.lng], {
+            icon: L.divIcon({
+                className: 'poi-marker',
+                html: iconHtml,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            })
+        }).addTo(map);
+
+        m.bindTooltip(`<b>[${poi.tipo}]</b> ${poi.nombre}`, {direction: 'top', offset: [0, -15], permanent: false});
+        drawnPOIs.push(m);
+        
+        // Add Tolerance Circle if Admin
+        if (window.userRole === 'admin') {
+            // Very roughly convert meters to pixels. 
+            // The map is approx 2000x3000. Depending on scale, 1 pixel = ~X meters.
+            // For now, let's just use a visual radius.
+            const circle = L.circle([mapPx.lat, mapPx.lng], {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0.1,
+                radius: poi.tolerancia_metros * 0.62 // approx 0.62 px per meter based on triangulation
+            }).addTo(map);
+            drawnPOIs.push(circle);
+        }
+    });
+
     drawnZonas.forEach(z => {
         map.removeLayer(z.polygon);
         if(z.labelMarker) map.removeLayer(z.labelMarker);
@@ -210,9 +407,9 @@ async function loadMapData() {
 }
 
 function getFactionColor() {
-    if (currentFaction === 'Syldavia') return '#cc0000'; // Red
+    if (currentFaction === 'Syldavia') return '#DAA520'; // Yellow/Gold
     if (currentFaction === 'Volkovia') return '#1E90FF'; // Blue
-    if (currentFaction === 'Khemed') return '#DAA520';   // Sand/Gold
+    if (currentFaction === 'Khemed') return '#2E7D32';   // Green
     return '#ff0000';
 }
 
@@ -325,8 +522,8 @@ function renderRouteOnMap(pts, color, id) {
         }).addTo(map);
     }
 
-    // Right click to delete route
-    if (window.userRole === 'admin' || window.userRole === 'mando') {
+    // Right click or Double Click to delete route
+    if (['admin', 'mando', 'equipo'].includes(window.userRole)) {
         const deleteRoute = async () => {
             if(confirm('¿Borrar esta ruta?')) {
                 await fetch(`/api/mapa/rutas/${id}`, { method: 'DELETE' });
@@ -334,24 +531,53 @@ function renderRouteOnMap(pts, color, id) {
             }
         };
         line.on('contextmenu', deleteRoute);
-        if(decorator) decorator.on('contextmenu', deleteRoute);
+        line.on('dblclick', deleteRoute);
+        if(decorator) {
+            decorator.on('contextmenu', deleteRoute);
+            decorator.on('dblclick', deleteRoute);
+        }
     }
 
     drawnRoutes.push({line, decorator, id});
 }
 
 function handleMapClick(e) {
-    if (currentMode === 'pan') return;
+    if (currentMode === 'pan') {
+        return;
+    }
+
+    if (currentMode === 'add_poi_map') {
+        setMode('pan');
+        
+        // Fill coordinates
+        document.getElementById('poi-map-y').value = e.latlng.lat.toFixed(2);
+        document.getElementById('poi-map-x').value = e.latlng.lng.toFixed(2);
+        if(window.mapProjector) {
+            const realGps = window.mapProjector.mapToGps(e.latlng.lat, e.latlng.lng);
+            document.getElementById('poi-lat').value = realGps.lat.toFixed(6);
+            document.getElementById('poi-lng').value = realGps.lng.toFixed(6);
+        }
+        
+        // Open the modal
+        const modalPoi = document.getElementById('modal-poi');
+        if (modalPoi) modalPoi.classList.add('active');
+        return;
+    }
 
     if (currentMode === 'add_marker') {
         const desc = prompt("Descripción del marcador de Inteligencia (ej. 'Contacto enemigo'):");
         if (desc) {
-            const faccion_id = facciones.find(f => f.nombre === currentFaction).id;
+            const faccionObj = facciones.find(f => f.nombre === currentFaction);
+            if (!faccionObj) {
+                alert("Selecciona una facción específica en las pestañas antes de añadir un marcador.");
+                setMode('pan');
+                return;
+            }
             fetch(`/api/mapa/marcadores`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    faccion_id: faccion_id,
+                    faccion_id: faccionObj.id,
                     tipo: 'intel',
                     lat: e.latlng.lat,
                     lng: e.latlng.lng,
@@ -368,12 +594,17 @@ function handleMapClick(e) {
     else if (currentMode === 'add_tl_marker') {
         const desc = prompt("Nombre/Identificativo de la Posición (ej. 'Equipo Alfa'):");
         if (desc) {
-            const faccion_id = facciones.find(f => f.nombre === currentFaction).id;
+            const faccionObj = facciones.find(f => f.nombre === currentFaction);
+            if (!faccionObj) {
+                alert("Selecciona una facción específica en las pestañas antes de añadir un marcador.");
+                setMode('pan');
+                return;
+            }
             fetch(`/api/mapa/marcadores`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    faccion_id: faccion_id,
+                    faccion_id: faccionObj.id,
                     tipo: 'tl_pos',
                     lat: e.latlng.lat,
                     lng: e.latlng.lng,
@@ -412,6 +643,14 @@ function handleMapClick(e) {
 }
 
 function handleMapMouseMove(e) {
+    if (trackerCoord && trackerGps) {
+        trackerCoord.innerText = getGridCoordinate(e.latlng.lat, e.latlng.lng);
+        if (window.mapProjector) {
+            const gps = window.mapProjector.mapToGps(e.latlng.lat, e.latlng.lng);
+            trackerGps.innerText = `GPS: ${gps.lat.toFixed(5)}, ${gps.lng.toFixed(5)}`;
+        }
+    }
+
     if (currentMode === 'draw_route' && currentRoutePoints.length > 0) {
         if (tempPolyline) map.removeLayer(tempPolyline);
         tempPolyline = L.polyline([...currentRoutePoints, e.latlng], {color: getFactionColor(), weight: 6, opacity: 0.6}).addTo(map);
@@ -505,14 +744,16 @@ function renderZoneOnMap(pts, color, name, id) {
         fillOpacity: 0.4
     }).addTo(map);
 
-    if (window.userRole === 'admin' || window.userRole === 'mando') {
-        polygon.on('contextmenu', async (e) => {
-            e.originalEvent.preventDefault();
+    if (['admin', 'mando', 'equipo'].includes(window.userRole)) {
+        const deleteZone = async (e) => {
+            if (e && e.originalEvent) e.originalEvent.preventDefault();
             if(confirm(`¿Borrar zona ${name || 'sin nombre'}?`)) {
                 await fetch(`/api/mapa/zonas/${id}`, { method: 'DELETE' });
                 loadMapData();
             }
-        });
+        };
+        polygon.on('contextmenu', deleteZone);
+        polygon.on('dblclick', deleteZone);
     }
 
     let labelMarker = null;

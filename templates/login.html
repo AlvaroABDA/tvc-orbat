@@ -4,134 +4,160 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TVC ORBAT - Acceso</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Use main app's fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
     <style>
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: #161b22;
+            --text-color: #c9d1d9;
+            --theme-color: #c0c0c0;
+            --font-main: 'Rajdhani', sans-serif;
+            --font-mono: 'Orbitron', monospace;
+        }
+
         body {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #050505;
+            background-color: var(--bg-color);
             background-image: 
-                radial-gradient(circle at center, #111 0%, #000 100%),
-                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.4) 2px, rgba(0, 0, 0, 0.4) 4px);
+                linear-gradient(rgba(22, 27, 34, 0.8) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(22, 27, 34, 0.8) 1px, transparent 1px);
+            background-size: 30px 30px;
             margin: 0;
-            font-family: 'Share Tech Mono', monospace;
+            font-family: var(--font-main);
             overflow: hidden;
+            color: var(--text-color);
         }
-        .scanlines {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            background-size: 100% 2px, 3px 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
+
         .login-box {
-            background: rgba(10, 15, 20, 0.85);
-            border: 1px solid rgba(0, 255, 170, 0.5);
+            background: rgba(22, 27, 34, 0.85);
+            border: 1px solid var(--theme-color);
             padding: 3rem;
             border-radius: 4px;
-            box-shadow: 0 0 20px rgba(0, 255, 170, 0.1), inset 0 0 20px rgba(0, 255, 170, 0.05);
+            box-shadow: 0 0 20px rgba(192, 192, 192, 0.1), inset 0 0 10px rgba(192, 192, 192, 0.05);
             backdrop-filter: blur(5px);
             text-align: center;
             width: 100%;
             max-width: 400px;
             position: relative;
             z-index: 20;
+            overflow: hidden; /* For the scanner */
         }
-        .login-box::before {
+        
+        /* Efecto de escaneo (Barrita guay) */
+        .login-box::after {
             content: '';
             position: absolute;
-            top: 0; left: 0; right: 0; height: 2px;
-            background: #00ffaa;
-            box-shadow: 0 0 15px #00ffaa;
+            top: -50px;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to bottom, transparent, var(--theme-color));
+            opacity: 0.2;
+            animation: scan 3s linear infinite;
+            pointer-events: none;
         }
+        @keyframes scan {
+            0% { top: -50px; }
+            100% { top: 100%; }
+        }
+
         h1 {
-            font-family: 'Teko', sans-serif;
-            font-size: 3.5rem;
-            color: #00ffaa;
+            font-family: var(--font-mono);
+            font-size: 2.5rem;
+            color: #fff;
             margin-top: 0;
             margin-bottom: 0.5rem;
-            letter-spacing: 3px;
+            letter-spacing: 4px;
             text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
         }
         .subtitle {
-            color: #777;
+            color: #8b949e;
             margin-bottom: 2rem;
-            font-size: 1rem;
-            letter-spacing: 1px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            letter-spacing: 2px;
             text-transform: uppercase;
         }
-        input[type="password"] {
-            width: 100%;
+        input[type="text"], input[type="password"] {
+            width: calc(100% - 2rem);
             padding: 1rem;
-            background: #0a0a0a;
-            border: 1px solid #333;
-            color: #00ffaa;
-            font-family: 'Share Tech Mono', monospace;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            color: #fff;
+            font-family: var(--font-mono);
             font-size: 1.2rem;
             text-align: center;
             margin-bottom: 1.5rem;
             border-radius: 2px;
             transition: border-color 0.3s, box-shadow 0.3s;
+            text-transform: uppercase;
         }
-        input[type="password"]:focus {
+        input[type="text"]:focus, input[type="password"]:focus {
             outline: none;
-            border-color: #00ffaa;
-            box-shadow: 0 0 10px rgba(0, 255, 170, 0.2);
+            border-color: var(--theme-color);
+            box-shadow: 0 0 10px rgba(192, 192, 192, 0.2);
         }
-        input[type="password"]::placeholder {
+        input[type="text"]::placeholder, input[type="password"]::placeholder {
             color: #444;
         }
         .btn {
             width: 100%;
             padding: 1rem;
             font-size: 1.2rem;
-            font-family: 'Share Tech Mono', monospace;
+            font-weight: 600;
+            font-family: var(--font-mono);
             text-transform: uppercase;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             background: transparent;
-            color: #00ffaa;
-            border: 1px solid #00ffaa;
+            color: var(--theme-color);
+            border: 1px solid var(--theme-color);
             cursor: pointer;
             transition: all 0.3s;
         }
         .btn:hover {
-            background: rgba(0, 255, 170, 0.1);
-            box-shadow: 0 0 15px rgba(0, 255, 170, 0.3);
-            text-shadow: 0 0 5px #00ffaa;
+            background: rgba(192, 192, 192, 0.1);
+            box-shadow: 0 0 15px rgba(192, 192, 192, 0.2);
         }
         .error-msg {
-            color: #ff3333;
+            color: #ff4d4d;
             margin-top: 1.5rem;
-            font-size: 0.9rem;
-            text-shadow: 0 0 5px rgba(255, 51, 51, 0.5);
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: var(--font-mono);
         }
     </style>
 </head>
 <body>
-    <div class="scanlines"></div>
     <div class="login-box">
-        <h1>TVC TERMINAL</h1>
-        <div class="subtitle">SISTEMA DE MANDO Y CONTROL</div>
+        <h1>TVC ACCESO</h1>
+        <div class="subtitle">SISTEMA DE GESTIÓN TÁCTICA</div>
         
         <form action="/login" method="POST">
-            <input type="password" name="codigo" placeholder="INTRODUZCA CÓDIGO" required autofocus autocomplete="off">
+            <input type="text" name="usuario" placeholder="USUARIO" autocomplete="off" required>
+            <input type="password" name="password" placeholder="CONTRASEÑA" required>
+            
+            <label style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; margin-bottom: 1.5rem; color: #aaa; font-family: var(--font-main); font-size: 0.9rem; cursor: pointer;">
+                <input type="checkbox" name="remember_me" value="yes" style="width: auto; padding: 0; margin: 0; accent-color: var(--theme-color); cursor: pointer;">
+                Mantener sesión iniciada
+            </label>
+
             <button type="submit" class="btn">
-                <span style="font-size: 1.4rem;">&#x23FB;</span> CONECTAR
+                <span class="material-symbols-outlined">login</span> CONECTAR
             </button>
         </form>
 
         {% if error %}
-            <div class="error-msg">> ERROR: {{ error }}</div>
+            <div class="error-msg">> ACCESO DENEGADO</div>
         {% endif %}
     </div>
 </body>

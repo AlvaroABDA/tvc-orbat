@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Scanner: {{ poi.nombre }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #c9d1d9;
+            --color-syldavia: #e2b938;
+            --color-volkovia: #4388cc;
+            --color-neutral: #8b949e;
+        }
+        body {
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at center, #161b22 0%, #0d1117 100%);
+            color: var(--text-color);
+            font-family: 'Rajdhani', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 30px 20px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        h1 {
+            margin: 10px 0 20px 0;
+            font-size: 2rem;
+            letter-spacing: 1px;
+            color: #fff;
+        }
+        h3 {
+            margin: 0;
+            color: var(--color-neutral);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        select, .btn {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: none;
+            font-size: 1.1rem;
+            font-family: inherit;
+            font-weight: 600;
+        }
+        select {
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+            appearance: none;
+            outline: none;
+        }
+        .btn {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-syldavia { background-color: var(--color-syldavia); color: #000; }
+        .btn-volkovia { background-color: var(--color-volkovia); }
+        .btn-neutral { background-color: transparent; border: 1px solid var(--color-neutral); color: var(--color-neutral); }
+        
+        #message {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glass-panel">
+        {% if poi.tipo == 'RESPAWN' %}
+            <img src="/static/imgs/{% if poi.faccion_id == 1 %}syldavia_blanco.png{% elif poi.faccion_id == 2 %}vokovia_blanco.png{% else %}khemed_blanco.png{% endif %}" style="width: 80px; height: 80px; margin-bottom: 10px; opacity: 0.8;" />
+        {% endif %}
+        
+        <h3>{{ 'SECTOR DE CONTROL' if poi.tipo == 'PC' else 'PUNTO DE INSERCIÓN' }}</h3>
+        <h1>{{ poi.nombre }}</h1>
+        
+        {% if poi.tipo == 'PC' %}
+            <p style="color: rgba(255,255,255,0.6); font-size: 1.1rem; margin-bottom: 25px;">Identifica tu facción y equipo para reclamar el sector.</p>
+            
+            <select id="faccion-select-pc" onchange="updateEquiposPC()">
+                <option value="">-- Selecciona Facción --</option>
+                <option value="1">Syldavia</option>
+                <option value="2">Volkovia</option>
+            </select>
+            
+            <select id="equipo-select-pc" disabled>
+                <option value="">-- Primero selecciona facción --</option>
+            </select>
+            
+            <button class="btn btn-neutral" id="btn-reclamar-pc" disabled onclick="capturarPC()" style="opacity: 0.5;">Reclamar Sector</button>
+            <button class="btn btn-neutral" onclick="window.location.href='/'">Volver al Radar</button>
+            
+            {% if user_role == 'admin' %}
+            <button class="btn btn-neutral" style="margin-top: 30px;" onclick="capturar(0, null)">[ADMIN] Hacer Neutral</button>
+            {% endif %}
+            
+        {% elif poi.tipo == 'RESPAWN' %}
+            <p style="color: rgba(255,255,255,0.6); font-size: 1.1rem; margin-bottom: 25px;">Registra el despliegue de tu equipo en este sector.</p>
+            
+            <select id="equipo-select">
+                <option value="">-- Selecciona tu Equipo --</option>
+                {% for eq in equipos %}
+                    {% if eq.faccion_id == poi.faccion_id %}
+                    <option value="{{ eq.id }}">{{ eq.nombre }}</option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+            
+            <button class="btn {% if poi.faccion_id == 1 %}btn-syldavia{% elif poi.faccion_id == 2 %}btn-volkovia{% else %}btn-neutral{% endif %}" id="btn-respawn" onclick="registrarRespawn({{ poi.faccion_id }})">Activar Despliegue</button>
+            <button class="btn btn-neutral" onclick="window.location.href='/'" style="margin-top: 15px;">Volver al Radar</button>
+        {% endif %}
+        
+        <div id="message"></div>
+    </div>
+
+    <script>
+        const equiposData = [
+            {% for eq in equipos %}
+            { id: {{ eq.id }}, nombre: "{{ eq.nombre }}", faccion: {{ eq.faccion_id }} }{% if not loop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        function showMessage(msg, color) {
+            const el = document.getElementById('message');
+            el.style.display = 'block';
+            el.style.backgroundColor = color;
+            el.innerText = msg;
+        }
+
+        function setButtonsState(disabled) {
+            document.querySelectorAll('.btn').forEach(b => { 
+                b.style.opacity = disabled ? '0.5' : '1'; 
+                b.disabled = disabled; 
+            });
+        }
+
+        // PC Logic
+        function updateEquiposPC() {
+            const fId = parseInt(document.getElementById('faccion-select-pc').value);
+            const eqSelect = document.getElementById('equipo-select-pc');
+            const btn = document.getElementById('btn-reclamar-pc');
+            
+            if (!fId) {
+                eqSelect.disabled = true;
+                eqSelect.innerHTML = '<option value="">-- Primero selecciona facción --</option>';
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.className = 'btn btn-neutral';
+                return;
+            }
+            
+            eqSelect.disabled = false;
+            eqSelect.innerHTML = '<option value="">-- Selecciona tu Equipo --</option>';
+            
+            equiposData.filter(e => e.faccion === fId).forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.id;
+                opt.textContent = e.nombre;
+                eqSelect.appendChild(opt);
+            });
+            
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.className = 'btn ' + (fId === 1 ? 'btn-syldavia' : 'btn-volkovia');
+        }
+
+        async function capturarPC() {
+            const fId = parseInt(document.getElementById('faccion-select-pc').value);
+            const eqId = document.getElementById('equipo-select-pc').value;
+            
+            if (!fId || !eqId) {
+                showMessage('Faltan datos por rellenar.', '#f87171');
+                return;
+            }
+            await capturar(fId, eqId);
+        }
+
+        async function capturar(faccion_id, equipo_id) {
+            setButtonsState(true);
+            showMessage('Estableciendo enlace de datos...', '#888');
+            
+            try {
+                const res = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token_qr: '{{ poi.token_qr }}', faccion_id: faccion_id, equipo_id: equipo_id })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showMessage(data.message, '#4ade80');
+                    setTimeout(() => window.location.href = '/', 1500);
+                } else {
+                    showMessage(data.message, '#f87171');
+                    setButtonsState(false);
+                }
+            } catch (err) {
+                showMessage('Fallo en el enlace de datos.', '#f87171');
+                setButtonsState(false);
+            }
+        }
+
+        // Respawn Logic
+        async function registrarRespawn(faccion_id) {
+            const equipo = document.getElementById('equipo-select').value;
+            
+            if (!equipo) {
+                showMessage('Faltan datos por rellenar.', '#f87171');
+                return;
+            }
+            
+            setButtonsState(true);
+            showMessage('Estableciendo enlace de datos...', '#888');
+            
+            try {
+                const res = await fetch('/api/scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token_qr: '{{ poi.token_qr }}', faccion_id: parseInt(faccion_id), equipo_id: parseInt(equipo) })
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showMessage(data.message, '#4ade80');
+                    setTimeout(() => window.location.href = '/', 1500);
+                } else {
+                    showMessage(data.message, '#f87171');
+                    setButtonsState(false);
+                }
+            } catch (err) {
+                showMessage('Fallo en el enlace de datos.', '#f87171');
+                setButtonsState(false);
+            }
+        }
+    </script>
+</body>
+</html>

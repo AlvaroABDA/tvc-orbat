@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OBSERVATION POINT - {{ poi.nombre }}</title>
+    <!-- Use standard font to match the TVC dashboard aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #f0f0f0;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            /* Background map texture/color */
+            background-image: radial-gradient(circle at center, #2a2a2a 0%, #111 100%);
+        }
+        
+        .target-container {
+            background: linear-gradient(135deg, rgba(60,60,60,0.85) 0%, rgba(40,40,40,0.95) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            position: relative;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-section {
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            margin: 0;
+            color: #fff;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: 0.8rem;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 5px;
+        }
+
+        .image-preview {
+            width: 100%;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        
+        .image-preview img {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            opacity: 0.95;
+            display: block;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .label {
+            color: #aaa;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .value {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #fff;
+        }
+        
+        .highlight {
+            color: #ffd700;
+        }
+
+        .status-badge {
+            background: rgba(255, 50, 50, 0.2);
+            color: #ff5555;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            border: 1px solid rgba(255, 50, 50, 0.3);
+        }
+
+        .error-container {
+            text-align: center;
+            padding: 30px 10px;
+        }
+        
+        .error-container h2 {
+            color: #ff5555;
+            margin-top: 0;
+        }
+        
+        .timer {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #fff;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="target-container">
+        
+        <div class="header-section">
+            <h1>{{ poi.nombre }}</h1>
+            <div class="subtitle">ENLACE TÁCTICO ESTABLECIDO</div>
+        </div>
+        
+        {% if target.error %}
+            <div class="error-container">
+                <h2>ENLACE NO DISPONIBLE</h2>
+                <p style="color: #aaa;">El punto de observación está reabasteciendo drones de reconocimiento.</p>
+                <div class="timer">{{ target.remaining }} MIN</div>
+                <p style="color: #888; font-size: 0.9rem;">ESPERE AL SIGUIENTE BARRIDO</p>
+            </div>
+        {% else %}
+            
+            <div class="image-preview">
+                <!-- Imagen Fotográfica Estática -->
+                <img src="/static/imgs/dynamic_targets_svg/convoy-1.jpg" alt="Target Preview">
+            </div>
+            
+            <div class="data-row">
+                <span class="label">TARGET ID</span>
+                <span class="value">{{ target.id }}</span>
+            </div>
+            
+            <div class="data-row">
+                <span class="label">COORDENADAS</span>
+                <span class="value highlight">{{ target.grid_reference }}</span>
+            </div>
+            
+            <div class="data-row">
+                <span class="label">RUMBO (BEARING)</span>
+                <span class="value highlight">{{ target.bearing }}</span>
+            </div>
+            
+            <div class="data-row" style="margin-top: 15px;">
+                <span class="label">VINCULADO A</span>
+                <span class="value" style="font-size: 0.9rem;">{{ target.pc_nombre }}</span>
+            </div>
+            
+            <div class="data-row">
+                <span class="label">ESTADO</span>
+                <span class="status-badge">ACTIVO</span>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ORBAT Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Teko:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 </head>
@@ -15,13 +15,25 @@
         <aside class="sidebar-nav">
             <div class="logo-min">OR</div>
             <nav class="nav-menu">
-                <button class="nav-icon-btn active" data-target="view-orbat" title="Visor ORBAT"><span class="material-symbols-outlined">account_tree</span></button>
-                <button class="nav-icon-btn" data-target="view-mapa" title="Mapa Táctico"><span class="material-symbols-outlined">radar</span></button>
-                {% if user_role == 'admin' %}
-                <button class="nav-icon-btn" data-target="view-equipos" title="Gestión Equipos"><span class="material-symbols-outlined">groups</span></button>
-                <button class="nav-icon-btn" data-target="view-misiones" title="Gestión Misiones"><span class="material-symbols-outlined">assignment</span></button>
-                {% endif %}
-            </nav>
+                  <div style="font-size: 0.65rem; color: #888; text-align: center; margin: 10px 0 5px 0; text-transform: uppercase; font-family: var(--font-mono); letter-spacing: 1px;">ACCESO TÁCTICO</div>
+                  <button class="nav-icon-btn active" data-target="view-orbat" title="Visor ORBAT"><span class="material-symbols-outlined">account_tree</span></button>
+                  <button class="nav-icon-btn" data-target="view-mapa" title="Mapa Táctico"><span class="material-symbols-outlined">radar</span></button>
+                  <button class="nav-icon-btn" data-target="view-domination" title="Marcador de Puntos"><span class="material-symbols-outlined">military_tech</span></button>
+                  <button class="nav-icon-btn" data-target="view-stats" title="Inteligencia Táctica"><span class="material-symbols-outlined">analytics</span></button>
+                  
+                    {% if user_role == 'admin' or 'mortero' in unlocked_minigames %}
+                    <button class="nav-icon-btn" data-target="view-mortero" title="Mortero/Artillería"><span class="material-symbols-outlined">rocket_launch</span></button>
+                    {% else %}
+                    <button class="nav-icon-btn minigame-locked" data-target="view-mortero" data-minigame="mortero" title="Mortero/Artillería (Requiere Código)"><span class="material-symbols-outlined" style="color: #ffaa00;">rocket_launch</span></button>
+                    {% endif %}
+                    {% if user_role == 'admin' %}
+                  <div style="font-size: 0.65rem; color: #ff4d4d; text-align: center; margin: 20px 0 5px 0; text-transform: uppercase; font-family: var(--font-mono); letter-spacing: 1px; border-top: 1px solid rgba(255,77,77,0.3); padding-top: 10px;">MANDO / ADMIN</div>
+                  <button class="nav-icon-btn" data-target="view-equipos" title="Gestión UNIDADs"><span class="material-symbols-outlined">groups</span></button>
+                  <button class="nav-icon-btn" data-target="view-misiones" title="Gestión Misiones"><span class="material-symbols-outlined">assignment</span></button>
+                  <button class="nav-icon-btn" data-target="view-pois" title="SECTORs de Interés"><span class="material-symbols-outlined">share_location</span></button>
+                  <button class="nav-icon-btn" data-target="view-seguridad" title="Seguridad Global"><span class="material-symbols-outlined">security</span></button>
+                  {% endif %}
+              </nav>
         </aside>
 
         <!-- Main Content Area -->
@@ -39,7 +51,14 @@
                     <button class="faction-tab {% if user_faction == 'Khemed' and user_role != 'admin' %}active{% endif %}" data-faction="Khemed">Khemed</button>
                     {% endif %}
                 </div>
-                <a href="/logout" class="btn-power" title="Cerrar Sesión"><span class="material-symbols-outlined">power_settings_new</span></a>
+                <div style="display: flex; gap: 1rem;">
+                    {% if user_role != 'admin' %}
+                    <button class="btn warning" id="btn-mi-expediente" style="padding: 0 1rem;">
+                        <span class="material-symbols-outlined" style="font-size: 1.2rem; margin-right: 5px; vertical-align: middle;">badge</span> Mi Expediente
+                    </button>
+                    {% endif %}
+                    <a href="/logout" class="btn-power" title="Cerrar Sesión"><span class="material-symbols-outlined">power_settings_new</span></a>
+                </div>
             </header>
 
             <main class="dashboard-container">
@@ -48,7 +67,9 @@
         <section id="view-orbat" class="view-section active">
             
             <div class="orbat-content-wrapper">
-                
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                    <button id="btn-export-orbat" class="btn primary" style="display: flex; align-items: center; gap: 0.5rem;"><span class="material-symbols-outlined">html</span> Exportar ORBAT (HTML)</button>
+                </div>
                 <!-- Total PAX will now be rendered inside the Mando card -->
 
                 <div class="orbat-tree-container" id="orbat-tree-container">
@@ -59,15 +80,15 @@
             <!-- Panel lateral derecho -->
             <aside class="sidebar-panel">
                 <div class="sidebar-tabs">
-                    <button class="sidebar-tab active" data-target="panel-equipos">Equipos</button>
+                    <button class="sidebar-tab active" data-target="panel-equipos">UNIDADs</button>
                     <button class="sidebar-tab" data-target="panel-misiones">Misiones</button>
                 </div>
                 
-                <!-- Equipos disponibles -->
+                <!-- UNIDADs disponibles -->
                 <div id="panel-equipos" class="sidebar-content active">
                     <h3>Sin Asignar</h3>
                     <div id="unassigned-teams" class="droppable-area" data-grupo-id="null" data-type="equipo">
-                        <!-- Equipos disponibles -->
+                        <!-- UNIDADs disponibles -->
                     </div>
                 </div>
 
@@ -85,15 +106,15 @@
         <section id="view-equipos" class="view-section">
             <div class="panel management-panel">
                 <div class="panel-header">
-                    <h2>Inventario de Equipos</h2>
-                    <button id="btn-nuevo-equipo" class="btn primary">Registrar Equipo</button>
+                    <h2>Inventario de UNIDADs</h2>
+                    <button id="btn-nuevo-equipo" class="btn primary">Registrar UNIDAD</button>
                 </div>
                 <div class="table-container">
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Nombre</th>
-                                <th>Facción</th>
+                                <th>FACC.</th>
                                 <th>Jugadores</th>
                                 <th>Perfil</th>
                                 <th>Acciones</th>
@@ -137,17 +158,96 @@
             </div>
         </section>
 
+        <!-- VISTA PUNTOS DE INTERÉS (POIs) -->
+        <section id="view-pois" class="view-section">
+            <div class="panel management-panel">
+                <div class="panel-header">
+                    <h2>SECTORs de Interés (POIs)</h2>
+                    <button id="btn-nuevo-poi" class="btn primary">Añadir SECTOR</button>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Tipo</th>
+                                <th>Radio (m)</th>
+                                <th>FACC. / Dueño</th>
+                                <th>Token QR</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pois-tbody">
+                            <!-- Llenado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- VISTA DOMINATION -->
+        <section id="view-domination" class="view-section view-column">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 class="view-title" style="margin-bottom: 1rem; display: block; width: 100%;">SISTEMA DE CONTROL TERRITORIAL (S.C.T.)</h2>
+        <button class="btn btn-outline" style="font-family: var(--font-mono); font-size: 1.2rem; letter-spacing: 2px; padding: 10px 30px; display: inline-block;" onclick="loadDomination()">SINCRONIZAR RED</button>
+    </div>
+    
+    <div style="display: flex; flex-direction: column; gap: 2rem; width: 100%; max-width: 600px; margin: 0 auto; padding-bottom: 2rem;">
+        
+        <!-- PROYECCIÓN ESTRATÉGICA -->
+        <div class="panel management-panel" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+            <h3 style="margin-bottom: 1.5rem; text-align: center; color: var(--color-syldavia);">PROYECCIÓN ESTRATÉGICA</h3>
+            <div style="width: 250px; height: 250px; margin: 0 auto; position: relative; display: block;">
+                <canvas id="dominationChart"></canvas>
+            </div>
+            
+            <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 2rem; text-align: center; width: 100%;">
+                <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; border-top: 3px solid var(--color-syldavia); flex: 1;">
+                    <div style="color: var(--color-syldavia); font-size: 0.9rem; font-weight: bold;">SYLDAVIA</div>
+                    <div style="color: var(--color-syldavia); margin: 5px 0;"><span id="dom-syl-time" style="font-size: 2.2rem; font-weight: 900; font-family: var(--font-mono);">0</span></div>
+                    <div style="font-size: 0.75rem; color: #888;">BASE:<br><span id="dom-syl-base" style="color: #ddd; font-weight: bold;">-</span></div>
+                </div>
+                
+                <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; border-top: 3px solid var(--color-volkovia); flex: 1;">
+                    <div style="color: var(--color-volkovia); font-size: 0.9rem; font-weight: bold;">VOLKOVIA</div>
+                    <div style="color: var(--color-volkovia); margin: 5px 0;"><span id="dom-vol-time" style="font-size: 2.2rem; font-weight: 900; font-family: var(--font-mono);">0</span></div>
+                    <div style="font-size: 0.75rem; color: #888;">BASE:<br><span id="dom-vol-base" style="color: #ddd; font-weight: bold;">-</span></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ESTADO TÁCTICO DE SECTORES -->
+        <div class="panel management-panel" style="display: flex; flex-direction: column; width: 100%;">
+            <h3 style="margin-bottom: 1.5rem; color: var(--color-syldavia); text-align: center;">ESTADO TÁCTICO DE SECTORES</h3>
+            <div id="dom-pcs-container" style="display: flex; flex-direction: column; gap: 0.8rem;">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+        
+    </div>
+</section>
+
         <!-- VISTA MAPA TÁCTICO -->
-        <section id="view-mapa" class="view-section" style="height: 100%; padding: 0;">
+        <section id="view-mapa" class="view-section" style="height: 100%; padding: 0; position: relative;">
+            
+            <!-- Floating Mobile-Friendly Drawing Toolbar -->
+            <div id="drawing-toolbar" style="display: none; position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 1000; background: rgba(0,0,0,0.85); border: 2px solid var(--theme-color); padding: 10px 15px; border-radius: 8px; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.5);">
+                <span id="drawing-mode-text" style="color: white; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-family: 'Orbitron', sans-serif;">Trazando...</span>
+                <button id="btn-draw-ok" class="btn primary" style="padding: 5px 15px;">Confirmar</button>
+                <button id="btn-draw-cancel" class="btn secondary" style="padding: 5px 15px;">Cancelar</button>
+            </div>
+
             <!-- Map Side Panel -->
-            {% if user_role in ['admin', 'mando'] %}
+            {% if user_role in ['admin', 'mando', 'equipo'] %}
             <aside class="sidebar-panel" style="width: 250px; min-width: 250px; flex: none; border-right: 1px solid var(--border-color); background: rgba(0,0,0,0.1);">
+                {% if user_role in ['admin', 'mando'] %}
                 <div style="padding: 1rem;">
                     <h3 style="margin-bottom: 1rem; border-bottom: 1px solid var(--theme-color); padding-bottom: 0.5rem;">Fichas Disponibles</h3>
                     <div id="map-units-container" style="display: flex; flex-direction: column; gap: 0.5rem;">
                         <!-- JS will populate unplaced units here -->
                     </div>
                 </div>
+                {% endif %}
                 <div style="padding: 1rem; border-top: 1px solid var(--border-color); margin-top: auto;">
                     <h3 style="margin-bottom: 1rem; font-size: 0.9rem;">Herramientas</h3>
                     <button id="btn-draw-route" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">timeline</span> Trazar Ruta</button>
@@ -155,88 +255,518 @@
                     <button id="btn-measure" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">straighten</span> Medir (50m)</button>
                     <button id="btn-add-marker" class="btn warning" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">warning</span> Añadir Intel</button>
                     <button id="btn-add-tl-marker" class="btn primary" style="width: 100%; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">my_location</span> Mi Posición (TL)</button>
+                    {% if user_role == 'admin' %}
+                    <button id="btn-add-poi-map" class="btn outline" style="width: 100%; margin-top: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">add_location_alt</span> Nuevo POI</button>
+                    <hr style="border-color: #444; margin: 10px 0;">
+                    <button id="btn-guardar-esquema" class="btn warning" style="width: 100%; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;" onclick="guardarEsquema()" title="Guardar mapa actual como Esquema/Librería"><span class="material-symbols-outlined" style="font-size: 1.2rem;">save</span> Guardar Plantilla</button>
+                    <button id="btn-libreria-esquemas" class="btn secondary" style="width: 100%; margin-top: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;" onclick="abrirLibreriaEsquemas()"><span class="material-symbols-outlined" style="font-size: 1.2rem;">library_books</span> Librería de Plantillas</button>
+                    <button id="btn-limpiar-dibujos" class="btn danger" style="width: 100%; margin-top: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;" onclick="limpiarDibujosMapa()" title="Limpiar todos los dibujos del mapa actual"><span class="material-symbols-outlined" style="font-size: 1.2rem;">delete_sweep</span> Limpiar Mapa</button>
+                    {% endif %}
                 </div>
             </aside>
             {% endif %}
+            
+        
+
             <!-- Map Canvas -->
-            <div id="tactical-map" style="flex: 1; height: 100%; background-color: #111;"></div>
+            <div style="flex: 1; height: 100%; position: relative;">
+                <div id="tactical-map" style="width: 100%; height: 100%; background-color: #111;"></div>
+                <!-- Tactical Tracker Widget -->
+                <div id="tactical-tracker" style="position: absolute; bottom: 30px; right: 30px; z-index: 1000; background: rgba(0,0,0,0.8); color: var(--theme-color); padding: 8px 15px; border: 1px solid var(--theme-color); border-radius: 4px; font-family: var(--font-mono); pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+                    <div style="font-size: 0.7rem; color: #aaa; text-transform: uppercase;">Tracker Alfanumérico</div>
+                    <div id="tracker-coord" style="font-weight: bold; font-size: 1.5rem; letter-spacing: 2px;">--</div>
+                    <div id="tracker-gps" style="font-size: 0.75rem; color: #ccc;">--</div>
+                </div>
+            </div>
+        </section>
+
+    
+        
+        <!-- VISTA MORTERO -->
+        <section id="view-mortero" class="view-section view-column" style="overflow-y: auto;">
+            <div id="mortero-main-ui" class="panel management-panel" style="max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; height: 85vh;">
+                <div class="panel-header" style="justify-content: space-between; display: flex;">
+                    <h2>Control de Fuego - Batería Principal</h2>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        {% if user_role == 'admin' %}
+                        <select id="admin-sim-faccion" class="form-control" style="background: #2b2b2b; color: #ff4d4d; border: 1px solid #ff4d4d; font-weight: bold;">
+                            <option value="Syldavia">Simulando: SYLDAVIA</option>
+                            <option value="Volkovia">Simulando: VOLKOVIA</option>
+                        </select>
+                        {% endif %}
+                        <div id="mortero-status" style="padding: 5px 15px; border-radius: 5px; font-weight: bold; background: #4CAF50; color: white;">OPERATIVO</div>
+                    </div>
+                </div>
+                
+                <div style="position: relative; margin-top: 1rem; flex: 1; min-height: 0; border: 2px solid var(--theme-color); border-radius: 5px; overflow: hidden; display: flex;">
+                      
+                      <!-- El Mapa Leaflet Ocupa Todo -->
+                      <div id="mortero-leaflet-map" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 1;"></div>
+                      
+                      <!-- HUD Superior: Batería -->
+                      <div style="position: absolute; top: 10px; left: 10px; right: 10px; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border: 1px solid #fff; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+                          <div style="flex: 1; display: flex; flex-direction: column;">
+                              <label style="font-size: 0.8rem; color: #aaa; margin-bottom: 2px;">CUADRÍCULA DESPLIEGUE</label>
+                              <input type="text" id="mortero_coord_display" class="form-control" style="width: 100%; font-family: var(--font-mono); font-weight: bold; text-align: center; font-size: 1.1rem; padding: 5px;" placeholder="Ej: AP 45 C">
+                          </div>
+                          <button id="btn-ubicar-mortero" class="btn" style="font-weight: bold; height: 100%; white-space: nowrap; background: #000; border: none; color: #fff; border-radius: 8px; padding: 0 15px;">DESPLEGAR</button>
+                      </div>
+
+                      <!-- HUD Inferior Izquierdo: Fuego -->
+                      <div style="position: absolute; bottom: 10px; left: 10px; right: 250px; z-index: 1000; background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border: 1px solid var(--danger-color); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 10px;">
+                          <div style="display: flex; gap: 10px;">
+                              <div style="flex: 1; display: flex; flex-direction: column;">
+                                  <label style="font-size: 0.8rem; color: #aaa; margin-bottom: 2px;">AZIMUT (0-360)</label>
+                                  <input type="number" id="azimut" value="0" class="form-control" style="width: 100%; font-size: 1.2rem; text-align: center;">
+                              </div>
+                              <div style="flex: 1; display: flex; flex-direction: column;">
+                                  <label style="font-size: 0.8rem; color: #aaa; margin-bottom: 2px;">ELEVACIÓN (45-85)</label>
+                                  <input type="number" id="angulo" value="85" class="form-control" style="width: 100%; font-size: 1.2rem; text-align: center;">
+                              </div>
+                          </div>
+                          
+                          <div style="display: flex; align-items: center; gap: 10px;">
+                              <div style="flex: 1;">
+                                  <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 2px;">
+                                      <span>CAÑÓN</span> <span id="mortero-heat-text" style="color: #4CAF50; font-weight: bold;">LISTO</span>
+                                  </div>
+                                  <div style="width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden;">
+                                      <div id="mortero-heat-bar" style="height: 100%; width: 0%; background: #4CAF50; transition: width 0.3s, background-color 0.3s;"></div>
+                                  </div>
+                              </div>
+                              <button id="btn-fuego-mortero" class="btn danger" style="font-size: 1.2rem; font-weight: 900; padding: 10px 20px;">FUEGO</button>
+                          </div>
+                      </div>
+
+                      <!-- HUD Inferior Derecho: D-PAD y Hover -->
+                      <div style="position: absolute; bottom: 10px; right: 10px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; width: 220px; align-items: stretch;">
+                          <!-- Tracker Widget -->
+                          <div style="background: rgba(0,0,0,0.8); color: #0f0; padding: 5px; border: 1px solid #0f0; border-radius: 4px; font-family: var(--font-mono); text-align: center; pointer-events: none;">
+                              <div id="mortero-hover-coord" style="font-weight: bold; font-size: 1.1rem;">--</div>
+                          </div>
+                          
+                          <!-- D-PAD -->
+                            <div style="background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); border: none; border-radius: 12px; padding: 5px; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 8px; height: 140px;">
+                                <button class="btn dpad-btn" id="dpad-zoom-out" style="grid-column: 1; grid-row: 1; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">-</button>
+                                <button class="btn dpad-btn" id="dpad-up" style="grid-column: 2; grid-row: 1; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">▲</button>
+                                <button class="btn dpad-btn" id="dpad-zoom-in" style="grid-column: 3; grid-row: 1; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">+</button>
+                                
+                                <button class="btn dpad-btn" id="dpad-left" style="grid-column: 1; grid-row: 2; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">◀</button>
+                                <button class="btn dpad-btn" id="dpad-down" style="grid-column: 2; grid-row: 2; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">▼</button>
+                                <button class="btn dpad-btn" id="dpad-right" style="grid-column: 3; grid-row: 2; padding: 0; font-size: 2.5rem; font-weight: bold; background: #000; border: none; color: #fff; border-radius: 8px;">▶</button>
+                            </div>
+                      </div>
+
+                      <!-- Overlay inhabilitado -->
+                      <div id="overlay-mortero-inhabilitado" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(255,0,0,0.85); z-index:2000; flex-direction:column; justify-content:center; align-items:center; text-align: center;">
+                          <h2 style="color:white; font-size:3rem; font-weight:bold; margin: 0;">SISTEMA DESTRUIDO</h2>
+                          <p style="color:white; font-size: 1.2rem;">Impacto directo de contrabatería enemiga.</p>
+                          <p style="color:white; font-size: 0.9rem; margin-top: 2rem;">A la espera de reparaciones de Alto Mando.</p>
+                      </div>
+                  </div>
+            </div>
+        </section>
+        
+        <!-- VISTA DE ESTADISTICAS -->
+
+        <section id="view-stats" class="view-section view-column">
+    <div style="text-align: center; margin-bottom: 2rem;">
+        <h2 class="view-title" style="margin-bottom: 1rem; display: block; width: 100%;">INTELIGENCIA TÁCTICA</h2>
+        <button class="btn btn-outline" style="font-family: var(--font-mono); font-size: 1.2rem; letter-spacing: 2px; padding: 10px 30px; display: inline-block;" onclick="loadAnalytics(); loadDomination();">ACTUALIZAR</button>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; width: 100%; padding-bottom: 3rem;">
+        
+        <!-- ROW 1: Logs -->
+        <div class="panel management-panel" style="display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">LOG DE INCURSIONES (CAPTURAS)</h3>
+            <div style="padding-right: 5px;">
+                <table class="table-tactical">
+                    <thead><tr><th style="text-align: left;">H-TIEMPO</th><th style="text-align: left;">SECTOR</th><th style="text-align: left;">FACC.</th></tr></thead>
+                    <tbody id="dom-log-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel management-panel" style="display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">TELEMETRÍA DE INSERCIONES (RESPAWN)</h3>
+            <div style="padding-right: 5px;">
+                <table class="table-tactical">
+                    <thead><tr><th style="text-align: left;">H-TIEMPO</th><th style="text-align: left;">SECTOR</th><th style="text-align: left;">UNIDAD</th></tr></thead>
+                    <tbody id="dom-respawns-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ROW 2: Rankings -->
+        <div class="panel management-panel" style="display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">TOP UNIDADES INCURSORAS</h3>
+            <div>
+                <table class="table-tactical">
+                    <thead><tr><th style="text-align: left;">UNIDAD</th><th style="text-align: left;">FACC.</th><th style="text-align: center;">CAPTURAS</th></tr></thead>
+                    <tbody id="stats-capturas-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel management-panel" style="display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">TOP UNIDADES DESPLEGADAS</h3>
+            <div>
+                <table class="table-tactical">
+                    <thead><tr><th style="text-align: left;">UNIDAD</th><th style="text-align: left;">FACC.</th><th style="text-align: center;">RESPAWNS</th></tr></thead>
+                    <tbody id="stats-respawns-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- ROW 3: Recursos (Koronnas) -->
+        <div class="panel management-panel" style="grid-column: 1 / -1; display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: #fff; text-transform: uppercase; letter-spacing: 3px; text-align: center;">Generación de Recursos (Koronnas)</h3>
+            <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 20px; text-align: center;">Cálculo: Minutos controlados por hora × 10 Koronnas</p>
+            
+            <div style="overflow-x: auto;">
+                <table class="table-tactical" style="text-align: center;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center; color: #fff;">FRANJA HORARIA</th>
+                            <th style="text-align: center; color: var(--color-syldavia); font-size: 1.1rem;">SYLDAVIA</th>
+                            <th style="text-align: center; color: var(--color-volkovia); font-size: 1.1rem;">VOLKOVIA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-koronnas-tbody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                    <tfoot style="border-top: 2px solid var(--theme-color);">
+                        <tr>
+                            <td style="font-weight: bold; color: #fff;">TOTAL ACUMULADO</td>
+                            <td style="color: var(--color-syldavia); font-weight: bold; font-family: var(--font-mono); font-size: 1.5rem;" id="koronnas-syl-total">0</td>
+                            <td style="color: var(--color-volkovia); font-weight: bold; font-family: var(--font-mono); font-size: 1.5rem;" id="koronnas-vol-total">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+</section>
+
+    
+                <!-- VISTA SEGURIDAD -->
+        <section id="view-seguridad" class="view-section view-column">
+            <h2 class="view-title" style="text-align: center;">PANEL DE SEGURIDAD GLOBAL</h2>
+            
+            <div style="width: 100%; max-width: 900px; margin: 0 auto;">
+                <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <button class="btn admin-tab-btn active" data-tab="tab-artilleria">ARTILLERÍA</button>
+                    <button class="btn admin-tab-btn" data-tab="tab-credenciales">CREDENCIALES</button>
+                    <button class="btn admin-tab-btn" data-tab="tab-zafarrancho" style="color: var(--danger-color); border-color: var(--danger-color);">ZAFARRANCHO</button>
+                </div>
+                
+                <div id="tab-artilleria" class="admin-tab-content">
+                    <!-- ADMINISTRACIÓN DE ARTILLERÍA -->
+                    <div class="panel management-panel" id="admin-artilleria-panel">
+                        <h3 style="color: var(--theme-color);">CONFIGURACIÓN DE ARTILLERÍA GLOBAL</h3>
+                        <p style="color: #aaa; margin-bottom: 1rem; font-size: 0.9rem;">
+                            Configura las variables balísticas de los morteros y rehabilita unidades destruidas.
+                        </p>
+                        
+                        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 300px; border: 1px solid #444; padding: 1rem; background: rgba(0,0,0,0.2);">
+                                <h4>Ajustes Balísticos</h4>
+                                <div class="form-group" style="margin-top: 1rem;">
+                                    <label>Alcance Máx. a 45º (m)</label>
+                                    <input type="number" id="admin-alcance-base" class="form-control" value="800">
+                                </div>
+                                <div class="form-group">
+                                    <label>Radio de Letalidad (m)</label>
+                                    <input type="number" id="admin-radio-explosion" class="form-control" value="15">
+                                </div>
+                                <div class="form-group">
+                                    <label>Cadencia (Disparos / Minuto)</label>
+                                    <input type="number" id="admin-cadencia" class="form-control" value="5">
+                                </div>
+                                <button id="btn-admin-guardar-artilleria" class="btn primary" style="width: 100%;">Guardar Ajustes</button>
+                                <button id="btn-admin-limpiar-impactos" class="btn outline" style="width: 100%; border-color: var(--danger-color); color: var(--danger-color); margin-top: 10px;">Limpiar Impactos</button>
+                            </div>
+                            
+                            <div style="flex: 1; min-width: 300px; border: 1px solid #444; padding: 1rem; background: rgba(0,0,0,0.2);">
+                                <h4>Estado de Baterías</h4>
+                                <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--color-syldavia); border-radius: 5px;">
+                                        <strong style="color: var(--color-syldavia);">SYLDAVIA</strong>
+                                        <div style="display: flex; gap: 5px;">
+                                            <button id="btn-syl-activa" class="btn">ACTIVA</button>
+                                            <button id="btn-syl-inactiva" class="btn">INACTIVA</button>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--color-volkovia); border-radius: 5px;">
+                                        <strong style="color: var(--color-volkovia);">VOLKOVIA</strong>
+                                        <div style="display: flex; gap: 5px;">
+                                            <button id="btn-vol-activa" class="btn">ACTIVA</button>
+                                            <button id="btn-vol-inactiva" class="btn">INACTIVA</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; border: 1px solid #444; padding: 1rem; background: rgba(0,0,0,0.2);">
+                            <h4>Registro de Impactos Exitosos (Log)</h4>
+                            <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                                <button id="btn-admin-refresh-art-log" class="btn outline btn-sm" style="font-size: 0.8rem;">Actualizar Log</button>
+                            </div>
+                            <div style="overflow-x: auto;">
+                                <table class="table-tactical">
+                                    <thead>
+                                        <tr>
+                                            <th>FECHA/HORA</th>
+                                            <th>FACCIÓN</th>
+                                            <th>TIPO OBJETIVO</th>
+                                            <th>ID OBJETIVO</th>
+                                            <th>DESCRIPCIÓN</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="admin-artilleria-log-list">
+                                        <!-- Logs dynamically injected here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-credenciales" class="admin-tab-content" style="display: none;">
+                    <!-- GESTIÓN DE ACCESOS -->
+                    <div class="panel management-panel">
+                        <h3 style="color: var(--theme-color);">CREDENCIALES DE ACCESO DE UNIDADES</h3>
+                        <p style="color: #aaa; margin-bottom: 1rem; font-size: 0.9rem;">
+                            Establece las contraseñas que usarán los Equipos para iniciar sesión en la plataforma y operar en sus roles.
+                        </p>
+                        <div style="overflow-x: auto;">
+                            <table class="table-tactical">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align: left;">UNIDAD</th>
+                                        <th style="text-align: left;">FACCIÓN</th>
+                                        <th style="text-align: left;">CONTRASEÑA (CÓDIGO)</th>
+                                        <th style="text-align: center;">ACCIÓN</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="seguridad-equipos-tbody">
+                                    <!-- Llenado por JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tab-zafarrancho" class="admin-tab-content" style="display: none;">
+                    <!-- REINICIO DE ESTADISTICAS -->
+                    <div class="panel management-panel" style="border: 2px solid #a32a2a;">
+                        <h3 style="color: #ff4d4d; display: flex; align-items: center; gap: 0.5rem;"><span class="material-symbols-outlined">warning</span> ZAFARRANCHO DE COMBATE</h3>
+                        <p style="color: #aaa; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                            <strong>ATENCIÓN:</strong> Esto eliminará TODO el historial de capturas de Puntos de Control y todos los registros de Respawn de forma irreversible. Además, desasignará todas las misiones activas y liberará todos los PCs. Utilizar únicamente al inicio de la partida o para reiniciar un evento desde cero.
+                        </p>
+                        <button id="btn-zafarrancho" class="btn btn-outline" style="background: rgba(255,0,0,0.2); color: #ff4d4d; border-color: #ff4d4d; width: 100%; font-weight: bold; font-family: var(--font-mono); font-size: 1.2rem; padding: 15px;">PURGAR REDES Y REINICIAR (WIPE)</button>
+                    </div>
+                </div>
+            </div>
+            <script>
+                document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
+                        
+                        btn.classList.add('active');
+                        document.getElementById(btn.getAttribute('data-tab')).style.display = 'block';
+                    });
+                });
+            </script>
         </section>
 
     </main>
 
-    <!-- Modal CRUD Equipo -->
+    <!-- Modal CRUD UNIDAD -->
     <div id="modal-equipo" class="modal">
-        <div class="modal-content military-report" style="max-width: 1300px; width: 95%; display: flex; flex-direction: column; gap: 1rem;">
-            <h2 id="modal-title" style="text-align: center; border-bottom: 2px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Expediente de Equipo</h2>
-            <form id="form-equipo" style="display: flex; flex-direction: column; gap: 1rem;">
+        <div class="modal-content panel" style="max-width: 1300px; width: 95%; display: flex; flex-direction: column; gap: 1rem; max-height: 90vh; overflow-y: auto; background: rgba(30, 30, 30, 0.98); border: 1px solid var(--border-color); border-top: 3px solid var(--theme-color); border-radius: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.9); color: var(--text-main); font-family: 'Rajdhani', sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                <h2 id="modal-title" style="margin: 0; color: var(--theme-color); font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">EXPEDIENTE DE EQUIPO</h2>
+                <div id="badge-medalla" style="display: none; padding: 0.5rem 1.5rem; border-radius: 0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; border: 1px solid transparent;"></div>
+            </div>
+            
+            <style>
+                #form-equipo input[type="text"],
+                #form-equipo input[type="email"],
+                #form-equipo select {
+                    background-color: rgba(0,0,0,0.4);
+                    color: var(--text-main);
+                    border: 1px solid var(--border-color);
+                    border-radius: 0;
+                    padding: 0.5rem;
+                }
+                #form-equipo input[type="text"]:focus,
+                #form-equipo input[type="email"]:focus,
+                #form-equipo select:focus {
+                    background-color: rgba(0,0,0,0.8);
+                    border-color: var(--theme-color);
+                    outline: none;
+                    box-shadow: 0 0 5px var(--theme-color);
+                }
+                #form-equipo input[readonly] {
+                    background-color: rgba(0,0,0,0.2) !important;
+                    color: var(--theme-color) !important;
+                    border: 1px solid #555 !important;
+                    font-weight: bold;
+                }
+            </style>
+            <form id="form-equipo" style="display: flex; flex-direction: column; gap: 2rem;">
                 <input type="hidden" id="eq-id">
                 
-                <div style="display: flex; gap: 1.5rem; flex-wrap: wrap;">
-                    <!-- Columna Izquierda: Historial y Valoración -->
-                    <div style="flex: 1.5; min-width: 300px; display: flex; flex-direction: column; gap: 1rem;">
-                        <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem;">[1] Historial de Servicio</h3>
-                        <div class="form-group" style="flex: 1;">
-                            <label>Operaciones y Misiones Cumplidas</label>
-                            <div id="historial-container" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
-                                <!-- JS will populate history rows -->
-                            </div>
-                            <button type="button" class="btn secondary" id="btn-add-historial" style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.8rem;">+ Añadir Misión</button>
+
+                <!-- Fila 1: Datos Básicos -->
+                <div style="background: transparent; padding: 0; margin-bottom: 1rem; border: none;">
+                    <h3 style="font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--theme-color); font-weight: bold;">[1] Datos Base y Credenciales</h3>
+                    <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
+                        <!-- Logo Immersive Input -->
+                        <div style="flex-shrink: 0;" title="Subir Logotipo del Equipo">
+                            <label for="eq-logo" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 120px; height: 120px; border: 2px dashed var(--theme-color); background: rgba(0,0,0,0.5); cursor: pointer; position: relative; overflow: hidden; transition: all 0.3s ease;">
+                                <span class="material-symbols-outlined" style="font-size: 2rem; color: var(--theme-color); margin-bottom: 0.5rem;">upload</span>
+                                <span style="font-size: 0.8rem; color: var(--theme-color); text-transform: uppercase; text-align: center; line-height: 1.2;">Subir<br>Logo</span>
+                                <img id="eq-logo-preview" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; background: rgba(0,0,0,0.8); display: none; z-index: 2;">
+                            </label>
+                            <input type="file" id="eq-logo" accept="image/*" style="display: none;">
                         </div>
-                        <div class="form-group">
-                            <label>Valoración de Organización (Rating)</label>
-                            <select id="eq-valoracion" style="width: 100%; padding: 0.5rem; font-family: var(--font-ui);">
-                                <option value="A (Excelente)">A (Excelente)</option>
-                                <option value="B (Bueno)">B (Bueno)</option>
-                                <option value="C (Estándar)">C (Estándar)</option>
-                                <option value="D (Problemático)">D (Problemático)</option>
-                            </select>
+                        
+                        <!-- Rest of basic fields -->
+                        <div style="flex: 1; display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                        <div class="form-group" style="flex: 1; min-width: 250px;">
+                            <label>Nombre del UNIDAD</label>
+                            <input type="text" id="eq-nombre" required style="font-size: 1.1rem;">
                         </div>
-                    </div>
-                    
-                    <!-- Columna Central: Datos Básicos -->
-                    <div style="flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 1rem;">
-                        <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem;">[2] Datos Base</h3>
-                        <div class="form-group">
-                            <label>Nombre del Equipo</label>
-                            <input type="text" id="eq-nombre" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Facción</label>
-                            <select id="eq-faccion" required>
+                        <div class="form-group" style="flex: 1; min-width: 200px;">
+                            <label>FACC.</label>
+                            <select id="eq-faccion" required style="font-size: 1.1rem;">
                                 <!-- Options cargadas desde la BD -->
                             </select>
                         </div>
-                        <div class="form-group">
-                            <label style="display: flex; justify-content: space-between; align-items: center;">
-                                Número de Jugadores 
-                                <label style="font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; font-weight: normal;">
-                                    <input type="checkbox" id="eq-jugadores-manual"> Forzar manual
-                                </label>
-                            </label>
-                            <input type="number" id="eq-jugadores" min="0" required readonly style="background: rgba(0,0,0,0.1);">
-                        </div>
-                        <div class="form-group">
+                        <div class="form-group" style="flex: 1; min-width: 200px;">
                             <label>Perfil Preferido</label>
-                            <select id="eq-tipo">
+                            <select id="eq-tipo" style="font-size: 1.1rem;">
                                 <option value="GOE">GOE (Rol, Especifico)</option>
                                 <option value="GAD">GAD (Acción Directa)</option>
+                                <option value="Infantería">Infantería</option>
                             </select>
                         </div>
-                    </div>
-                    
-                    <!-- Columna Derecha: Miembros -->
-                    <div style="flex: 1.5; min-width: 300px; display: flex; flex-direction: column; gap: 1rem;">
-                        <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.25rem;">[3] Desglose Miembros</h3>
-                        <div id="miembros-container" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 250px; overflow-y: auto;">
-                            <!-- JS will populate member rows -->
+                        <div class="form-group" style="width: 100%;">
+                            <label>Misiones Preferidas (Estilo de juego)</label>
+                            <input type="text" id="eq-misiones-preferidas" placeholder="Ej: Incursiones, VIP, CQB, Asalto frontal...">
                         </div>
-                        <button type="button" class="btn secondary" id="btn-add-miembro" style="align-self: flex-start; padding: 0.25rem 0.5rem; font-size: 0.8rem;">+ Añadir Miembro</button>
+
+                        <div class="form-group" style="flex: 1; min-width: 200px;">
+                            <label>Usuario (Login)</label>
+                            <input type="text" id="eq-codigo" placeholder="Ej: red91" style="font-size: 1.1rem; color: #ffaa00;">
+                        </div>
+                        <div class="form-group" style="flex: 1; min-width: 200px;">
+                            <label>Nueva Contraseña (Dejar en blanco para no cambiar)</label>
+                            <input type="text" id="eq-password" placeholder="***" style="font-size: 1.1rem;">
+                        </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="modal-actions" style="margin-top: 1rem; justify-content: center;">
+                <!-- Fila 2: Dashboard de Jugadores -->
+                <div style="background: transparent; padding: 0; margin-bottom: 1rem; border: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #333; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                        <h3 style="font-size: 1.1rem; margin: 0; color: var(--theme-color); font-weight: bold;">[2] Dashboard de Jugadores</h3>
+                        <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
+                            Efectivos (Activos / Total): <input type="text" id="eq-jugadores" required readonly style="width: 70px; text-align: center;">
+                            <input type="checkbox" id="eq-jugadores-manual" style="margin-left: 10px;"> Forzar manual
+                        </label>
+                    </div>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; text-align: left; border-collapse: collapse; min-width: 800px;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid #333; color: var(--theme-color); font-size: 0.9rem; text-transform: uppercase;">
+                                    <th style="padding: 0.5rem; width: 60px; text-align: center;" title="Marcados como activos desplegarán en la misión actual">Activo</th>
+                                    <th style="padding: 0.5rem;">Jugador / Nick</th>
+                                    <th style="padding: 0.5rem;">Nombre Completo</th>
+                                    <th style="padding: 0.5rem;">DNI</th>
+                                    <th style="padding: 0.5rem;">Rol</th>
+                                    <th style="padding: 0.5rem;">Teléfono</th>
+                                    <th style="padding: 0.5rem;">Email</th>
+                                    <th style="padding: 0.5rem; width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="miembros-container">
+                                <!-- JS will populate member rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button type="button" class="btn secondary" id="btn-add-miembro" style="margin-top: 1rem; margin-bottom: 2rem;">+ Añadir Miembro</button>
+                    
+                    <div style="margin-top: 1rem;">
+                        <h3 style="font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--theme-color); font-weight: bold;">[2.1] Fotografía del Equipo</h3>
+                        <div title="Subir Fotografía del Equipo">
+                            <label for="eq-foto" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 200px; border: 2px dashed var(--theme-color); background: rgba(0,0,0,0.5); cursor: pointer; position: relative; overflow: hidden; transition: all 0.3s ease;">
+                                <span class="material-symbols-outlined" style="font-size: 3rem; color: var(--theme-color); margin-bottom: 0.5rem;">add_a_photo</span>
+                                <span style="font-size: 1rem; color: var(--theme-color); text-transform: uppercase;">Subir Fotografía del Equipo (Opcional)</span>
+                                <img id="eq-foto-preview" src="" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; background: rgba(0,0,0,0.8); display: none; z-index: 2;">
+                            </label>
+                            <input type="file" id="eq-foto" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fila 3: Expediente Clasificado (Solo Admin) -->
+                <div id="admin-expediente" style="background: rgba(255, 0, 0, 0.03); padding: 1.5rem; border: 1px solid #422; border-radius: 0; margin-top: 1rem;">
+                    <h3 style="font-size: 1.1rem; border-bottom: 1px solid #522; padding-bottom: 0.5rem; margin-bottom: 1rem; color: #ff5555; display: flex; align-items: center; gap: 0.5rem; font-weight: bold;">
+                        <span class="material-symbols-outlined" style="font-size: 1.2rem;">lock</span> [3] Expediente Clasificado (SOLO ADMIN)
+                    </h3>
+                    
+                    <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                        <!-- Columna Tags -->
+                        <div style="flex: 1; min-width: 300px;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
+                                <label style="color: #f55; margin: 0;">Calificación / Etiquetas</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <label style="color: #f55; font-size: 0.8rem; margin: 0;">Registro Sanciones:</label>
+                                    <select id="eq-estado-sancion" style="font-size: 0.9rem; padding: 0.25rem; background: rgba(0,0,0,0.5); color: white; border: 1px solid #f55;">
+                                        <option value="Autorizado">Autorizado</option>
+                                        <option value="Penalizado (1 evento)">Penalizado (1 evento)</option>
+                                        <option value="Expulsado">Expulsado</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 0;">
+                                <button type="button" class="btn-tag" data-tag="Actitud Positiva" style="background: #153; color: white; border: 1px solid #2a5; padding: 0.25rem 0.5rem; border-radius: 0; cursor: pointer;">+ Actitud Positiva</button>
+                                <button type="button" class="btn-tag" data-tag="Respeto Ambientación" style="background: #153; color: white; border: 1px solid #2a5; padding: 0.25rem 0.5rem; border-radius: 0; cursor: pointer;">+ Respeto Ambientación</button>
+                                <button type="button" class="btn-tag" data-tag="Colaborativos" style="background: #153; color: white; border: 1px solid #2a5; padding: 0.25rem 0.5rem; border-radius: 0; cursor: pointer;">+ Colaborativos</button>
+                                <button type="button" class="btn-tag" data-tag="Desorganizados" style="background: #a80; color: white; border: 1px solid #da0; padding: 0.25rem 0.5rem; border-radius: 0; cursor: pointer;">+ Desorganizados</button>
+                                <button type="button" class="btn-tag" data-tag="Problemas Radio" style="background: #a80; color: white; border: 1px solid #da0; padding: 0.25rem 0.5rem; border-radius: 0; cursor: pointer;">+ Problemas Radio</button>
+                                <button type="button" class="btn-tag" data-tag="Trampas" style="background: #811; color: white; border: 1px solid #f33; padding: 0.25rem 0.5rem; border-radius: 0; cursor: pointer;">+ Trampas</button>
+                                <button type="button" class="btn-tag" data-tag="Mala Actitud" style="background: #811; color: white; border: 1px solid #f33; padding: 0.25rem 0.5rem; border-radius: 0; cursor: pointer;">+ Mala Actitud</button>
+                            </div>
+                            <div id="tags-asignados" style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; min-height: 35px; align-items: center;">
+                                <!-- Tags se muestran aquí -->
+                            </div>
+                            <input type="hidden" id="eq-tags" value="[]">
+                            <input type="hidden" id="eq-estado-medalla" value="verde">
+                        </div>
+
+                        <!-- Columna Historial -->
+                        <div style="flex: 2; min-width: 400px; display: flex; flex-direction: column;">
+                            <label style="color: #f55;">Historial de Servicio y Valoración Operativa</label>
+                            <div id="historial-container" style="display: flex; flex-direction: column; gap: 0.5rem; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 0.5rem; border-radius: 0; border: 1px solid rgba(255,255,255,0.1); min-height: 150px;">
+                                <!-- JS will populate history rows -->
+                            </div>
+                            <button type="button" class="btn secondary" id="btn-add-historial" style="margin-top: 0.5rem; align-self: flex-start;">+ Añadir Misión al Historial</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
                     <button type="button" class="btn secondary" id="btn-cancel-modal">Cancelar</button>
-                    <button type="submit" class="btn primary">Guardar Expediente</button>
+                    <button type="submit" class="btn primary" style="font-size: 1.1rem; padding: 0.5rem 2rem;">Guardar Expediente</button>
                 </div>
             </form>
         </div>
@@ -248,11 +778,11 @@
                 <input type="hidden" id="mis-id">
                 
                 <!-- Header del Documento -->
-                <div style="text-align: center; border: 2px solid #000; padding: 1rem; background: #fff; position: relative;">
+                <div style="text-align: center; border: 2px solid #000; padding: 1rem; background: #fff; position: relative; color: #000;">
                     <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%) rotate(-2deg); border: 3px solid #b22222; color: #b22222; padding: 0.25rem 1rem; font-weight: bold; font-family: sans-serif; font-size: 0.9rem; background: var(--mission-bg, #dfbd73); letter-spacing: 2px;">
                         SECRETO / ALTO MANDO / ORDEN OPERATIVA
                     </div>
-                    <h2 id="mis-header-ejercito" style="font-family: 'Times New Roman', Times, serif; margin: 1.5rem 0 0.5rem 0; font-size: 2.2rem; letter-spacing: 3px;">EJÉRCITO DE SYLDAVIA</h2>
+                    <h2 id="mis-header-ejercito" style="font-family: 'Times New Roman', Times, serif; margin: 1.5rem 0 0.5rem 0; font-size: 1.8rem; letter-spacing: 3px; color: #000;">EJÉRCITO DE SYLDAVIA</h2>
                     <div id="mis-header-capitania" style="font-family: sans-serif; font-size: 0.8rem; letter-spacing: 2px; margin-bottom: 1rem;">CAPITANÍA GENERAL DE HERTZPLATZ • MANDO DE TEATRO</div>
                     
                     <div style="background: var(--mission-dark, #2b2b2b); color: var(--mission-bg, #dfbd73); display: inline-block; padding: 0.5rem 2rem; font-weight: bold; font-family: sans-serif; letter-spacing: 2px; margin-bottom: 0.5rem;">
@@ -274,16 +804,32 @@
                         <div style="font-size: 0.7rem; font-family: sans-serif; font-weight: bold;">OFICIAL DE OPERACIONES</div>
                         <input type="text" id="mis-oficial" placeholder="Ej: Cmdt. Rivas" style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1rem; font-weight: bold; outline: none; margin-top: 0.25rem;">
                     </div>
-                    <div style="border-right: 2px solid #000; padding: 0.5rem;">
+                    <div style="border-right: 2px solid #000; border-bottom: 2px solid #000; padding: 0.5rem;">
                         <div style="font-size: 0.7rem; font-family: sans-serif; font-weight: bold;">ETIQUETAS TÁCTICAS</div>
                         <input type="text" id="mis-etiquetas" placeholder="Ej: [Infiltración] [Sigilo]" style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1rem; font-weight: bold; outline: none; margin-top: 0.25rem;">
                     </div>
-                    <div style="padding: 0.5rem;">
+                    <div style="border-bottom: 2px solid #000; padding: 0.5rem;">
+                        <div style="font-size: 0.7rem; font-family: sans-serif; font-weight: bold;">PLANTILLA DE MAPA / ESQUEMA TÁCTICO</div>
+                        <select id="mis-esquema" style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1rem; font-weight: bold; outline: none; margin-top: 0.25rem;">
+                            <option value="">(Sin mapa táctico)</option>
+                        </select>
+                    </div>
+                    <div style="padding: 0.5rem; grid-column: 1 / span 2;">
                         <div style="font-size: 0.7rem; font-family: sans-serif; font-weight: bold;">ASIGNACIÓN</div>
                         <div style="margin-top: 0.25rem; display: flex; align-items: center; gap: 0.5rem; font-weight: bold;">
                             <input type="checkbox" id="mis-persistente"> <label for="mis-persistente" style="margin: 0; color: #4CAF50; cursor: pointer; margin-right: 1rem;">Misión Persistente (Varias unidades)</label>
                             <input type="checkbox" id="mis-revelada"> <label for="mis-revelada" style="margin: 0; color: #2196F3; cursor: pointer;">Misión Revelada / Pública</label>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Resumen Situacional -->
+                <div>
+                    <div style="background: var(--mission-dark, #2b2b2b); color: #fff; padding: 0.25rem 1rem; font-family: sans-serif; font-weight: bold; letter-spacing: 1px;">
+                        REQUISITOS OPERACIONALES
+                    </div>
+                    <div style="border: 2px solid #000; background: rgba(255,255,255,0.7); padding: 0.5rem; margin-bottom: 1.5rem;">
+                        <textarea id="mis-resumen" rows="2" placeholder="Ej: Equipo especializado necesario, material..." style="width: 100%; border: none; background: transparent; font-family: 'Courier New', Courier, monospace; font-size: 1.1rem; font-weight: bold; outline: none; resize: vertical;"></textarea>
                     </div>
                 </div>
 
@@ -330,7 +876,7 @@
     <div id="modal-mision" class="modal">
         <div class="modal-content military-report">
             <div class="report-header">
-                <h2>INFORME CLASIFICADO</h2>
+                <h2 style="color: #000;">INFORME CLASIFICADO</h2>
                 <div class="report-stamp">TOP SECRET</div>
             </div>
             <div class="report-body">
@@ -347,6 +893,11 @@
                     <strong>OFICIAL AL MANDO:</strong> <span id="rm-oficial"></span>
                 </div>
                 
+                <div class="report-section" style="border: 2px solid #000; background: rgba(0,0,0,0.05); padding: 1rem; margin-bottom: 1.5rem;">
+                      <h3 style="color: #000; margin-top: 0; margin-bottom: 10px; border-bottom: 2px solid #000; padding-bottom: 0.5rem; text-shadow: none;">REQUISITOS OPERACIONALES</h3>
+                      <div id="rm-resumen" class="report-text" style="font-weight: bold; color: #000; font-family: 'Courier New', Courier, monospace; font-size: 1.1rem;"></div>
+                  </div>
+
                 <div class="report-section">
                     <h3>I. CONTEXTO OPERACIONAL</h3>
                     <div id="rm-contexto" class="report-text redacted-content"></div>
@@ -362,7 +913,8 @@
                     <div id="rm-consideraciones" class="report-text redacted-content"></div>
                 </div>
             </div>
-            <div class="modal-actions" style="margin-top: 1rem; border-top: 2px solid #555; padding-top: 1rem;">
+            <div class="modal-actions" style="margin-top: 1rem; border-top: 2px solid #555; padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                <div id="rm-actions-container"></div>
                 <button type="button" class="btn secondary" id="btn-cerrar-mision">Cerrar Informe</button>
             </div>
         </div>
@@ -392,14 +944,148 @@
             </form>
         </div>
     </div>
+
+    <!-- Modal POIs -->
+    <div id="modal-poi" class="modal">
+        <div class="modal-content military-report">
+            <h2 style="text-align: center; border-bottom: 2px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Alta de SECTOR de Interés (POI)</h2>
+            <form id="form-poi" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div class="form-group">
+                    <label>Nombre Identificativo</label>
+                    <input type="text" id="poi-nombre" required>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Tipo de SECTOR</label>
+                        <select id="poi-tipo">
+                            <option value="PC">SECTOR (Bandera)</option>
+                            <option value="RESPAWN">Base / Respawn</option>
+                            <option value="MISION">Misión / Minijuego</option>
+                            <option value="OP">Punto Observación (OP)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>FACC. Inicial</label>
+                        <select id="poi-faccion">
+                            <option value="">(Ninguna / Neutral)</option>
+                            <!-- Llenado por JS -->
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; border: 1px solid #444; padding: 0.5rem; border-radius: 5px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Latitud (GPS Real)</label>
+                        <input type="text" id="poi-lat" required>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Longitud (GPS Real)</label>
+                        <input type="text" id="poi-lng" required>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; border: 1px solid #444; padding: 0.5rem; border-radius: 5px;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Mapa Y (Leaflet Lat)</label>
+                        <input type="text" id="poi-map-y" required>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Mapa X (Leaflet Lng)</label>
+                        <input type="text" id="poi-map-x" required>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Tolerancia (Metros para escanear QR)</label>
+                    <input type="number" step="1" id="poi-tolerancia" value="15" required>
+                </div>
+                
+                <!-- Advanced Respawn Rules Container -->
+                <div id="poi-respawn-rules" style="display: none; border: 1px solid var(--theme-color); padding: 0.5rem; border-radius: 5px; background: rgba(0,0,0,0.2);">
+                    <h4 style="margin-top:0; color: var(--theme-color);">Requisitos de Captura (Respawns Avanzados)</h4>
+                    <p style="font-size: 0.8rem; color: #ccc; margin-bottom: 0.5rem;">Marca los SECTORs de Control (PCs) que debe poseer cada facción para usar este Respawn. Si no marcas nada, es un Respawn incondicional.</p>
+                    <div id="poi-respawn-factions-container" style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 200px; overflow-y: auto;">
+                        <!-- JS will inject faction checkboxes here -->
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button type="button" class="btn warning" id="btn-poi-gps-mapa">Capturar Coords. de Mapa</button>
+                    <button type="button" class="btn secondary" id="btn-cancel-poi">Cancelar</button>
+                    <button type="submit" class="btn primary">Generar SECTOR y QR</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL VISOR MAPA MISION -->
+    <div id="modal-mapa-mision" class="modal">
+        <div class="modal-content" style="max-width: 90vw; width: 1000px; height: 80vh; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 id="visor-mapa-title" style="margin: 0; color: var(--theme-color);">Esquema Táctico</h3>
+                <button type="button" class="btn secondary" onclick="document.getElementById('modal-mapa-mision').classList.remove('active')"><span class="material-symbols-outlined">close</span></button>
+            </div>
+            <div id="visor-leaflet-map" style="flex: 1; background: #111; border: 1px solid var(--border-color); border-radius: 5px;"></div>
+        </div>
+    </div>
+
+    <!-- MODAL VIEW QR -->
+    <div id="modal-qr" class="modal">
+        <div class="modal-content" style="max-width: 350px; text-align: center;">
+            <h3 id="qr-title" style="margin-top:0; color: var(--theme-color);">Código QR</h3>
+            <div style="background: white; padding: 1rem; border-radius: 5px; display: inline-block; margin: 1rem 0;">
+                <img id="qr-image" src="" alt="QR Code" style="width: 250px; height: 250px;">
+            </div>
+            <p style="font-size: 0.8rem; color: #aaa;">Imprime este QR para colocarlo en el campo. El contenido exacto del QR es: <strong id="qr-raw-content"></strong></p>
+            <div class="modal-actions" style="margin-top: 1rem; display: flex; justify-content: center;">
+                <button type="button" class="btn secondary" onclick="document.getElementById('modal-qr').classList.remove('active')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Librería de Esquemas -->
+    <div id="modal-libreria-esquemas" class="modal">
+        <div class="modal-content military-report" style="max-width: 700px; width: 95%;">
+            <h2 style="text-align: center; border-bottom: 2px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Librería de Plantillas Tácticas</h2>
+            <div class="table-container" style="max-height: 400px; overflow-y: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Nombre de Plantilla</th>
+                            <th style="width: 250px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-libreria-esquemas">
+                        <!-- Llenado por JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                <button class="btn secondary" onclick="document.getElementById('modal-libreria-esquemas').classList.remove('active')">Cerrar</button>
+            </div>
+        </div>
+    </div>
+    <!-- Minigame Auth Modal -->
+    <div id="minigame-auth-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <h2 style="color: var(--theme-color); text-transform: uppercase; letter-spacing: 2px;">ACCESO RESTRINGIDO</h2>
+            <p style="margin-bottom: 20px; color: #888;">Introduzca código de autorización:</p>
+            <input type="password" id="minigame-password" class="form-control" style="text-align: center; font-size: 1.2rem; letter-spacing: 3px;" autocomplete="off">
+            <input type="hidden" id="minigame-target" value="">
+            <div style="color: #ff4d4d; margin-top: 10px; display: none;" id="minigame-error">CÓDIGO INCORRECTO</div>
+            <div class="modal-actions" style="justify-content: center; margin-top: 20px;">
+                <button class="btn" onclick="document.getElementById('minigame-auth-modal').style.display='none'">CANCELAR</button>
+                <button class="btn primary" id="btn-auth-minigame">AUTORIZAR</button>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         window.userRole = "{{ user_role }}";
         window.userFaction = "{{ user_faction }}";
+        window.equipoId = "{{ session.get('equipo_id', '') }}";
     </script>
-    <script src="{{ url_for('static', filename='js/main.js') }}?v=13"></script>
-    <script src="{{ url_for('static', filename='js/map.js') }}?v=11"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=50"></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}?v=20"></script>
         </div>
     </div>
 </body>
