@@ -2123,6 +2123,11 @@ function initMorteroLeaflet() {
 
     refreshMorteroState();
     setInterval(refreshMorteroState, 3000);
+
+    // Force layout recalculation after initialization to fix empty cartography on mobile
+    setTimeout(() => {
+        if (morteroMap) morteroMap.invalidateSize();
+    }, 500);
 }
 
 let morteroShotsLayer = L.layerGroup();
