@@ -83,7 +83,15 @@
             .hud-col {
                 grid-area: 1 / 1; margin: 15px; display: flex; flex-direction: column; gap: 10px; width: 190px; z-index: 10; align-self: start; pointer-events: none;
             }
-            .hud-col .btn { pointer-events: auto; }
+            .hud-col .btn, .hud-col button { pointer-events: auto; }
+            
+            @media (max-width: 768px) {
+                .hud-wrapper { display: flex !important; flex-direction: column; height: 85vh; min-height: 0; }
+                .hud-image-container { flex: 1; position: relative; height: auto !important; }
+                .hud-col { width: 100%; margin: 0; padding: 10px; background: #111; flex-direction: row; flex-wrap: wrap; justify-content: center; pointer-events: auto; }
+                .tactical-box { flex: 1; min-width: 140px; }
+                .hud-bottom-right { display: none !important; } /* Hide fake tracking UI on mobile to save space */
+            }
         </style>
         
         {% if active_targets %}
@@ -97,7 +105,7 @@
                 
                 <div class="hud-wrapper" style="min-height: 450px;">
                     {% if tgt.image_url %}
-                    <div style="grid-area: 1 / 1; width: 100%; height: 100%; overflow: auto; position: relative; z-index: 1;">
+                    <div class="hud-image-container" style="grid-area: 1 / 1; width: 100%; height: 100%; overflow: auto; position: relative; z-index: 1;">
                         <img src="{{ tgt.image_url }}" alt="Objetivo" style="width: 200%; height: auto; min-height: 100%; display: block; filter: grayscale(50%) contrast(120%) brightness(0.5); transform-origin: top left;">
                     </div>
                     {% else %}
@@ -172,7 +180,7 @@
                     </div>
                     
                     <!-- Bottom Fake UI elements (Right side) -->
-                    <div style="position: absolute; bottom: 15px; right: 15px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 10;">
+                    <div class="hud-bottom-right" style="position: absolute; bottom: 15px; right: 15px; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; z-index: 10;">
                         <div style="border: 1px solid rgba(255,255,255,0.2); padding: 4px 8px; font-size: 0.7rem; color: #aaa; background: rgba(0,0,0,0.5);">
                             TRACKING ↗
                         </div>
