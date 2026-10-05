@@ -326,7 +326,7 @@ async function loadMapData() {
     drawnPOIs = [];
     
     pois.forEach(poi => {
-        const currentFaccionId = (facciones.find(f => f.nombre === currentFaction) ? facciones.find(f => f.nombre === currentFaction).id : null);
+        const currentFaccionId = facciones.find(f => f.nombre === currentFaction)?.id;
         
         // Fog of War: If not Admin, hide enemy POIs (keep neutral and own)
         if (window.userRole !== 'admin') {
@@ -792,7 +792,7 @@ document.querySelectorAll('.nav-icon-btn').forEach(btn => {
 // Modal handling for Zonas
 let pendingZonePoints = null;
 
-(document.getElementById('form-zona') ? document.getElementById('form-zona') : {addEventListener: function(){}}).addEventListener('submit', async (e) => {
+document.getElementById('form-zona')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!pendingZonePoints) return;
     
@@ -817,7 +817,7 @@ let pendingZonePoints = null;
     loadMapData();
 });
 
-(document.getElementById('btn-cancel-zona') ? document.getElementById('btn-cancel-zona') : {addEventListener: function(){}}).addEventListener('click', () => {
+document.getElementById('btn-cancel-zona')?.addEventListener('click', () => {
     document.getElementById('modal-zona').style.display = 'none';
     pendingZonePoints = null;
     setMode('pan');

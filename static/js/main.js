@@ -472,7 +472,7 @@ function renderCard(g, isMando, totalFactionPax = 0) {
                         <div class="equipo-card" draggable="true" data-equipo-id="${t.equipo_id}">
                             <div>
                                 <strong>${t.equipo_nombre}</strong>
-                                <div class="equipo-details">Rol Preferido: ${(todosEquipos.find(e => e.id === t.equipo_id) ? todosEquipos.find(e => e.id === t.equipo_id).tipo : null) || 'N/A'}</div>
+                                <div class="equipo-details">Rol Preferido: ${todosEquipos.find(e => e.id === t.equipo_id)?.tipo || 'N/A'}</div>
                                 ${ (t.apoyos > 0 || t.snipers > 0) ? `<div style="font-size: 0.7em; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">${t.apoyos > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🛡️ ${t.apoyos} Apoyo</span>` : ''}${t.snipers > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🎯 ${t.snipers} Sniper</span>` : ''}</div>` : '' }
                             </div>
                             <span>${t.jugadores} px</span>
@@ -2000,7 +2000,7 @@ function initMortero() {
             const res = await fetch('/api/mortero/fijar', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ lat: pendingBatteryLat, lng: pendingBatteryLng, admin_faccion: (document.getElementById('admin-sim-faccion') ? document.getElementById('admin-sim-faccion').value : \'\') })
+                body: JSON.stringify({ lat: pendingBatteryLat, lng: pendingBatteryLng, admin_faccion: document.getElementById('admin-sim-faccion')?.value })
             });
             
             if (res.ok) {
@@ -2036,7 +2036,7 @@ function initMortero() {
             const res = await fetch('/api/mortero/pintar', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ azimut: az, angulo: ang, admin_faccion: (document.getElementById('admin-sim-faccion') ? document.getElementById('admin-sim-faccion').value : \'\') })
+                body: JSON.stringify({ azimut: az, angulo: ang, admin_faccion: document.getElementById('admin-sim-faccion')?.value })
             });
             
             if (!res.ok) {
@@ -2135,7 +2135,7 @@ let morteroShotsLayer = L.layerGroup();
 async function refreshMorteroState() {
     if (!morteroAuth) return;
     
-    const simFac = (document.getElementById('admin-sim-faccion') ? document.getElementById('admin-sim-faccion').value : \'\') || '';
+    const simFac = document.getElementById('admin-sim-faccion')?.value || '';
     const res = await fetch('/api/mortero/todos_json' + (simFac ? '?faccion='+simFac : ''));
     const data = await res.json();
     
@@ -2283,7 +2283,7 @@ async function loadAdminArtilleria() {
     }
 }
 
-(document.getElementById('btn-admin-guardar-artilleria') ? document.getElementById('btn-admin-guardar-artilleria') : {addEventListener: function(){}}).addEventListener('click', async () => {
+document.getElementById('btn-admin-guardar-artilleria')?.addEventListener('click', async () => {
     const alcance = document.getElementById('admin-alcance-base').value;
     const radio = document.getElementById('admin-radio-explosion').value;
     const cadencia = document.getElementById('admin-cadencia').value;
@@ -2334,7 +2334,7 @@ function parseGrid(text) {
 
 setTimeout(() => { if (typeof loadAdminArtilleria === 'function') loadAdminArtilleria(); }, 1000);
 
-(document.getElementById('btn-admin-limpiar-impactos') ? document.getElementById('btn-admin-limpiar-impactos') : {addEventListener: function(){}}).addEventListener('click', async () => {
+document.getElementById('btn-admin-limpiar-impactos')?.addEventListener('click', async () => {
     if (confirm("¿Estás seguro de que quieres borrar todos los impactos del mapa?")) {
         const res = await fetch('/api/admin/artilleria/limpiar', { method: 'DELETE' });
         if (res.ok) {
@@ -2346,19 +2346,19 @@ setTimeout(() => { if (typeof loadAdminArtilleria === 'function') loadAdminArtil
 
 // --- D-PAD LOGIC FOR MOBILE MAP ---
 const dpadStep = 200; // pixels to pan per click
-(document.getElementById('dpad-up') ? document.getElementById('dpad-up') : {addEventListener: function(){}}).addEventListener('click', () => { if(morteroMap) morteroMap.panBy([0, -dpadStep]); });
-(document.getElementById('dpad-down') ? document.getElementById('dpad-down') : {addEventListener: function(){}}).addEventListener('click', () => { if(morteroMap) morteroMap.panBy([0, dpadStep]); });
-(document.getElementById('dpad-left') ? document.getElementById('dpad-left') : {addEventListener: function(){}}).addEventListener('click', () => { if(morteroMap) morteroMap.panBy([-dpadStep, 0]); });
-(document.getElementById('dpad-right') ? document.getElementById('dpad-right') : {addEventListener: function(){}}).addEventListener('click', () => { if(morteroMap) morteroMap.panBy([dpadStep, 0]); });
-(document.getElementById('dpad-zoom-in') ? document.getElementById('dpad-zoom-in') : {addEventListener: function(){}}).addEventListener('click', () => { if(morteroMap) morteroMap.zoomIn(); });
-(document.getElementById('dpad-zoom-out') ? document.getElementById('dpad-zoom-out') : {addEventListener: function(){}}).addEventListener('click', () => { if(morteroMap) morteroMap.zoomOut(); });
+document.getElementById('dpad-up')?.addEventListener('click', () => { if(morteroMap) morteroMap.panBy([0, -dpadStep]); });
+document.getElementById('dpad-down')?.addEventListener('click', () => { if(morteroMap) morteroMap.panBy([0, dpadStep]); });
+document.getElementById('dpad-left')?.addEventListener('click', () => { if(morteroMap) morteroMap.panBy([-dpadStep, 0]); });
+document.getElementById('dpad-right')?.addEventListener('click', () => { if(morteroMap) morteroMap.panBy([dpadStep, 0]); });
+document.getElementById('dpad-zoom-in')?.addEventListener('click', () => { if(morteroMap) morteroMap.zoomIn(); });
+document.getElementById('dpad-zoom-out')?.addEventListener('click', () => { if(morteroMap) morteroMap.zoomOut(); });
 
 async function guardarEsquema() {
     const nombre = prompt("Nombre para la Plantilla del Mapa (Ej: M01-Despliegue Inicial):");
     if (!nombre) return;
     
     // Obtenemos los datos actuales de la faccion desde la BD
-    const currentFactionId = (facciones.find(f => f.nombre === currentFaction) ? facciones.find(f => f.nombre === currentFaction).id : null);
+    const currentFactionId = facciones.find(f => f.nombre === currentFaction)?.id;
     if(!currentFactionId) return;
 
     try {
@@ -2393,7 +2393,7 @@ async function guardarEsquema() {
 
 async function limpiarDibujosMapa() {
     if(!confirm("¿Borrar todos los dibujos, zonas y marcadores de esta facción en la base de datos de forma permanente?")) return;
-    const currentFactionId = (facciones.find(f => f.nombre === currentFaction) ? facciones.find(f => f.nombre === currentFaction).id : null);
+    const currentFactionId = facciones.find(f => f.nombre === currentFaction)?.id;
     if(!currentFactionId) return;
 
     try {
@@ -2446,7 +2446,7 @@ async function eliminarEsquema(id) {
 async function cargarPlantillaEnMapa(datos_json_str) {
     if(!confirm("Esto AÑADIRÁ los trazos de la plantilla al mapa Táctico ACTUAL de tu facción. Recomendamos usar el botón 'Limpiar Mapa' antes si quieres que quede idéntico a la plantilla. ¿Continuar?")) return;
     
-    const currentFactionId = (facciones.find(f => f.nombre === currentFaction) ? facciones.find(f => f.nombre === currentFaction).id : null);
+    const currentFactionId = facciones.find(f => f.nombre === currentFaction)?.id;
     if(!currentFactionId) return;
 
     let datos = datos_json_str;
@@ -2884,5 +2884,5 @@ async function loadAdminArtilleriaLogs() {
     }
 }
 
-(document.getElementById('btn-admin-refresh-art-log') ? document.getElementById('btn-admin-refresh-art-log') : {addEventListener: function(){}}).addEventListener('click', loadAdminArtilleriaLogs);
+document.getElementById('btn-admin-refresh-art-log')?.addEventListener('click', loadAdminArtilleriaLogs);
 setTimeout(() => { if(typeof loadAdminArtilleriaLogs === 'function') loadAdminArtilleriaLogs(); }, 1200);
