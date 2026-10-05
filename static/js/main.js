@@ -111,6 +111,19 @@ async function loadDomination() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Detect if we are in the dedicated Mortero app (no ORBAT view present)
+    const isMorteroApp = document.getElementById('view-mortero') && !document.getElementById('view-orbat');
+    
+    if (isMorteroApp) {
+        const appData = document.getElementById('app-data');
+        if (appData) {
+            window.userRole = appData.dataset.role;
+            window.userFaction = appData.dataset.faction;
+        }
+        initMortero();
+        return; // Skip all other SPA initializations
+    }
+
     initNavigation();
     initTabs();
     loadFacciones();
@@ -257,10 +270,12 @@ async function loadFacciones() {
     }
 
     const select = document.getElementById('eq-faccion');
-    select.innerHTML = '';
-    facciones.forEach(f => {
-        select.innerHTML += `<option value="${f.id}">${f.nombre}</option>`;
-    });
+    if (select) {
+        select.innerHTML = '';
+        facciones.forEach(f => {
+            select.innerHTML += `<option value="${f.id}">${f.nombre}</option>`;
+        });
+    }
 }
 
 async function loadEquipos() {
