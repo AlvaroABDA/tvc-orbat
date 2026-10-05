@@ -126,11 +126,14 @@
         .hud-col .btn, .hud-col button { pointer-events: auto; }
         
         @media (max-width: 768px) {
-            .hud-wrapper { display: flex !important; flex-direction: column; height: 85vh; min-height: 0; }
-            .hud-image-container { flex: 1; position: relative; height: auto !important; }
-            .hud-col { width: 100%; margin: 0; padding: 10px; background: #111; flex-direction: row; flex-wrap: wrap; justify-content: center; pointer-events: auto; }
-            .tactical-box { flex: 1; min-width: 140px; }
+            .hud-wrapper { display: flex !important; flex-direction: column; height: auto; min-height: 0; border: none; }
+            .hud-image-container { width: 100% !important; height: 50vh !important; border: 1px solid rgba(255,255,255,0.2); margin-bottom: 15px; overflow: scroll !important; -webkit-overflow-scrolling: touch; }
+            .hud-image-container img { width: 300% !important; max-width: none !important; height: auto !important; }
+            .hud-col { width: 100%; margin: 0; padding: 0; background: transparent; flex-direction: column; flex-wrap: nowrap; justify-content: flex-start; pointer-events: auto; }
+            .tactical-box { width: 100%; }
             .hud-bottom-right { display: none !important; }
+            .hud-main { padding: 0; background: transparent; }
+            .c-tl, .c-tr, .c-bl, .c-br { display: none; }
         }
     </style>
     
