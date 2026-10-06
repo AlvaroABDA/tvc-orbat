@@ -957,7 +957,7 @@ select option { color: #000; background: #fff; }
         left: 10px !important;
         width: calc(100% - 20px) !important;
         min-width: 0 !important;
-        height: 35vh !important;
+        height: auto !important;
         z-index: 1000 !important;
         background: rgba(20,20,20,0.9) !important;
         border: 1px solid rgba(255,255,255,0.2) !important;
