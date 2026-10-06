@@ -680,6 +680,7 @@ function handleMapMouseMove(e) {
 
 // Global mousedown/up for measuring dragging
 function setupMeasurementDragging(targetMap) {
+    // Desktop / Mouse
     targetMap.on('mousedown', (e) => {
         if (currentMode === 'measure') {
             isMeasuring = true;
@@ -693,16 +694,30 @@ function setupMeasurementDragging(targetMap) {
             isMeasuring = false;
         }
     });
-    // Add touchstart and touchend specifically for mobile
-    targetMap.on('touchstart', (e) => {
-        if (currentMode === 'measure' && e.touches && e.touches.length === 1) {
+
+    // Mobile / Touch handling via DOM events on container
+    const container = targetMap.getContainer();
+    container.addEventListener('touchstart', (e) => {
+        if (currentMode === 'measure' && e.touches.length === 1) {
             isMeasuring = true;
-            currentRoutePoints = [e.latlng];
+            const latlng = targetMap.mouseEventToLatLng(e.touches[0]);
+            currentRoutePoints = [latlng];
             if (measureLine) targetMap.removeLayer(measureLine);
             if (measurePopup) targetMap.removeLayer(measurePopup);
         }
-    });
-    targetMap.on('touchend', (e) => {
+    }, {passive: false});
+
+    container.addEventListener('touchmove', (e) => {
+        if (currentMode === 'measure' && isMeasuring && e.touches.length === 1) {
+            e.preventDefault(); // Prevent browser scrolling
+            const latlng = targetMap.mouseEventToLatLng(e.touches[0]);
+            // Simulate mousemove for drawing logic
+            const evt = { latlng: latlng };
+            handleMapMouseMove(evt); 
+        }
+    }, {passive: false});
+
+    container.addEventListener('touchend', (e) => {
         if (currentMode === 'measure') {
             isMeasuring = false;
         }
