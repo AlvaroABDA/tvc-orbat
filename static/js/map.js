@@ -214,8 +214,11 @@ function setMode(mode) {
     // Cleanups on mode switch
     currentRoutePoints = [];
     currentZonePoints = [];
-    if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
-    if (tempPolygon) { map.removeLayer(tempPolygon); tempPolygon = null; }
+    let actMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
+    if (actMap) {
+        if (tempPolyline) { actMap.removeLayer(tempPolyline); tempPolyline = null; }
+        if (tempPolygon) { actMap.removeLayer(tempPolygon); tempPolygon = null; }
+    }
     
     // Floating Toolbar for Mobile/Tablets
     const drawingToolbar = document.getElementById('drawing-toolbar');
@@ -231,8 +234,10 @@ function setMode(mode) {
             drawingToolbar.style.display = 'none';
         }
     }
-    if (measureLine) { map.removeLayer(measureLine); measureLine = null; }
-    if (measurePopup) { map.removeLayer(measurePopup); measurePopup = null; }
+    if (actMap) {
+        if (measureLine) { actMap.removeLayer(measureLine); measureLine = null; }
+        if (measurePopup) { actMap.removeLayer(measurePopup); measurePopup = null; }
+    }
 }
 
 async function loadMapData() {
