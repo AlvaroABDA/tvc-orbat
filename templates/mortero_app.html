@@ -29,7 +29,7 @@
         @media (max-width: 896px) {
             #mortero-panel-header { padding: 5px 10px !important; }
             #mortero-title { font-size: 1rem !important; display: none !important; } /* Oculto en movil para ganar espacio */
-            .btn-volver span { display: none; } /* Solo el icono en movil */
+            .btn-volver > span:not(.material-symbols-outlined) { display: none; } /* Solo el texto en movil */
             
             #mortero-mobile-wrapper {
                 display: flex !important;

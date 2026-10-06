@@ -992,6 +992,11 @@ select option { color: #000; background: #fff; }
         display: none !important;
     }
 
+    #tactical-tracker {
+        bottom: 110px !important;
+        right: 10px !important;
+    }
+
     /* 6. ORBAT Cards Vertical Stack and Shrink */
     .orbat-tree-container {
         flex-direction: column !important; /* Stack vertically instead of horizontally */
