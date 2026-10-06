@@ -686,15 +686,15 @@ function openAssignModal(grupoId, type) {
     
     let optionsHTML = '<option value="">-- Seleccionar --</option>';
     if (type === 'equipo') {
-        window.todosEquipos.forEach(eq => {
-            let isAssigned = window.todasAsignaciones.some(a => a.equipo_id === eq.id);
+        todosEquipos.forEach(eq => {
+            let isAssigned = todasAsignaciones.some(a => a.equipo_id === eq.id);
             if (!isAssigned) {
                 optionsHTML += `<option value="${eq.id}">${eq.nombre}</option>`;
             }
         });
     } else {
-        window.misiones.forEach(m => {
-            let isAssigned = window.todosGrupos.some(g => g.mision_actual_id === m.id);
+        todasMisiones.forEach(m => {
+            let isAssigned = todosGrupos.some(g => g.mision_actual_id === m.id);
             if (!isAssigned || m.persistente) {
                 optionsHTML += `<option value="${m.id}">${m.tipo} - ${m.cuadricula}</option>`;
             }
@@ -2171,6 +2171,9 @@ const batteryIcon = L.divIcon({
 });
 
 function initMorteroLeaflet() {
+    const container = document.getElementById('mortero-leaflet-map');
+    if (!container) return;
+    
     if (morteroMap) {
         morteroMap.invalidateSize();
         return;

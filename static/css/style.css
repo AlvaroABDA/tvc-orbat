@@ -473,9 +473,27 @@ body[data-theme="Khemed"] {
     display: block;
 }
 
+
+/* Orbat Sidebar Specific */
+#view-orbat .sidebar-panel {
+    width: 200px !important;
+    min-width: 200px !important;
+}
+#view-orbat .orbat-content-wrapper {
+    flex: 1;
+    overflow-x: auto;
+}
+.tree-split {
+    display: flex;
+    width: 100%;
+    min-width: 800px; /* Ensure cards don't squish too much */
+    gap: 1rem;
+    position: relative;
+}
+
 /* Sidebar Panels */
 .sidebar-panel {
-    width: 300px;
+    width: 200px;
     background: var(--bg-panel);
     border-left: 2px solid var(--theme-color);
     display: flex;
