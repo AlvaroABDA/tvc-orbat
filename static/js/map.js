@@ -202,10 +202,13 @@ function setMode(mode) {
     if (btnPoiMap) btnPoiMap.classList.remove('active');
     if (mode === 'add_poi_map' && btnPoiMap) btnPoiMap.classList.add('active');
 
-    if (mode === 'pan') {
-        document.getElementById('tactical-map').style.cursor = 'grab';
-    } else {
-        document.getElementById('tactical-map').style.cursor = 'crosshair';
+    const mapEl = document.getElementById('tactical-map') || document.getElementById('mortero-leaflet-map');
+    if (mapEl) {
+        if (mode === 'pan') {
+            mapEl.style.cursor = 'grab';
+        } else {
+            mapEl.style.cursor = 'crosshair';
+        }
     }
 
     // Cleanups on mode switch
@@ -649,7 +652,7 @@ function handleMapClick(e) {
             const pixelsPerGrid = 32; 
             const meters = (pxDist / pixelsPerGrid) * 50;
             
-            const flagHtml = `<div style="background: rgba(0,0,0,0.8); color: #ffff00; padding: 5px 10px; border: 1px solid #ffff00; font-family: var(--font-mono); font-weight: bold; font-size: 1.1rem; white-space: nowrap; border-radius: 4px;">Distancia: ${meters.toFixed(0)}m</div>`;
+            const flagHtml = `<div style="color: #000; font-family: var(--font-mono); font-weight: bold; font-size: 0.8rem; white-space: nowrap; text-shadow: 1px 1px 0px #fff, -1px -1px 0px #fff, 1px -1px 0px #fff, -1px 1px 0px #fff;">${meters.toFixed(0)}m</div>`;
             const flagIcon = L.divIcon({ className: 'measure-flag', html: flagHtml, iconSize: null, iconAnchor: [-10, 15] });
             measurePopup = L.marker(p2, { icon: flagIcon, interactive: false }).addTo(targetMap);
                 
@@ -708,7 +711,7 @@ function handleMapMouseMove(e) {
 
         if (measurePopup) targetMap.removeLayer(measurePopup);
         
-        const flagHtml = `<div style="background: rgba(0,0,0,0.8); color: #ffff00; padding: 5px 10px; border: 1px solid #ffff00; font-family: var(--font-mono); font-weight: bold; font-size: 1.1rem; white-space: nowrap; border-radius: 4px;">Distancia: ${meters.toFixed(0)}m</div>`;
+        const flagHtml = `<div style="color: #000; font-family: var(--font-mono); font-weight: bold; font-size: 0.8rem; white-space: nowrap; text-shadow: 1px 1px 0px #fff, -1px -1px 0px #fff, 1px -1px 0px #fff, -1px 1px 0px #fff;">${meters.toFixed(0)}m</div>`;
         const flagIcon = L.divIcon({ className: 'measure-flag', html: flagHtml, iconSize: null, iconAnchor: [-10, 15] });
         measurePopup = L.marker(p2, { icon: flagIcon, interactive: false }).addTo(targetMap);
     }
