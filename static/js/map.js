@@ -655,6 +655,9 @@ function handleMapClick(e) {
             currentRoutePoints.push(e.latlng);
             let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
             
+            if (measureLine) targetMap.removeLayer(measureLine);
+            if (measurePopup) targetMap.removeLayer(measurePopup);
+
             const p1 = currentRoutePoints[0];
             const p2 = currentRoutePoints[1];
             measureLine = L.polyline([p1, p2], {color: '#ffff00', weight: 4, dashArray: '5, 5'}).addTo(targetMap);
