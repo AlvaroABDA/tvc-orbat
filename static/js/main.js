@@ -687,6 +687,8 @@ function openAssignModal(grupoId, type) {
     let optionsHTML = '<option value="">-- Seleccionar --</option>';
     if (type === 'equipo') {
         todosEquipos.forEach(eq => {
+            if (eq.faccion_nombre !== currentFaction) return; // FIX: Only show teams for the current faction
+            
             let isAssigned = todasAsignaciones.some(a => a.equipo_id === eq.id);
             if (!isAssigned) {
                 optionsHTML += `<option value="${eq.id}">${eq.nombre}</option>`;
