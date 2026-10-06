@@ -154,7 +154,7 @@ function initMap() {
 
     // Interaction handling
     map.on('click', handleMapClick);
-    setupMeasurementDragging(map);
+    
     map.on('mousemove', handleMapMouseMove);
     map.on('dblclick', handleMapDoubleClick); 
     map.on('contextmenu', handleMapRightClick); 
@@ -627,6 +627,33 @@ function handleMapClick(e) {
         }
         tempPolyline = L.polyline(currentRoutePoints, {color: getFactionColor(), weight: 6, opacity: 0.6}).addTo(map);
     }
+
+    else if (currentMode === 'measure') {
+        if (currentRoutePoints.length === 0 || currentRoutePoints.length === 2) {
+            // Start new measurement
+            currentRoutePoints = [e.latlng];
+            let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
+            if (measureLine) targetMap.removeLayer(measureLine);
+            if (measurePopup) targetMap.removeLayer(measurePopup);
+        } else if (currentRoutePoints.length === 1) {
+            // Second point, finish measurement
+            currentRoutePoints.push(e.latlng);
+            let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
+            
+            const p1 = currentRoutePoints[0];
+            const p2 = currentRoutePoints[1];
+            measureLine = L.polyline([p1, p2], {color: '#ffff00', weight: 4, dashArray: '5, 5'}).addTo(targetMap);
+            
+            const pxDist = Math.sqrt(Math.pow(p2.lat - p1.lat, 2) + Math.pow(p2.lng - p1.lng, 2));
+            const pixelsPerGrid = 32; 
+            const meters = (pxDist / pixelsPerGrid) * 50;
+            
+            measurePopup = L.popup({closeButton: false, autoClose: false, className: 'measure-popup'})
+                .setLatLng(p2)
+                .setContent(`Distancia: ${meters.toFixed(0)}m`)
+                .openOn(targetMap);
+        }
+    }
     else if (currentMode === 'draw_zone') {
         currentZonePoints.push(e.latlng);
         if (tempPolygon) {
@@ -653,7 +680,7 @@ function handleMapMouseMove(e) {
         if (tempPolygon) map.removeLayer(tempPolygon);
         tempPolygon = L.polygon([...currentZonePoints, e.latlng], {color: getFactionColor(), weight: 3, opacity: 0.8, fillColor: getFactionColor(), fillOpacity: 0.4}).addTo(map);
     }
-    if (currentMode === 'measure' && isMeasuring && currentRoutePoints.length === 1) {
+    if (currentMode === 'measure' && currentRoutePoints.length === 1) {
         let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
         if (measureLine) targetMap.removeLayer(measureLine);
         
@@ -678,51 +705,6 @@ function handleMapMouseMove(e) {
     }
 }
 
-// Global mousedown/up for measuring dragging
-function setupMeasurementDragging(targetMap) {
-    // Desktop / Mouse
-    targetMap.on('mousedown', (e) => {
-        if (currentMode === 'measure') {
-            isMeasuring = true;
-            currentRoutePoints = [e.latlng];
-            if (measureLine) targetMap.removeLayer(measureLine);
-            if (measurePopup) targetMap.removeLayer(measurePopup);
-        }
-    });
-    targetMap.on('mouseup', (e) => {
-        if (currentMode === 'measure') {
-            isMeasuring = false;
-        }
-    });
-
-    // Mobile / Touch handling via DOM events on container
-    const container = targetMap.getContainer();
-    container.addEventListener('touchstart', (e) => {
-        if (currentMode === 'measure' && e.touches.length === 1) {
-            isMeasuring = true;
-            const latlng = targetMap.mouseEventToLatLng(e.touches[0]);
-            currentRoutePoints = [latlng];
-            if (measureLine) targetMap.removeLayer(measureLine);
-            if (measurePopup) targetMap.removeLayer(measurePopup);
-        }
-    }, {passive: false});
-
-    container.addEventListener('touchmove', (e) => {
-        if (currentMode === 'measure' && isMeasuring && e.touches.length === 1) {
-            e.preventDefault(); // Prevent browser scrolling
-            const latlng = targetMap.mouseEventToLatLng(e.touches[0]);
-            // Simulate mousemove for drawing logic
-            const evt = { latlng: latlng };
-            handleMapMouseMove(evt); 
-        }
-    }, {passive: false});
-
-    container.addEventListener('touchend', (e) => {
-        if (currentMode === 'measure') {
-            isMeasuring = false;
-        }
-    });
-}
 
 function handleMapDoubleClick(e) {
     if (currentMode === 'draw_route' && currentRoutePoints.length > 0) {

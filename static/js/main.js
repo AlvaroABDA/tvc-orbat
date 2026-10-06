@@ -2207,10 +2207,7 @@ function initMorteroLeaflet() {
         }
     });
     
-    // Add setupMeasurementDragging
-    if (typeof setupMeasurementDragging !== 'undefined') {
-        setupMeasurementDragging(morteroMap);
-    }
+    
 
     // Click to place battery
     morteroMap.on('click', (e) => {
