@@ -888,8 +888,8 @@ select option { color: #000; background: #fff; }
         padding: 15px;
     }
     
-    /* 4. Fix ORBAT and Map Layout on Mobile */
-    #view-orbat, #view-mapa {
+        /* 4. Fix ORBAT Layout on Mobile */
+    #view-orbat {
         flex-direction: column !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
@@ -901,7 +901,7 @@ select option { color: #000; background: #fff; }
         min-height: 50vh !important;
     }
 
-    .sidebar-panel {
+    #view-orbat .sidebar-panel {
         width: 100% !important;
         min-width: 100% !important;
         flex: none !important;
@@ -916,28 +916,68 @@ select option { color: #000; background: #fff; }
         padding: 0.5rem !important;
     }
     
-    /* Make map take remaining space */
-    #map {
-        flex: 1 !important;
-        width: 100% !important;
-        min-height: 50vh !important;
+    /* 5. Map Fullscreen with floating HUD */
+    #view-mapa {
+        display: block !important;
+        position: relative !important;
     }
     
-    /* 5. ORBAT Cards Vertical Stack */
+    #map {
+        position: absolute !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 1 !important;
+    }
+    
+    #view-mapa .sidebar-panel {
+        position: absolute !important;
+        bottom: 10px !important;
+        left: 10px !important;
+        width: calc(100% - 20px) !important;
+        min-width: 0 !important;
+        height: 35vh !important;
+        z-index: 1000 !important;
+        background: rgba(20,20,20,0.9) !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 0 10px rgba(0,0,0,0.5) !important;
+        overflow-y: auto !important;
+    }
+    
+    #view-mapa .sidebar-panel > div {
+        padding: 0.5rem !important;
+    }
+    
+    /* 6. ORBAT Cards Vertical Stack and Shrink */
     .orbat-tree-container {
         flex-direction: column !important; /* Stack vertically instead of horizontally */
-        gap: 15px !important;
+        gap: 5px !important;
         padding: 5px !important;
         align-items: stretch !important; /* Make cards take full width */
     }
     
     .mando-section {
         width: 100% !important;
-        margin-bottom: 1rem !important;
+        margin-bottom: 0.5rem !important;
     }
     
     .squad-column {
         width: 100% !important;
         min-width: 100% !important;
     }
+    
+    /* Shrink elements */
+    .grupo-header { padding: 0.2rem 0.5rem !important; }
+    .grupo-nombre { font-size: 0.85rem !important; }
+    .grupo-pax { font-size: 0.85rem !important; padding: 1px 4px !important; }
+    .grupo-body { padding: 0.2rem !important; gap: 0.2rem !important; }
+    .grupo-logo { width: 35px !important; height: 35px !important; }
+    .editable-field { font-size: 0.7rem !important; }
+    .editable-field input, .editable-field select { font-size: 0.7rem !important; padding: 0.1rem 0.2rem !important; height: auto !important; }
+    .equipo-card { padding: 0.25rem 0.5rem !important; font-size: 0.75rem !important; margin-bottom: 0.2rem !important; }
+    .droppable-area { padding: 0.2rem !important; min-height: 25px !important; }
 }
