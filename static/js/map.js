@@ -158,11 +158,11 @@ function initMap() {
     map.on('contextmenu', handleMapRightClick); 
 
     if (['admin', 'mando', 'equipo'].includes(window.userRole)) {
-        document.getElementById('btn-draw-route').addEventListener('click', () => setMode('draw_route'));
-        document.getElementById('btn-draw-zone').addEventListener('click', () => setMode('draw_zone'));
-        document.getElementById('btn-measure').addEventListener('click', () => setMode('measure'));
-        document.getElementById('btn-add-marker').addEventListener('click', () => setMode('add_marker'));
-        document.getElementById('btn-add-tl-marker').addEventListener('click', () => setMode('add_tl_marker'));
+        document.getElementById('btn-draw-route')?.addEventListener('click', () => setMode('draw_route'));
+        document.getElementById('btn-draw-zone')?.addEventListener('click', () => setMode('draw_zone'));
+        document.getElementById('btn-measure')?.addEventListener('click', () => setMode('measure'));
+        document.getElementById('btn-add-marker')?.addEventListener('click', () => setMode('add_marker'));
+        document.getElementById('btn-add-tl-marker')?.addEventListener('click', () => setMode('add_tl_marker'));
         const btnPoiMap = document.getElementById('btn-add-poi-map');
         if(btnPoiMap) btnPoiMap.addEventListener('click', () => setMode('add_poi_map'));
         
@@ -185,17 +185,17 @@ function initMap() {
 
 function setMode(mode) {
     currentMode = mode;
-    document.getElementById('btn-draw-route').classList.remove('active');
+    document.getElementById('btn-draw-route')?.classList.remove('active');
     const drawZoneBtn = document.getElementById('btn-draw-zone');
     if (drawZoneBtn) drawZoneBtn.classList.remove('active');
-    document.getElementById('btn-measure').classList.remove('active');
-    document.getElementById('btn-add-marker').classList.remove('active');
+    document.getElementById('btn-measure')?.classList.remove('active');
+    document.getElementById('btn-add-marker')?.classList.remove('active');
 
-    if (mode === 'draw_route') document.getElementById('btn-draw-route').classList.add('active');
+    if (mode === 'draw_route') document.getElementById('btn-draw-route')?.classList.add('active');
     if (mode === 'draw_zone' && drawZoneBtn) drawZoneBtn.classList.add('active');
-    if (mode === 'measure') document.getElementById('btn-measure').classList.add('active');
-    if (mode === 'add_marker') document.getElementById('btn-add-marker').classList.add('active');
-    if (mode === 'add_tl_marker') document.getElementById('btn-add-tl-marker').classList.add('active');
+    if (mode === 'measure') document.getElementById('btn-measure')?.classList.add('active');
+    if (mode === 'add_marker') document.getElementById('btn-add-marker')?.classList.add('active');
+    if (mode === 'add_tl_marker') document.getElementById('btn-add-tl-marker')?.classList.add('active');
     const btnPoiMap = document.getElementById('btn-add-poi-map');
     if (btnPoiMap) btnPoiMap.classList.remove('active');
     if (mode === 'add_poi_map' && btnPoiMap) btnPoiMap.classList.add('active');

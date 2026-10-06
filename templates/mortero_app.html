@@ -195,13 +195,7 @@
     </script>
     <script src="{{ url_for('static', filename='js/map.js') }}?v=52"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}?v=52"></script>
-    <script>
-        // Force the app to initialize the mortar directly
-        window.addEventListener('DOMContentLoaded', () => {
-            if(typeof initMorteroMap === 'function') {
-                setTimeout(initMorteroMap, 200); // Give it some time to layout
-            }
-        });
+
 
         // Fullscreen Toggle
         function toggleFullScreen() {
