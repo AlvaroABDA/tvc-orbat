@@ -106,6 +106,9 @@
                     </select>
                     {% endif %}
                     <div id="mortero-status" style="padding: 5px 15px; border-radius: 5px; font-weight: bold; background: #4CAF50; color: white;">OPERATIVO</div>
+                    <button class="btn-volver" onclick="document.getElementById('modal-instrucciones-mortero').style.display='flex'" title="Instrucciones">
+                        <span class="material-symbols-outlined">help</span>
+                    </button>
                     <button class="btn-volver" onclick="toggleFullScreen()" title="Pantalla Completa">
                         <span class="material-symbols-outlined">fullscreen</span>
                     </button>
@@ -186,6 +189,20 @@
         </div>
     </section>
 
+    <!-- Modal Instrucciones Mortero -->
+    <div id="modal-instrucciones-mortero" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:var(--font-main);">
+        <div style="background:#222; border:1px solid #555; border-radius:8px; padding:20px; max-width:400px; width:90%; position:relative;">
+            <button onclick="document.getElementById('modal-instrucciones-mortero').style.display='none'" style="position:absolute; right:10px; top:10px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+            <h3 style="margin-top:0; color:var(--theme-color);">CÓMO USAR EL MORTERO</h3>
+            <ul style="padding-left:20px; line-height:1.6; font-size:0.95rem;">
+                <li><b>1. Despliegue:</b> Introduce la cuadrícula donde está la batería (ej. <i>AP 45 C</i>) y pulsa DESPLEGAR.</li>
+                <li><b>2. Tracking:</b> Pasa el dedo o el ratón por el mapa para ver coordenadas en el HUD verde. Usa la cruceta (D-PAD) para apuntar con precisión.</li>
+                <li><b>3. Fuego:</b> Introduce el Azimut (dirección) y la Elevación (distancia). Pulsa FUEGO cuando la barra esté lista.</li>
+                <li><b>Nota:</b> Usa los botones + y - para hacer zoom en el mapa y mejorar la precisión del apuntado.</li>
+            </ul>
+        </div>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
     <script>
         window.onerror = function(msg, url, lineNo, columnNo, error) {
@@ -197,15 +214,24 @@
     <script src="{{ url_for('static', filename='js/main.js') }}?v=52"></script>
 
 
-        // Fullscreen Toggle
+        // Fullscreen Toggle robusto
         function toggleFullScreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log("Error intentando activar pantalla completa:", err);
-                });
+            let elem = document.documentElement;
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(err => console.log("Error fullscreen:", err));
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
             } else {
                 if (document.exitFullscreen) {
                     document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
                 }
             }
         }

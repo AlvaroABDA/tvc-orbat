@@ -249,7 +249,10 @@
                 </div>
                 {% endif %}
                 <div style="padding: 1rem; border-top: 1px solid var(--border-color); margin-top: auto;">
-                    <h3 style="margin-bottom: 1rem; font-size: 0.9rem;">Herramientas</h3>
+                    <h3 style="margin-bottom: 1rem; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;">
+                        Herramientas
+                        <button class="btn secondary" onclick="document.getElementById('modal-instrucciones-mapa').style.display='flex'" style="padding: 2px 8px; font-size: 0.8rem; border-radius: 4px; border: 1px solid #555;" title="Instrucciones">?</button>
+                    </h3>
                     <button id="btn-draw-route" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">timeline</span> <span class="btn-text">Trazar Ruta</span></button>
                     <button id="btn-draw-zone" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">polyline</span> <span class="btn-text">Trazar Zona</span></button>
                     <button id="btn-measure" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">straighten</span> <span class="btn-text">Medir (50m)</span></button>
@@ -1003,5 +1006,20 @@
     <script src="{{ url_for('static', filename='js/map.js') }}?v=20"></script>
         </div>
     </div>
+    <!-- Modal Instrucciones Mapa Táctico -->
+    <div id="modal-instrucciones-mapa" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:var(--font-main);">
+        <div style="background:#222; border:1px solid #555; border-radius:8px; padding:20px; max-width:400px; width:90%; position:relative;">
+            <button onclick="document.getElementById('modal-instrucciones-mapa').style.display='none'" style="position:absolute; right:10px; top:10px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+            <h3 style="margin-top:0; color:var(--theme-color);">HERRAMIENTAS TÁCTICAS</h3>
+            <ul style="padding-left:20px; line-height:1.6; font-size:0.95rem;">
+                <li><b>Trazar Ruta:</b> Haz clic en el mapa para marcar puntos de una ruta. Termina pulsando el botón rojo de Guardar en la parte superior central.</li>
+                <li><b>Trazar Zona:</b> Dibuja un polígono para marcar un área en el mapa. Asignale un nombre y un color.</li>
+                <li><b>Medir (50m):</b> Dibuja una línea entre dos puntos para conocer la distancia (en metros y yardas). La escala es 1 cuadrícula = 50x50 metros.</li>
+                <li><b>Añadir Intel:</b> Selecciona un tipo de marca (amenaza enemiga) y clica en el mapa para informar de ella a toda tu facción.</li>
+                <li><b>Mi Posición (TL):</b> Al pulsarlo, crearás o actualizarás tu propia posición en el mapa para que el resto de tu equipo pueda verte.</li>
+            </ul>
+        </div>
+    </div>
+
 </body>
 </html>

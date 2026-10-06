@@ -84,7 +84,8 @@
     </style>
 </head>
 <body>
-    <div class="header">
+    <div class="header" style="position: relative;">
+        <button onclick="document.getElementById('modal-instrucciones-imint').style.display='flex'" style="position: absolute; left: 15px; top: 15px; background: transparent; border: 1px solid #555; color: #fff; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-weight: bold;" title="Instrucciones">?</button>
         <h1>SISTEMA IMINT</h1>
         <p>OP: {{ poi.nombre }}</p>
     </div>
@@ -340,5 +341,19 @@
             }
         }
     </script>
+
+    <!-- Modal Instrucciones IMINT -->
+    <div id="modal-instrucciones-imint" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:var(--font-main);">
+        <div style="background:#222; border:1px solid #555; border-radius:8px; padding:20px; max-width:400px; width:90%; position:relative;">
+            <button onclick="document.getElementById('modal-instrucciones-imint').style.display='none'" style="position:absolute; right:10px; top:10px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
+            <h3 style="margin-top:0; color:#fff;">INSTRUCCIONES IMINT</h3>
+            <ul style="padding-left:20px; line-height:1.6; font-size:0.95rem;">
+                <li><b>1. Selección:</b> Revisa las fotografías y pulsa en la que creas que contiene al objetivo buscado.</li>
+                <li><b>2. Análisis:</b> Observa los detalles con atención. Puedes hacer zoom en la imagen deslizando el dedo o usando el botón de ampliación del móvil para buscar detalles del objetivo.</li>
+                <li><b>3. Confirmación:</b> Si estás seguro de que es el objetivo, pulsa <b>AUTORIZAR OBJETIVO</b>.</li>
+                <li><b>Atención:</b> Si fallas al autorizar, el sistema entrará en cooldown y perderás temporalmente la conexión con este OP.</li>
+            </ul>
+        </div>
+    </div>
 </body>
 </html>
