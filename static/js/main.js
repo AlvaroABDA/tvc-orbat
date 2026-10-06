@@ -2200,7 +2200,17 @@ function initMorteroLeaflet() {
         if (hoverCoord && typeof getGridCoordinate !== 'undefined') {
             hoverCoord.innerText = getGridCoordinate(e.latlng.lat, e.latlng.lng);
         }
+        
+        // Propagate to map.js for measuring
+        if (typeof handleMapMouseMove !== 'undefined') {
+            handleMapMouseMove(e);
+        }
     });
+    
+    // Add setupMeasurementDragging
+    if (typeof setupMeasurementDragging !== 'undefined') {
+        setupMeasurementDragging(morteroMap);
+    }
 
     // Click to place battery
     morteroMap.on('click', (e) => {

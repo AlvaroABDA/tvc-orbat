@@ -45,6 +45,7 @@ let groupMarkers = {};
 let currentMode = 'pan'; // pan, draw_route, measure, add_marker
 let tempPolyline = null;
 let measureLine = null;
+let isMeasuring = false;
 let measurePopup = null;
 let currentRoutePoints = [];
 let currentZonePoints = [];
@@ -153,6 +154,7 @@ function initMap() {
 
     // Interaction handling
     map.on('click', handleMapClick);
+    setupMeasurementDragging(map);
     map.on('mousemove', handleMapMouseMove);
     map.on('dblclick', handleMapDoubleClick); 
     map.on('contextmenu', handleMapRightClick); 
@@ -631,14 +633,6 @@ function handleMapClick(e) {
             map.removeLayer(tempPolygon);
         }
         tempPolygon = L.polygon(currentZonePoints, {color: getFactionColor(), weight: 3, opacity: 0.8, fillColor: getFactionColor(), fillOpacity: 0.4}).addTo(map);
-    } 
-    else if (currentMode === 'measure') {
-        if (currentRoutePoints.length === 0) {
-            currentRoutePoints.push(e.latlng);
-        } else {
-            // End of measurement
-            setMode('pan'); // Reset everything (clears lines)
-        }
     }
 }
 
@@ -659,12 +653,13 @@ function handleMapMouseMove(e) {
         if (tempPolygon) map.removeLayer(tempPolygon);
         tempPolygon = L.polygon([...currentZonePoints, e.latlng], {color: getFactionColor(), weight: 3, opacity: 0.8, fillColor: getFactionColor(), fillOpacity: 0.4}).addTo(map);
     }
-    if (currentMode === 'measure' && currentRoutePoints.length === 1) {
-        if (measureLine) map.removeLayer(measureLine);
+    if (currentMode === 'measure' && isMeasuring && currentRoutePoints.length === 1) {
+        let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
+        if (measureLine) targetMap.removeLayer(measureLine);
         
         const p1 = currentRoutePoints[0];
         const p2 = e.latlng;
-        measureLine = L.polyline([p1, p2], {color: '#ffff00', weight: 4, dashArray: '5, 5'}).addTo(map);
+        measureLine = L.polyline([p1, p2], {color: '#ffff00', weight: 4, dashArray: '5, 5'}).addTo(targetMap);
         
         // Calibration: User noted 16m was actually 50m. 
         // Previously: pxDist = 32 pixels => 16m formula => pxDist/100 * 50 = 16 => pxDist = 32.
@@ -674,12 +669,44 @@ function handleMapMouseMove(e) {
         const pixelsPerGrid = 32; 
         const meters = (pxDist / pixelsPerGrid) * 50;
 
-        if (measurePopup) map.removeLayer(measurePopup);
+        if (measurePopup) targetMap.removeLayer(measurePopup);
+        
         measurePopup = L.popup({closeButton: false, autoClose: false, className: 'measure-popup'})
             .setLatLng(p2)
             .setContent(`Distancia: ${meters.toFixed(0)}m`)
-            .openOn(map);
+            .openOn(targetMap);
     }
+}
+
+// Global mousedown/up for measuring dragging
+function setupMeasurementDragging(targetMap) {
+    targetMap.on('mousedown', (e) => {
+        if (currentMode === 'measure') {
+            isMeasuring = true;
+            currentRoutePoints = [e.latlng];
+            if (measureLine) targetMap.removeLayer(measureLine);
+            if (measurePopup) targetMap.removeLayer(measurePopup);
+        }
+    });
+    targetMap.on('mouseup', (e) => {
+        if (currentMode === 'measure') {
+            isMeasuring = false;
+        }
+    });
+    // Add touchstart and touchend specifically for mobile
+    targetMap.on('touchstart', (e) => {
+        if (currentMode === 'measure' && e.touches && e.touches.length === 1) {
+            isMeasuring = true;
+            currentRoutePoints = [e.latlng];
+            if (measureLine) targetMap.removeLayer(measureLine);
+            if (measurePopup) targetMap.removeLayer(measurePopup);
+        }
+    });
+    targetMap.on('touchend', (e) => {
+        if (currentMode === 'measure') {
+            isMeasuring = false;
+        }
+    });
 }
 
 function handleMapDoubleClick(e) {
