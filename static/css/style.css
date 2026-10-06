@@ -952,6 +952,28 @@ select option { color: #000; background: #fff; }
         padding: 0.5rem !important;
     }
     
+    
+    /* Hide map button texts on mobile and make them inline */
+    #view-mapa .sidebar-panel > div {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 5px !important;
+        padding: 5px !important;
+    }
+    #view-mapa .sidebar-panel h3, #view-mapa .sidebar-panel hr {
+        display: none !important; /* Hide headers and dividers */
+    }
+    #view-mapa .sidebar-panel button {
+        width: auto !important;
+        flex: 1 1 auto !important;
+        justify-content: center !important;
+        padding: 5px 10px !important;
+    }
+    #view-mapa .sidebar-panel .btn-text {
+        display: none !important;
+    }
+
     /* 6. ORBAT Cards Vertical Stack and Shrink */
     .orbat-tree-container {
         flex-direction: column !important; /* Stack vertically instead of horizontally */

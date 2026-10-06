@@ -458,7 +458,7 @@ function renderCard(g, isMando, totalFactionPax = 0) {
         <div class="grupo-drop-zones mando-mision-zone" style="margin-top: 1rem; width: 100%; grid-template-columns: 1fr;">
             <div class="droppable-area-wrapper misiones-zone" style="width: 100%;">
                 <div class="zone-label">Contexto Operacional (Misión Global)</div>
-                <div class="droppable-area" data-grupo-id="${g.id}" data-type="mision" style="min-height: 80px;">
+                <div class="droppable-area" style="cursor:pointer;" onclick="openAssignModal('${g.id}', 'mision')" data-grupo-id="${g.id}" data-type="mision" style="min-height: 80px;">
                     ${assignedMissionHtml}
                 </div>
             </div>
@@ -467,9 +467,9 @@ function renderCard(g, isMando, totalFactionPax = 0) {
         <div class="grupo-drop-zones">
             <div class="droppable-area-wrapper equipos-zone">
                 <div class="zone-label">Equipos (${teamsInGroup.length})</div>
-                <div class="droppable-area" data-grupo-id="${g.id}" data-type="equipo">
+                <div class="droppable-area" style="cursor:pointer;" onclick="openAssignModal('${g.id}', 'equipo')" data-grupo-id="${g.id}" data-type="equipo">
                     ${teamsInGroup.map(t => `
-                        <div class="equipo-card" draggable="true" data-equipo-id="${t.equipo_id}">
+                        <div class="equipo-card" data-equipo-id="${t.equipo_id}" onclick="unassignItem(event, 'equipo', '${t.equipo_id}', '${g.id}')">
                             <div>
                                 <strong>${t.equipo_nombre}</strong>
                                 <div class="equipo-details">Rol Preferido: ${todosEquipos.find(e => e.id === t.equipo_id)?.tipo || 'N/A'}</div>
@@ -483,7 +483,7 @@ function renderCard(g, isMando, totalFactionPax = 0) {
             
             <div class="droppable-area-wrapper misiones-zone">
                 <div class="zone-label">Misión Activa</div>
-                <div class="droppable-area" data-grupo-id="${g.id}" data-type="mision">
+                <div class="droppable-area" style="cursor:pointer;" onclick="openAssignModal('${g.id}', 'mision')" data-grupo-id="${g.id}" data-type="mision">
                     ${assignedMissionHtml}
                 </div>
             </div>
@@ -575,7 +575,7 @@ function renderUnassigned() {
 
     unassigned.forEach(eq => {
         unassignedContainer.innerHTML += `
-            <div class="equipo-card" draggable="true" data-equipo-id="${eq.id}">
+            <div class="equipo-card" data-equipo-id="${eq.id}" onclick="unassignItem(event, 'equipo', '${eq.id}', null)">
                 <div>
                     <strong>${eq.nombre}</strong>
                     <div class="equipo-details">Perfil: ${eq.tipo}</div>
@@ -680,7 +680,103 @@ function initInlineEditing() {
 // --- DRAG AND DROP ---
 let draggedItem = null;
 
+
+function openAssignModal(grupoId, type) {
+    if (window.userRole !== 'admin') return;
+    
+    let optionsHTML = '<option value="">-- Seleccionar --</option>';
+    if (type === 'equipo') {
+        window.todosEquipos.forEach(eq => {
+            let isAssigned = window.todasAsignaciones.some(a => a.equipo_id === eq.id);
+            if (!isAssigned) {
+                optionsHTML += `<option value="${eq.id}">${eq.nombre}</option>`;
+            }
+        });
+    } else {
+        window.misiones.forEach(m => {
+            let isAssigned = window.todosGrupos.some(g => g.mision_actual_id === m.id);
+            if (!isAssigned || m.persistente) {
+                optionsHTML += `<option value="${m.id}">${m.tipo} - ${m.cuadricula}</option>`;
+            }
+        });
+    }
+    
+    let assignOverlay = document.getElementById('assign-overlay-quick');
+    if (!assignOverlay) {
+        assignOverlay = document.createElement('div');
+        assignOverlay.id = 'assign-overlay-quick';
+        assignOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.8);z-index:9999;display:flex;align-items:center;justify-content:center;';
+        document.body.appendChild(assignOverlay);
+    }
+    
+    assignOverlay.innerHTML = `
+        <div style="background:#1e1e1e; padding: 20px; border-radius: 8px; border: 2px solid var(--theme-color); width: 90%; max-width: 400px; display:flex; flex-direction:column; gap: 15px;">
+            <h3 style="margin:0; text-align:center; color: var(--theme-color);">Asignar ${type === 'equipo' ? 'Unidad' : 'Misión'}</h3>
+            <select id="assign-select-quick" style="padding:10px; background:#000; color:#fff; border:1px solid var(--theme-color); font-size:1.1rem; border-radius: 4px;">
+                ${optionsHTML}
+            </select>
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top: 10px;">
+                <button class="btn secondary" onclick="document.getElementById('assign-overlay-quick').style.display='none'">Cancelar</button>
+                <button class="btn primary" id="btn-confirm-assign-quick">Confirmar</button>
+            </div>
+        </div>
+    `;
+    assignOverlay.style.display = 'flex';
+    
+    document.getElementById('btn-confirm-assign-quick').onclick = async () => {
+        const val = document.getElementById('assign-select-quick').value;
+        if (!val) return;
+        
+        assignOverlay.style.display = 'none';
+        
+        if (type === 'equipo') {
+            await fetch('/api/orbat/assign', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ equipo_id: val, grupo_batalla_id: grupoId === 'null' ? null : grupoId })
+            });
+        } else {
+            if (grupoId !== 'null') {
+                await fetch(`/api/orbat/grupo/${grupoId}`, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ mision_actual_id: val })
+                });
+            }
+        }
+        await loadORBAT();
+        if (typeof initMortero === 'function') initMortero();
+    };
+}
+
+function unassignItem(e, type, id, grupoId) {
+    e.stopPropagation();
+    if (window.userRole !== 'admin') return;
+    if (confirm('¿Quitar asignación?')) {
+        if (type === 'equipo') {
+            fetch('/api/orbat/assign', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ equipo_id: id, grupo_batalla_id: null })
+            }).then(() => {
+                loadORBAT();
+                if (typeof initMortero === 'function') initMortero();
+            });
+        } else {
+            fetch(`/api/orbat/grupo/${grupoId}`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ mision_actual_id: "" })
+            }).then(() => {
+                loadORBAT();
+                if (typeof initMortero === 'function') initMortero();
+            });
+        }
+    }
+}
+
 function initDragAndDrop() {
+
     if (window.userRole !== 'admin') {
         document.querySelectorAll('[draggable="true"]').forEach(el => el.removeAttribute('draggable'));
         return;
