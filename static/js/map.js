@@ -162,7 +162,13 @@ function initMap() {
     if (['admin', 'mando', 'equipo'].includes(window.userRole) || window.location.pathname === '/mortero_app') {
         document.getElementById('btn-draw-route')?.addEventListener('click', () => setMode('draw_route'));
         document.getElementById('btn-draw-zone')?.addEventListener('click', () => setMode('draw_zone'));
-        document.getElementById('btn-measure')?.addEventListener('click', () => setMode('measure'));
+        document.getElementById('btn-measure')?.addEventListener('click', () => {
+            if (typeof currentMode !== 'undefined' && currentMode === 'measure') {
+                setMode('pan');
+            } else {
+                setMode('measure');
+            }
+        });
         document.getElementById('btn-add-marker')?.addEventListener('click', () => setMode('add_marker'));
         document.getElementById('btn-add-tl-marker')?.addEventListener('click', () => setMode('add_tl_marker'));
         const btnPoiMap = document.getElementById('btn-add-poi-map');
@@ -661,15 +667,7 @@ function handleMapClick(e) {
             const flagIcon = L.divIcon({ className: 'measure-flag', html: flagHtml, iconSize: null, iconAnchor: [-10, 15] });
             measurePopup = L.marker(p2, { icon: flagIcon, interactive: false }).addTo(targetMap);
                 
-            if (window.measureTimeout) clearTimeout(window.measureTimeout);
-            window.measureTimeout = setTimeout(() => {
-                if (measureLine) targetMap.removeLayer(measureLine);
-                if (measurePopup) targetMap.removeLayer(measurePopup);
-                if (currentMode === 'measure') {
-                    currentRoutePoints = [];
-                    setMode('pan');
-                }
-            }, 5000);
+            
         }
     }
     else if (currentMode === 'draw_zone') {

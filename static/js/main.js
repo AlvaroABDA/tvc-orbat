@@ -2214,7 +2214,13 @@ function initMorteroLeaflet() {
     const btnMeasureMortero = document.getElementById('btn-measure');
     if (btnMeasureMortero) {
         btnMeasureMortero.addEventListener('click', () => {
-            if (typeof setMode === 'function') setMode('measure');
+            if (typeof setMode === 'function') {
+                if (typeof currentMode !== 'undefined' && currentMode === 'measure') {
+                    setMode('pan');
+                } else {
+                    setMode('measure');
+                }
+            }
         });
     }
 
