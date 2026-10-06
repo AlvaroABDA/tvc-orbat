@@ -2063,6 +2063,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // --- MORTERO (LEAFLET REWRITE) ---
 let morteroMap = null;
 let morteroBatteryMarker = null;
+let morteroCursorMarker = null;
 let morteroAuth = false;
 let pendingBatteryLat = null;
 let pendingBatteryLng = null;
@@ -2159,6 +2160,22 @@ function initMortero() {
 }
 
 
+
+const cursorIcon = L.divIcon({
+    className: 'custom-cursor-icon',
+    html: `
+    <div style="position: relative; width: 24px; height: 24px;">
+        <div style="position: absolute; width: 4px; height: 4px; background: red; top: 10px; left: 10px; border-radius: 50%;"></div>
+        <div style="position: absolute; width: 2px; height: 8px; background: red; top: 0; left: 11px;"></div>
+        <div style="position: absolute; width: 2px; height: 8px; background: red; bottom: 0; left: 11px;"></div>
+        <div style="position: absolute; width: 8px; height: 2px; background: red; top: 11px; left: 0;"></div>
+        <div style="position: absolute; width: 8px; height: 2px; background: red; top: 11px; right: 0;"></div>
+    </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+});
+
 const batteryIcon = L.divIcon({
     className: 'custom-battery-icon',
     html: `
@@ -2220,10 +2237,10 @@ function initMorteroLeaflet() {
         pendingBatteryLat = e.latlng.lat;
         pendingBatteryLng = e.latlng.lng;
         
-        if (morteroBatteryMarker) {
-            morteroBatteryMarker.setLatLng(e.latlng);
+        if (morteroCursorMarker) {
+            morteroCursorMarker.setLatLng(e.latlng);
         } else {
-            morteroBatteryMarker = L.marker(e.latlng, { icon: batteryIcon }).addTo(morteroMap);
+            morteroCursorMarker = L.marker(e.latlng, { icon: cursorIcon }).addTo(morteroMap);
         }
         
         const display = document.getElementById('mortero_coord_display');
@@ -2278,6 +2295,8 @@ async function refreshMorteroState() {
             if (typeof getGridCoordinate !== 'undefined') {
                 document.getElementById('mortero_coord_display').value = getGridCoordinate(data.lat, data.lng);
             }
+        } else {
+            morteroBatteryMarker.setLatLng([data.lat, data.lng]);
         }
     }
 
