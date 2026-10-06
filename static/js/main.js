@@ -2211,6 +2211,12 @@ function initMorteroLeaflet() {
 
     // Click to place battery
     morteroMap.on('click', (e) => {
+        if (typeof currentMode !== 'undefined' && currentMode === 'measure') {
+            if (typeof handleMapClick === 'function') {
+                handleMapClick(e);
+            }
+            return;
+        }
         pendingBatteryLat = e.latlng.lat;
         pendingBatteryLng = e.latlng.lng;
         

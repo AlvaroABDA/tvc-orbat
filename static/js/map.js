@@ -159,7 +159,7 @@ function initMap() {
     map.on('dblclick', handleMapDoubleClick); 
     map.on('contextmenu', handleMapRightClick); 
 
-    if (['admin', 'mando', 'equipo'].includes(window.userRole)) {
+    if (['admin', 'mando', 'equipo'].includes(window.userRole) || window.location.pathname === '/mortero_app') {
         document.getElementById('btn-draw-route')?.addEventListener('click', () => setMode('draw_route'));
         document.getElementById('btn-draw-zone')?.addEventListener('click', () => setMode('draw_zone'));
         document.getElementById('btn-measure')?.addEventListener('click', () => setMode('measure'));
@@ -296,7 +296,7 @@ async function loadMapData() {
 
         intel.bindTooltip(m.descripcion, { permanent: false, direction: 'right', className: isTL ? 'tl-tooltip' : '' });
 
-        if (['admin', 'mando', 'equipo'].includes(window.userRole)) {
+        if (['admin', 'mando', 'equipo'].includes(window.userRole) || window.location.pathname === '/mortero_app') {
             intel.on('dragend', async (e) => {
                 const pos = e.target.getLatLng();
                 await fetch(`/api/mapa/marcadores/${m.id}`, {
@@ -525,7 +525,7 @@ function renderRouteOnMap(pts, color, id) {
     }
 
     // Right click or Double Click to delete route
-    if (['admin', 'mando', 'equipo'].includes(window.userRole)) {
+    if (['admin', 'mando', 'equipo'].includes(window.userRole) || window.location.pathname === '/mortero_app') {
         const deleteRoute = async () => {
             if(confirm('¿Borrar esta ruta?')) {
                 await fetch(`/api/mapa/rutas/${id}`, { method: 'DELETE' });
@@ -635,6 +635,7 @@ function handleMapClick(e) {
             let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
             if (measureLine) targetMap.removeLayer(measureLine);
             if (measurePopup) targetMap.removeLayer(measurePopup);
+            if (window.measureTimeout) clearTimeout(window.measureTimeout);
         } else if (currentRoutePoints.length === 1) {
             // Second point, finish measurement
             currentRoutePoints.push(e.latlng);
@@ -652,6 +653,16 @@ function handleMapClick(e) {
                 .setLatLng(p2)
                 .setContent(`Distancia: ${meters.toFixed(0)}m`)
                 .openOn(targetMap);
+                
+            if (window.measureTimeout) clearTimeout(window.measureTimeout);
+            window.measureTimeout = setTimeout(() => {
+                if (measureLine) targetMap.removeLayer(measureLine);
+                if (measurePopup) targetMap.removeLayer(measurePopup);
+                if (currentMode === 'measure') {
+                    currentRoutePoints = [];
+                    setMode('pan');
+                }
+            }, 5000);
         }
     }
     else if (currentMode === 'draw_zone') {
@@ -768,7 +779,7 @@ function renderZoneOnMap(pts, color, name, id) {
         fillOpacity: 0.4
     }).addTo(map);
 
-    if (['admin', 'mando', 'equipo'].includes(window.userRole)) {
+    if (['admin', 'mando', 'equipo'].includes(window.userRole) || window.location.pathname === '/mortero_app') {
         const deleteZone = async (e) => {
             if (e && e.originalEvent) e.originalEvent.preventDefault();
             if(confirm(`¿Borrar zona ${name || 'sin nombre'}?`)) {
