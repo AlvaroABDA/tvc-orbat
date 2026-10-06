@@ -649,10 +649,9 @@ function handleMapClick(e) {
             const pixelsPerGrid = 32; 
             const meters = (pxDist / pixelsPerGrid) * 50;
             
-            measurePopup = L.popup({closeButton: false, autoClose: false, className: 'measure-popup'})
-                .setLatLng(p2)
-                .setContent(`Distancia: ${meters.toFixed(0)}m`)
-                .openOn(targetMap);
+            const flagHtml = `<div style="background: rgba(0,0,0,0.8); color: #ffff00; padding: 5px 10px; border: 1px solid #ffff00; font-family: var(--font-mono); font-weight: bold; font-size: 1.1rem; white-space: nowrap; border-radius: 4px;">Distancia: ${meters.toFixed(0)}m</div>`;
+            const flagIcon = L.divIcon({ className: 'measure-flag', html: flagHtml, iconSize: null, iconAnchor: [-10, 15] });
+            measurePopup = L.marker(p2, { icon: flagIcon, interactive: false }).addTo(targetMap);
                 
             if (window.measureTimeout) clearTimeout(window.measureTimeout);
             window.measureTimeout = setTimeout(() => {
@@ -709,10 +708,9 @@ function handleMapMouseMove(e) {
 
         if (measurePopup) targetMap.removeLayer(measurePopup);
         
-        measurePopup = L.popup({closeButton: false, autoClose: false, className: 'measure-popup'})
-            .setLatLng(p2)
-            .setContent(`Distancia: ${meters.toFixed(0)}m`)
-            .openOn(targetMap);
+        const flagHtml = `<div style="background: rgba(0,0,0,0.8); color: #ffff00; padding: 5px 10px; border: 1px solid #ffff00; font-family: var(--font-mono); font-weight: bold; font-size: 1.1rem; white-space: nowrap; border-radius: 4px;">Distancia: ${meters.toFixed(0)}m</div>`;
+        const flagIcon = L.divIcon({ className: 'measure-flag', html: flagHtml, iconSize: null, iconAnchor: [-10, 15] });
+        measurePopup = L.marker(p2, { icon: flagIcon, interactive: false }).addTo(targetMap);
     }
 }
 

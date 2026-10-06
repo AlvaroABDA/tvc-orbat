@@ -2210,6 +2210,14 @@ function initMorteroLeaflet() {
     L.control.zoom({ position: 'topright' }).addTo(morteroMap);
     L.imageOverlay('/static/map/Full_Mapa%20Oct24.png', bounds).addTo(morteroMap);
     morteroMap.setView([1000, 1500], 0);
+    
+    const btnMeasureMortero = document.getElementById('btn-measure');
+    if (btnMeasureMortero) {
+        btnMeasureMortero.addEventListener('click', () => {
+            if (typeof setMode === 'function') setMode('measure');
+        });
+    }
+
 
     // Coordinate hover (Grid)
     morteroMap.on('mousemove', (e) => {
