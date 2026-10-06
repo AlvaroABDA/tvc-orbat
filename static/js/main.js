@@ -2996,3 +2996,89 @@ async function loadAdminArtilleriaLogs() {
 
 document.getElementById('btn-admin-refresh-art-log')?.addEventListener('click', loadAdminArtilleriaLogs);
 setTimeout(() => { if(typeof loadAdminArtilleriaLogs === 'function') loadAdminArtilleriaLogs(); }, 1200);
+
+
+// OPFOR Intel Slideshow Logic
+let opforSlides = [];
+let opforCurrentSlide = 0;
+
+function abrirOpfor() {
+    const modal = document.getElementById('modal-opfor');
+    if (!modal) return;
+    
+    if (!todosGrupos || todosGrupos.length === 0) {
+        alert("Aún no se han cargado los equipos.");
+        return;
+    }
+
+    // Determine OPFOR faction (any faction that is not currentFaction)
+    // We try to find the actual opposite faction based on teams available
+    let opforTeams = todosGrupos.filter(g => g.faccion_nombre && g.faccion_nombre !== currentFaction);
+    
+    // Some teams might not have foto_url, we only want ones with pictures
+    opforSlides = opforTeams.filter(g => g.foto_url && g.foto_url.trim() !== '');
+
+    let opforFactionName = "OPFOR";
+    let opforLogoUrl = "";
+    if (opforSlides.length > 0) {
+        opforFactionName = opforSlides[0].faccion_nombre;
+        opforLogoUrl = opforSlides[0].faccion_color || ''; // fallback if we don't have the logo easily
+        // Try to get faccion object to find logo if exists
+        if (typeof facciones !== 'undefined') {
+            const fObj = facciones.find(f => f.nombre === opforFactionName);
+            if (fObj && fObj.logo_url) opforLogoUrl = fObj.logo_url;
+        }
+    } else {
+        // Find OPFOR name even if no photos
+        const anyOpfor = opforTeams.find(g => g.faccion_nombre);
+        if (anyOpfor) opforFactionName = anyOpfor.faccion_nombre;
+    }
+
+    document.getElementById('opfor-faction-name').innerText = "OPFOR: " + opforFactionName;
+    const logoEl = document.getElementById('opfor-faction-logo');
+    if (opforLogoUrl && opforLogoUrl.includes('.')) {
+        logoEl.src = opforLogoUrl;
+        logoEl.style.display = 'block';
+    } else {
+        logoEl.style.display = 'none';
+    }
+
+    opforCurrentSlide = 0;
+    renderOpforSlide();
+    modal.style.display = 'flex';
+}
+
+function renderOpforSlide() {
+    const imgEl = document.getElementById('opfor-current-image');
+    const nameEl = document.getElementById('opfor-team-name');
+    const noIntelEl = document.getElementById('opfor-no-intel');
+
+    if (opforSlides.length === 0) {
+        imgEl.style.display = 'none';
+        nameEl.style.display = 'none';
+        noIntelEl.style.display = 'block';
+        return;
+    }
+
+    imgEl.style.display = 'block';
+    nameEl.style.display = 'block';
+    noIntelEl.style.display = 'none';
+
+    const slide = opforSlides[opforCurrentSlide];
+    imgEl.src = slide.foto_url;
+    nameEl.innerText = slide.nombre;
+}
+
+function opforPrevSlide() {
+    if (opforSlides.length <= 1) return;
+    opforCurrentSlide--;
+    if (opforCurrentSlide < 0) opforCurrentSlide = opforSlides.length - 1;
+    renderOpforSlide();
+}
+
+function opforNextSlide() {
+    if (opforSlides.length <= 1) return;
+    opforCurrentSlide++;
+    if (opforCurrentSlide >= opforSlides.length) opforCurrentSlide = 0;
+    renderOpforSlide();
+}

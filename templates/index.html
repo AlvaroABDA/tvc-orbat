@@ -256,6 +256,7 @@
                     <button id="btn-draw-route" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">timeline</span> <span class="btn-text">Trazar Ruta</span></button>
                     <button id="btn-draw-zone" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">polyline</span> <span class="btn-text">Trazar Zona</span></button>
                     <button id="btn-measure" class="btn secondary" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">straighten</span> <span class="btn-text">Medir (50m)</span></button>
+                    <button id="btn-opfor" class="btn outline" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;" onclick="abrirOpfor()"><span class="material-symbols-outlined" style="font-size: 1.2rem;">policy</span> <span class="btn-text">Intel OPFOR</span></button>
                     <button id="btn-add-marker" class="btn warning" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">warning</span> <span class="btn-text">Añadir Intel</span></button>
                     <button id="btn-add-tl-marker" class="btn primary" style="width: 100%; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">my_location</span> <span class="btn-text">Mi Posición (TL)</span></button>
                     {% if user_role == 'admin' %}
@@ -1021,5 +1022,47 @@
         </div>
     </div>
 
+
+    <!-- Modal OPFOR (IMINT) -->
+    <div id="modal-opfor" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; flex-direction:column; justify-content:center; align-items:center; color:white; font-family:var(--font-main);">
+        <div style="position:relative; width:95%; max-width:800px; height:85%; max-height:800px; border:1px solid #333; background:#0a0a0a; display:flex; flex-direction:column; overflow:hidden;">
+            <!-- Brackets -->
+            <div style="position:absolute; top:15px; left:15px; width:40px; height:40px; border-top:4px solid white; border-left:4px solid white; z-index:10;"></div>
+            <div style="position:absolute; top:15px; right:15px; width:40px; height:40px; border-top:4px solid white; border-right:4px solid white; z-index:10;"></div>
+            <div style="position:absolute; bottom:15px; left:15px; width:40px; height:40px; border-bottom:4px solid white; border-left:4px solid white; z-index:10;"></div>
+            <div style="position:absolute; bottom:15px; right:15px; width:40px; height:40px; border-bottom:4px solid white; border-right:4px solid white; z-index:10;"></div>
+
+            <div style="position:absolute; top:25px; left:0; width:100%; display:flex; justify-content:space-between; padding:0 40px; box-sizing:border-box; z-index:20;">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <img id="opfor-faction-logo" src="" style="height:40px; filter:grayscale(100%) brightness(200%); display:none;">
+                    <span id="opfor-faction-name" style="font-family:var(--font-mono); font-size:1.5rem; letter-spacing:2px; color:#ff3333; text-transform:uppercase;">OPFOR</span>
+                </div>
+                <div style="display:flex; gap: 20px; align-items:center;">
+                    <!-- Rec overlay -->
+                    <div style="color:red; font-family:var(--font-mono); font-size:1.2rem; display:flex; align-items:center; gap:5px;">
+                        <div style="width:12px; height:12px; background:red; border-radius:50%; animation: blink 1s infinite;"></div> REC
+                    </div>
+                    <button onclick="document.getElementById('modal-opfor').style.display='none'" style="background:none; border:none; color:white; font-size:2rem; cursor:pointer;">&times;</button>
+                </div>
+            </div>
+
+            <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; position:relative; padding:80px 30px 60px 30px;">
+                <div id="opfor-image-container" style="width:100%; height:100%; display:flex; justify-content:center; align-items:center; position:relative;">
+                    <div id="opfor-no-intel" style="display:none; font-family:var(--font-mono); font-size:1.2rem; color:#666;">NO HAY INTELIGENCIA DISPONIBLE</div>
+                    <img id="opfor-current-image" src="" style="max-width:100%; max-height:100%; object-fit:contain; filter: contrast(1.1) brightness(0.9); box-shadow: 0 0 30px rgba(0,0,0,0.8);">
+                </div>
+                
+                <div style="position:absolute; bottom:30px; left:0; width:100%; display:flex; justify-content:center; align-items:center; gap:20px; z-index:20;">
+                    <button onclick="opforPrevSlide()" class="btn outline" style="font-size:1.5rem; padding:5px 20px;">&#9664;</button>
+                    <div id="opfor-team-name" style="font-family:var(--font-mono); font-size:1.2rem; background:rgba(0,0,0,0.8); padding:5px 20px; border:1px solid #555; text-transform:uppercase; letter-spacing:1px;">EQUIPO</div>
+                    <button onclick="opforNextSlide()" class="btn outline" style="font-size:1.5rem; padding:5px 20px;">&#9654;</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } 100% { opacity: 1; } }
+    </style>
 </body>
+
 </html>
