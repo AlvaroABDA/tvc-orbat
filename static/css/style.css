@@ -887,4 +887,57 @@ select option { color: #000; background: #fff; }
         overflow-y: auto;
         padding: 15px;
     }
+    
+    /* 4. Fix ORBAT and Map Layout on Mobile */
+    #view-orbat, #view-mapa {
+        flex-direction: column !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+    
+    .orbat-content-wrapper {
+        flex: none !important;
+        height: auto !important;
+        min-height: 50vh !important;
+    }
+
+    .sidebar-panel {
+        width: 100% !important;
+        min-width: 100% !important;
+        flex: none !important;
+        height: auto !important;
+        max-height: 50vh !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-top: 2px solid var(--theme-color) !important;
+    }
+    
+    .sidebar-content {
+        padding: 0.5rem !important;
+    }
+    
+    /* Make map take remaining space */
+    #map {
+        flex: 1 !important;
+        width: 100% !important;
+        min-height: 50vh !important;
+    }
+    
+    /* 5. ORBAT Cards Vertical Stack */
+    .orbat-tree-container {
+        flex-direction: column !important; /* Stack vertically instead of horizontally */
+        gap: 15px !important;
+        padding: 5px !important;
+        align-items: stretch !important; /* Make cards take full width */
+    }
+    
+    .mando-section {
+        width: 100% !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .squad-column {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
 }
