@@ -1112,7 +1112,7 @@ function openModal(equipo = null) {
     document.getElementById('eq-nombre').value = equipo ? equipo.nombre : '';
     document.getElementById('eq-jugadores').value = equipo ? equipo.jugadores : '0 / 0';
     document.getElementById('eq-jugadores-manual').checked = equipo ? equipo.jugadores_manual : false;
-    document.getElementById('eq-tipo').value = equipo ? equipo.tipo : 'Infantería';
+    document.getElementById('eq-tipo').value = equipo ? equipo.tipo : 'GAD';
     document.getElementById('eq-misiones-preferidas').value = equipo ? (equipo.misiones_preferidas || '') : '';
     
     const logoPreview = document.getElementById('eq-logo-preview');
