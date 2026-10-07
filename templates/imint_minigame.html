@@ -163,6 +163,9 @@
                             <div style="width: 8px; height: 8px; background: #4caf50; border-radius: 50%; box-shadow: 0 0 5px #4caf50;"></div>
                             <span id="resTargetId"></span>
                         </div>
+                        {% if session.get('role') == 'admin' %}
+                        <div style="color: #ff3333; font-size: 0.8rem; margin-top: 6px; font-weight: bold;" id="adminLinkedPc"></div>
+                        {% endif %}
                         <div style="color: #ccc; font-size: 0.8rem; margin-top: 6px; line-height: 1.3;" id="intelDesc"></div>
                     </div>
                     
@@ -253,7 +256,12 @@
             document.getElementById('loading').style.display = 'block';
             
             // Prepare Backend Request
-            const faccionNombre = "{{ session.get('faction', '') }}";
+            let faccionNombre = "Desconocida";
+            const opFactionId = parseInt('{{ poi.faccion_id }}');
+            if (opFactionId === 1) faccionNombre = 'Syldavia';
+            else if (opFactionId === 2) faccionNombre = 'Volkovia';
+            else if (opFactionId === 3) faccionNombre = 'Khemed';
+            
             let isFake = true;
             if(opt.es_objetivo_valido_para.includes(faccionNombre)) {
                 isFake = false;
@@ -283,6 +291,10 @@
                     document.getElementById('phase3Image').src = opt.imagen_url;
                     
                     document.getElementById('resTargetId').textContent = tgt.id;
+                    
+                    if (document.getElementById('adminLinkedPc')) {
+                        document.getElementById('adminLinkedPc').textContent = "[ADMIN] Vinculado a: " + (tgt.pc_nombre || "DESCONOCIDO");
+                    }
                     
                     document.getElementById('compassArrow').style.transform = `translateX(-50%) rotate(${tgt.azimut}deg)`;
                     document.getElementById('resAzimutText').textContent = Math.round(tgt.azimut) + '°';
@@ -348,10 +360,11 @@
             <button onclick="document.getElementById('modal-instrucciones-imint').style.display='none'" style="position:absolute; right:10px; top:10px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
             <h3 style="margin-top:0; color:#fff;">INSTRUCCIONES IMINT</h3>
             <ul style="padding-left:20px; line-height:1.6; font-size:0.95rem;">
-                <li><b>1. Selección:</b> Revisa las fotografías y pulsa en la que creas que contiene al objetivo buscado.</li>
-                <li><b>2. Análisis:</b> Observa los detalles con atención. Puedes hacer zoom. Alterna entre distintas posiciones (varios OP) para triangular la posición final de tu objetivo en el mapa.</li>
-                <li><b>3. Confirmación:</b> Si estás seguro de que es el objetivo, pulsa <b>AUTORIZAR OBJETIVO</b>.</li>
-                <li><b>Atención:</b> Si fallas al autorizar, el sistema entrará en cooldown y perderás temporalmente la conexión con este OP.</li>
+                <li><b>1. Selección:</b> Revisa las fotografías y pulsa en la que creas que contiene al objetivo valido para tu faccion.</li>
+                <li><b>2. Análisis:</b> Observa los detalles con atención. Puedes hacer zoom y volver atrás para elegir otro objetivo.</li>
+                <li><b>3. Confirmación:</b> Si estás seguro de que es el objetivo, pulsa AUTORIZAR OBJETIVO. Puede que no haya ninguno valido (todos sean civiles o de tu mismo bando), algunos son deliberadamente ambiguos.</li>
+                <li><b>4. </b>La tarjeta de objetivo aportará el azimut y la distancia al objetivo además de posibles daños colaterales cercanos. Calculad las coordendas y comunicadlas al equipo de artilleria.</li>
+                <li><b>5. </b>Si seleccionas un objetivo y te das cuenta de que es erroneo puedes abortar la mision de fuego. Pero esto invalida el punto de observación momentaneamente. NO se pueden asignar dos objetivos seguidos desde el mismo PO, por lo que estais obligados a alternar entre los puntos de observación.</li>
             </ul>
         </div>
     </div>

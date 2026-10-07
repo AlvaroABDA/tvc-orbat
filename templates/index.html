@@ -458,10 +458,22 @@
                 <div id="tab-credenciales" class="admin-tab-content" style="display: none;">
                     <!-- GESTIÓN DE ACCESOS -->
                     <div class="panel management-panel">
-                        <h3 style="color: var(--theme-color);">CREDENCIALES DE ACCESO DE UNIDADES</h3>
+                        <h3 style="color: var(--theme-color);">CREDENCIALES Y SEGURIDAD</h3>
                         <p style="color: #aaa; margin-bottom: 1rem; font-size: 0.9rem;">
-                            Establece las contraseñas que usarán los Equipos para iniciar sesión en la plataforma y operar en sus roles.
+                            Establece las contraseñas que usarán los Equipos para iniciar sesión y configura los protocolos de seguridad.
                         </p>
+                        
+                        <div style="background: rgba(0,0,0,0.3); border: 1px solid #444; padding: 1rem; margin-bottom: 2rem; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h4 style="margin: 0; color: #fff;">Validación GPS Estricta en Códigos QR</h4>
+                                <p style="margin: 5px 0 0 0; color: #aaa; font-size: 0.85rem;">Si está activo, los jugadores deberán estar físicamente cerca de la baliza QR (según la tolerancia de cada POI) para capturarla.</p>
+                            </div>
+                            <div>
+                                <button id="btn-toggle-geo" class="btn" style="min-width: 150px; font-weight: bold;"></button>
+                            </div>
+                        </div>
+
+                        <h4 style="color: #ccc; margin-bottom: 0.5rem;">Credenciales de Equipos</h4>
                         <div style="overflow-x: auto;">
                             <table class="table-tactical">
                                 <thead>

@@ -3033,6 +3033,55 @@ async function loadAdminArtilleriaLogs() {
 document.getElementById('btn-admin-refresh-art-log')?.addEventListener('click', loadAdminArtilleriaLogs);
 setTimeout(() => { if(typeof loadAdminArtilleriaLogs === 'function') loadAdminArtilleriaLogs(); }, 1200);
 
+// Geo-Validation Toggle Logic
+async function loadGeoValidationConfig() {
+    const btn = document.getElementById('btn-toggle-geo');
+    if (!btn) return;
+    try {
+        const res = await fetch('/api/config/geo_validation');
+        if (res.ok) {
+            const data = await res.json();
+            updateGeoToggleUI(data.geo_validation_enabled);
+        }
+    } catch (e) {
+        console.error("Error loading geo config", e);
+    }
+}
+
+function updateGeoToggleUI(isEnabled) {
+    const btn = document.getElementById('btn-toggle-geo');
+    if (!btn) return;
+    if (isEnabled) {
+        btn.textContent = "DESACTIVAR";
+        btn.style.backgroundColor = "var(--danger-color)";
+        btn.style.color = "#fff";
+        btn.dataset.enabled = "true";
+    } else {
+        btn.textContent = "ACTIVAR";
+        btn.style.backgroundColor = "var(--success-color, #4ade80)";
+        btn.style.color = "#000";
+        btn.dataset.enabled = "false";
+    }
+}
+
+document.getElementById('btn-toggle-geo')?.addEventListener('click', async (e) => {
+    const isEnabled = e.target.dataset.enabled === "true";
+    try {
+        const res = await fetch('/api/config/geo_validation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: !isEnabled })
+        });
+        if (res.ok) {
+            const data = await res.json();
+            updateGeoToggleUI(data.enabled);
+        }
+    } catch (err) {
+        console.error("Error toggling geo config", err);
+    }
+});
+setTimeout(() => { loadGeoValidationConfig(); }, 1200);
+
 
 // OPFOR Intel Slideshow Logic
 let opforSlides = [];

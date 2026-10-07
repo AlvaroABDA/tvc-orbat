@@ -208,13 +208,33 @@
 
         async function capturar(faccion_id, equipo_id) {
             setButtonsState(true);
-            showMessage('Estableciendo enlace de datos...', '#888');
+            showMessage('Obteniendo ubicación GPS...', '#888');
             
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    await sendCaptureData(faccion_id, equipo_id, pos.coords.latitude, pos.coords.longitude);
+                }, async (err) => {
+                    showMessage('Error GPS. Intentando sin geolocalización...', '#f87171');
+                    await sendCaptureData(faccion_id, equipo_id, null, null);
+                }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+            } else {
+                await sendCaptureData(faccion_id, equipo_id, null, null);
+            }
+        }
+
+        async function sendCaptureData(faccion_id, equipo_id, lat, lng) {
+            showMessage('Estableciendo enlace de datos...', '#888');
             try {
                 const res = await fetch('/api/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token_qr: '{{ poi.token_qr }}', faccion_id: faccion_id, equipo_id: equipo_id })
+                    body: JSON.stringify({ 
+                        token_qr: '{{ poi.token_qr }}', 
+                        faccion_id: faccion_id, 
+                        equipo_id: equipo_id,
+                        user_lat: lat,
+                        user_lng: lng
+                    })
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -240,13 +260,33 @@
             }
             
             setButtonsState(true);
-            showMessage('Estableciendo enlace de datos...', '#888');
+            showMessage('Obteniendo ubicación GPS...', '#888');
             
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    await sendRespawnData(faccion_id, equipo, pos.coords.latitude, pos.coords.longitude);
+                }, async (err) => {
+                    showMessage('Error GPS. Intentando sin geolocalización...', '#f87171');
+                    await sendRespawnData(faccion_id, equipo, null, null);
+                }, { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 });
+            } else {
+                await sendRespawnData(faccion_id, equipo, null, null);
+            }
+        }
+
+        async function sendRespawnData(faccion_id, equipo, lat, lng) {
+            showMessage('Estableciendo enlace de datos...', '#888');
             try {
                 const res = await fetch('/api/scan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token_qr: '{{ poi.token_qr }}', faccion_id: parseInt(faccion_id), equipo_id: parseInt(equipo) })
+                    body: JSON.stringify({ 
+                        token_qr: '{{ poi.token_qr }}', 
+                        faccion_id: parseInt(faccion_id), 
+                        equipo_id: parseInt(equipo),
+                        user_lat: lat,
+                        user_lng: lng
+                    })
                 });
                 const data = await res.json();
                 

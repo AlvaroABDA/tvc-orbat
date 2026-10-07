@@ -24,7 +24,7 @@ def get_faction_validity(faccion_code):
     if faccion_code == 'khd': return ['Syldavia', 'Volkovia']
     return [] # civil
 
-def generate_imint_scenario():
+def generate_imint_scenario(op_faccion_id=None):
     data = load_imint_data()
     img_dir = os.path.join(os.path.dirname(__file__), 'static', 'imgs', 'dynamic_targets_svg')
     
@@ -33,42 +33,74 @@ def generate_imint_scenario():
         
     all_files = [f for f in os.listdir(img_dir) if f.endswith(('.jpg', '.png'))]
     
+    # Determine valid enemy faction
+    enemy_faccion_code = None
+    own_faccion_code = None
+    if op_faccion_id == 1:
+        enemy_faccion_code = 'vlk'
+        own_faccion_code = 'syl'
+    elif op_faccion_id == 2:
+        enemy_faccion_code = 'syl'
+        own_faccion_code = 'vlk'
+        
+    enemy_files = []
+    decoy_files = []
+    
     # Parse files
     parsed_files = []
     for f in all_files:
         name = os.path.splitext(f)[0]
         parts = name.split('-')
         if len(parts) >= 4:
-            faccion = parts[0]
+            faccion = parts[0].lower()
             variante = parts[-1]
             contexto = parts[-2]
             tipo = " ".join(parts[1:-2])
-            parsed_files.append({
+            
+            pf = {
                 'filename': f,
-                'faccion': faccion.lower(),
+                'faccion': faccion,
                 'tipo': tipo.upper(),
                 'contexto': contexto.lower(),
                 'variante': variante
-            })
+            }
             
-    if len(parsed_files) < 3:
+            parsed_files.append(pf)
+            if faccion == enemy_faccion_code:
+                enemy_files.append(pf)
+            elif faccion == 'civil' or faccion == own_faccion_code:
+                decoy_files.append(pf)
+                
+    if len(parsed_files) < 3 or not enemy_files or len(decoy_files) < 2:
         # Fallback if there are not enough well-formatted images
         return {'titulo': 'DATOS INSUFICIENTES', 'opciones': []}
         
-    # Group by context+variant to ensure uniqueness
-    # e.g., 'urbano-1', 'bosque-2'
-    unique_bg_groups = {}
-    for pf in parsed_files:
+    # Group decoy files by context+variant to ensure distinct backgrounds if possible
+    unique_decoy_groups = {}
+    for pf in decoy_files:
         bg_key = f"{pf['contexto']}-{pf['variante']}"
-        unique_bg_groups.setdefault(bg_key, []).append(pf)
+        unique_decoy_groups.setdefault(bg_key, []).append(pf)
         
-    if len(unique_bg_groups) >= 3:
-        # Pick 3 distinct background keys
-        chosen_bgs = random.sample(list(unique_bg_groups.keys()), 3)
-        chosen_files = [random.choice(unique_bg_groups[bg]) for bg in chosen_bgs]
+    chosen_files = []
+    
+    # 1. Pick exactly 1 valid enemy target
+    chosen_enemy = random.choice(enemy_files)
+    chosen_files.append(chosen_enemy)
+    
+    # 2. Pick 2 decoy targets with different backgrounds if possible, and different from enemy background
+    enemy_bg = f"{chosen_enemy['contexto']}-{chosen_enemy['variante']}"
+    available_decoy_bgs = [bg for bg in unique_decoy_groups.keys() if bg != enemy_bg]
+    
+    if len(available_decoy_bgs) >= 2:
+        chosen_bgs = random.sample(available_decoy_bgs, 2)
+        chosen_files.append(random.choice(unique_decoy_groups[chosen_bgs[0]]))
+        chosen_files.append(random.choice(unique_decoy_groups[chosen_bgs[1]]))
     else:
-        # Fallback if we don't have 3 distinct backgrounds
-        chosen_files = random.sample(parsed_files, min(3, len(parsed_files)))
+        # Fallback: just pick any 2 random decoy files
+        chosen_files.extend(random.sample(decoy_files, 2))
+        
+    # Shuffle so the valid target isn't always the first one
+    random.shuffle(chosen_files)
         
     opciones = []
     for i, pf in enumerate(chosen_files):

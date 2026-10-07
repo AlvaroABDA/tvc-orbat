@@ -14,6 +14,62 @@ def calculate_azimuth(lat_origin, lng_origin, lat_target, lng_target):
         azimut += 360
     return azimut
 
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371000 # Radio de la Tierra en metros
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    a = math.sin(delta_phi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2.0) ** 2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return R * c
+
+def get_config():
+    config_path = os.path.join(os.path.dirname(__file__), 'data', 'config.json')
+    if os.path.exists(config_path):
+        import json
+        with open(config_path, 'r') as f:
+            try:
+                return json.load(f)
+            except:
+                pass
+    return {"geo_validation_enabled": False}
+
+def set_config(config_data):
+    config_path = os.path.join(os.path.dirname(__file__), 'data', 'config.json')
+    import json
+    with open(config_path, 'w') as f:
+        json.dump(config_data, f)
+
+class GPSMapper:
+    def __init__(self):
+        u1, v1 = -6.256770847102261, 41.95586014650798
+        x1, y1 = 1244.75, 1139
+        
+        u2, v2 = -6.2679631830511005, 41.95764427861231
+        x2, y2 = 674, 1257.75
+        
+        u3, v3 = -6.2547713027579865, 41.96462525160695
+        x3, y3 = 1343.75, 1727.75
+        
+        det = u1*(v2 - v3) - v1*(u2 - u3) + (u2*v3 - u3*v2)
+        
+        self.A = (x1*(v2 - v3) - v1*(x2 - x3) + (x2*v3 - x3*v2)) / det
+        self.B = (u1*(x2 - x3) - x1*(u2 - u3) + (u2*x3 - u3*x2)) / det
+        self.C = x1 - self.A * u1 - self.B * v1
+        
+        self.D = (y1*(v2 - v3) - v1*(y2 - y3) + (y2*v3 - y3*v2)) / det
+        self.E = (u1*(y2 - y3) - y1*(u2 - u3) + (u2*y3 - u3*y2)) / det
+        self.F = y1 - self.D * u1 - self.E * v1
+
+    def gps_to_map(self, lat, lng):
+        x = self.A * lng + self.B * lat + self.C
+        y = self.D * lng + self.E * lat + self.F
+        return y, x
+
+gps_mapper = GPSMapper()
+
+
 app = Flask(__name__)
 app.secret_key = 'tvc-milsim-secret-key-2026'
 
@@ -134,10 +190,15 @@ def index():
 def mortero_app():
     if 'role' not in session:
         return redirect(url_for('login'))
+    conn = get_db_connection()
+    config = conn.execute('SELECT alcance_base FROM Mortero_Config WHERE id=1').fetchone()
+    alcance_base = config['alcance_base'] if config else 800
+    
     return render_template('mortero_app.html', 
                            user_role=session['role'], 
                            user_faction=session['faction'],
-                           equipo_id=session.get('equipo_id'))
+                           equipo_id=session.get('equipo_id'),
+                           alcance_base=alcance_base)
 
 @app.route('/api/facciones', methods=['GET'])
 def get_facciones():
@@ -769,6 +830,8 @@ def scan_qr():
     data = request.json
     token = data.get('token_qr')
     faccion_id = data.get('faccion_id')
+    user_lat = data.get('user_lat')
+    user_lng = data.get('user_lng')
     
     conn = get_db_connection()
     try:
@@ -776,6 +839,16 @@ def scan_qr():
         
         if not poi:
             return jsonify({'status': 'error', 'message': 'QR Inválido o Punto no encontrado.'}), 404
+            
+        config = get_config()
+        if config.get("geo_validation_enabled"):
+            if user_lat is None or user_lng is None:
+                return jsonify({'status': 'error', 'message': 'Se requiere ubicación GPS para escanear.'}), 400
+            
+            dist = haversine(float(user_lat), float(user_lng), float(poi['lat']), float(poi['lng']))
+            tol = float(poi['tolerancia_metros']) if poi['tolerancia_metros'] else 15.0
+            if dist > tol:
+                return jsonify({'status': 'error', 'message': f'Estás demasiado lejos de la baliza ({int(dist)}m > {int(tol)}m). Acércate más.'}), 400
             
         if poi['tipo'] == 'PC':
             fac_id = None if str(faccion_id) == '0' else int(faccion_id)
@@ -1025,16 +1098,26 @@ def view_target():
     equipo_id = session.get('equipo_id')
     user_role = session.get('role', 'player')
     
-    active_targets = conn.execute("SELECT id, lat, lng, grid_reference, bearing, image_url, intel_text, entorno_text FROM dynamic_targets WHERE source_op_id = ? AND status = 'ACTIVE' AND id NOT LIKE '%-COL'", (poi['id'],)).fetchall()
+    active_targets = conn.execute("SELECT id, lat, lng, grid_reference, bearing, image_url, intel_text, entorno_text, linked_pc_id, is_fake FROM dynamic_targets WHERE source_op_id = ? AND status = 'ACTIVE' AND id NOT LIKE '%-COL'", (poi['id'],)).fetchall()
     if active_targets:
         active_targets_list = []
         for t in active_targets:
             tgt_dict = dict(t)
-            tgt_dict['azimut'] = calculate_azimuth(poi['lat'], poi['lng'], tgt_dict['lat'], tgt_dict['lng'])
-            tgt_dict['distancia'] = dynamic_targets_engine.calculate_distance(poi['lat'], poi['lng'], tgt_dict['lat'], tgt_dict['lng'])
+            poi_px_lat, poi_px_lng = gps_mapper.gps_to_map(poi['lat'], poi['lng'])
+            tgt_dict['azimut'] = calculate_azimuth(poi_px_lat, poi_px_lng, tgt_dict['lat'], tgt_dict['lng'])
+            tgt_dict['distancia'] = dynamic_targets_engine.calculate_distance(poi_px_lat, poi_px_lng, tgt_dict['lat'], tgt_dict['lng'])
+            
+            # Fetch PC name for admin visibility
+            if tgt_dict.get('linked_pc_id'):
+                pc = conn.execute('SELECT nombre FROM puntos_interes WHERE id = ?', (tgt_dict['linked_pc_id'],)).fetchone()
+                pc_nombre = pc['nombre'] if pc else "DESCONOCIDO"
+            else:
+                pc_nombre = "NINGÚN PC (NO HAY PCs DISPONIBLES EN ESTA FACCIÓN)"
+            tgt_dict['pc_nombre'] = pc_nombre
+            
             active_targets_list.append(tgt_dict)
         conn.close()
-        return render_template('op_locked.html', poi=poi, active_targets=active_targets_list, equipo_id=equipo_id)
+        return render_template('op_locked.html', poi=poi, active_targets=active_targets_list, equipo_id=equipo_id, user_role=user_role)
         
     # Check Lockout (Only apply to equipos, admins skip lockout for testing)
     if equipo_id and user_role != 'admin':
@@ -1047,7 +1130,7 @@ def view_target():
     conn.close()
     
     # Generate random IMINT scenario
-    scenario = imint_engine.generate_imint_scenario()
+    scenario = imint_engine.generate_imint_scenario(faccion_id)
     
     return render_template('imint_minigame.html', poi=poi, scenario=scenario, equipo_id=equipo_id, faccion_id=faccion_id)
 
@@ -1069,18 +1152,21 @@ def api_imint_confirm():
     
     target_dict = dict(target_info)
     
-    # Calculate azimuth and distance from OP
+    # Calculate azimuth and distance from OP (Need to convert OP GPS to Map Pixels first)
     conn = get_db_connection()
     poi = conn.execute('SELECT lat, lng FROM puntos_interes WHERE id = ?', (source_op_id,)).fetchone()
     if poi:
-        target_dict['azimut'] = calculate_azimuth(poi['lat'], poi['lng'], target_dict['lat'], target_dict['lng'])
-        target_dict['distancia'] = dynamic_targets_engine.calculate_distance(poi['lat'], poi['lng'], target_dict['lat'], target_dict['lng'])
+        poi_px_lat, poi_px_lng = gps_mapper.gps_to_map(poi['lat'], poi['lng'])
+        target_dict['azimut'] = calculate_azimuth(poi_px_lat, poi_px_lng, target_dict['lat'], target_dict['lng'])
+        target_dict['distancia'] = dynamic_targets_engine.calculate_distance(poi_px_lat, poi_px_lng, target_dict['lat'], target_dict['lng'])
     
     # Re-fetch PC name to send back
-    pc_nombre = "OBJETIVO FANTASMA (SEÑUELO)"
     if target_dict.get('linked_pc_id'):
         pc = conn.execute('SELECT nombre FROM puntos_interes WHERE id = ?', (target_dict['linked_pc_id'],)).fetchone()
-        if pc: pc_nombre = pc['nombre']
+        pc_nombre = pc['nombre'] if pc else "DESCONOCIDO"
+    else:
+        pc_nombre = "NINGÚN PC (NO HAY PCs DISPONIBLES EN ESTA FACCIÓN)"
+        
     conn.close()
     
     target_dict['pc_nombre'] = pc_nombre
@@ -1462,6 +1548,21 @@ def admin_get_artilleria_logs():
         return jsonify({'error': str(e)}), 500
     finally:
         conn.close()
+
+@app.route('/api/config/geo_validation', methods=['GET', 'POST'])
+def geo_validation_config():
+    if session.get('role') != 'admin':
+        return jsonify({'status': 'error', 'message': 'No autorizado'}), 403
+        
+    if request.method == 'GET':
+        return jsonify(get_config())
+        
+    if request.method == 'POST':
+        data = request.json
+        config = get_config()
+        config['geo_validation_enabled'] = data.get('enabled', False)
+        set_config(config)
+        return jsonify({'status': 'success', 'enabled': config['geo_validation_enabled']})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
