@@ -435,6 +435,26 @@ def update_delete_mision(id):
         conn.close()
         return jsonify({'status': 'success'})
 
+@app.route('/api/misiones/<int:id>/duplicate', methods=['POST'])
+def duplicate_mision(id):
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    mision = cursor.execute('SELECT * FROM Mision WHERE id = ?', (id,)).fetchone()
+    if mision:
+        cursor.execute(
+            '''INSERT INTO Mision (operacion_id, nombre, tipo, etiquetas, oficial_responsable, resumen, contexto, instrucciones, consideraciones, persistente, revelada, esquema_id, map_snapshot) 
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+            (mision['operacion_id'], mision['nombre'] + ' (Copia)', mision['tipo'], mision['etiquetas'], mision['oficial_responsable'], mision['resumen'], mision['contexto'], mision['instrucciones'], mision['consideraciones'], mision['persistente'], mision['revelada'], mision['esquema_id'], mision['map_snapshot'])
+        )
+        new_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        return jsonify({'id': new_id, 'status': 'success'}), 201
+    conn.close()
+    return jsonify({'status': 'error', 'message': 'Misión no encontrada'}), 404
+
 import base64
 @app.route('/api/misiones/<int:id>/snapshot', methods=['POST'])
 def save_mision_snapshot(id):

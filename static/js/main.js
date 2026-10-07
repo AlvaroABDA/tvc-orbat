@@ -1382,6 +1382,7 @@ function renderMisionesTable(misiones) {
                 <td>${mis.revelada ? '👁️ SÍ' : 'NO'}</td>
                 <td>
                     <button class="btn secondary btn-edit-mision" data-id="${mis.id}" data-obj='${JSON.stringify(mis)}'>Editar</button>
+                    <button class="btn secondary btn-dup-mision" data-id="${mis.id}">Duplicar</button>
                     <button class="btn danger btn-del-mision" data-id="${mis.id}">Borrar</button>
                 </td>
             </tr>
@@ -1392,6 +1393,17 @@ function renderMisionesTable(misiones) {
         btn.addEventListener('click', (e) => {
             const mis = JSON.parse(e.target.dataset.obj);
             openModalMision(mis);
+        });
+    });
+
+    document.querySelectorAll('.btn-dup-mision').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            if(confirm('¿Duplicar misión?')) {
+                const id = e.target.dataset.id;
+                await fetch(`/api/misiones/${id}/duplicate`, { method: 'POST' });
+                await loadORBAT();
+                initMortero();
+            }
         });
     });
 
