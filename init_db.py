@@ -31,6 +31,14 @@ def init_db():
             faccion_id INTEGER,
             tipo TEXT,
             valoracion TEXT,
+            foto_url TEXT,
+            logo_url TEXT,
+            codigo TEXT,
+            misiones_preferidas TEXT,
+            tags_comportamiento TEXT,
+            estado_medalla TEXT,
+            estado_sancion TEXT,
+            password_hash TEXT,
             FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
         )
     ''')
@@ -41,6 +49,15 @@ def init_db():
             equipo_id INTEGER,
             nombre_jugador TEXT,
             rol TEXT,
+            armamento TEXT,
+            uid TEXT,
+            nombre_apellidos TEXT,
+            dni TEXT,
+            telefono TEXT,
+            email TEXT,
+            bando_original TEXT,
+            activo BOOLEAN DEFAULT 1,
+            foto_url TEXT,
             FOREIGN KEY (equipo_id) REFERENCES Equipo (id) ON DELETE CASCADE
         )
     ''')
@@ -269,13 +286,23 @@ def init_db():
         'Task Force Cerberus': [('Mkvenner', 'Fusilero'), ('Delvira', 'Fusilero'), ('Guille', 'Tirador'), ('Vi', 'Fusilero'), ('Iñaki', 'Fusilero'), ('Iago', 'Tirador')]
     }
     
+    import uuid
     for team, members in miembros_data.items():
         res = cursor.execute('SELECT id FROM Equipo WHERE nombre LIKE ?', (f'%{team}%',)).fetchone()
         if res:
             team_id = res[0]
             cursor.execute('UPDATE Equipo SET jugadores = ? WHERE id = ?', (len(members), team_id))
-            for name, role in members:
-                cursor.execute('INSERT INTO Miembro (equipo_id, nombre_jugador, rol) VALUES (?, ?, ?)', (team_id, name, role))
+            for name, old_role in members:
+                rol = 'Operador'
+                armamento = 'Fusilero'
+                if old_role == 'Sanitario': rol = 'Medico'
+                elif old_role == 'Mando': rol = 'Jefe de equipo'
+                elif old_role == 'Sniper': armamento = 'Francotirador'
+                elif old_role == 'Tirador': armamento = 'Tirador'
+                elif old_role == 'Apoyo': armamento = 'Apoyo'
+                
+                uid = str(uuid.uuid4()).split('-')[0].upper()
+                cursor.execute('INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid) VALUES (?, ?, ?, ?, ?)', (team_id, name, rol, armamento, uid))
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS puntos_control (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 

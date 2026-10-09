@@ -475,13 +475,13 @@
 
                         <h4 style="color: #ccc; margin-bottom: 0.5rem;">Credenciales de Equipos</h4>
                         <div style="overflow-x: auto;">
-                            <table class="table-tactical">
+                            <table class="table-tactical" style="table-layout: fixed; width: 100%;">
                                 <thead>
                                     <tr>
-                                        <th style="text-align: left;">UNIDAD</th>
-                                        <th style="text-align: left;">FACCIÓN</th>
-                                        <th style="text-align: left;">CONTRASEÑA (CÓDIGO)</th>
-                                        <th style="text-align: center;">ACCIÓN</th>
+                                        <th style="text-align: left; width: 25%;">UNIDAD</th>
+                                        <th style="text-align: left; width: 15%;">FACCIÓN</th>
+                                        <th style="text-align: left; width: 45%;">NUEVA CONTRASEÑA</th>
+                                        <th style="text-align: center; width: 15%;">ACCIÓN</th>
                                     </tr>
                                 </thead>
                                 <tbody id="seguridad-equipos-tbody">
@@ -623,8 +623,10 @@
                                     <th style="padding: 0.5rem;">Nombre Completo</th>
                                     <th style="padding: 0.5rem;">DNI</th>
                                     <th style="padding: 0.5rem;">Rol</th>
+                                    <th style="padding: 0.5rem;">Armamento</th>
                                     <th style="padding: 0.5rem;">Teléfono</th>
                                     <th style="padding: 0.5rem;">Email</th>
+                                    <th style="padding: 0.5rem;">Carnet / Foto</th>
                                     <th style="padding: 0.5rem; width: 50px;"></th>
                                 </tr>
                             </thead>
@@ -876,6 +878,32 @@
         </div>
     </div>
 
+    <!-- Modal OPORD Faccion -->
+    <div id="modal-opord" class="modal">
+        <div class="modal-content military-report">
+            <h2 style="text-align: center; border-bottom: 2px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">Gestionar OPORD de Facción</h2>
+            <form id="form-opord" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" id="opord-faccion-id">
+                <div class="form-group">
+                    <label>Archivo OPORD (PDF)</label>
+                    <input type="file" id="opord-pdf" accept=".pdf">
+                    <div style="font-size: 0.8em; color: #888;">Si subes un PDF nuevo, reemplazará al anterior.</div>
+                </div>
+                <div class="form-group">
+                    <label>Esquema Táctico Asociado (Mapa)</label>
+                    <select id="opord-esquema">
+                        <option value="">(Ninguno)</option>
+                        <!-- Llenado por JS con Esquemas -->
+                    </select>
+                </div>
+                <div class="modal-actions" style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button type="button" class="btn secondary" onclick="document.getElementById('modal-opord').classList.remove('active')">Cancelar</button>
+                    <button type="submit" class="btn primary">Guardar OPORD</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal POIs -->
     <div id="modal-poi" class="modal">
         <div class="modal-content military-report">
@@ -901,6 +929,12 @@
                             <option value="">(Ninguna / Neutral)</option>
                             <!-- Llenado por JS -->
                         </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Visible para</label>
+                        <div id="poi-visible-container" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
+                            <!-- Llenado por JS con las facciones -->
+                        </div>
                     </div>
                 </div>
                 <div style="display: flex; gap: 1rem; border: 1px solid #444; padding: 0.5rem; border-radius: 5px;">

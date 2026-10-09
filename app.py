@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, session, redirect, u
 import sqlite3
 import os
 import secrets
+import time
 import dynamic_targets_engine
 import imint_engine
 import math
@@ -203,9 +204,43 @@ def mortero_app():
 @app.route('/api/facciones', methods=['GET'])
 def get_facciones():
     conn = get_db_connection()
-    facciones = conn.execute('SELECT * FROM Faccion').fetchall()
+    facciones = conn.execute('''
+        SELECT F.*, E.datos_json as opord_esquema_json 
+        FROM Faccion F
+        LEFT JOIN Esquema_Tactico E ON F.opord_esquema_id = E.id
+    ''').fetchall()
     conn.close()
     return jsonify([dict(row) for row in facciones])
+
+@app.route('/api/facciones/<int:id>/opord', methods=['POST'])
+def upload_faccion_opord(id):
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    conn = get_db_connection()
+    esquema_id = request.form.get('opord_esquema_id')
+    if esquema_id == '': esquema_id = None
+    
+    # Handle PDF
+    pdf_url = request.form.get('opord_pdf', '')
+    if 'pdf' in request.files:
+        file = request.files['pdf']
+        if file.filename != '':
+            ext = os.path.splitext(file.filename)[1].lower()
+            if ext == '.pdf':
+                filename = f"opord_faccion_{id}_{int(time.time())}{ext}"
+                file_path = os.path.join('static', 'uploads', filename)
+                file.save(file_path)
+                pdf_url = f'/{file_path}'.replace('\\', '/')
+                
+    if pdf_url or esquema_id is not None:
+        if pdf_url:
+            conn.execute('UPDATE Faccion SET opord_pdf = ?, opord_esquema_id = ? WHERE id = ?', (pdf_url, esquema_id, id))
+        else:
+            conn.execute('UPDATE Faccion SET opord_esquema_id = ? WHERE id = ?', (esquema_id, id))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success'})
 
 @app.route('/api/equipos', methods=['GET', 'POST'])
 def manage_equipos():
@@ -213,8 +248,8 @@ def manage_equipos():
     if request.method == 'GET':
         equipos = conn.execute('''
             SELECT Equipo.*, Faccion.nombre as faccion_nombre, Faccion.color as faccion_color,
-                   (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = Equipo.id AND m.rol LIKE '%Apoyo%') as apoyos,
-                   (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = Equipo.id AND m.rol LIKE '%Sniper%') as snipers
+                   (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = Equipo.id AND m.armamento LIKE '%Apoyo%') as apoyos,
+                   (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = Equipo.id AND (m.armamento LIKE '%Sniper%' OR m.armamento LIKE '%Francotirador%')) as snipers
             FROM Equipo
             LEFT JOIN Faccion ON Equipo.faccion_id = Faccion.id
         ''').fetchall()
@@ -254,10 +289,12 @@ def manage_equipos():
         new_id = cursor.lastrowid
         
         if 'miembros' in data and isinstance(data['miembros'], list):
+            import uuid
             for m in data['miembros']:
+                new_uid = str(uuid.uuid4()).split('-')[0].upper()
                 cursor.execute(
-                    'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, nombre_apellidos, dni, telefono, email, bando_original, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (new_id, m.get('nombre_jugador', ''), m.get('rol', ''), m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1))
+                    'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid, nombre_apellidos, dni, telefono, email, bando_original, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (new_id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1))
                 )
         
         if 'historial' in data and isinstance(data['historial'], list):
@@ -287,12 +324,19 @@ def upload_equipo_logo(id):
     if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
         return jsonify({'error': 'Invalid image format'}), 400
         
-    filename = f"{id}{ext}"
+    # Obtener nombre del equipo para el archivo
+    conn = get_db_connection()
+    equipo = conn.execute('SELECT nombre FROM Equipo WHERE id = ?', (id,)).fetchone()
+    if not equipo:
+        conn.close()
+        return jsonify({'error': 'Equipo no encontrado'}), 404
+        
+    safe_name = "".join([c for c in equipo['nombre'] if c.isalnum() or c in (' ', '_', '-')]).replace(' ', '_')
+    filename = f"{safe_name}{ext}"
     filepath = os.path.join(app.root_path, 'static', 'imgs', 'logos_equipos', filename)
     file.save(filepath)
     
     # Update db
-    conn = get_db_connection()
     conn.execute('UPDATE Equipo SET logo_url = ? WHERE id = ?', (f"/static/imgs/logos_equipos/{filename}", id))
     conn.commit()
     conn.close()
@@ -315,12 +359,19 @@ def upload_equipo_foto(id):
     if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
         return jsonify({'error': 'Invalid image format'}), 400
         
-    filename = f"{id}{ext}"
+    # Obtener nombre del equipo
+    conn = get_db_connection()
+    equipo = conn.execute('SELECT nombre FROM Equipo WHERE id = ?', (id,)).fetchone()
+    if not equipo:
+        conn.close()
+        return jsonify({'error': 'Equipo no encontrado'}), 404
+        
+    safe_name = "".join([c for c in equipo['nombre'] if c.isalnum() or c in (' ', '_', '-')]).replace(' ', '_')
+    filename = f"{safe_name}{ext}"
     filepath = os.path.join(app.root_path, 'static', 'imgs', 'fotos_equipos', filename)
     file.save(filepath)
     
     # Update db
-    conn = get_db_connection()
     conn.execute('UPDATE Equipo SET foto_url = ? WHERE id = ?', (f"/static/imgs/fotos_equipos/{filename}", id))
     conn.commit()
     conn.close()
@@ -354,16 +405,18 @@ def update_delete_equipo(id):
             else:
                 cursor.execute('DELETE FROM Miembro WHERE equipo_id = ?', (id,))
                 
+            import uuid
             for m in data['miembros']:
                 if m.get('id'):
                     cursor.execute(
-                        'UPDATE Miembro SET nombre_jugador = ?, rol = ?, nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, bando_original = ?, activo = ? WHERE id = ?',
-                        (m.get('nombre_jugador', ''), m.get('rol', ''), m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1), m['id'])
+                        'UPDATE Miembro SET nombre_jugador = ?, rol = ?, armamento = ?, nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, bando_original = ?, activo = ? WHERE id = ?',
+                        (m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1), m['id'])
                     )
                 else:
+                    new_uid = str(uuid.uuid4()).split('-')[0].upper()
                     cursor.execute(
-                        'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, nombre_apellidos, dni, telefono, email, bando_original, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (id, m.get('nombre_jugador', ''), m.get('rol', ''), m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1))
+                        'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid, nombre_apellidos, dni, telefono, email, bando_original, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1))
                     )
                 
         # Update historial
@@ -566,8 +619,8 @@ def get_orbat():
     # In a real scenario, we would filter by current operation.
     asignaciones = conn.execute('''
         SELECT Historial_Asignacion.*, Equipo.nombre as equipo_nombre, Equipo.jugadores,
-               (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = Equipo.id AND m.rol LIKE '%Apoyo%') as apoyos,
-               (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = Equipo.id AND m.rol LIKE '%Sniper%') as snipers
+               (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = Equipo.id AND m.armamento LIKE '%Apoyo%') as apoyos,
+               (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = Equipo.id AND (m.armamento LIKE '%Sniper%' OR m.armamento LIKE '%Francotirador%')) as snipers
         FROM Historial_Asignacion
         JOIN Equipo ON Historial_Asignacion.equipo_id = Equipo.id
         WHERE operacion_id = 1
@@ -802,17 +855,44 @@ def delete_zona(id):
 def manage_pois():
     conn = get_db_connection()
     if request.method == 'GET':
-        pois = conn.execute('SELECT * FROM puntos_interes').fetchall()
+        pois_rows = conn.execute('SELECT * FROM puntos_interes').fetchall()
+        pois = [dict(row) for row in pois_rows]
+        
+        # Filtro de visibilidad
+        if session.get('role') != 'admin':
+            faccion_nombre = session.get('faction')
+            f = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (faccion_nombre,)).fetchone()
+            fid = f['id'] if f else 0
+            
+            # Solo mostrar si es 0 (Todos) o si coincide con la faccion del usuario
+            import json
+            filtered = []
+            for p in pois:
+                vp = p.get('visible_para')
+                if vp in (None, 0, '0', ''):
+                    filtered.append(p)
+                else:
+                    try:
+                        if isinstance(vp, str) and vp.startswith('['):
+                            arr = json.loads(vp)
+                            if fid in arr:
+                                filtered.append(p)
+                        elif str(vp) == str(fid):
+                            filtered.append(p)
+                    except:
+                        pass
+            pois = filtered
+            
         conn.close()
-        return jsonify([dict(row) for row in pois])
+        return jsonify(pois)
     
     elif request.method == 'POST':
         data = request.json
         cursor = conn.cursor()
         token = secrets.token_hex(4)
         cursor.execute(
-            'INSERT INTO puntos_interes (nombre, descripcion, lat, lng, tolerancia_metros, tipo, token_qr, faccion_id, datos_extra) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            (data.get('nombre',''), data.get('descripcion', ''), data.get('lat', 0), data.get('lng', 0), data.get('tolerancia_metros', 15.0), data.get('tipo', 'PC'), token, data.get('faccion_id'), data.get('datos_extra', ''))
+            'INSERT INTO puntos_interes (nombre, descripcion, lat, lng, tolerancia_metros, tipo, token_qr, faccion_id, datos_extra, visible_para) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            (data.get('nombre',''), data.get('descripcion', ''), data.get('lat', 0), data.get('lng', 0), data.get('tolerancia_metros', 15.0), data.get('tipo', 'PC'), token, data.get('faccion_id'), data.get('datos_extra', ''), data.get('visible_para', 0))
         )
         new_id = cursor.lastrowid
         conn.commit()
@@ -835,8 +915,8 @@ def update_or_delete_poi(id):
             conn.execute('INSERT INTO puntos_control (poi_id, faccion_id) VALUES (?, ?)', (id, new_faccion))
 
         conn.execute(
-            'UPDATE puntos_interes SET nombre=?, descripcion=?, lat=?, lng=?, tolerancia_metros=?, tipo=?, faccion_id=?, datos_extra=? WHERE id=?',
-            (data.get('nombre'), data.get('descripcion', ''), data.get('lat'), data.get('lng'), data.get('tolerancia_metros'), data.get('tipo'), new_faccion, data.get('datos_extra', ''), id)
+            'UPDATE puntos_interes SET nombre=?, descripcion=?, lat=?, lng=?, tolerancia_metros=?, tipo=?, faccion_id=?, datos_extra=?, visible_para=? WHERE id=?',
+            (data.get('nombre'), data.get('descripcion', ''), data.get('lat'), data.get('lng'), data.get('tolerancia_metros'), data.get('tipo'), new_faccion, data.get('datos_extra', ''), data.get('visible_para', 0), id)
         )
     conn.commit()
     conn.close()
@@ -1521,7 +1601,8 @@ def api_mortero_todos():
 def admin_get_artilleria():
     if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
     conn = get_db_connection()
-    config = dict(conn.execute('SELECT * FROM Mortero_Config WHERE id=1').fetchone())
+    row = conn.execute('SELECT * FROM Mortero_Config WHERE id=1').fetchone()
+    config = dict(row) if row else {}
     estados = [dict(r) for r in conn.execute('SELECT * FROM Mortero_Estado').fetchall()]
     conn.close()
     return jsonify({'config': config, 'estados': estados})
@@ -1583,6 +1664,53 @@ def geo_validation_config():
         config['geo_validation_enabled'] = data.get('enabled', False)
         set_config(config)
         return jsonify({'status': 'success', 'enabled': config['geo_validation_enabled']})
+
+@app.route('/carnet/<int:id>')
+def view_carnet(id):
+    conn = get_db_connection()
+    miembro = conn.execute('''
+        SELECT m.*, f.color as faccion_color, f.nombre as faccion_nombre, COALESCE(e.logo_url, e.foto_url) as equipo_logo, e.nombre as equipo_nombre
+        FROM Miembro m 
+        JOIN Equipo e ON m.equipo_id = e.id 
+        JOIN Faccion f ON e.faccion_id = f.id 
+        WHERE m.id = ?
+    ''', (id,)).fetchone()
+    conn.close()
+    if not miembro:
+        return "Jugador no encontrado", 404
+        
+    color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
+    hex_color = color_map.get(miembro['faccion_color'], '#00d2ff')
+    
+    return render_template('carnet.html', miembro=dict(miembro), hex_color=hex_color)
+
+@app.route('/api/miembros/<int:id>/foto', methods=['POST'])
+def upload_miembro_foto(id):
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    if 'foto' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['foto']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+        
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
+        return jsonify({'error': 'Invalid image format'}), 400
+        
+    filename = f"miembro_{id}{ext}"
+    filepath = os.path.join(app.root_path, 'static', 'imgs', 'fotos_jugadores', filename)
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    file.save(filepath)
+    
+    conn = get_db_connection()
+    foto_url = f"/static/imgs/fotos_jugadores/{filename}"
+    conn.execute('UPDATE Miembro SET foto_url = ? WHERE id = ?', (foto_url, id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'status': 'success', 'foto_url': foto_url})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

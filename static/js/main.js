@@ -262,10 +262,15 @@ async function loadFacciones() {
     
 
     const selectPoi = document.getElementById('poi-faccion');
+    const containerVisible = document.getElementById('poi-visible-container');
     if (selectPoi) {
         selectPoi.innerHTML = '<option value="">(Ninguna / Neutral)</option>';
+        if (containerVisible) containerVisible.innerHTML = '';
         facciones.forEach(f => {
             selectPoi.innerHTML += `<option value="${f.id}">${f.nombre}</option>`;
+            if (containerVisible) {
+                containerVisible.innerHTML += `<label style="display:flex; align-items:center; gap:5px;"><input type="checkbox" class="poi-visible-cb" value="${f.id}" checked> ${f.nombre}</label>`;
+            }
         });
     }
 
@@ -426,10 +431,28 @@ function renderCard(g, isMando, totalFactionPax = 0) {
 
     let extraFieldsHtml = '';
     if (isMandoCard) {
+        const faccionData = facciones.find(f => f.id === g.faccion_id);
+        let opordButtons = '';
+        if (faccionData) {
+            if (faccionData.opord_pdf) {
+                opordButtons += `<a href="${faccionData.opord_pdf}" target="_blank" class="btn primary" style="padding: 4px 8px; font-size: 0.85em; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><span class="material-symbols-outlined" style="font-size: 1.1em;">picture_as_pdf</span> Ver OPORD</a>`;
+            }
+            if (faccionData.opord_esquema_json) {
+                const encodedEsquema = encodeURIComponent(faccionData.opord_esquema_json);
+                opordButtons += `<button onclick="event.stopPropagation(); verEsquema(decodeURIComponent('${encodedEsquema}'))" class="btn primary" style="padding: 4px 8px; font-size: 0.85em; display: inline-flex; align-items: center; gap: 5px;"><span class="material-symbols-outlined" style="font-size: 1.1em;">map</span> Ver Mapa OPORD</button>`;
+            }
+            if (window.userRole === 'admin') {
+                opordButtons += `<button onclick="event.stopPropagation(); openOpordModal(${g.faccion_id})" class="btn secondary" style="padding: 4px 8px; font-size: 0.85em; margin-left: auto; display: inline-flex; align-items: center; gap: 5px;"><span class="material-symbols-outlined" style="font-size: 1.1em;">edit</span> Gestionar OPORD</button>`;
+            }
+        }
+
         extraFieldsHtml = `
             <div class="editable-field" style="margin-top: 5px;">
                 <label>Cmdt</label>
                 <input type="text" class="input-inline update-grupo" data-id="${g.id}" data-field="nombre_jefe" value="${g.nombre_jefe || ''}" placeholder="Nombre del mando">
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                ${opordButtons}
             </div>
         `;
     }
@@ -439,13 +462,15 @@ function renderCard(g, isMando, totalFactionPax = 0) {
     const assignedMission = todasMisiones.find(m => m.id === g.mision_actual_id);
     let assignedMissionHtml = '';
     
-    if (assignedMission) {
+    if (assignedMission && !isMandoCard) {
         let snapshotHtml = '';
         if (assignedMission.esquema_json && (assignedMission.revelada || window.userRole === 'admin' || window.userRole === 'mando')) {
-            snapshotHtml = `<button onclick='event.stopPropagation(); verEsquema(${JSON.stringify(assignedMission.esquema_json)})' style="display:inline-block; margin-top:5px; background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:3px; font-size:0.75em; text-decoration:none; color:var(--theme-color); border:none; cursor:pointer;"><span class="material-symbols-outlined" style="font-size:1em; vertical-align:middle;">map</span> Ver Mapa</button>`;
+            const encodedEsquema = encodeURIComponent(assignedMission.esquema_json);
+            snapshotHtml = `<button onclick="event.stopPropagation(); verEsquema(decodeURIComponent('${encodedEsquema}'))" style="display:inline-block; margin-top:5px; background:rgba(255,255,255,0.1); padding:2px 5px; border-radius:3px; font-size:0.75em; text-decoration:none; color:var(--theme-color); border:none; cursor:pointer;"><span class="material-symbols-outlined" style="font-size:1em; vertical-align:middle;">map</span> Ver Mapa</button>`;
         }
+        const encodedMission = encodeURIComponent(JSON.stringify(assignedMission));
         assignedMissionHtml = `
-            <div class="mision-card" draggable="true" onclick='verInformeMision(${JSON.stringify(assignedMission)})' data-mision-id="${assignedMission.id}" data-obj='${JSON.stringify(assignedMission)}'>
+            <div class="mision-card" draggable="true" onclick="verInformeMision(JSON.parse(decodeURIComponent('${encodedMission}')))" data-mision-id="${assignedMission.id}">
                 <strong style="text-transform: uppercase;">[MSN] ${assignedMission.tipo}</strong>
                 <div style="font-size: 0.85em; font-weight: bold; margin-bottom: 2px;">${assignedMission.nombre}</div>
                 <div>${assignedMission.etiquetas || ''}</div>
@@ -454,16 +479,7 @@ function renderCard(g, isMando, totalFactionPax = 0) {
         `;
     }
 
-    const droppableHtml = isMandoCard ? `
-        <div class="grupo-drop-zones mando-mision-zone" style="margin-top: 1rem; width: 100%; grid-template-columns: 1fr;">
-            <div class="droppable-area-wrapper misiones-zone" style="width: 100%;">
-                <div class="zone-label">Contexto Operacional (Misión Global)</div>
-                <div class="droppable-area" style="cursor:pointer;" onclick="openAssignModal('${g.id}', 'mision')" data-grupo-id="${g.id}" data-type="mision" style="min-height: 80px;">
-                    ${assignedMissionHtml}
-                </div>
-            </div>
-        </div>
-    ` : `
+    const droppableHtml = isMandoCard ? '' : `
         <div class="grupo-drop-zones">
             <div class="droppable-area-wrapper equipos-zone">
                 <div class="zone-label">Equipos (${teamsInGroup.length})</div>
@@ -1057,9 +1073,10 @@ function initModal() {
                 const tel = row.querySelector('.miembro-telefono') ? row.querySelector('.miembro-telefono').value.trim() : '';
                 const email = row.querySelector('.miembro-email') ? row.querySelector('.miembro-email').value.trim() : '';
                 const rol = row.querySelector('.miembro-rol').value;
+                const armamento = row.querySelector('.miembro-armamento').value;
                 
                 if (nombre) {
-                    payload.miembros.push({ id: mId, activo: activo, nombre_jugador: nombre, nombre_apellidos: fullname, dni: dni, telefono: tel, email: email, rol: rol });
+                    payload.miembros.push({ id: mId, activo: activo, nombre_jugador: nombre, nombre_apellidos: fullname, dni: dni, telefono: tel, email: email, rol: rol, armamento: armamento });
                 }
             });
         }
@@ -1247,9 +1264,13 @@ function addMiembroRow(m = null) {
     const nombre = m ? m.nombre_jugador : '';
     const fullname = m ? (m.nombre_apellidos || '') : '';
     const dni = m ? (m.dni || '') : '';
-    const rol = m ? m.rol : 'Fusilero';
+    const rol = m ? (m.rol || 'Operador') : 'Operador';
+    const armamento = m ? (m.armamento || 'Fusilero') : 'Fusilero';
     const tel = m ? (m.telefono || '') : '';
     const email = m ? (m.email || '') : '';
+    
+    const fotoBtn = (m && m.id) ? `<button type="button" class="btn primary btn-foto-miembro" title="Subir Foto" style="padding: 0.25rem 0.5rem; margin-right: 5px;" onclick="uploadFotoMiembro(${m.id})">📸</button>` : '';
+    const carnetBtn = (m && m.id) ? `<a href="/carnet/${m.id}" target="_blank" title="Ver Carnet" class="btn secondary" style="padding: 0.25rem 0.5rem; text-decoration: none;">🪪</a>` : '<span style="font-size: 0.7rem; color: #888;">(Guardar antes)</span>';
 
     tr.innerHTML = `
         <td style="padding: 0.25rem; text-align: center;"><input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} style="transform: scale(1.5);"></td>
@@ -1258,16 +1279,24 @@ function addMiembroRow(m = null) {
         <td style="padding: 0.25rem;"><input type="text" class="miembro-dni" placeholder="DNI" value="${dni}" style="width: 100%; padding: 0.25rem;"></td>
         <td style="padding: 0.25rem;">
             <select class="miembro-rol" style="width: 100%; padding: 0.25rem;">
-                <option value="Lider" ${rol === 'Lider' ? 'selected' : ''}>Lider</option>
-                <option value="Fusilero" ${rol === 'Fusilero' ? 'selected' : ''}>Fusilero</option>
-                <option value="Sanitario" ${rol === 'Sanitario' ? 'selected' : ''}>Sanitario</option>
-                <option value="Apoyo" ${rol === 'Apoyo' ? 'selected' : ''}>Apoyo</option>
-                <option value="Sniper" ${rol === 'Sniper' ? 'selected' : ''}>Sniper</option>
-                <option value="Selecto" ${rol === 'Selecto' ? 'selected' : ''}>Selecto</option>
+                <option value="Operador" ${rol === 'Operador' ? 'selected' : ''}>Operador</option>
+                <option value="Jefe de equipo" ${rol === 'Jefe de equipo' ? 'selected' : ''}>Jefe de equipo</option>
+                <option value="Enlace" ${rol === 'Enlace' ? 'selected' : ''}>Enlace</option>
+                <option value="Medico" ${rol === 'Medico' ? 'selected' : ''}>Médico</option>
+                <option value="Ingeniero" ${rol === 'Ingeniero' ? 'selected' : ''}>Ingeniero</option>
+            </select>
+        </td>
+        <td style="padding: 0.25rem;">
+            <select class="miembro-armamento" style="width: 100%; padding: 0.25rem;">
+                <option value="Fusilero" ${armamento === 'Fusilero' ? 'selected' : ''}>Fusilero</option>
+                <option value="Francotirador" ${armamento === 'Francotirador' ? 'selected' : ''}>Francotirador</option>
+                <option value="Tirador" ${armamento === 'Tirador' ? 'selected' : ''}>Tirador</option>
+                <option value="Apoyo" ${armamento === 'Apoyo' ? 'selected' : ''}>Apoyo</option>
             </select>
         </td>
         <td style="padding: 0.25rem;"><input type="text" class="miembro-telefono" placeholder="Teléfono" value="${tel}" style="width: 100%; padding: 0.25rem;"></td>
         <td style="padding: 0.25rem;"><input type="email" class="miembro-email" placeholder="Email" value="${email}" style="width: 100%; padding: 0.25rem;"></td>
+        <td style="padding: 0.25rem; text-align: center; white-space: nowrap;">${fotoBtn}${carnetBtn}</td>
         <td style="padding: 0.25rem; text-align: center;"><button type="button" class="btn danger btn-del-miembro" style="padding: 0.25rem 0.5rem;">X</button></td>
     `;
     
@@ -1666,6 +1695,22 @@ function renderPOIsTable() {
             document.getElementById('poi-nombre').value = poi.nombre;
             document.getElementById('poi-tipo').value = poi.tipo;
             document.getElementById('poi-faccion').value = poi.faccion_id || '';
+            
+            let visArray = [];
+            if (poi.visible_para && typeof poi.visible_para === 'string' && poi.visible_para.startsWith('[')) {
+                try { visArray = JSON.parse(poi.visible_para); } catch(e) {}
+            } else if (poi.visible_para && !isNaN(poi.visible_para) && poi.visible_para != 0) {
+                visArray = [parseInt(poi.visible_para)];
+            }
+            
+            document.querySelectorAll('.poi-visible-cb').forEach(cb => {
+                if (poi.visible_para === 0 || poi.visible_para === '0' || !poi.visible_para || (visArray.length === 0 && (!poi.visible_para || poi.visible_para == 0))) {
+                    cb.checked = true;
+                } else {
+                    cb.checked = visArray.includes(parseInt(cb.value));
+                }
+            });
+
             document.getElementById('poi-lat').value = poi.lat;
             document.getElementById('poi-lng').value = poi.lng;
             document.getElementById('poi-tolerancia').value = poi.tolerancia_metros;
@@ -1745,10 +1790,15 @@ if (formPoi) {
     formPoi.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        const checkedVis = Array.from(document.querySelectorAll('.poi-visible-cb:checked')).map(cb => parseInt(cb.value));
+        const totalFacs = document.querySelectorAll('.poi-visible-cb').length;
+        const visibleParaValue = (checkedVis.length === totalFacs || checkedVis.length === 0) ? 0 : JSON.stringify(checkedVis);
+
         const payload = {
             nombre: document.getElementById('poi-nombre').value,
             tipo: document.getElementById('poi-tipo').value,
             faccion_id: document.getElementById('poi-faccion').value || null,
+            visible_para: visibleParaValue,
             lat: parseFloat(document.getElementById('poi-lat').value.replace(',', '.')),
             lng: parseFloat(document.getElementById('poi-lng').value.replace(',', '.')),
             tolerancia_metros: parseFloat(document.getElementById('poi-tolerancia').value.replace(',', '.')),
@@ -2010,7 +2060,7 @@ async function loadSeguridad() {
                     <td style="font-weight: bold; color: #fff;">${eq.nombre}</td>
                     <td style="color: ${facColor};">${eq.faccion_nombre}</td>
                     <td>
-                        <input type="text" id="pwd-${eq.id}" value="${eq.codigo || ''}" placeholder="Sin contraseña" style="background: rgba(0,0,0,0.3); border: 1px solid #444; color: #fff; padding: 5px 10px; width: 100%; border-radius: 3px; font-family: var(--font-mono);">
+                        <input type="text" id="pwd-${eq.id}" value="" placeholder="*** (Escribe para cambiar)" style="background: rgba(0,0,0,0.3); border: 1px solid #444; color: #fff; padding: 5px 10px; width: 100%; border-radius: 3px; font-family: var(--font-mono);">
                     </td>
                     <td style="text-align: center;">
                         <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="updateEquipoPwd(${eq.id})">GUARDAR</button>
@@ -2033,7 +2083,9 @@ async function updateEquipoPwd(id) {
     const eq = equipos.find(e => e.id == id);
     if (!eq) return;
     
-    eq.codigo = pwd;
+    if (pwd) {
+        eq.password = pwd;
+    }
     
     const resPut = await fetch(`/api/equipos/${id}`, {
         method: 'PUT',
@@ -2690,6 +2742,18 @@ function verEsquema(esquemaJsonStr) {
                         {offset: 25, repeat: 50, symbol: L.Symbol.arrowHead({pixelSize: 15, pathOptions: {fillOpacity: 1, weight: 0, color: r.color}})}
                     ]
                 }).addTo(visorMap);
+
+                if (r.nombre) {
+                    const midPoint = pts[Math.floor(pts.length / 2)];
+                    L.marker(midPoint, {
+                        icon: L.divIcon({
+                            className: 'zone-label',
+                            html: `<div style="color: white; font-weight: bold; text-shadow: 1px 1px 2px black; font-size: 1.1em; text-align: center; white-space: nowrap;">${r.nombre}</div>`,
+                            iconSize: null,
+                        }),
+                        interactive: false
+                    }).addTo(visorMap);
+                }
             });
         }
         
@@ -2730,8 +2794,28 @@ function verEsquema(esquemaJsonStr) {
         
         // Cargar POIs vivos
         if(typeof todosPOIs !== 'undefined') {
+            const currentFaccionData = facciones.find(f => f.nombre === currentFaction);
+            const currentFid = currentFaccionData ? currentFaccionData.id : null;
+
             todosPOIs.forEach(poi => {
                 if(poi.lat && poi.lng) {
+                    if (currentFid) {
+                        const vp = poi.visible_para;
+                        if (vp !== null && vp !== 0 && vp !== '0' && vp !== '') {
+                            try {
+                                let arr = [];
+                                if (typeof vp === 'string' && vp.startsWith('[')) {
+                                    arr = JSON.parse(vp);
+                                } else if (typeof vp === 'number' || !isNaN(vp)) {
+                                    arr = [parseInt(vp)];
+                                }
+                                if (arr.length > 0 && !arr.includes(currentFid)) {
+                                    return;
+                                }
+                            } catch(e) {}
+                        }
+                    }
+
                     let faccion_name = 'Neutral';
                     if(poi.faccion_id === 1) faccion_name = 'Syldavia';
                     if(poi.faccion_id === 2) faccion_name = 'Volkovia';
@@ -2764,31 +2848,58 @@ function verEsquema(esquemaJsonStr) {
             });
         }
 
-        // Cargar Grupos de Batalla de la Facción
-        if(typeof facciones !== 'undefined') {
-            const faccionMap = facciones.find(f => f.nombre === currentFaction);
-            if (faccionMap && faccionMap.grupos) {
-                faccionMap.grupos.forEach(g => {
-                    if(g.pos_x && g.pos_y) {
-                        const iconMap = {
-                            'HQ': 'star', 'Infantería': 'group', 'Reconocimiento': 'visibility', 
-                            'Sniper': 'my_location', 'Logística': 'local_shipping', 'Artillería': 'rocket_launch'
-                        };
-                        const iconName = iconMap[g.tipo] || 'group';
-                        const color = faccionMap.color;
-                        const gIcon = L.divIcon({
-                            className: 'group-icon',
-                            html: `<div style="background-color: ${color}; width: 34px; height: 34px; display: flex; justify-content: center; align-items: center; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 5px rgba(0,0,0,0.5);">
-                                     <span class="material-symbols-outlined" style="color: white; font-size: 20px;">${iconName}</span>
-                                   </div>
-                                   <div style="background: rgba(0,0,0,0.7); color: white; font-size: 10px; text-align: center; margin-top: 2px; border-radius: 3px; padding: 1px 4px; white-space: nowrap;">${g.nombre}</div>`,
-                            iconSize: [34, 50],
-                            iconAnchor: [17, 25]
-                        });
-                        L.marker([g.pos_x, g.pos_y], { icon: gIcon }).addTo(visorMap);
+        // Cargar Grupos de Batalla
+        if(typeof todosGrupos !== 'undefined' && typeof facciones !== 'undefined') {
+            todosGrupos.forEach(g => {
+                if(g.pos_x && g.pos_y) {
+                    const faccionDelGrupo = facciones.find(f => f.id === g.faccion_id);
+                    // Solo mostrar los grupos de la faccion que estamos visualizando
+                    if (faccionDelGrupo && faccionDelGrupo.nombre !== currentFaction) {
+                        return;
                     }
-                });
-            }
+                    
+                    const faccionNombre = faccionDelGrupo ? faccionDelGrupo.nombre : '';
+                    let prefix = '';
+                    if (faccionNombre === 'Syldavia') prefix = 's';
+                    if (faccionNombre === 'Volkovia') prefix = 'v';
+                    if (faccionNombre === 'Khemed') prefix = 'k';
+
+                    let letter = '';
+                    const nameLow = g.nombre.toLowerCase();
+                    if (nameLow.includes('alfa')) letter = 'a';
+                    else if (nameLow.includes('bravo')) letter = 'b';
+                    else if (nameLow.includes('charlie')) letter = 'c';
+                    else if (nameLow.includes('delta')) letter = 'd';
+                    else if (nameLow.includes('echo')) letter = 'e';
+
+                    let imgSrc = '';
+                    if (letter) {
+                        imgSrc = `/static/imgs/${prefix}${letter}.png`;
+                    } else {
+                        if (faccionNombre === 'Syldavia') imgSrc = '/static/imgs/syldavia_negro.png';
+                        if (faccionNombre === 'Volkovia') imgSrc = '/static/imgs/vokovia_negro.png';
+                        if (faccionNombre === 'Khemed') imgSrc = '/static/imgs/khemed_negro.png';
+                    }
+
+                    const teamsInGroup = typeof todasAsignaciones !== 'undefined' ? todasAsignaciones.filter(a => a.grupo_batalla_id === g.id) : [];
+                    const totalJugadores = teamsInGroup.reduce((sum, t) => sum + (t.jugadores || 0), 0);
+
+                    const html = `<div style="text-align: center; position: relative;">
+                        <img src="${imgSrc}" style="width: 38px; filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.8)); pointer-events: none;" />
+                        <div style="position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); color: white; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; pointer-events: none; white-space: nowrap; border: 1px solid rgba(255,255,255,0.2);">
+                            ${g.nombre} <span style="color:#aaa;font-size:0.9em;">(${totalJugadores}px)</span>
+                        </div>
+                    </div>`;
+
+                    const gIcon = L.divIcon({
+                        className: 'custom-map-icon',
+                        html: html,
+                        iconSize: [38, 56],
+                        iconAnchor: [19, 28]
+                    });
+                    L.marker([g.pos_x, g.pos_y], { icon: gIcon }).addTo(visorMap);
+                }
+            });
         }
         
     } catch(e) {
@@ -3179,3 +3290,87 @@ function opforNextSlide() {
     if (opforCurrentSlide >= opforSlides.length) opforCurrentSlide = 0;
     renderOpforSlide();
 }
+
+window.uploadFotoMiembro = function(id) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const formData = new FormData();
+        formData.append('foto', file);
+        fetch(`/api/miembros/${id}/foto`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.status === 'success') {
+                alert('Foto de jugador subida correctamente.');
+            } else {
+                alert('Error al subir foto: ' + data.error);
+            }
+        })
+        .catch(err => {
+            alert('Error al conectar con el servidor.');
+        });
+    };
+    input.click();
+};
+
+async function openOpordModal(faccionId) {
+    document.getElementById('opord-faccion-id').value = faccionId;
+    const selectEsquema = document.getElementById('opord-esquema');
+    selectEsquema.innerHTML = '<option value="">(Ninguno)</option>';
+    try {
+        const res = await fetch('/api/mapa/esquemas');
+        const esquemas = await res.json();
+        esquemas.forEach(e => {
+            selectEsquema.innerHTML += `<option value="${e.id}">${e.nombre}</option>`;
+        });
+        const faccionData = facciones.find(f => f.id === faccionId);
+        if (faccionData && faccionData.opord_esquema_id) {
+            selectEsquema.value = faccionData.opord_esquema_id;
+        }
+    } catch(e) {}
+    document.getElementById('opord-pdf').value = '';
+    document.getElementById('modal-opord').classList.add('active');
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const formOpord = document.getElementById('form-opord');
+    if (formOpord) {
+        formOpord.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const faccionId = document.getElementById('opord-faccion-id').value;
+            const esquemaId = document.getElementById('opord-esquema').value;
+            const pdfInput = document.getElementById('opord-pdf');
+            const formData = new FormData();
+            formData.append('opord_esquema_id', esquemaId);
+            const faccionData = facciones.find(f => f.id == faccionId);
+            if (pdfInput.files.length > 0) {
+                formData.append('pdf', pdfInput.files[0]);
+            } else if (faccionData && faccionData.opord_pdf) {
+                formData.append('opord_pdf', faccionData.opord_pdf);
+            }
+            try {
+                const res = await fetch(`/api/facciones/${faccionId}/opord`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById('modal-opord').classList.remove('active');
+                    const resFac = await fetch('/api/facciones');
+                    facciones = await resFac.json();
+                    loadORBAT();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch(e) {
+                alert('Error al guardar OPORD.');
+            }
+        });
+    }
+});
+

@@ -280,11 +280,11 @@ async function loadMapData() {
     // Load Routes and Markers from API
     const resR = await fetch(`/api/mapa/rutas?faccion_id=${facciones.find(f => f.nombre === currentFaction).id}`);
     const rutas = await resR.json();
-    drawnRoutes.forEach(r => { map.removeLayer(r.line); if(r.decorator) map.removeLayer(r.decorator); });
+    drawnRoutes.forEach(r => { map.removeLayer(r.line); if(r.decorator) map.removeLayer(r.decorator); if(r.labelMarker) map.removeLayer(r.labelMarker); });
     drawnRoutes = [];
     rutas.forEach(r => {
         const pts = JSON.parse(r.puntos_json);
-        renderRouteOnMap(pts, r.color, r.id);
+        renderRouteOnMap(pts, r.color, r.id, r.nombre);
     });
 
     const resM = await fetch(`/api/mapa/marcadores?faccion_id=${facciones.find(f => f.nombre === currentFaction).id}`);
@@ -520,7 +520,7 @@ async function placeGroupOnMap(g, lat, lng) {
     loadMapData(); 
 }
 
-function renderRouteOnMap(pts, color, id) {
+function renderRouteOnMap(pts, color, id, name) {
     // Thick line, 60% opacity
     const line = L.polyline(pts, {color: color, weight: 6, opacity: 0.6}).addTo(map);
     
@@ -535,6 +535,19 @@ function renderRouteOnMap(pts, color, id) {
                     symbol: L.Symbol.arrowHead({pixelSize: 15, pathOptions: {fillOpacity: 1, weight: 0, color: color}})
                 }
             ]
+        }).addTo(map);
+    }
+
+    let labelMarker = null;
+    if (name) {
+        const midPoint = pts[Math.floor(pts.length / 2)];
+        labelMarker = L.marker(midPoint, {
+            icon: L.divIcon({
+                className: 'zone-label',
+                html: `<div style="color: white; font-weight: bold; text-shadow: 1px 1px 2px black; font-size: 1.1em; text-align: center; white-space: nowrap;">${name}</div>`,
+                iconSize: null,
+            }),
+            interactive: false
         }).addTo(map);
     }
 
@@ -554,7 +567,7 @@ function renderRouteOnMap(pts, color, id) {
         }
     }
 
-    drawnRoutes.push({line, decorator, id});
+    drawnRoutes.push({line, decorator, labelMarker, id});
 }
 
 function handleMapClick(e) {
