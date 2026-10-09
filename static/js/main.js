@@ -110,7 +110,7 @@ async function loadDomination() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // Detect if we are in the dedicated Mortero app (no ORBAT view present)
     const isMorteroApp = document.getElementById('view-mortero') && !document.getElementById('view-orbat');
     
@@ -126,10 +126,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     initNavigation();
     initTabs();
-    loadFacciones();
-    loadEquipos();
-    if(window.userRole === "admin") loadPOIs();
-    loadORBAT();
+    await loadFacciones();
+    await loadEquipos();
+    if(window.userRole === "admin") await loadPOIs();
+    await loadORBAT();
     initMortero();
     initModal();
     initCrudMision();
@@ -2742,18 +2742,6 @@ function verEsquema(esquemaJsonStr) {
                         {offset: 25, repeat: 50, symbol: L.Symbol.arrowHead({pixelSize: 15, pathOptions: {fillOpacity: 1, weight: 0, color: r.color}})}
                     ]
                 }).addTo(visorMap);
-
-                if (r.nombre) {
-                    const midPoint = pts[Math.floor(pts.length / 2)];
-                    L.marker(midPoint, {
-                        icon: L.divIcon({
-                            className: 'zone-label',
-                            html: `<div style="color: white; font-weight: bold; text-shadow: 1px 1px 2px black; font-size: 1.1em; text-align: center; white-space: nowrap;">${r.nombre}</div>`,
-                            iconSize: null,
-                        }),
-                        interactive: false
-                    }).addTo(visorMap);
-                }
             });
         }
         
@@ -2762,6 +2750,23 @@ function verEsquema(esquemaJsonStr) {
             data.zonas.forEach(z => {
                 const pts = JSON.parse(z.puntos_json);
                 L.polygon(pts, { color: z.color, weight: 2, fillColor: z.color, fillOpacity: 0.2 }).addTo(visorMap);
+
+                if (z.nombre) {
+                    // Approximate center by using the first point or a bounding box center if preferred
+                    // For simplicity, we can use the first point or calculate the average of points
+                    let latSum = 0, lngSum = 0;
+                    pts.forEach(p => { latSum += p.lat; lngSum += p.lng; });
+                    const center = { lat: latSum / pts.length, lng: lngSum / pts.length };
+                    
+                    L.marker(center, {
+                        icon: L.divIcon({
+                            className: 'zone-label',
+                            html: `<div style="color: white; font-weight: bold; text-shadow: 1px 1px 2px black; font-size: 1.1em; text-align: center; white-space: nowrap;">${z.nombre}</div>`,
+                            iconSize: null,
+                        }),
+                        interactive: false
+                    }).addTo(visorMap);
+                }
             });
         }
         

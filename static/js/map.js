@@ -277,8 +277,15 @@ async function loadMapData() {
         createGroupMarker(g);
     });
 
+    // Wait until facciones is loaded
+    while (typeof facciones === 'undefined' || facciones.length === 0) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    const faccionObj = facciones.find(f => f.nombre === currentFaction);
+    if (!faccionObj) return; // Silent return if faction not set (e.g. admin on page load)
+
     // Load Routes and Markers from API
-    const resR = await fetch(`/api/mapa/rutas?faccion_id=${facciones.find(f => f.nombre === currentFaction).id}`);
+    const resR = await fetch(`/api/mapa/rutas?faccion_id=${faccionObj.id}`);
     const rutas = await resR.json();
     drawnRoutes.forEach(r => { map.removeLayer(r.line); if(r.decorator) map.removeLayer(r.decorator); if(r.labelMarker) map.removeLayer(r.labelMarker); });
     drawnRoutes = [];
@@ -287,7 +294,7 @@ async function loadMapData() {
         renderRouteOnMap(pts, r.color, r.id, r.nombre);
     });
 
-    const resM = await fetch(`/api/mapa/marcadores?faccion_id=${facciones.find(f => f.nombre === currentFaction).id}`);
+    const resM = await fetch(`/api/mapa/marcadores?faccion_id=${faccionObj.id}`);
     const marcadores = await resM.json();
     intelMarkers.forEach(m => map.removeLayer(m));
     intelMarkers = [];
@@ -332,7 +339,7 @@ async function loadMapData() {
         intelMarkers.push(intel);
     });
 
-    const resZ = await fetch(`/api/mapa/zonas?faccion_id=${facciones.find(f => f.nombre === currentFaction).id}`);
+    const resZ = await fetch(`/api/mapa/zonas?faccion_id=${faccionObj.id}`);
     const zonas = await resZ.json();
 
     // Render POIs
@@ -539,17 +546,6 @@ function renderRouteOnMap(pts, color, id, name) {
     }
 
     let labelMarker = null;
-    if (name) {
-        const midPoint = pts[Math.floor(pts.length / 2)];
-        labelMarker = L.marker(midPoint, {
-            icon: L.divIcon({
-                className: 'zone-label',
-                html: `<div style="color: white; font-weight: bold; text-shadow: 1px 1px 2px black; font-size: 1.1em; text-align: center; white-space: nowrap;">${name}</div>`,
-                iconSize: null,
-            }),
-            interactive: false
-        }).addTo(map);
-    }
 
     // Right click or Double Click to delete route
     if (['admin', 'mando', 'equipo'].includes(window.userRole) || window.location.pathname === '/mortero_app') {
