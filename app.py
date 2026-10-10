@@ -1550,7 +1550,7 @@ def api_mortero_pintar():
                 cursor.execute('''INSERT INTO Mortero_Radar 
                     (faccion_id_origen, lat, lng, radio, caduca_en) 
                     VALUES (?, ?, ?, ?, datetime('now', '+60 seconds'))''',
-                    (faccion_id, avg_lat, avg_lng, 150.0))
+                    (faccion_id, avg_lat, avg_lng, 50.0))
         
         # Update cooldown
         cursor.execute("UPDATE Mortero_Estado SET ultimo_disparo=datetime('now') WHERE faccion_id=?", (faccion_id,))
