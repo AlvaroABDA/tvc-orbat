@@ -873,3 +873,42 @@ document.getElementById('btn-cancel-zona')?.addEventListener('click', () => {
     pendingZonePoints = null;
     setMode('pan');
 });
+
+
+let radarMarkers = [];
+async function loadRadarMarkers() {
+    if (!facciones || facciones.length === 0) return;
+    
+    let url = '/api/mapa/radar';
+    if (currentFaction !== 'All') {
+        const faccionObj = facciones.find(f => f.nombre === currentFaction);
+        if (!faccionObj) return;
+        url = `/api/mapa/radar?faccion_id=${faccionObj.id}`;
+    }
+
+    try {
+        const res = await fetch(url);
+        const radares = await res.json();
+
+        // Remove old radar markers
+        radarMarkers.forEach(m => map.removeLayer(m));
+        radarMarkers = [];
+
+        radares.forEach(r => {
+            const circle = L.circle([r.lat, r.lng], {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.2,
+                radius: r.radio,
+                weight: 2,
+                dashArray: '5, 10'
+            }).addTo(map);
+            
+            circle.bindPopup('<b>RADAR: Posible artillería enemiga</b>');
+            radarMarkers.push(circle);
+        });
+    } catch(e) {
+        console.error('Error loading radar markers', e);
+    }
+}
+setInterval(loadRadarMarkers, 5000);
