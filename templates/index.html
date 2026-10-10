@@ -21,7 +21,6 @@
                   <button class="nav-icon-btn" data-target="view-mapa" title="Mapa Táctico"><span class="material-symbols-outlined">radar</span></button>
                   <button class="nav-icon-btn" data-target="view-domination" title="Marcador de Puntos"><span class="material-symbols-outlined">military_tech</span></button>
                   <button class="nav-icon-btn" data-target="view-stats" title="Inteligencia Táctica"><span class="material-symbols-outlined">analytics</span></button>
-                  <button class="nav-icon-btn" onclick="abrirOpfor()" title="IMINT OPFOR (Facciones)"><span class="material-symbols-outlined">policy</span></button>
                   <button class="nav-icon-btn" data-target="view-docs" title="Reglamentos y Normativas"><span class="material-symbols-outlined">library_books</span></button>
                   
                     {% if user_role == 'admin' or 'mortero' in unlocked_minigames %}
@@ -70,8 +69,13 @@
         <section id="view-orbat" class="view-section active">
             
             <div class="orbat-content-wrapper">
-                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
-                    <button id="btn-export-orbat" class="btn primary" style="display: flex; align-items: center; gap: 0.5rem;"><span class="material-symbols-outlined">html</span> Exportar ORBAT (HTML)</button>
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 10px; gap: 10px;">
+                    <button class="btn warning" style="display: flex; align-items: center; gap: 0.5rem;" onclick="abrirOpfor()">
+                        <span class="material-symbols-outlined">policy</span> IMINT OPFOR
+                    </button>
+                    <button id="btn-export-orbat" class="btn primary" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="material-symbols-outlined">html</span> Exportar ORBAT (HTML)
+                    </button>
                 </div>
                 <!-- Total PAX will now be rendered inside the Mando card -->
 
