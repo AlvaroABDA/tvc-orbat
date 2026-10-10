@@ -188,10 +188,27 @@ def logout():
 def index():
     if 'role' not in session:
         return redirect(url_for('login'))
+        
+    conn = get_db_connection()
+    op = conn.execute('SELECT nombre FROM Operacion WHERE id=1').fetchone()
+    operacion_nombre = op['nombre'] if op else "Operación Desconocida"
+    conn.close()
+    
     return render_template('index.html', 
                            user_role=session['role'], 
                            user_faction=session['faction'],
+                           operacion_nombre=operacion_nombre,
                            unlocked_minigames=session.get('unlocked_minigames', []))
+
+@app.route('/api/admin/operacion', methods=['POST'])
+def update_operacion():
+    if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json
+    conn = get_db_connection()
+    conn.execute('UPDATE Operacion SET nombre = ? WHERE id = 1', (data.get('nombre', ''),))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success'})
 
 @app.route('/mortero_app')
 def mortero_app():
