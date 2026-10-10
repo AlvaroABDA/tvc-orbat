@@ -2058,8 +2058,6 @@ async function loadSeguridad() {
         equipos.forEach(eq => {
             const facColor = eq.faccion_id === 1 ? 'var(--color-syldavia)' : (eq.faccion_id === 2 ? 'var(--color-volkovia)' : '#888');
             
-            const showPass = (eq.password_hash && !eq.password_hash.startsWith('pbkdf2:')) ? eq.password_hash : '';
-            
             tbody.innerHTML += `
                 <tr>
                     <td style="font-weight: bold; color: #fff;">
@@ -2070,7 +2068,7 @@ async function loadSeguridad() {
                     </td>
                     <td style="color: ${facColor};">${eq.faccion_nombre}</td>
                     <td>
-                        <input type="text" id="pwd-${eq.id}" value="${showPass}" placeholder="*** (Nuevo PIN)" style="background: rgba(0,0,0,0.3); border: 1px solid #444; color: #fff; padding: 5px 10px; width: 100%; border-radius: 3px; font-family: var(--font-mono);">
+                        <input type="text" id="pwd-${eq.id}" value="" placeholder="*** (Nuevo PIN)" style="background: rgba(0,0,0,0.3); border: 1px solid #444; color: #fff; padding: 5px 10px; width: 100%; border-radius: 3px; font-family: var(--font-mono);">
                     </td>
                     <td style="text-align: center;">
                         <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="updateEquipoPwd(${eq.id})">GUARDAR</button>
