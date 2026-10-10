@@ -2392,13 +2392,19 @@ async function refreshMorteroState() {
         if(d.pixel_x && d.pixel_y) {
             const PIXELS_PER_METER = 31.71 / 50.0;
             const radiusPx = (data.radio_explosion || 15) * PIXELS_PER_METER;
+            let shotColor = 'red';
+            let shotFill = '#f03';
+            if (d.faccion === 'Syldavia') { shotColor = '#ffaa00'; shotFill = '#ffcc00'; }
+            else if (d.faccion === 'Volkovia') { shotColor = '#0088ff'; shotFill = '#00d2ff'; }
+            else if (d.faccion === 'Khemed') { shotColor = '#00cc00'; shotFill = '#00ff00'; }
+
             L.circle([d.pixel_x, d.pixel_y], {
-                color: 'red',
+                color: shotColor,
                 opacity: 0.3,
-                fillColor: '#f03',
+                fillColor: shotFill,
                 fillOpacity: 0.15,
                 radius: radiusPx
-            }).bindPopup(`Impacto: ${d.timestamp}`).addTo(morteroShotsLayer);
+            }).bindPopup(`<b>${d.faccion}</b><br>Impacto: ${d.timestamp}`).addTo(morteroShotsLayer);
         }
     });
     if(!morteroMap.hasLayer(morteroShotsLayer)) {
@@ -3387,3 +3393,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+
+
+async function clearMorteroImpacts() {
+    if(confirm('¿Limpiar todos tus impactos del mapa?')) {
+        try {
+            await fetch('/api/mortero/clear', {method: 'POST'});
+            if(window.loadMorteroData) {
+                window.loadMorteroData(); // Refresh impacts immediately
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
+}
+window.clearMorteroImpacts = clearMorteroImpacts;

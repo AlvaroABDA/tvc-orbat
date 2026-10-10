@@ -1615,10 +1615,14 @@ def api_mortero_todos():
     if session.get('role') == 'admin' and request.args.get('faccion'):
         faccion_name = request.args.get('faccion')
         
-    faccion_id = 1 if faccion_name == 'Syldavia' else (2 if faccion_name == 'Volkovia' else None)
-    
     conn = get_db_connection()
-    disparos = conn.execute('SELECT * FROM Mortero_Disparo WHERE faccion = ? ORDER BY timestamp DESC LIMIT 50', (faccion_name,)).fetchall()
+    if session.get('role') == 'admin' and faccion_name == 'All':
+        disparos = conn.execute('SELECT * FROM Mortero_Disparo ORDER BY timestamp DESC LIMIT 300').fetchall()
+        faccion_id = None
+    else:
+        disparos = conn.execute("SELECT * FROM Mortero_Disparo WHERE faccion = ? AND borrado = 0 AND timestamp >= datetime('now', '-15 minutes') ORDER BY timestamp DESC LIMIT 50", (faccion_name,)).fetchall()
+        faccion_id = 1 if faccion_name == 'Syldavia' else (2 if faccion_name == 'Volkovia' else None)
+        
     estado = cursor = conn.execute('SELECT * FROM Mortero_Estado WHERE faccion_id=?', (faccion_id,)).fetchone() if faccion_id else None
     
     activo = estado['activo'] if estado else False
@@ -1780,6 +1784,18 @@ def api_mapa_radar():
         
     conn.close()
     return jsonify([dict(m) for m in markers])
+
+@app.route('/api/mortero/clear', methods=['POST'])
+def api_mortero_clear():
+    if 'role' not in session or session.get('faction') == 'All':
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    faccion_name = session.get('faction')
+    conn = get_db_connection()
+    conn.execute('UPDATE Mortero_Disparo SET borrado = 1 WHERE faccion = ?', (faccion_name,))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success'})
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

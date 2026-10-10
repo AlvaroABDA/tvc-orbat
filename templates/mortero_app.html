@@ -103,6 +103,7 @@
                     <select id="admin-sim-faccion" class="form-control" style="background: #2b2b2b; color: #ff4d4d; border: 1px solid #ff4d4d; font-weight: bold;">
                         <option value="Syldavia">SYLDAVIA</option>
                         <option value="Volkovia">VOLKOVIA</option>
+                        <option value="All">TODAS (MODO DIOS)</option>
                     </select>
                     {% endif %}
                     <div id="mortero-status" style="padding: 5px 15px; border-radius: 5px; font-weight: bold; background: #4CAF50; color: white;">OPERATIVO</div>
@@ -133,6 +134,9 @@
                             <span class="material-symbols-outlined">straighten</span>
                         </button>
                         <button id="btn-ubicar-mortero" class="btn" style="pointer-events: auto; font-weight: bold; height: 100%; white-space: nowrap; background: #000; border: 2px solid #fff; color: #fff; border-radius: 8px; padding: 10px 15px;">DESPLEGAR</button>
+                        <button id="btn-clear-mortero" class="btn" onclick="clearMorteroImpacts()" style="pointer-events: auto; font-weight: bold; height: 100%; white-space: nowrap; background: rgba(255,0,0,0.2); border: 2px solid #ff4444; color: #ff4444; border-radius: 8px; padding: 10px; margin-left: 5px;" title="Limpiar Mapa">
+                            <span class="material-symbols-outlined">delete</span>
+                        </button>
                   </div>
 
                   <!-- HUD Inferior Izquierdo: Fuego -->
