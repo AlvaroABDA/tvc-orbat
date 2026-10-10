@@ -665,6 +665,7 @@ def get_orbat():
 
 @app.route('/api/orbat/assign', methods=['POST'])
 def assign_orbat():
+    if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
     data = request.json
     equipo_id = data['equipo_id']
     grupo_batalla_id = data['grupo_batalla_id']
@@ -673,24 +674,58 @@ def assign_orbat():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Check if assignment already exists for this operation and team
     existing = cursor.execute('SELECT id FROM Historial_Asignacion WHERE operacion_id = ? AND equipo_id = ?', (operacion_id, equipo_id)).fetchone()
     
     if grupo_batalla_id is None:
-        # Remove assignment
         if existing:
             cursor.execute('DELETE FROM Historial_Asignacion WHERE id = ?', (existing['id'],))
     else:
         if existing:
-            # Update assignment
-            cursor.execute('UPDATE Historial_Asignacion SET grupo_batalla_id = ? WHERE id = ?', (grupo_batalla_id, existing['id']))
+            cursor.execute("UPDATE Historial_Asignacion SET grupo_batalla_id = ?, estado = 'Aprobada' WHERE id = ?", (grupo_batalla_id, existing['id']))
         else:
-            # Create assignment
-            cursor.execute('INSERT INTO Historial_Asignacion (operacion_id, equipo_id, grupo_batalla_id) VALUES (?, ?, ?)', (operacion_id, equipo_id, grupo_batalla_id))
+            cursor.execute("INSERT INTO Historial_Asignacion (operacion_id, equipo_id, grupo_batalla_id, estado) VALUES (?, ?, ?, 'Aprobada')", (operacion_id, equipo_id, grupo_batalla_id))
             
     conn.commit()
     conn.close()
     
+    return jsonify({'status': 'success'})
+
+@app.route('/api/orbat/solicitar', methods=['POST'])
+def solicitar_orbat():
+    if session.get('role') != 'equipo': return jsonify({'error': 'Solo los equipos pueden solicitar'}), 403
+    data = request.json
+    equipo_id = session.get('equipo_id')
+    grupo_batalla_id = data.get('grupo_batalla_id')
+    operacion_id = 1
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    existing = cursor.execute('SELECT id FROM Historial_Asignacion WHERE operacion_id = ? AND equipo_id = ?', (operacion_id, equipo_id)).fetchone()
+    if existing:
+        cursor.execute("UPDATE Historial_Asignacion SET grupo_batalla_id = ?, estado = 'Pendiente' WHERE id = ?", (grupo_batalla_id, existing['id']))
+    else:
+        cursor.execute("INSERT INTO Historial_Asignacion (operacion_id, equipo_id, grupo_batalla_id, estado) VALUES (?, ?, ?, 'Pendiente')", (operacion_id, equipo_id, grupo_batalla_id))
+    
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success'})
+
+@app.route('/api/orbat/solicitud/resolver', methods=['POST'])
+def resolver_solicitud():
+    if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json
+    asignacion_id = data['asignacion_id']
+    accion = data['accion']
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if accion == 'aprobar':
+        cursor.execute("UPDATE Historial_Asignacion SET estado = 'Aprobada' WHERE id = ?", (asignacion_id,))
+    elif accion == 'rechazar':
+        cursor.execute('DELETE FROM Historial_Asignacion WHERE id = ?', (asignacion_id,))
+    
+    conn.commit()
+    conn.close()
     return jsonify({'status': 'success'})
 
 @app.route('/api/orbat/grupo/<int:id>', methods=['PUT'])
@@ -1822,6 +1857,11 @@ def patch_db():
             conn.commit()
         except Exception as e:
             pass # Column already exists or error
+        try:
+            conn.execute("ALTER TABLE Historial_Asignacion ADD COLUMN estado TEXT DEFAULT 'Aprobada';")
+            conn.commit()
+        except Exception:
+            pass
         conn.close()
 
 patch_db()

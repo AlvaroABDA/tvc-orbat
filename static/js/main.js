@@ -484,18 +484,48 @@ function renderCard(g, isMando, totalFactionPax = 0) {
     const droppableHtml = isMandoCard ? '' : `
         <div class="grupo-drop-zones">
             <div class="droppable-area-wrapper equipos-zone">
-                <div class="zone-label">Equipos (${teamsInGroup.length})</div>
+                <div class="zone-label">Equipos (${teamsInGroup.filter(t => t.estado === 'Aprobada').length})</div>
                 <div class="droppable-area" style="cursor:pointer;" onclick="openAssignModal('${g.id}', 'equipo')" data-grupo-id="${g.id}" data-type="equipo">
-                    ${teamsInGroup.map(t => `
-                        <div class="equipo-card" data-equipo-id="${t.equipo_id}" onclick="unassignItem(event, 'equipo', '${t.equipo_id}', '${g.id}')">
-                            <div>
-                                <strong>${t.equipo_nombre}</strong>
-                                <div class="equipo-details">Rol Preferido: ${todosEquipos.find(e => e.id === t.equipo_id)?.tipo || 'N/A'}</div>
-                                ${ (t.apoyos > 0 || t.snipers > 0) ? `<div style="font-size: 0.7em; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">${t.apoyos > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🛡️ ${t.apoyos} Apoyo</span>` : ''}${t.snipers > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🎯 ${t.snipers} Sniper</span>` : ''}</div>` : '' }
-                            </div>
-                            <span>${t.jugadores} px</span>
-                        </div>
-                    `).join('')}
+                    ${teamsInGroup.map(t => {
+                        if (t.estado === 'Pendiente') {
+                            if (window.userRole === 'admin') {
+                                return `
+                                    <div class="equipo-card pendiente" data-equipo-id="${t.equipo_id}" style="border: 2px dashed #ffaa00; background: rgba(255,170,0,0.1);">
+                                        <div>
+                                            <strong>${t.equipo_nombre} (PENDIENTE)</strong>
+                                            <div class="equipo-details">Solicita unirse.</div>
+                                        </div>
+                                        <div style="display: flex; gap: 5px;">
+                                            <button onclick="event.stopPropagation(); resolverSolicitud(${t.id}, 'aprobar')" class="btn primary" style="padding: 2px 5px; font-size: 0.7em;">Aprobar</button>
+                                            <button onclick="event.stopPropagation(); resolverSolicitud(${t.id}, 'rechazar')" class="btn danger" style="padding: 2px 5px; font-size: 0.7em;">Rechazar</button>
+                                        </div>
+                                    </div>
+                                `;
+                            } else {
+                                return `
+                                    <div class="equipo-card pendiente" data-equipo-id="${t.equipo_id}" style="border: 1px dashed #ffaa00; opacity: 0.8;">
+                                        <div>
+                                            <strong>${t.equipo_nombre} <span style="color:#ffaa00; font-size:0.8em;">(Pendiente...)</span></strong>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        } else {
+                            return `
+                                <div class="equipo-card" data-equipo-id="${t.equipo_id}" onclick="unassignItem(event, 'equipo', '${t.equipo_id}', '${g.id}')">
+                                    <div>
+                                        <strong>${t.equipo_nombre}</strong>
+                                        <div class="equipo-details">Rol Preferido: ${todosEquipos.find(e => e.id === t.equipo_id)?.tipo || 'N/A'}</div>
+                                        ${ (t.apoyos > 0 || t.snipers > 0) ? `<div style="font-size: 0.7em; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">${t.apoyos > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🛡️ ${t.apoyos} Apoyo</span>` : ''}${t.snipers > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🎯 ${t.snipers} Sniper</span>` : ''}</div>` : '' }
+                                    </div>
+                                    <span>${t.jugadores} px</span>
+                                </div>
+                            `;
+                        }
+                    }).join('')}
+                    ${ (window.userRole === 'equipo' && !todasAsignaciones.find(a => a.equipo_id == window.equipoId && a.estado === 'Aprobada') && !todasAsignaciones.find(a => a.equipo_id == window.equipoId && a.grupo_batalla_id === g.id && a.estado === 'Pendiente')) ? 
+                        `<div style="text-align: center; margin-top: 5px;"><button class="btn warning" style="width: 100%; font-size:0.8em; padding: 4px;" onclick="event.stopPropagation(); solicitarUnirse(${g.id})">Solicitar Integración</button></div>` 
+                        : '' }
                 </div>
             </div>
             
@@ -792,6 +822,44 @@ function unassignItem(e, type, id, grupoId) {
                 if (typeof initMortero === 'function') initMortero();
             });
         }
+    }
+}
+
+async function solicitarUnirse(grupo_batalla_id) {
+    if (confirm('¿Quieres enviar una solicitud para unirte a este grupo? Si ya tienes una en otro, se moverá a este.')) {
+        try {
+            const res = await fetch('/api/orbat/solicitar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ grupo_batalla_id: grupo_batalla_id })
+            });
+            if (res.ok) {
+                alert('Solicitud enviada al mando.');
+                loadORBAT();
+            } else {
+                const err = await res.json();
+                alert(err.error || 'Error al enviar solicitud.');
+            }
+        } catch (e) {
+            alert('Error de conexión.');
+        }
+    }
+}
+
+async function resolverSolicitud(asignacion_id, accion) {
+    try {
+        const res = await fetch('/api/orbat/solicitud/resolver', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ asignacion_id: asignacion_id, accion: accion })
+        });
+        if (res.ok) {
+            loadORBAT();
+        } else {
+            alert('Error al resolver la solicitud.');
+        }
+    } catch (e) {
+        alert('Error de conexión.');
     }
 }
 
