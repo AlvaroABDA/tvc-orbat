@@ -48,6 +48,51 @@
             fill: rgba(0, 0, 0, 0.2);
         }
 
+        /* --- THEME MODE (Faccion Industrial Style) --- */
+        body.theme-mode {
+            --dark-bg: #111111;
+            --card-bg: var(--theme-color);
+            --text-color: #000000;
+        }
+
+        body.theme-mode .side-band,
+        body.theme-mode .bottom-text {
+            color: rgba(0, 0, 0, 0.7);
+            font-weight: bold;
+        }
+
+        body.theme-mode .identificacion-title {
+            color: #000000;
+            font-weight: bold;
+        }
+
+        body.theme-mode .photo-container {
+            background-color: #000000;
+        }
+
+        body.theme-mode .photo-container svg {
+            fill: rgba(255, 255, 255, 0.2);
+        }
+
+        body.theme-mode .corner {
+            border-color: #000000;
+            border-width: 4px;
+        }
+        
+        body.theme-mode .watermark {
+            opacity: 0.15;
+            filter: brightness(0);
+        }
+        
+        body.theme-mode .names-wrapper .nickname,
+        body.theme-mode .names-wrapper div {
+            color: #000000 !important;
+        }
+        
+        body.theme-mode .carnet-container.back-cover {
+            border-left: 2px dashed rgba(0,0,0,0.4);
+        }
+
         .controls {
             margin-top: 20px;
             display: flex;
@@ -464,7 +509,7 @@
     </div> <!-- End print-wrapper -->
     
     <div class="controls">
-        <button onclick="toggleTheme()">Tema Claro/Oscuro</button>
+        <button onclick="toggleTheme()">Cambiar Tema</button>
         <button onclick="window.print()">Imprimir Carnet</button>
     </div>
 
@@ -528,14 +573,25 @@
         });
         
         // Toggle Theme
+        const modes = ['dark-mode', 'light-mode', 'theme-mode'];
+        let currentModeIndex = 0;
+
         function toggleTheme() {
-            document.body.classList.toggle('light-mode');
-            const isLight = document.body.classList.contains('light-mode');
+            document.body.classList.remove('light-mode', 'theme-mode');
+            
+            currentModeIndex = (currentModeIndex + 1) % modes.length;
+            const nextMode = modes[currentModeIndex];
+            
+            if (nextMode !== 'dark-mode') {
+                document.body.classList.add(nextMode);
+            }
+            
+            const useBlackLogo = (nextMode === 'light-mode' || nextMode === 'theme-mode');
             
             const faccionImgs = document.querySelectorAll('.faccion-img');
             faccionImgs.forEach(img => {
                 const currentSrc = img.getAttribute('src');
-                if (isLight) {
+                if (useBlackLogo) {
                     img.setAttribute('src', currentSrc.replace('_blanco.png', '_negro.png'));
                 } else {
                     img.setAttribute('src', currentSrc.replace('_negro.png', '_blanco.png'));
