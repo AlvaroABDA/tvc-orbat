@@ -88,7 +88,9 @@
             <aside class="sidebar-panel">
                 <div class="sidebar-tabs">
                     <button class="sidebar-tab active" data-target="panel-equipos">UNIDADs</button>
+                    {% if user_role == 'admin' %}
                     <button class="sidebar-tab" data-target="panel-misiones">Misiones</button>
+                    {% endif %}
                 </div>
                 
                 <!-- UNIDADs disponibles -->
@@ -99,6 +101,7 @@
                     </div>
                 </div>
 
+                {% if user_role == 'admin' %}
                 <!-- Misiones disponibles -->
                 <div id="panel-misiones" class="sidebar-content">
                     <h3>Disponibles</h3>
@@ -106,6 +109,7 @@
                         <!-- Misiones disponibles -->
                     </div>
                 </div>
+                {% endif %}
             </aside>
         </section>
 
