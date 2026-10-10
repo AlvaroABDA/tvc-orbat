@@ -1798,13 +1798,14 @@ def api_mortero_clear():
     return jsonify({'status': 'success'})
 
 def patch_db():
-    conn = get_db_connection()
-    try:
-        conn.execute('ALTER TABLE puntos_control ADD COLUMN equipo_id INTEGER REFERENCES Equipo(id);')
-        conn.commit()
-    except Exception as e:
-        pass # Column already exists or error
-    conn.close()
+    with app.app_context():
+        conn = get_db_connection()
+        try:
+            conn.execute('ALTER TABLE puntos_control ADD COLUMN equipo_id INTEGER REFERENCES Equipo(id);')
+            conn.commit()
+        except Exception as e:
+            pass # Column already exists or error
+        conn.close()
 
 patch_db()
 
