@@ -1880,7 +1880,58 @@ def patch_db():
             conn.commit()
         except Exception:
             pass
+        try:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS Documento (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    titulo TEXT NOT NULL,
+                    contenido TEXT,
+                    pdf_url TEXT,
+                    faccion_id INTEGER,
+                    orden INTEGER DEFAULT 0
+                )
+            ''')
+            conn.commit()
+        except Exception:
+            pass
         conn.close()
+
+@app.route('/api/docs', methods=['GET'])
+def get_docs():
+    conn = get_db_connection()
+    if session.get('role') == 'admin':
+        docs = conn.execute('SELECT * FROM Documento ORDER BY orden ASC, id DESC').fetchall()
+    else:
+        # Faccion id for the current user
+        faccion = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (session.get('faction'),)).fetchone()
+        fac_id = faccion['id'] if faccion else None
+        docs = conn.execute('SELECT * FROM Documento WHERE faccion_id IS NULL OR faccion_id = ? ORDER BY orden ASC, id DESC', (fac_id,)).fetchall()
+    conn.close()
+    return jsonify([dict(row) for row in docs])
+
+@app.route('/api/docs', methods=['POST'])
+def save_doc():
+    if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json
+    conn = get_db_connection()
+    if data.get('id'):
+        conn.execute('UPDATE Documento SET titulo = ?, contenido = ?, pdf_url = ?, faccion_id = ?, orden = ? WHERE id = ?',
+                     (data['titulo'], data.get('contenido', ''), data.get('pdf_url', ''), data.get('faccion_id'), data.get('orden', 0), data['id']))
+    else:
+        conn.execute('INSERT INTO Documento (titulo, contenido, pdf_url, faccion_id, orden) VALUES (?, ?, ?, ?, ?)',
+                     (data['titulo'], data.get('contenido', ''), data.get('pdf_url', ''), data.get('faccion_id'), data.get('orden', 0)))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success'})
+
+@app.route('/api/docs/<int:id>', methods=['DELETE'])
+def delete_doc(id):
+    if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
+    conn = get_db_connection()
+    conn.execute('DELETE FROM Documento WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success'})
 
 patch_db()
 

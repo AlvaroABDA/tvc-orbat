@@ -3301,14 +3301,14 @@ function abrirOpfor() {
     const modal = document.getElementById('modal-opfor');
     if (!modal) return;
     
-    if (!todosGrupos || todosGrupos.length === 0) {
+    if (!todosEquipos || todosEquipos.length === 0) {
         alert("Aún no se han cargado los equipos.");
         return;
     }
 
     // Determine OPFOR faction (any faction that is not currentFaction)
     // We try to find the actual opposite faction based on teams available
-    let opforTeams = todosGrupos.filter(g => g.faccion_nombre && g.faccion_nombre !== currentFaction);
+    let opforTeams = todosEquipos.filter(g => g.faccion_nombre && g.faccion_nombre !== currentFaction);
     
     // Some teams might not have foto_url, we only want ones with pictures
     opforSlides = opforTeams.filter(g => g.foto_url && g.foto_url.trim() !== '');
@@ -3476,3 +3476,158 @@ async function clearMorteroImpacts() {
     }
 }
 window.clearMorteroImpacts = clearMorteroImpacts;
+
+// --- REPOSITORIO DOCUMENTAL ---
+let quillDocEditor = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize Quill if the editor div exists
+    const editorEl = document.getElementById('doc-editor');
+    if (editorEl) {
+        quillDocEditor = new Quill('#doc-editor', {
+            theme: 'snow',
+            placeholder: 'Escribe aquí el contenido del documento o normativas...',
+            modules: {
+                toolbar: [
+                    [{ 'header': [1, 2, 3, false] }],
+                    ['bold', 'italic', 'underline', 'strike'],
+                    [{ 'color': [] }, { 'background': [] }],
+                    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                    ['link', 'image', 'video'],
+                    ['clean']
+                ]
+            }
+        });
+    }
+    
+    // Load docs on init
+    cargarDocs();
+});
+
+async function cargarDocs() {
+    try {
+        const res = await fetch('/api/docs');
+        const docs = await res.json();
+        
+        const container = document.getElementById('docs-container');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        docs.forEach(doc => {
+            const isPdf = doc.pdf_url && doc.pdf_url.trim() !== '';
+            let contentHtml = '';
+            
+            if (isPdf) {
+                contentHtml = <a href=" + doc.pdf_url + " target="_blank" class="btn primary" style="display:inline-block; margin-top:10px;">Ver PDF</a>;
+            } else {
+                contentHtml = <div class="ql-editor" style="padding:0; min-height:auto;"> + doc.contenido + </div>;
+            }
+            
+            let adminControls = '';
+            if (window.userRole === 'admin') {
+                const encodedDoc = encodeURIComponent(JSON.stringify(doc));
+                adminControls = 
+                    <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px; display:flex; gap:10px;">
+                        <button class="btn secondary" onclick="editarDoc(decodeURIComponent(' + encodedDoc + '))" style="font-size:0.8em; padding:4px 8px;">Editar</button>
+                        <button class="btn danger" onclick="borrarDoc( + doc.id + )" style="font-size:0.8em; padding:4px 8px;">Borrar</button>
+                    </div>
+                ;
+            }
+            
+            const card = document.createElement('div');
+            card.className = 'mision-card';
+            card.style = 'cursor: default; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); padding: 15px;';
+            card.innerHTML = 
+                <h3 style="color: var(--theme-color); margin-bottom: 5px; font-family: var(--font-mono);"> + doc.titulo + </h3>
+                 + contentHtml + adminControls + 
+            ;
+            container.appendChild(card);
+        });
+        
+    } catch (e) {
+        console.error("Error al cargar documentos", e);
+    }
+}
+
+async function guardarDoc() {
+    const id = document.getElementById('doc-id').value;
+    const titulo = document.getElementById('doc-titulo').value.trim();
+    const pdf_url = document.getElementById('doc-pdf-url').value.trim();
+    const faccion_id = document.getElementById('doc-faccion').value;
+    const orden = document.getElementById('doc-orden').value;
+    const contenido = quillDocEditor ? quillDocEditor.root.innerHTML : '';
+    
+    if (!titulo) {
+        alert('El título es obligatorio.');
+        return;
+    }
+    
+    const payload = {
+        titulo: titulo,
+        contenido: contenido,
+        pdf_url: pdf_url,
+        faccion_id: faccion_id ? parseInt(faccion_id) : null,
+        orden: orden ? parseInt(orden) : 0
+    };
+    if (id) payload.id = parseInt(id);
+    
+    try {
+        const res = await fetch('/api/docs', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            alert('Documento guardado');
+            limpiarDocEditor();
+            cargarDocs();
+        } else {
+            alert('Error al guardar documento');
+        }
+    } catch(e) {
+        alert('Error de conexión');
+    }
+}
+
+function editarDoc(docJsonStr) {
+    const doc = JSON.parse(docJsonStr);
+    document.getElementById('doc-id').value = doc.id;
+    document.getElementById('doc-titulo').value = doc.titulo;
+    document.getElementById('doc-pdf-url').value = doc.pdf_url || '';
+    document.getElementById('doc-faccion').value = doc.faccion_id || '';
+    document.getElementById('doc-orden').value = doc.orden || 0;
+    if (quillDocEditor) {
+        quillDocEditor.root.innerHTML = doc.contenido || '';
+    }
+    
+    // Scroll up to editor
+    const view = document.getElementById('view-docs');
+    if(view) view.scrollTop = 0;
+}
+
+function limpiarDocEditor() {
+    document.getElementById('doc-id').value = '';
+    document.getElementById('doc-titulo').value = '';
+    document.getElementById('doc-pdf-url').value = '';
+    document.getElementById('doc-faccion').value = '';
+    document.getElementById('doc-orden').value = '';
+    if (quillDocEditor) {
+        quillDocEditor.root.innerHTML = '';
+    }
+}
+
+async function borrarDoc(id) {
+    if (confirm('¿Estás seguro de que quieres borrar este documento?')) {
+        try {
+            const res = await fetch('/api/docs/' + id, { method: 'DELETE' });
+            if (res.ok) {
+                cargarDocs();
+            } else {
+                alert('Error al borrar documento');
+            }
+        } catch(e) {
+            alert('Error de conexión');
+        }
+    }
+}
