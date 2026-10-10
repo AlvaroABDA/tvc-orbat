@@ -1625,7 +1625,7 @@ def api_mortero_todos():
         
     estado = cursor = conn.execute('SELECT * FROM Mortero_Estado WHERE faccion_id=?', (faccion_id,)).fetchone() if faccion_id else None
     
-    activo = estado['activo'] if estado else False
+    activo = True if faccion_id is None else (estado['activo'] if estado else False)
     lat = estado['lat'] if estado else None
     lng = estado['lng'] if estado else None
     
