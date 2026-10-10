@@ -84,7 +84,7 @@ MINIGAME_PASSWORDS = {
 }
 
 ADMIN_USERS = {
-    'admin': {'password': 'admin123', 'role': 'admin', 'faction': 'All'}
+    'admin': {'password': '4747', 'role': 'admin', 'faction': 'All'}
 }
 
 def get_db_connection():
@@ -130,7 +130,7 @@ def login():
                 SELECT e.id, e.password_hash, e.estado_sancion, f.nombre as faccion_nombre 
                 FROM Equipo e 
                 JOIN Faccion f ON e.faccion_id = f.id 
-                WHERE LOWER(e.codigo) = ? AND e.codigo != '' AND e.codigo IS NOT NULL
+                WHERE LOWER(e.codigo) = LOWER(?) AND e.codigo != '' AND e.codigo IS NOT NULL
             ''', (usuario,)).fetchone()
             conn.close()
             
@@ -384,17 +384,26 @@ def update_delete_equipo(id):
     cursor = conn.cursor()
     if request.method == 'PUT':
         data = request.json
-        cursor.execute(
-            'UPDATE Equipo SET nombre = ?, jugadores = ?, jugadores_manual = ?, faccion_id = ?, tipo = ?, valoracion = ?, codigo = ?, misiones_preferidas = ?, tags_comportamiento = ?, estado_medalla = ?, estado_sancion = ? WHERE id = ?',
-            (data['nombre'], data['jugadores'], data.get('jugadores_manual', False), data['faccion_id'], data.get('tipo', ''), data.get('valoracion', ''), data.get('codigo', ''), data.get('misiones_preferidas', ''), data.get('tags_comportamiento', '[]'), data.get('estado_medalla', 'verde'), data.get('estado_sancion', 'Autorizado'), id)
-        )
+        is_admin = session.get('role') == 'admin'
         
-        # Update password if provided
-        raw_password = data.get('password', '').strip()
-        if raw_password:
-            from werkzeug.security import generate_password_hash
-            pwd_hash = generate_password_hash(raw_password)
-            cursor.execute('UPDATE Equipo SET password_hash = ? WHERE id = ?', (pwd_hash, id))
+        if is_admin:
+            cursor.execute(
+                'UPDATE Equipo SET nombre = ?, jugadores = ?, jugadores_manual = ?, faccion_id = ?, tipo = ?, valoracion = ?, codigo = ?, misiones_preferidas = ?, tags_comportamiento = ?, estado_medalla = ?, estado_sancion = ? WHERE id = ?',
+                (data['nombre'], data['jugadores'], data.get('jugadores_manual', False), data['faccion_id'], data.get('tipo', ''), data.get('valoracion', ''), data.get('codigo', ''), data.get('misiones_preferidas', ''), data.get('tags_comportamiento', '[]'), data.get('estado_medalla', 'verde'), data.get('estado_sancion', 'Autorizado'), id)
+            )
+            
+            # Update password if provided
+            raw_password = data.get('password', '').strip()
+            if raw_password:
+                from werkzeug.security import generate_password_hash
+                pwd_hash = generate_password_hash(raw_password)
+                cursor.execute('UPDATE Equipo SET password_hash = ? WHERE id = ?', (pwd_hash, id))
+        else:
+            # Equips can only update their own safe fields
+            cursor.execute(
+                'UPDATE Equipo SET jugadores = ?, jugadores_manual = ?, tipo = ?, misiones_preferidas = ?, tags_comportamiento = ? WHERE id = ?',
+                (data['jugadores'], data.get('jugadores_manual', False), data.get('tipo', ''), data.get('misiones_preferidas', ''), data.get('tags_comportamiento', '[]'), id)
+            )
         
         # Update members (smart approach: update existing, delete missing, insert new)
         if 'miembros' in data and isinstance(data['miembros'], list):
@@ -1501,6 +1510,44 @@ def api_mortero_pintar():
             VALUES (?, ?, ?, ?, ?, ?, ?)''',
             (faccion_name, str(estado['lat']), int(estado['lng']), azimut, angulo, impacto_lat, impacto_lng))
             
+        # Log to Historial Disparos for Radar logic
+        cursor.execute('''INSERT INTO Mortero_Historial_Disparos 
+            (faccion_id, lat, lng, timestamp) VALUES (?, ?, ?, datetime('now'))''', 
+            (faccion_id, estado['lat'], estado['lng']))
+            
+        # Cleanup old shots (older than 5 minutes)
+        cursor.execute('''DELETE FROM Mortero_Historial_Disparos 
+            WHERE timestamp < datetime('now', '-5 minutes')''')
+            
+        # Check Radar Condition
+        # Get all shots from this faction in the last 5 minutes
+        recent_shots = cursor.execute('''SELECT lat, lng FROM Mortero_Historial_Disparos 
+            WHERE faccion_id = ?''', (faccion_id,)).fetchall()
+            
+        if len(recent_shots) >= 6:
+            # Check how many are within 50 meters of the CURRENT shot
+            close_shots_count = 0
+            for rs in recent_shots:
+                dist_px = math.sqrt((estado['lat'] - rs['lat'])**2 + (estado['lng'] - rs['lng'])**2)
+                dist_m = dist_px / PIXELS_PER_METER
+                if dist_m <= 50:
+                    close_shots_count += 1
+                    
+            if close_shots_count >= 6:
+                # Trigger radar!
+                # Calculate average location
+                avg_lat = sum([rs['lat'] for rs in recent_shots]) / len(recent_shots)
+                avg_lng = sum([rs['lng'] for rs in recent_shots]) / len(recent_shots)
+                
+                # Cleanup any expired markers first
+                cursor.execute("DELETE FROM Mortero_Radar WHERE caduca_en < datetime('now')")
+                
+                # Insert a new radar marker valid for 60 seconds (as requested for testing)
+                cursor.execute('''INSERT INTO Mortero_Radar 
+                    (faccion_id_origen, lat, lng, radio, caduca_en) 
+                    VALUES (?, ?, ?, ?, datetime('now', '+60 seconds'))''',
+                    (faccion_id, avg_lat, avg_lng, 150.0))
+        
         # Update cooldown
         cursor.execute("UPDATE Mortero_Estado SET ultimo_disparo=datetime('now') WHERE faccion_id=?", (faccion_id,))
         
@@ -1712,5 +1759,26 @@ def upload_miembro_foto(id):
     
     return jsonify({'status': 'success', 'foto_url': foto_url})
 
+@app.route('/api/mapa/radar', methods=['GET'])
+def api_mapa_radar():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Cleanup expired markers
+    cursor.execute("DELETE FROM Mortero_Radar WHERE caduca_en < datetime('now')")
+    conn.commit()
+    
+    # Get active markers
+    faccion_id = request.args.get('faccion_id')
+    if faccion_id:
+        markers = cursor.execute("SELECT * FROM Mortero_Radar WHERE faccion_id_origen != ?", (faccion_id,)).fetchall()
+    else:
+        markers = cursor.execute("SELECT * FROM Mortero_Radar").fetchall()
+        
+    conn.close()
+    return jsonify([dict(m) for m in markers])
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
+
+
