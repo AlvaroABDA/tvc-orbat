@@ -3519,29 +3519,29 @@ async function cargarDocs() {
             let contentHtml = '';
             
             if (isPdf) {
-                contentHtml = <a href=" + doc.pdf_url + " target="_blank" class="btn primary" style="display:inline-block; margin-top:10px;">Ver PDF</a>;
+                contentHtml = `<a href="${doc.pdf_url}" target="_blank" class="btn primary" style="display:inline-block; margin-top:10px;">Ver PDF</a>`;
             } else {
-                contentHtml = <div class="ql-editor" style="padding:0; min-height:auto;"> + doc.contenido + </div>;
+                contentHtml = `<div class="ql-editor" style="padding:0; min-height:auto;">${doc.contenido}</div>`;
             }
             
             let adminControls = '';
             if (window.userRole === 'admin') {
                 const encodedDoc = encodeURIComponent(JSON.stringify(doc));
-                adminControls = 
+                adminControls = `
                     <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px; display:flex; gap:10px;">
-                        <button class="btn secondary" onclick="editarDoc(decodeURIComponent(' + encodedDoc + '))" style="font-size:0.8em; padding:4px 8px;">Editar</button>
-                        <button class="btn danger" onclick="borrarDoc( + doc.id + )" style="font-size:0.8em; padding:4px 8px;">Borrar</button>
+                        <button class="btn secondary" onclick="editarDoc(decodeURIComponent('${encodedDoc}'))" style="font-size:0.8em; padding:4px 8px;">Editar</button>
+                        <button class="btn danger" onclick="borrarDoc(${doc.id})" style="font-size:0.8em; padding:4px 8px;">Borrar</button>
                     </div>
-                ;
+                `;
             }
             
             const card = document.createElement('div');
             card.className = 'mision-card';
             card.style = 'cursor: default; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); padding: 15px;';
-            card.innerHTML = 
-                <h3 style="color: var(--theme-color); margin-bottom: 5px; font-family: var(--font-mono);"> + doc.titulo + </h3>
-                 + contentHtml + adminControls + 
-            ;
+            card.innerHTML = `
+                <h3 style="color: var(--theme-color); margin-bottom: 5px; font-family: var(--font-mono);">${doc.titulo}</h3>
+                ${contentHtml}${adminControls}
+            `;
             container.appendChild(card);
         });
         
