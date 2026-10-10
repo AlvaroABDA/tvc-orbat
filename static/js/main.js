@@ -208,10 +208,12 @@ function initMinigameAuth() {
                 document.getElementById('minigame-auth-modal').style.display = 'none';
                 const navBtn = document.querySelector(`.nav-icon-btn[data-minigame="${minigame}"]`);
                 if (navBtn) {
-                    navBtn.classList.remove('minigame-locked');
-                    navBtn.innerHTML = '<span class="material-symbols-outlined">rocket_launch</span>';
-                    navBtn.title = 'Mortero/Artillería';
-                    navBtn.click(); // switch to it
+                    if (minigame === 'mortero') {
+                        window.location.href = '/mortero_app';
+                    } else {
+                        navBtn.classList.remove('minigame-locked');
+                        navBtn.click(); // switch to it
+                    }
                 }
             } else {
                 document.getElementById('minigame-error').style.display = 'block';
@@ -2055,12 +2057,20 @@ async function loadSeguridad() {
         
         equipos.forEach(eq => {
             const facColor = eq.faccion_id === 1 ? 'var(--color-syldavia)' : (eq.faccion_id === 2 ? 'var(--color-volkovia)' : '#888');
+            
+            const showPass = (eq.password_hash && !eq.password_hash.startsWith('pbkdf2:')) ? eq.password_hash : '';
+            
             tbody.innerHTML += `
                 <tr>
-                    <td style="font-weight: bold; color: #fff;">${eq.nombre}</td>
+                    <td style="font-weight: bold; color: #fff;">
+                        ${eq.nombre}
+                        <div style="font-size: 0.75rem; color: #aaa; font-weight: normal; margin-top: 3px;">
+                            User: <span style="color:#ffcc00">${eq.codigo || 'Sin código'}</span>
+                        </div>
+                    </td>
                     <td style="color: ${facColor};">${eq.faccion_nombre}</td>
                     <td>
-                        <input type="text" id="pwd-${eq.id}" value="" placeholder="*** (Escribe para cambiar)" style="background: rgba(0,0,0,0.3); border: 1px solid #444; color: #fff; padding: 5px 10px; width: 100%; border-radius: 3px; font-family: var(--font-mono);">
+                        <input type="text" id="pwd-${eq.id}" value="${showPass}" placeholder="*** (Nuevo PIN)" style="background: rgba(0,0,0,0.3); border: 1px solid #444; color: #fff; padding: 5px 10px; width: 100%; border-radius: 3px; font-family: var(--font-mono);">
                     </td>
                     <td style="text-align: center;">
                         <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="updateEquipoPwd(${eq.id})">GUARDAR</button>

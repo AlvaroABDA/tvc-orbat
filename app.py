@@ -135,8 +135,14 @@ def login():
             conn.close()
             
             if eq:
+                # Support both plaintext and legacy hashed passwords
                 from werkzeug.security import check_password_hash
-                if check_password_hash(eq['password_hash'], password):
+                is_valid = False
+                if eq['password_hash'] == password:
+                    is_valid = True
+                elif eq['password_hash'].startswith('pbkdf2:sha256:') and check_password_hash(eq['password_hash'], password):
+                    is_valid = True
+                if is_valid:
                     if eq['estado_sancion'] in ['Sancionado', 'Expulsado', 'Inactivo']:
                         return render_template('login.html', error=f"ACCESO DENEGADO: El equipo se encuentra {eq['estado_sancion'].upper()}")
                         
@@ -276,11 +282,10 @@ def manage_equipos():
         data = request.json
         cursor = conn.cursor()
         
-        from werkzeug.security import generate_password_hash
         raw_password = data.get('password', '').strip()
         if not raw_password:
             raw_password = '1234'
-        pwd_hash = generate_password_hash(raw_password)
+        pwd_hash = raw_password
         
         cursor.execute(
             'INSERT INTO Equipo (nombre, jugadores, jugadores_manual, faccion_id, tipo, valoracion, codigo, password_hash, misiones_preferidas, tags_comportamiento, estado_medalla, estado_sancion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -395,8 +400,7 @@ def update_delete_equipo(id):
             # Update password if provided
             raw_password = data.get('password', '').strip()
             if raw_password:
-                from werkzeug.security import generate_password_hash
-                pwd_hash = generate_password_hash(raw_password)
+                pwd_hash = raw_password
                 cursor.execute('UPDATE Equipo SET password_hash = ? WHERE id = ?', (pwd_hash, id))
         else:
             # Equips can only update their own safe fields

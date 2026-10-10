@@ -139,12 +139,49 @@
 </head>
 <body>
     <div class="login-box">
-        <h1>TVC ACCESO</h1>
-        <div class="subtitle">SISTEMA DE GESTIÓN TÁCTICA</div>
+        <img src="/static/imgs/tvc_blanco.png" alt="TVC ACCESO" style="width: 100%; max-width: 280px; margin: 0 auto 10px auto; display: block; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">
+        <div class="subtitle" style="margin-bottom: 2rem;">SISTEMA DE GESTIÓN TÁCTICA</div>
         
         <form action="/login" method="POST">
             <input type="text" name="usuario" placeholder="USUARIO" autocomplete="off" required>
-            <input type="password" name="password" placeholder="CONTRASEÑA" required>
+            
+            <div style="display: flex; gap: 10px; justify-content: space-between; margin-bottom: 1.5rem;">
+                <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" required autocomplete="off" style="width: 50px; height: 50px; font-size: 2rem; text-align: center; padding: 0;">
+                <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" required autocomplete="off" style="width: 50px; height: 50px; font-size: 2rem; text-align: center; padding: 0;">
+                <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" required autocomplete="off" style="width: 50px; height: 50px; font-size: 2rem; text-align: center; padding: 0;">
+                <input type="password" class="pin-box" maxlength="1" inputmode="numeric" pattern="[0-9]*" required autocomplete="off" style="width: 50px; height: 50px; font-size: 2rem; text-align: center; padding: 0;">
+            </div>
+            <input type="hidden" name="password" id="real-password" required>
+            
+            <script>
+                const pinBoxes = document.querySelectorAll('.pin-box');
+                const realPassword = document.getElementById('real-password');
+                
+                pinBoxes.forEach((box, index) => {
+                    box.addEventListener('input', (e) => {
+                        // Only allow numbers
+                        box.value = box.value.replace(/[^0-9]/g, '');
+                        
+                        if (box.value.length === 1 && index < pinBoxes.length - 1) {
+                            pinBoxes[index + 1].focus();
+                        }
+                        updateRealPassword();
+                    });
+                    
+                    box.addEventListener('keydown', (e) => {
+                        if (e.key === 'Backspace' && box.value === '' && index > 0) {
+                            pinBoxes[index - 1].focus();
+                        }
+                    });
+                });
+                
+                function updateRealPassword() {
+                    let pwd = '';
+                    pinBoxes.forEach(b => pwd += b.value);
+                    realPassword.value = pwd;
+                }
+            </script>
+
             
             <label style="display: flex; align-items: center; justify-content: flex-start; gap: 10px; margin-bottom: 1.5rem; color: #aaa; font-family: var(--font-main); font-size: 0.9rem; cursor: pointer;">
                 <input type="checkbox" name="remember_me" value="yes" style="width: auto; padding: 0; margin: 0; accent-color: var(--theme-color); cursor: pointer;">
