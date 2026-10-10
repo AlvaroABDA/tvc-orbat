@@ -826,7 +826,7 @@ function unassignItem(e, type, id, grupoId) {
 }
 
 async function solicitarUnirse(grupo_batalla_id) {
-    if (confirm('¿Quieres enviar una solicitud para unirte a este grupo? Si ya tienes una en otro, se moverá a este.')) {
+    if (confirm('¿Quieres enviar una solicitud para unirte a este grupo? Puedes solicitar en varios a la vez.')) {
         try {
             const res = await fetch('/api/orbat/solicitar', {
                 method: 'POST',

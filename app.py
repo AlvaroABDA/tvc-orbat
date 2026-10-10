@@ -674,16 +674,19 @@ def assign_orbat():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    existing = cursor.execute('SELECT id FROM Historial_Asignacion WHERE operacion_id = ? AND equipo_id = ?', (operacion_id, equipo_id)).fetchone()
-    
+    # If the admin removes assignment, delete ALL assignments for this team
     if grupo_batalla_id is None:
-        if existing:
-            cursor.execute('DELETE FROM Historial_Asignacion WHERE id = ?', (existing['id'],))
+        cursor.execute('DELETE FROM Historial_Asignacion WHERE operacion_id = ? AND equipo_id = ?', (operacion_id, equipo_id))
     else:
+        # Check for an existing approved assignment
+        existing = cursor.execute("SELECT id FROM Historial_Asignacion WHERE operacion_id = ? AND equipo_id = ? AND estado = 'Aprobada'", (operacion_id, equipo_id)).fetchone()
         if existing:
-            cursor.execute("UPDATE Historial_Asignacion SET grupo_batalla_id = ?, estado = 'Aprobada' WHERE id = ?", (grupo_batalla_id, existing['id']))
+            cursor.execute("UPDATE Historial_Asignacion SET grupo_batalla_id = ? WHERE id = ?", (grupo_batalla_id, existing['id']))
         else:
             cursor.execute("INSERT INTO Historial_Asignacion (operacion_id, equipo_id, grupo_batalla_id, estado) VALUES (?, ?, ?, 'Aprobada')", (operacion_id, equipo_id, grupo_batalla_id))
+        
+        # Delete any pending requests
+        cursor.execute("DELETE FROM Historial_Asignacion WHERE operacion_id = ? AND equipo_id = ? AND estado = 'Pendiente'", (operacion_id, equipo_id))
             
     conn.commit()
     conn.close()
@@ -700,10 +703,16 @@ def solicitar_orbat():
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    existing = cursor.execute('SELECT id FROM Historial_Asignacion WHERE operacion_id = ? AND equipo_id = ?', (operacion_id, equipo_id)).fetchone()
-    if existing:
-        cursor.execute("UPDATE Historial_Asignacion SET grupo_batalla_id = ?, estado = 'Pendiente' WHERE id = ?", (grupo_batalla_id, existing['id']))
-    else:
+    
+    # Check if already approved
+    approved = cursor.execute("SELECT id FROM Historial_Asignacion WHERE operacion_id = ? AND equipo_id = ? AND estado = 'Aprobada'", (operacion_id, equipo_id)).fetchone()
+    if approved:
+        conn.close()
+        return jsonify({'error': 'Ya tienes una asignación aprobada.'}), 400
+        
+    # Check if already requested this group
+    existing = cursor.execute("SELECT id FROM Historial_Asignacion WHERE operacion_id = ? AND equipo_id = ? AND grupo_batalla_id = ? AND estado = 'Pendiente'", (operacion_id, equipo_id, grupo_batalla_id)).fetchone()
+    if not existing:
         cursor.execute("INSERT INTO Historial_Asignacion (operacion_id, equipo_id, grupo_batalla_id, estado) VALUES (?, ?, ?, 'Pendiente')", (operacion_id, equipo_id, grupo_batalla_id))
     
     conn.commit()
@@ -719,8 +728,17 @@ def resolver_solicitud():
     
     conn = get_db_connection()
     cursor = conn.cursor()
+    
     if accion == 'aprobar':
-        cursor.execute("UPDATE Historial_Asignacion SET estado = 'Aprobada' WHERE id = ?", (asignacion_id,))
+        # Get team ID first
+        row = cursor.execute("SELECT equipo_id, operacion_id FROM Historial_Asignacion WHERE id = ?", (asignacion_id,)).fetchone()
+        if row:
+            equipo_id = row['equipo_id']
+            operacion_id = row['operacion_id']
+            # Approve this one
+            cursor.execute("UPDATE Historial_Asignacion SET estado = 'Aprobada' WHERE id = ?", (asignacion_id,))
+            # Delete all OTHER pending requests for this team in this operation
+            cursor.execute("DELETE FROM Historial_Asignacion WHERE equipo_id = ? AND operacion_id = ? AND id != ?", (equipo_id, operacion_id, asignacion_id))
     elif accion == 'rechazar':
         cursor.execute('DELETE FROM Historial_Asignacion WHERE id = ?', (asignacion_id,))
     
