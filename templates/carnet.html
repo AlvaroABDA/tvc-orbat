@@ -84,8 +84,13 @@
             filter: brightness(0);
         }
         
+        .team-text {
+            color: var(--theme-color);
+        }
+
         body.theme-mode .names-wrapper .nickname,
-        body.theme-mode .names-wrapper div {
+        body.theme-mode .names-wrapper div,
+        body.theme-mode .team-text {
             color: #000000 !important;
         }
         
@@ -439,7 +444,7 @@
                     {% if miembro and miembro.equipo_logo %}
                         <img src="{{ miembro.equipo_logo }}" class="team-logo" alt="Logo Equipo" onerror="this.style.display='none'">
                     {% else %}
-                        <div style="font-size: 0.6rem; color: var(--theme-color); width: 45px; text-align: center; text-transform: uppercase;">
+                        <div class="team-text" style="font-size: 0.6rem; width: 45px; text-align: center; text-transform: uppercase;">
                             {{ miembro.equipo_nombre if miembro and miembro.equipo_nombre else 'TEAM' }}
                         </div>
                     {% endif %}
@@ -448,7 +453,7 @@
                 <!-- NOMBRES -->
                 <div class="names-wrapper">
                     <h1 class="nickname" id="display-nickname" style="font-size: 1.8rem; margin: 0;">JUGADOR</h1>
-                    <div style="font-size: 0.65rem; color: var(--theme-color); text-transform: uppercase; margin-top: 2px; letter-spacing: 1px; font-weight: bold;">
+                    <div class="team-text" style="font-size: 0.65rem; text-transform: uppercase; margin-top: 2px; letter-spacing: 1px; font-weight: bold;">
                         {{ miembro.equipo_nombre if miembro and miembro.equipo_nombre else 'SIN EQUIPO' }}
                     </div>
                 </div>
