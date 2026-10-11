@@ -877,8 +877,32 @@ select option { color: #000; background: #fff; }
         overflow-y: hidden;
     }
     
-    .logo-min, .sidebar-nav div {
+    .logo-min, .sidebar-nav .nav-section-title-desktop {
         display: none !important;
+    }
+
+    .nav-admin-divider {
+        width: 2px !important;
+        height: 32px !important;
+        background: rgba(255, 77, 77, 0.4) !important;
+        margin: 0 4px !important;
+        flex-shrink: 0 !important;
+        display: block !important;
+    }
+
+    .nav-icon-btn.nav-btn-admin {
+        color: #ff9999;
+    }
+
+    .nav-icon-btn.active {
+        border-left: none !important;
+        border-top: 3px solid var(--theme-color) !important;
+        background: rgba(255, 255, 255, 0.05) !important;
+    }
+
+    .nav-icon-btn.nav-btn-admin.active {
+        color: #ff4d4d !important;
+        border-top-color: #ff4d4d !important;
     }
 
     .nav-menu {
@@ -935,12 +959,13 @@ select option { color: #000; background: #fff; }
     }
     
     /* 5. Map Fullscreen with floating HUD */
-    #view-mapa {
+    #view-mapa.active {
         display: block !important;
         position: relative !important;
+        height: 100% !important;
     }
     
-    #map {
+    #tactical-map {
         position: absolute !important;
         top: 0 !important;
         bottom: 0 !important;
