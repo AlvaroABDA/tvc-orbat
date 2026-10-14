@@ -10,10 +10,10 @@ class MemorySequenceGame {
 
         const raw = config || {};
         this.config = {
-            rondas_totales: Number(raw.rondas_totales) || 3,
+            rondas_totales: Number(raw.rondas_totales) || 5,
             longitud_inicial: Number(raw.longitud_inicial) || 3,
-            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 20.0,
-            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 60
+            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 16.0,
+            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 65
         };
 
         this.onProgressUpdate = onProgressUpdate || (() => {});

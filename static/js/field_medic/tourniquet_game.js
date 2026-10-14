@@ -12,12 +12,12 @@ class TourniquetGame {
         const raw = config || {};
         this.config = {
             segmentos_totales: Number(raw.segmentos_totales) || 8,
-            aciertos_requeridos: Number(raw.aciertos_requeridos) || 4,
+            aciertos_requeridos: Number(raw.aciertos_requeridos) || 6,
             velocidad_rotacion_segundos: Number(raw.velocidad_rotacion_segundos) || 2.4,
             tolerancia_grados: Number(raw.tolerancia_grados) || 12.0,
             penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 8.0,
-            progreso_por_acierto_pct: Number(raw.progreso_por_acierto_pct) || 25.0,
-            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 45
+            progreso_por_acierto_pct: Number(raw.progreso_por_acierto_pct) || 16.66,
+            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 50
         };
 
         this.onProgressUpdate = onProgressUpdate || (() => {});

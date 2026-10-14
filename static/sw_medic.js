@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tvc-medic-v6';
+const CACHE_NAME = 'tvc-medic-v7';
 const ASSETS_TO_CACHE = [
   '/medic',
   '/static/manifest_medic.json',

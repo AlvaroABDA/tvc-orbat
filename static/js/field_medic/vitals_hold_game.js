@@ -11,10 +11,10 @@ class VitalsHoldGame {
         const raw = config || {};
         this.config = {
             velocidad_marcador_ms: Number(raw.velocidad_marcador_ms) || 1500,
-            ancho_zona_pct: Number(raw.ancho_zona_pct) || 25.0,
-            aciertos_consecutivos_requeridos: Number(raw.aciertos_consecutivos_requeridos) || 5,
-            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 20.0,
-            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 50
+            ancho_zona_pct: Number(raw.ancho_zona_pct) || 24.0,
+            aciertos_consecutivos_requeridos: Number(raw.aciertos_consecutivos_requeridos) || 7,
+            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 16.0,
+            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 60
         };
 
         this.onProgressUpdate = onProgressUpdate || (() => {});

@@ -13,9 +13,9 @@ class PneumothoraxGame {
             velocidad_carga: Number(raw.velocidad_carga) || 75.0,
             zona_valvula_min: Number(raw.zona_valvula_min !== undefined ? raw.zona_valvula_min : raw.zona_descompresion_min_pct) || 60.0,
             zona_valvula_max: Number(raw.zona_valvula_max !== undefined ? raw.zona_valvula_max : raw.zona_descompresion_max_pct) || 82.0,
-            aciertos_requeridos: Number(raw.aciertos_requeridos) || 4,
-            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 15.0,
-            progreso_por_acierto_pct: Number(raw.progreso_por_acierto_pct) || 25.0,
+            aciertos_requeridos: Number(raw.aciertos_requeridos) || 6,
+            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 12.0,
+            progreso_por_acierto_pct: Number(raw.progreso_por_acierto_pct) || 16.66,
             tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 60
         };
 

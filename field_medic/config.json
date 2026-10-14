@@ -2,10 +2,11 @@
     "reanimaciones_iniciales_medico": 3,
     "fase1_hemorragia": {
         "velocidad_marcador_ms": 1600,
+        "velocidad_deriva_zona_ms": 2500,
         "ancho_zona_objetivo_pct": 22.0,
-        "aciertos_requeridos": 4,
-        "penalizacion_por_error_pct": 15.0,
-        "progreso_por_acierto_pct": 25.0,
+        "aciertos_requeridos": 6,
+        "penalizacion_por_error_pct": 12.0,
+        "progreso_por_acierto_pct": 16.66,
         "tiempo_limite_segundos": 60,
         "decay_pasivo_por_segundo_pct": 1.0
     },
@@ -16,63 +17,64 @@
         "zona_valvula_max": 85.0,
         "zona_descompresion_min_pct": 65.0,
         "zona_descompresion_max_pct": 85.0,
-        "aciertos_requeridos": 4,
-        "penalizacion_por_error_pct": 15.0,
-        "progreso_por_acierto_pct": 25.0,
+        "aciertos_requeridos": 6,
+        "penalizacion_por_error_pct": 12.0,
+        "progreso_por_acierto_pct": 16.66,
         "tiempo_limite_segundos": 60
     },
     "fase1_torniquete": {
         "segmentos_totales": 8,
-        "aciertos_requeridos": 4,
+        "aciertos_requeridos": 6,
         "velocidad_rotacion_segundos": 2.4,
         "tolerancia_grados": 12.0,
         "duracion_activacion_ms": 300,
         "intervalo_entre_activaciones_ms": 0,
         "penalizacion_por_error_pct": 8.0,
-        "progreso_por_acierto_pct": 25.0,
-        "tiempo_limite_segundos": 45
+        "progreso_por_acierto_pct": 16.66,
+        "tiempo_limite_segundos": 50
     },
     "fase1_sutura": {
-        "puntos_requeridos": 6,
-        "radio_objetivo_px": 30,
-        "penalizacion_por_error_pct": 10.0,
+        "puntos_requeridos": 8,
+        "radio_objetivo_px": 28,
+        "velocidad_cursor_ms": 1300,
+        "penalizacion_por_error_pct": 8.0,
         "tiempo_limite_segundos": 60
     },
     "fase2_estabilizacion": {
         "bpm_ritmo": 60,
         "tolerancia_ms": 180,
-        "pulsaciones_requeridas": 8,
-        "penalizacion_por_desfase_pct": 10.0,
-        "progreso_por_latido_pct": 12.5,
-        "tiempo_limite_segundos": 45
+        "pulsaciones_requeridas": 10,
+        "penalizacion_por_desfase_pct": 8.0,
+        "progreso_por_latido_pct": 10.0,
+        "tiempo_limite_segundos": 50
     },
     "fase2_constantes_rango": {
         "velocidad_marcador_ms": 1500,
-        "ancho_zona_pct": 25.0,
-        "aciertos_consecutivos_requeridos": 5,
-        "penalizacion_por_error_pct": 20.0,
-        "tiempo_limite_segundos": 50
+        "ancho_zona_pct": 24.0,
+        "aciertos_consecutivos_requeridos": 7,
+        "penalizacion_por_error_pct": 16.0,
+        "tiempo_limite_segundos": 60
     },
     "fase2_doble_indicador": {
         "velocidad_indicador_1_ms": 1600,
         "velocidad_indicador_2_ms": 2200,
         "ancho_zona_1_pct": 24.0,
         "ancho_zona_2_pct": 24.0,
-        "aciertos_requeridos_por_barra": 4,
-        "penalizacion_por_error_pct": 15.0,
-        "tiempo_limite_segundos": 60
+        "aciertos_requeridos_por_barra": 6,
+        "penalizacion_por_error_pct": 12.0,
+        "tiempo_limite_segundos": 65
     },
     "fase2_secuencia_visual": {
-        "rondas_totales": 3,
+        "rondas_totales": 5,
         "longitud_inicial": 3,
-        "penalizacion_por_error_pct": 20.0,
-        "tiempo_limite_segundos": 60
+        "penalizacion_por_error_pct": 16.0,
+        "tiempo_limite_segundos": 65
     },
     "fase2_correccion_linea": {
         "velocidad_desviacion": 35.0,
         "fuerza_correccion": 65.0,
-        "margen_tolerancia_pct": 25.0,
-        "segundos_en_rango_requeridos": 6.0,
-        "tiempo_limite_segundos": 50
+        "margen_tolerancia_pct": 16.0,
+        "segundos_en_rango_requeridos": 8.0,
+        "tiempo_limite_segundos": 55
     }
 }

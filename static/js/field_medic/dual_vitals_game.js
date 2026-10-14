@@ -14,9 +14,9 @@ class DualVitalsGame {
             velocidad_indicador_2_ms: Number(raw.velocidad_indicador_2_ms) || 2200,
             ancho_zona_1_pct: Number(raw.ancho_zona_1_pct) || 24.0,
             ancho_zona_2_pct: Number(raw.ancho_zona_2_pct) || 24.0,
-            aciertos_requeridos_por_barra: Number(raw.aciertos_requeridos_por_barra) || 4,
-            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 15.0,
-            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 60
+            aciertos_requeridos_por_barra: Number(raw.aciertos_requeridos_por_barra) || 6,
+            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 12.0,
+            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 65
         };
 
         this.onProgressUpdate = onProgressUpdate || (() => {});

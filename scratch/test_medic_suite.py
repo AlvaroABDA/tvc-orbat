@@ -196,7 +196,7 @@ class TestFieldMedicSuite(unittest.TestCase):
         config = medic_engine.load_medic_config()
         self.assertLessEqual(config["fase1_torniquete"]["duracion_activacion_ms"], 300)
         self.assertLessEqual(config["fase1_torniquete"]["intervalo_entre_activaciones_ms"], 50)
-        self.assertEqual(config["fase1_torniquete"]["aciertos_requeridos"], 4)
+        self.assertEqual(config["fase1_torniquete"]["aciertos_requeridos"], 6)
 
         with self.client.session_transaction() as sess:
             sess['role'] = 'admin'
@@ -209,6 +209,22 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertIn('header-back-btn', html)
         self.assertIn('abortEpisodeToScan()', html)
         self.assertIn('adminAutoPassPhase()', html)
+
+    def test_11_elongated_mechanics_and_requirements(self):
+        config = medic_engine.load_medic_config()
+        # +2 requirements on each game
+        self.assertEqual(config["fase1_hemorragia"]["aciertos_requeridos"], 6)
+        self.assertEqual(config["fase1_hemorragia"]["velocidad_deriva_zona_ms"], 2500)
+        self.assertEqual(config["fase1_neumotorax"]["aciertos_requeridos"], 6)
+        self.assertEqual(config["fase1_torniquete"]["aciertos_requeridos"], 6)
+        self.assertEqual(config["fase1_sutura"]["puntos_requeridos"], 8)
+        self.assertEqual(config["fase2_estabilizacion"]["pulsaciones_requeridas"], 10)
+        self.assertEqual(config["fase2_constantes_rango"]["aciertos_consecutivos_requeridos"], 7)
+        self.assertEqual(config["fase2_doble_indicador"]["aciertos_requeridos_por_barra"], 6)
+        self.assertEqual(config["fase2_secuencia_visual"]["rondas_totales"], 5)
+        # Línea de vida: 8 segundos y 16% de tolerancia
+        self.assertEqual(config["fase2_correccion_linea"]["segundos_en_rango_requeridos"], 8.0)
+        self.assertEqual(config["fase2_correccion_linea"]["margen_tolerancia_pct"], 16.0)
 
 if __name__ == '__main__':
     unittest.main()

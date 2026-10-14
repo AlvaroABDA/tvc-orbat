@@ -11,10 +11,11 @@ class HemorrhageGame {
         const raw = config || {};
         this.config = {
             velocidad_marcador_ms: Number(raw.velocidad_marcador_ms) || 1600,
+            velocidad_deriva_zona_ms: Number(raw.velocidad_deriva_zona_ms) || 2500,
             ancho_zona_objetivo_pct: Number(raw.ancho_zona_objetivo_pct) || 22.0,
-            aciertos_requeridos: Number(raw.aciertos_requeridos) || 4,
-            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 15.0,
-            progreso_por_acierto_pct: Number(raw.progreso_por_acierto_pct) || 25.0,
+            aciertos_requeridos: Number(raw.aciertos_requeridos) || 6,
+            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 12.0,
+            progreso_por_acierto_pct: Number(raw.progreso_por_acierto_pct) || (100 / 6),
             tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 60,
             decay_pasivo_por_segundo_pct: Number(raw.decay_pasivo_por_segundo_pct) || 1.0
         };
@@ -36,14 +37,16 @@ class HemorrhageGame {
         this.markerPos = 0; // 0..1
         this.markerDir = 1;
 
-        // Zona objetivo variable
+        // Zona objetivo móvil y dinámica continua
         this.targetWidth = this.config.ancho_zona_objetivo_pct / 100;
-        this.targetStart = 0.5 - (this.targetWidth / 2);
-        this.targetEnd = 0.5 + (this.targetWidth / 2);
+        this.targetPos = 0.5; // centro de la zona objetivo
+        this.targetDir = 1; // dirección de desplazamiento de la zona
+        this.targetStart = this.targetPos - (this.targetWidth / 2);
+        this.targetEnd = this.targetPos + (this.targetWidth / 2);
 
         this.consecutiveErrors = 0;
         this.hitStreak = 0;
-        this.feedbackText = "TOCA EL CÍRCULO CENTRAL CUANDO LA AGUJA CRUCE LA ZONA VERDE";
+        this.feedbackText = "TOCA EL CÍRCULO CENTRAL CUANDO LA AGUJA COINCIDA CON LA ZONA VERDE MÓVIL";
         this.feedbackColor = "#888";
         this.feedbackTimer = 0;
 
@@ -86,6 +89,8 @@ class HemorrhageGame {
         this.progress = Math.max(0, Math.min(100, Number(initialProgress) || 0));
         this.isRunning = true;
         this.lastTime = performance.now();
+        this.targetPos = 0.35 + Math.random() * 0.3;
+        this.targetDir = Math.random() > 0.5 ? 1 : -1;
         this.repositionTarget();
         this.loop(this.lastTime);
     }
@@ -100,22 +105,15 @@ class HemorrhageGame {
 
     repositionTarget() {
         const baseWidth = (this.config.ancho_zona_objetivo_pct / 100) || 0.22;
-        // Variación aleatoria del ancho (+- 3.5%)
-        const widthVariation = (Math.random() * 0.07) - 0.035;
-        this.targetWidth = Math.max(0.14, Math.min(0.28, baseWidth + widthVariation));
+        // Variación sutil del ancho (+- 2.5%)
+        const widthVariation = (Math.random() * 0.05) - 0.025;
+        this.targetWidth = Math.max(0.16, Math.min(0.26, baseWidth + widthVariation));
 
-        const margin = 0.10;
-        const available = 1 - (2 * margin) - this.targetWidth;
-        
-        let newStart;
-        let attempts = 0;
-        do {
-            newStart = margin + (Math.random() * available);
-            attempts++;
-        } while (attempts < 6 && this.targetStart !== undefined && Math.abs(newStart - this.targetStart) < 0.16);
-
-        this.targetStart = newStart;
-        this.targetEnd = this.targetStart + this.targetWidth;
+        // Invertir sentido de deriva para aumentar el dinamismo tras un intento
+        this.targetDir = -this.targetDir;
+        const halfW = this.targetWidth / 2;
+        this.targetStart = Math.max(0, this.targetPos - halfW);
+        this.targetEnd = Math.min(1, this.targetPos + halfW);
     }
 
     triggerTap() {
@@ -123,7 +121,7 @@ class HemorrhageGame {
 
         this.tapRippleTime = 0.35; // Animación de onda táctica
 
-        // Verificar si el marcador está dentro de la zona objetivo
+        // Verificar si el marcador coincide con la zona objetivo móvil
         const isHit = (this.markerPos >= this.targetStart && this.markerPos <= this.targetEnd);
         this.lastTapSuccess = isHit;
 
@@ -133,7 +131,7 @@ class HemorrhageGame {
             this.progress = Math.min(100, this.progress + this.config.progreso_por_acierto_pct);
 
             this.showFeedback("¡PRECISIÓN! PRESIÓN EFECTIVA", "#2ecc71");
-            this.repositionTarget(); // Cambiar posición y ancho de la barra variable
+            this.repositionTarget(); // Dinamizar deriva de la zona
 
             this.onProgressUpdate(this.progress, { hit: true, streak: this.hitStreak });
 
@@ -148,8 +146,8 @@ class HemorrhageGame {
             const penalty = this.config.penalizacion_por_error_pct + (this.consecutiveErrors > 1 ? 5 : 0);
             this.progress = Math.max(0, this.progress - penalty);
 
-            this.showFeedback("¡DESFASE! REUBICANDO PRESIÓN", "#ff3344");
-            this.repositionTarget(); // Cambiar posición y ancho también al fallar
+            this.showFeedback("¡DESFASE! ZONA EN MOVIMIENTO", "#ff3344");
+            this.repositionTarget();
             this.onProgressUpdate(this.progress, { hit: false, errors: this.consecutiveErrors });
         }
     }
@@ -178,9 +176,9 @@ class HemorrhageGame {
             this.onProgressUpdate(this.progress, { passive: true });
         }
 
-        // Mover marcador
-        const speed = 1 / (this.config.velocidad_marcador_ms / 1000);
-        this.markerPos += this.markerDir * speed * delta;
+        // 1. Mover marcador oscilante
+        const markerSpeed = 1 / (this.config.velocidad_marcador_ms / 1000);
+        this.markerPos += this.markerDir * markerSpeed * delta;
 
         if (this.markerPos >= 1) {
             this.markerPos = 1;
@@ -189,6 +187,24 @@ class HemorrhageGame {
             this.markerPos = 0;
             this.markerDir = 1;
         }
+
+        // 2. Mover zona de tolerancia de forma constante
+        const zoneSpeed = 1 / ((this.config.velocidad_deriva_zona_ms || 2500) / 1000);
+        this.targetPos += this.targetDir * zoneSpeed * delta;
+        const halfW = this.targetWidth / 2;
+        const minPos = halfW + 0.02;
+        const maxPos = 1 - halfW - 0.02;
+
+        if (this.targetPos >= maxPos) {
+            this.targetPos = maxPos;
+            this.targetDir = -1;
+        } else if (this.targetPos <= minPos) {
+            this.targetPos = minPos;
+            this.targetDir = 1;
+        }
+
+        this.targetStart = this.targetPos - halfW;
+        this.targetEnd = this.targetPos + halfW;
 
         if (this.feedbackTimer > 0) {
             this.feedbackTimer -= delta;

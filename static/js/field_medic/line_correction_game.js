@@ -12,9 +12,9 @@ class LineCorrectionGame {
         this.config = {
             velocidad_desviacion: Number(raw.velocidad_desviacion) || 35.0,
             fuerza_correccion: Number(raw.fuerza_correccion) || 65.0,
-            margen_tolerancia_pct: Number(raw.margen_tolerancia_pct) || 25.0,
-            segundos_en_rango_requeridos: Number(raw.segundos_en_rango_requeridos) || 6.0,
-            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 50
+            margen_tolerancia_pct: Number(raw.margen_tolerancia_pct) || 16.0,
+            segundos_en_rango_requeridos: Number(raw.segundos_en_rango_requeridos) || 8.0,
+            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 55
         };
 
         this.onProgressUpdate = onProgressUpdate || (() => {});

@@ -1,7 +1,8 @@
 /**
- * Fase 1 - Variante C: Sutura Ficticia Mediante Objetivos Consecutivos
- * Mecánica táctica de precisión espacial sobre pantalla táctil móvil.
- * El sanitario debe pulsar secuencialmente puntos de sutura sobre la herida esquemática.
+ * Fase 1 - Variante C: Sutura Ficticia con Cursor Móvil
+ * Mecánica táctica de precisión y sincronización temporal sobre pantalla táctil móvil.
+ * Un cursor/retícula móvil oscila constantemente sobre cada punto de sutura de la herida;
+ * el sanitario debe tocar la pantalla en el instante en que el cursor coincide con el punto.
  */
 class SutureGame {
     constructor(canvas, config, onProgressUpdate, onSuccess, onFail) {
@@ -10,9 +11,10 @@ class SutureGame {
 
         const raw = config || {};
         this.config = {
-            puntos_requeridos: Number(raw.puntos_requeridos) || 6,
-            radio_objetivo_px: Number(raw.radio_objetivo_px) || 30,
-            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 10.0,
+            puntos_requeridos: Number(raw.puntos_requeridos) || 8,
+            radio_objetivo_px: Number(raw.radio_objetivo_px) || 28,
+            velocidad_cursor_ms: Number(raw.velocidad_cursor_ms) || 1300,
+            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 8.0,
             tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 60
         };
 
@@ -30,11 +32,16 @@ class SutureGame {
         // Historial de puntos consolidados (suturas ya dadas)
         this.completedPoints = []; // [{x, y}]
         
-        // Objetivo activo actual {x, y, r}
+        // Objetivo activo actual {x, y, r, angle, sweep}
         this.currentPoint = null;
-        this.tapRipple = null; // {x, y, time, success}
+        this.cursorPhase = 0;
+        this.cursorX = 0;
+        this.cursorY = 0;
+        this.isCursorAligned = false;
 
-        this.feedbackText = "TOCA EL PUNTO DE SUTURA DESTACADO EN LA HERIDA";
+        this.tapRipple = null; // {x, y, timer, success}
+
+        this.feedbackText = "TOCA CUANDO EL CURSOR MÓVIL COINCIDA CON EL PUNTO DE SUTURA";
         this.feedbackColor = "#888";
         this.feedbackTimer = 0;
 
@@ -53,7 +60,6 @@ class SutureGame {
             if (e && e.cancelable) e.preventDefault();
 
             const rect = this.canvas.getBoundingClientRect();
-            // Coordenadas relativas al CSS del canvas
             const touchX = e.clientX - rect.left;
             const touchY = e.clientY - rect.top;
             this.handleTapAt(touchX, touchY);
@@ -101,21 +107,21 @@ class SutureGame {
         const h = this.h || 210;
         const r = this.config.radio_objetivo_px;
 
-        // Margen seguro (Safe zone) para ergonomía táctil en móviles
-        const marginX = r + 24;
-        const minY = 38 + r;
-        const maxY = h - 28 - r;
+        // Margen seguro para ergonomía táctil en móviles
+        const marginX = r + 30;
+        const minY = 40 + r;
+        const maxY = h - 35 - r;
 
         let bestX = 0, bestY = 0;
         let attempts = 0;
-        const minDistance = r * 2.2;
+        const minDistance = r * 2.0;
 
         do {
             bestX = marginX + Math.random() * (w - (2 * marginX));
             bestY = minY + Math.random() * (maxY - minY);
             attempts++;
 
-            // Verificar separación de los puntos anteriores
+            // Separación de puntos ya completados
             let farEnough = true;
             for (const p of this.completedPoints) {
                 const dist = Math.hypot(bestX - p.x, bestY - p.y);
@@ -127,30 +133,44 @@ class SutureGame {
             if (farEnough || attempts > 15) break;
         } while (attempts < 20);
 
-        this.currentPoint = { x: bestX, y: bestY, r: r };
+        // Ángulo de barrido del cursor (horizontal, vertical o diagonales)
+        const angles = [0, Math.PI / 4, Math.PI / 2, (3 * Math.PI) / 4];
+        const chosenAngle = angles[Math.floor(Math.random() * angles.length)];
+
+        this.cursorPhase = -Math.PI / 2; // Inicia en un extremo del barrido
+        this.currentPoint = {
+            x: bestX,
+            y: bestY,
+            r: r,
+            angle: chosenAngle,
+            sweep: Math.max(48, r * 2.0)
+        };
+
+        this.cursorX = bestX;
+        this.cursorY = bestY;
+        this.isCursorAligned = false;
     }
 
     handleTapAt(x, y) {
         if (!this.currentPoint) return;
 
-        const dist = Math.hypot(x - this.currentPoint.x, y - this.currentPoint.y);
-        // Margen de tolerancia táctil generoso (radio + 6px) para pantallas móviles
-        const isHit = dist <= (this.currentPoint.r + 6);
+        // Tolerancia: acierta si el cursor móvil coincide con el área del punto activo
+        const isHit = this.isCursorAligned;
 
         this.tapRipple = {
-            x: x,
-            y: y,
+            x: this.cursorX,
+            y: this.cursorY,
             timer: 0.35,
             success: isHit
         };
 
         if (isHit) {
-            // Acierto: fijar punto de sutura
+            // Acierto: consolidar punto de sutura
             this.completedPoints.push({ x: this.currentPoint.x, y: this.currentPoint.y });
             const totalDone = this.completedPoints.length;
             this.progress = Math.min(100, (totalDone / this.config.puntos_requeridos) * 100);
 
-            this.showFeedback(`¡PUNTO APLICADO! (${totalDone}/${this.config.puntos_requeridos})`, "#2ecc71");
+            this.showFeedback(`¡PUNTO CONSOLIDADO! (${totalDone}/${this.config.puntos_requeridos})`, "#2ecc71");
             this.onProgressUpdate(this.progress, { hit: true, puntos_completados: totalDone });
 
             if (totalDone >= this.config.puntos_requeridos || this.progress >= 100) {
@@ -162,9 +182,9 @@ class SutureGame {
 
             this.spawnNextPoint();
         } else {
-            // Fallo de precisión espacial
+            // Fallo de sincronización
             this.progress = Math.max(0, this.progress - this.config.penalizacion_por_error_pct);
-            this.showFeedback("¡DESVÍO DE AGUJA! TOCA DENTRO DE LA RETÍCULA", "#ff3344");
+            this.showFeedback("¡DESFASE! ESPERA A QUE EL CURSOR CRUCE EL PUNTO", "#ff3344");
             this.onProgressUpdate(this.progress, { hit: false });
         }
     }
@@ -182,6 +202,20 @@ class SutureGame {
         this.lastTime = timestamp;
         this.elapsedTime += delta;
         this.pulseTime += delta;
+
+        // Actualizar posición del cursor oscilante sobre el punto activo
+        if (this.currentPoint) {
+            const cp = this.currentPoint;
+            const cycleSpeed = (Math.PI * 2) / ((this.config.velocidad_cursor_ms || 1300) / 1000);
+            this.cursorPhase += cycleSpeed * delta;
+
+            const offset = Math.sin(this.cursorPhase) * cp.sweep;
+            this.cursorX = cp.x + (Math.cos(cp.angle) * offset);
+            this.cursorY = cp.y + (Math.sin(cp.angle) * offset);
+
+            const dist = Math.hypot(this.cursorX - cp.x, this.cursorY - cp.y);
+            this.isCursorAligned = (dist <= cp.r);
+        }
 
         if (this.tapRipple && this.tapRipple.timer > 0) {
             this.tapRipple.timer -= delta;
@@ -236,7 +270,7 @@ class SutureGame {
         ctx.fillStyle = "#666";
         ctx.font = "9px 'Share Tech Mono', monospace";
         ctx.textAlign = "left";
-        ctx.fillText("SUTURA TÁCTICA // APROXIMACIÓN DE BORDES", 12, 16);
+        ctx.fillText("SUTURA TÁCTICA // CURSOR DE PRECISIÓN", 12, 16);
 
         ctx.textAlign = "right";
         ctx.fillStyle = "#2ecc71";
@@ -260,31 +294,59 @@ class SutureGame {
             ctx.fill();
         }
 
-        // ==================== DIBUJAR OBJETIVO ACTIVO ====================
+        // ==================== DIBUJAR OBJETIVO ACTIVO Y PISTA ====================
         if (this.currentPoint) {
             const cp = this.currentPoint;
-            const pulse = (Math.sin(this.pulseTime * 4) + 1) * 0.15;
+            const cosA = Math.cos(cp.angle);
+            const sinA = Math.sin(cp.angle);
+            const x1 = cp.x - cosA * cp.sweep;
+            const y1 = cp.y - sinA * cp.sweep;
+            const x2 = cp.x + cosA * cp.sweep;
+            const y2 = cp.y + sinA * cp.sweep;
 
-            // Halo exterior pulsante
-            ctx.beginPath();
-            ctx.arc(cp.x, cp.y, cp.r + (pulse * 8), 0, Math.PI * 2);
-            ctx.strokeStyle = `rgba(0, 240, 255, ${0.35 + pulse})`;
+            // 1. Pista guía del cursor
+            ctx.strokeStyle = "rgba(0, 240, 255, 0.25)";
             ctx.lineWidth = 1.5;
-            ctx.setLineDash([4, 4]);
+            ctx.setLineDash([3, 4]);
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
             ctx.stroke();
             ctx.setLineDash([]);
 
-            // Círculo táctil principal
+            // Topes tácticos de la pista
+            const capLen = 5;
+            const pCos = -sinA * capLen;
+            const pSin = cosA * capLen;
+            ctx.strokeStyle = "rgba(0, 240, 255, 0.4)";
+            ctx.beginPath();
+            ctx.moveTo(x1 - pCos, y1 - pSin); ctx.lineTo(x1 + pCos, y1 + pSin);
+            ctx.moveTo(x2 - pCos, y2 - pSin); ctx.lineTo(x2 + pCos, y2 + pSin);
+            ctx.stroke();
+
+            // 2. Círculo objetivo del punto
+            const isAligned = this.isCursorAligned;
+            const pulse = (Math.sin(this.pulseTime * 4) + 1) * 0.15;
+            const pointColor = isAligned ? "#2ecc71" : "#00f0ff";
+
+            // Halo pulsante
+            ctx.beginPath();
+            ctx.arc(cp.x, cp.y, cp.r + (pulse * 6), 0, Math.PI * 2);
+            ctx.strokeStyle = isAligned ? `rgba(46, 204, 113, ${0.45 + pulse})` : `rgba(0, 240, 255, ${0.3 + pulse})`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Círculo base del punto
             ctx.beginPath();
             ctx.arc(cp.x, cp.y, cp.r, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(0, 240, 255, 0.12)";
+            ctx.fillStyle = isAligned ? "rgba(46, 204, 113, 0.25)" : "rgba(0, 240, 255, 0.1)";
             ctx.fill();
-            ctx.strokeStyle = "#00f0ff";
+            ctx.strokeStyle = pointColor;
             ctx.lineWidth = 2;
             ctx.stroke();
 
-            // Miras tácticas en los 4 ejes
-            const markLen = 7;
+            // Miras de cuadrante
+            const markLen = 6;
             ctx.beginPath();
             ctx.moveTo(cp.x, cp.y - cp.r - markLen); ctx.lineTo(cp.x, cp.y - cp.r + 2);
             ctx.moveTo(cp.x, cp.y + cp.r - 2); ctx.lineTo(cp.x, cp.y + cp.r + markLen);
@@ -292,15 +354,40 @@ class SutureGame {
             ctx.moveTo(cp.x - cp.r - markLen, cp.y); ctx.lineTo(cp.x - cp.r + 2, cp.y);
             ctx.stroke();
 
-            // Texto central de acción
+            // Etiqueta del punto
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillStyle = "#fff";
-            ctx.font = "bold 9px 'Orbitron', monospace";
-            ctx.fillText("PULSAR", cp.x, cp.y - 2);
-            ctx.fillStyle = "#00f0ff";
+            ctx.fillStyle = isAligned ? "#2ecc71" : "#888";
             ctx.font = "8px 'Share Tech Mono', monospace";
-            ctx.fillText(`[#${this.completedPoints.length + 1}]`, cp.x, cp.y + 8);
+            ctx.fillText(`PUNTO #${this.completedPoints.length + 1}`, cp.x, cp.y);
+
+            // 3. CURSOR MÓVIL (Aguja/Retícula táctica oscilante)
+            const curCol = isAligned ? "#2ecc71" : "#e2b938";
+            ctx.save();
+            ctx.translate(this.cursorX, this.cursorY);
+
+            const cursorSize = 10;
+            ctx.strokeStyle = curCol;
+            ctx.fillStyle = isAligned ? "rgba(46, 204, 113, 0.45)" : "rgba(226, 185, 56, 0.25)";
+            ctx.lineWidth = 2;
+
+            // Rombo táctico
+            ctx.beginPath();
+            ctx.moveTo(0, -cursorSize);
+            ctx.lineTo(cursorSize, 0);
+            ctx.lineTo(0, cursorSize);
+            ctx.lineTo(-cursorSize, 0);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Cruz interna
+            ctx.beginPath();
+            ctx.moveTo(-cursorSize - 4, 0); ctx.lineTo(cursorSize + 4, 0);
+            ctx.moveTo(0, -cursorSize - 4); ctx.lineTo(0, cursorSize + 4);
+            ctx.stroke();
+
+            ctx.restore();
         }
 
         // Onda expansiva táctica al pulsar

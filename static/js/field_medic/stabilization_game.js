@@ -12,10 +12,10 @@ class StabilizationGame {
         this.config = {
             bpm_ritmo: Number(raw.bpm_ritmo) || 60,
             tolerancia_ms: Number(raw.tolerancia_ms) || 180,
-            pulsaciones_requeridas: Number(raw.pulsaciones_requeridas) || 8,
-            penalizacion_por_desfase_pct: Number(raw.penalizacion_por_desfase_pct) || 10.0,
-            progreso_por_latido_pct: Number(raw.progreso_por_latido_pct) || 12.5,
-            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 45
+            pulsaciones_requeridas: Number(raw.pulsaciones_requeridas) || 10,
+            penalizacion_por_desfase_pct: Number(raw.penalizacion_por_desfase_pct) || 8.0,
+            progreso_por_latido_pct: Number(raw.progreso_por_latido_pct) || 10.0,
+            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 50
         };
 
         this.onProgressUpdate = onProgressUpdate || (() => {});
