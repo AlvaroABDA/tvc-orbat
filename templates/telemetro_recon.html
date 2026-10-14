@@ -947,7 +947,8 @@
         let currentSession = null;
         let watchPositionId = null;
         let lastPlayerCoords = null;
-        let currentHeading = 0;
+        let currentHeading = null; // null indica pendiente de primera lectura del sensor
+        let hasCompassReading = false;
         let isAimingOnTarget = false;
         let aimStartTime = null;
         let dwellInterval = null;
@@ -962,6 +963,9 @@
 
         // 1. Desplegar OP Dinámico
         async function deployOP(opId) {
+            // Intentar solicitar permiso / registrar brújula en la primera interacción táctil
+            startCompass();
+
             try {
                 const res = await fetch('/api/op-dinamico/iniciar', {
                     method: 'POST',
@@ -982,6 +986,9 @@
 
         // 2. Reanudar sesión y activar Tracker GPS
         function resumeSession(sourceOpId, tokenSesion, secLat, secLng, azimutBusqueda) {
+            // Activar brújula también en reanudación
+            startCompass();
+
             currentSession = {
                 sourceOpId: sourceOpId,
                 tokenSesion: tokenSesion,
@@ -1092,6 +1099,20 @@
             const camEl = document.getElementById('view-camera');
             camEl.style.display = 'flex';
 
+            // Resetear estados visuales para evitar falsas detecciones antes de lectura real
+            targetIsLocked = false;
+            isAimingOnTarget = false;
+            if (dwellInterval) { clearInterval(dwellInterval); dwellInterval = null; }
+            document.getElementById('btn-acquire').style.display = 'none';
+            document.getElementById('dwell-wrap').style.display = 'none';
+            document.getElementById('dwell-bar').style.width = '0%';
+            document.getElementById('cam-instructions').textContent = "CALIBRANDO SENSORES... APUNTE CON EL TELÉMETRO";
+            document.getElementById('cam-warning-banner').className = "target-warning-banner";
+            document.getElementById('cam-warning-icon').textContent = "🔍";
+
+            // Solicitar activación de brújula inmediatamente
+            startCompass();
+
             // Intentar poner en pantalla completa en el móvil
             try {
                 if (camEl.requestFullscreen) {
@@ -1114,13 +1135,9 @@
                 console.warn("No se pudo iniciar cámara:", err);
                 alert("No se pudo acceder a la cámara. Verifique los permisos o use el método QR.");
             }
-
-            // Iniciar brújula
-            startCompass();
         }
 
         function closeCameraView() {
-            stopCompass();
             if (cameraStream) {
                 cameraStream.getTracks().forEach(t => t.stop());
                 cameraStream = null;
@@ -1141,14 +1158,31 @@
             }
         }
 
+        let compassStarted = false;
         function startCompass() {
+            if (compassStarted) return;
+            compassStarted = true;
+
             // Activar todos los eventos posibles en capture para asegurar que el navegador envíe datos
             window.addEventListener('deviceorientationabsolute', handleOrientation, true);
             window.addEventListener('deviceorientation', handleOrientation, true);
 
-            // iOS 13+ verificación de permisos explícitos
+            // En iOS 13+, si no se ha otorgado permiso aún, solicitarlo inmediatamente
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                document.getElementById('btn-ios-permission').style.display = 'block';
+                DeviceOrientationEvent.requestPermission().then(response => {
+                    if (response === 'granted') {
+                        const permBtn = document.getElementById('btn-ios-permission');
+                        if (permBtn) permBtn.style.display = 'none';
+                        window.addEventListener('deviceorientation', handleOrientation, true);
+                        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+                    } else {
+                        const permBtn = document.getElementById('btn-ios-permission');
+                        if (permBtn) permBtn.style.display = 'block';
+                    }
+                }).catch(() => {
+                    const permBtn = document.getElementById('btn-ios-permission');
+                    if (permBtn) permBtn.style.display = 'block';
+                });
             }
         }
 
@@ -1156,7 +1190,8 @@
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(response => {
                     if (response === 'granted') {
-                        document.getElementById('btn-ios-permission').style.display = 'none';
+                        const permBtn = document.getElementById('btn-ios-permission');
+                        if (permBtn) permBtn.style.display = 'none';
                         window.addEventListener('deviceorientation', handleOrientation, true);
                         window.addEventListener('deviceorientationabsolute', handleOrientation, true);
                     } else {
@@ -1310,6 +1345,10 @@
 
         function checkAzimuthAim() {
             if (!currentSession) return;
+            if (currentHeading === null || isNaN(currentHeading)) {
+                // Aún no hay lectura de brújula: mantener en búsqueda y no evaluar falso lock
+                return;
+            }
             const targetAzimuth = currentSession.azimutBusqueda;
             
             // Diferencia angular mínima considerando el círculo de 360°
