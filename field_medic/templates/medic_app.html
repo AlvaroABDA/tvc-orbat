@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ORBAT - Field Medic</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        :root {
+            --bg-dark: #0a0c0e;
+            --panel-bg: rgba(18, 22, 28, 0.95);
+            --border-color: rgba(255, 255, 255, 0.15);
+            --accent-cyan: #00f0ff;
+            --accent-gold: #daa520;
+            --accent-green: #2ecc71;
+            --accent-red: #ff3344;
+            --text-main: #f0f6fc;
+            --text-muted: #8b949e;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Roboto', sans-serif;
+            margin: 0; padding: 0;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex; flex-direction: column;
+            user-select: none;
+        }
+
+        /* Top Bar Médica */
+        .medic-header {
+            background: #111418;
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .btn-header {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+            font-family: 'Share Tech Mono', monospace;
+            text-decoration: none;
+        }
+
+        .reanim-counter-badge {
+            background: rgba(255, 51, 68, 0.15);
+            border: 1px solid var(--accent-red);
+            padding: 4px 10px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+
+        .reanim-cross {
+            color: var(--accent-red);
+            font-size: 1.1rem;
+            font-weight: 900;
+        }
+
+        /* Contenedor Principal */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            max-width: 500px;
+            width: 100%;
+            margin: 0 auto;
+            gap: 15px;
+        }
+
+        .tactical-card {
+            position: relative;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .c-tl, .c-tr, .c-bl, .c-br {
+            position: absolute;
+            width: 8px; height: 8px;
+            pointer-events: none;
+        }
+        .c-tl { top: -1px; left: -1px; border-top: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
+        .c-tr { top: -1px; right: -1px; border-top: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
+        .c-bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
+        .c-br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
+
+        /* Monitor de Estado Médico (Rojo / Amarillo / Verde) */
+        .patient-monitor {
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.4s ease;
+        }
+
+        .patient-monitor.state-red {
+            background: rgba(255, 51, 68, 0.2);
+            border-color: var(--accent-red);
+            box-shadow: 0 0 15px rgba(255, 51, 68, 0.3);
+        }
+        .patient-monitor.state-yellow {
+            background: rgba(218, 165, 32, 0.2);
+            border-color: var(--accent-gold);
+            box-shadow: 0 0 15px rgba(218, 165, 32, 0.3);
+        }
+        .patient-monitor.state-green {
+            background: rgba(46, 204, 113, 0.2);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .monitor-dot {
+            width: 12px; height: 12px;
+            border-radius: 50%;
+            animation: pulse-dot 1s infinite alternate;
+        }
+        @keyframes pulse-dot {
+            from { transform: scale(1); opacity: 0.8; }
+            to { transform: scale(1.3); opacity: 1; }
+        }
+
+        /* Botón Táctico de Intervención */
+        .btn-action-large {
+            width: 100%;
+            padding: 18px 20px;
+            border-radius: 6px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border: 2px solid;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            transition: transform 0.08s ease, filter 0.08s ease;
+        }
+        .btn-action-large:active {
+            transform: scale(0.97);
+            filter: brightness(1.3);
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #8b0000 0%, #ff3344 100%);
+            border-color: #ff9999;
+            color: #fff;
+        }
+        .btn-cyan {
+            background: linear-gradient(135deg, #005577 0%, #00f0ff 100%);
+            border-color: #b3f7ff;
+            color: #000;
+        }
+        .btn-green {
+            background: linear-gradient(135deg, #1e824c 0%, #2ecc71 100%);
+            border-color: #a3e4d7;
+            color: #fff;
+        }
+
+        /* Barra de Progreso */
+        .progress-bar-wrap {
+            width: 100%;
+            height: 12px;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.15s ease-out;
+        }
+
+        /* Modal / Scanner de Cámara */
+        #scanner-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #000;
+            z-index: 9999;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #scanner-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .scanner-reticle {
+            position: absolute;
+            width: 250px; height: 250px;
+            border: 2px dashed #00f0ff;
+            border-radius: 12px;
+            pointer-events: none;
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Cabecera Médica Oficial -->
+    <header class="medic-header">
+        <button onclick="exitAndReturn('/simulacion')" class="btn-header">
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            VOLVER
+        </button>
+
+        <div style="text-align: center;">
+            <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #fff; letter-spacing: 1.5px;">FIELD MEDIC</div>
+            <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--text-muted);" id="header-sanitario-tag">SANITARIO: {{ sanitario_id }}</div>
+        </div>
+
+        <div class="reanim-counter-badge" title="Reanimaciones restantes disponibles para este evento">
+            <span class="reanim-cross">✚</span>
+            <span id="reanim-count-val">3</span>
+        </div>
+    </header>
+
+    <div class="content-area">
+
+        <!-- ==================== PANTALLA 0: SELECCIÓN / ESCANEO DE PACIENTE ==================== -->
+        <section id="view-scan-patient" class="tactical-card" style="display: block;">
+            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+            <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin: 0 0 8px 0; color: #fff;">ATENCIÓN MÉDICA TÁCTICA</h2>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px; line-height: 1.4;">
+                Escanee el código QR del carnet del operador herido para iniciar el protocolo de triaje y tratamiento.
+            </p>
+
+            <button class="btn-action-large btn-cyan" onclick="openQRScanner()" style="margin-bottom: 15px;">
+                📷 ESCANEAR CARNET (QR)
+            </button>
+
+            <!-- Entrada de contingencia manual por si la cámara física falla -->
+            <div style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+                <label style="font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">INGRESO MANUAL DE UID / TOKEN</label>
+                <div style="display: flex; gap: 8px; margin-top: 5px;">
+                    <input type="text" id="manual-uid-input" placeholder="Ej: SYL-042 o UID" style="flex: 1; padding: 10px; background: #000; border: 1px solid var(--border-color); color: #fff; font-family: 'Share Tech Mono', monospace; border-radius: 4px;">
+                    <button class="btn-header" onclick="submitManualPatient()" style="padding: 10px 14px;">CARGAR</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PANTALLA 1: CASO Y CONTROL DE HEMORRAGIA ==================== -->
+        <section id="view-hemorrhage" class="tactical-card" style="display: none;">
+            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+            
+            <!-- Monitor Rojo -->
+            <div class="patient-monitor state-red" id="hemorrhage-monitor">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" id="patient-name-display">OPERADOR HERIDO</div>
+                    <div style="font-size: 0.75rem; color: #ff9999; font-family: 'Share Tech Mono', monospace;">ESTADO: HEMORRAGIA ACTIVA</div>
+                </div>
+                <div class="monitor-dot" style="background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red);"></div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
+                «El operador presenta una hemorragia simulada. Debes controlar la pérdida antes de iniciar la fase de estabilización».
+            </p>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
+                <span>CONTROL HEMORRAGIA</span>
+                <span id="hemorrhage-pct-val">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="hemorrhage-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
+            </div>
+
+            <!-- Canvas Riel Precisión -->
+            <canvas id="hemorrhage-canvas" width="450" height="110" style="width: 100%; border-radius: 6px; margin: 10px 0; background: #000;"></canvas>
+
+            <button class="btn-action-large btn-red" id="btn-tap-hemorrhage" onclick="onHemorrhageTap()">
+                APLICAR PRESIÓN
+            </button>
+        </section>
+
+        <!-- ==================== PANTALLA 2: ESTABILIZACIÓN RÍTMICA ==================== -->
+        <section id="view-stabilization" class="tactical-card" style="display: none;">
+            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+
+            <!-- Monitor Amarillo -->
+            <div class="patient-monitor state-yellow" id="stabilization-monitor">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" id="patient-name-display-2">OPERADOR</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace;" id="stabilization-status-text">HEMORRAGIA CONTROLADA — ESTABILIZACIÓN EN CURSO</div>
+                </div>
+                <div class="monitor-dot" id="stabilization-monitor-dot" style="background: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold);"></div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
+                Sincronice sus pulsaciones rítmicas con el pulso cardíaco del monitor cuando la onda alcance el recuadro central.
+            </p>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
+                <span>ESTABILIZACIÓN VITAL</span>
+                <span id="stabilization-pct-val">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="stabilization-bar" style="background: linear-gradient(90deg, var(--accent-gold), var(--accent-green));"></div>
+            </div>
+
+            <!-- Canvas ECG -->
+            <canvas id="stabilization-canvas" width="450" height="130" style="width: 100%; border-radius: 6px; margin: 10px 0; background: #000;"></canvas>
+
+            <button class="btn-action-large btn-green" id="btn-tap-stabilization" onclick="onStabilizationTap()">
+                PULSAR RITMO VITAL
+            </button>
+        </section>
+
+        <!-- ==================== PANTALLA 3: RESUMEN Y CIERRE ==================== -->
+        <section id="view-summary" class="tactical-card" style="display: none;">
+            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+
+            <!-- Monitor Verde -->
+            <div class="patient-monitor state-green">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #fff;">ESTABILIZACIÓN COMPLETADA</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-green); font-family: 'Share Tech Mono', monospace;">OBJETIVO DE JUEGO CUMPLIDO</div>
+                </div>
+                <div class="monitor-dot" style="background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green);"></div>
+            </div>
+
+            <div style="background: rgba(0,0,0,0.4); border: 1px dashed var(--border-color); border-radius: 6px; padding: 14px; font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.7;">
+                <div>PACIENTE: <b id="sum-patient-name" style="color: #fff;">--</b> (<span id="sum-patient-uid">--</span>)</div>
+                <div>LESIÓN FICTICIA: <span style="color: #ffaa00;">HEMORRAGIA ACTIVA</span></div>
+                <div>CONTROL HEMORRAGIA: <b style="color: var(--accent-green);">SÍ (100%)</b></div>
+                <div>ESTABILIZACIÓN VITAL: <b style="color: var(--accent-green);">SÍ (100%)</b></div>
+                <div>TIEMPO TOTAL: <span id="sum-total-time" style="color: #00f0ff;">--</span> SEG</div>
+                <div>ESTADO DE RECURSOS: <span style="color: #fff;">-1 REANIMACIÓN CONSUMIDA</span></div>
+            </div>
+
+            <p style="color: var(--text-muted); font-size: 0.8rem; line-height: 1.4; margin-bottom: 20px;">
+                <i>Nota doctrinal:</i> El cumplimiento de la estabilización no habilita al operador de forma automática para el combate. Respete las normas de evacuación o respawn establecidas por la organización.
+            </p>
+
+            <button class="btn-action-large btn-cyan" onclick="confirmEpisodeClose()">
+                CONFIRMAR Y CERRAR ATENCIÓN
+            </button>
+        </section>
+
+    </div>
+
+    <!-- Scanner Modal Fullscreen -->
+    <div id="scanner-modal">
+        <video id="scanner-video" playsinline autoplay muted></video>
+        <div class="scanner-reticle"></div>
+        <button class="btn-header" onclick="closeQRScanner()" style="position: absolute; bottom: 30px; font-size: 1rem; padding: 12px 24px;">
+            CANCELAR ESCANEO
+        </button>
+    </div>
+
+    <!-- Carga de Scripts Modulares Field Medic -->
+    <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=1"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=1"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=1"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=1"></script>
+
+    <script>
+        const sanitarioId = "{{ sanitario_id }}";
+        const medicConfig = {{ config | tojson | safe }};
+        
+        const storage = new EpisodeStorage(sanitarioId);
+        let activeEpisode = null;
+        let qrScanner = null;
+        let hemorrhageEngine = null;
+        let stabilizationEngine = null;
+
+        // Inicialización al cargar la página
+        window.addEventListener('DOMContentLoaded', () => {
+            updateReanimUI();
+            storage.flushSyncQueue(); // Intentar sincronizar cola offline si hay red
+
+            // Si se accede directamente escaneando el carnet (?token=UID)
+            const preloadedToken = "{{ preloaded_token | default('', true) }}";
+            if (preloadedToken && preloadedToken.trim() !== '') {
+                startNewEpisodeWithToken(preloadedToken.trim());
+                return;
+            }
+
+            // Comprobar si hay un episodio interrumpido para recuperarlo
+            const saved = storage.getCurrentEpisode();
+            if (saved && saved.fase_actual !== 'completed') {
+                resumeEpisode(saved);
+            }
+        });
+
+        function updateReanimUI() {
+            const val = storage.getLocalReanimations(medicConfig.reanimaciones_iniciales_medico || 3);
+            document.getElementById('reanim-count-val').textContent = val;
+        }
+
+        // ==================== ESCÁNER QR ====================
+        function openQRScanner() {
+            const modal = document.getElementById('scanner-modal');
+            modal.style.display = 'flex';
+            const vid = document.getElementById('scanner-video');
+            qrScanner = new MedicQRScanner(vid, (token) => {
+                modal.style.display = 'none';
+                startNewEpisodeWithToken(token);
+            }, (err) => {
+                alert(err);
+                modal.style.display = 'none';
+            });
+            qrScanner.start();
+        }
+
+        function closeQRScanner() {
+            if (qrScanner) qrScanner.stop();
+            document.getElementById('scanner-modal').style.display = 'none';
+        }
+
+        function submitManualPatient() {
+            const val = document.getElementById('manual-uid-input').value.trim();
+            if (!val) {
+                alert("Introduzca un UID o indicativo de operador.");
+                return;
+            }
+            startNewEpisodeWithToken(val);
+        }
+
+        // ==================== INICIO / RECUPERACIÓN DE EPISODIO ====================
+        function startNewEpisodeWithToken(token) {
+            // Verificar si el sanitario dispone de reanimaciones
+            const reanims = storage.getLocalReanimations();
+            if (reanims <= 0) {
+                alert("ATENCIÓN: Ha agotado su cupo de reanimaciones asignadas para este despliegue.");
+                return;
+            }
+
+            activeEpisode = {
+                episode_id: "EP-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7).toUpperCase(),
+                sanitario_id: sanitarioId,
+                operador_uid: token,
+                operador_nombre: "OPERADOR " + token,
+                fase_actual: "hemorrhage_control",
+                hemorragia_controlada: false,
+                estabilizacion_completada: false,
+                hemorrhage_progress: 0,
+                stabilization_progress: 0,
+                start_time: Date.now(),
+                duration_total_segundos: 0
+            };
+
+            storage.saveCurrentEpisode(activeEpisode);
+            launchHemorrhagePhase();
+        }
+
+        function resumeEpisode(saved) {
+            activeEpisode = saved;
+            if (activeEpisode.fase_actual === 'hemorrhage_control') {
+                launchHemorrhagePhase(activeEpisode.hemorrhage_progress || 0);
+            } else if (activeEpisode.fase_actual === 'patient_stabilization') {
+                launchStabilizationPhase(activeEpisode.stabilization_progress || 0);
+            }
+        }
+
+        // ==================== FASE 1: CONTROL DE HEMORRAGIA ====================
+        function launchHemorrhagePhase(initialProgress = 0) {
+            document.getElementById('view-scan-patient').style.display = 'none';
+            document.getElementById('view-stabilization').style.display = 'none';
+            document.getElementById('view-summary').style.display = 'none';
+            document.getElementById('view-hemorrhage').style.display = 'block';
+
+            document.getElementById('patient-name-display').textContent = activeEpisode.operador_nombre;
+
+            const canvas = document.getElementById('hemorrhage-canvas');
+            hemorrhageEngine = new HemorrhageGame(
+                canvas,
+                medicConfig.fase1_hemorragia,
+                (pct) => {
+                    document.getElementById('hemorrhage-pct-val').textContent = Math.round(pct) + "%";
+                    document.getElementById('hemorrhage-bar').style.width = pct + "%";
+                    activeEpisode.hemorrhage_progress = pct;
+                    storage.saveCurrentEpisode(activeEpisode);
+                },
+                (result) => {
+                    // ÉXITO FASE 1
+                    activeEpisode.hemorragia_controlada = true;
+                    activeEpisode.fase_actual = "patient_stabilization";
+                    storage.saveCurrentEpisode(activeEpisode);
+
+                    // Transición automática e inmediata sin selección
+                    setTimeout(() => {
+                        launchStabilizationPhase(0);
+                    }, 500);
+                },
+                (failReason) => {
+                    alert("Intervención fallida: " + failReason);
+                }
+            );
+
+            hemorrhageEngine.start(initialProgress);
+        }
+
+        function onHemorrhageTap() {
+            if (hemorrhageEngine) hemorrhageEngine.triggerTap();
+        }
+
+        // ==================== FASE 2: ESTABILIZACIÓN RÍTMICA ====================
+        function launchStabilizationPhase(initialProgress = 0) {
+            if (hemorrhageEngine) hemorrhageEngine.stop();
+
+            document.getElementById('view-hemorrhage').style.display = 'none';
+            document.getElementById('view-summary').style.display = 'none';
+            document.getElementById('view-stabilization').style.display = 'block';
+
+            document.getElementById('patient-name-display-2').textContent = activeEpisode.operador_nombre;
+
+            const canvas = document.getElementById('stabilization-canvas');
+            stabilizationEngine = new StabilizationGame(
+                canvas,
+                medicConfig.fase2_estabilizacion,
+                (pct) => {
+                    document.getElementById('stabilization-pct-val').textContent = Math.round(pct) + "%";
+                    document.getElementById('stabilization-bar').style.width = pct + "%";
+                    activeEpisode.stabilization_progress = pct;
+                    storage.saveCurrentEpisode(activeEpisode);
+                },
+                (result) => {
+                    // ÉXITO FASE 2
+                    activeEpisode.estabilizacion_completada = true;
+                    activeEpisode.fase_actual = "completed";
+                    activeEpisode.duration_total_segundos = Math.round((Date.now() - activeEpisode.start_time) / 1000);
+                    activeEpisode.resultado_final = "EXITO";
+                    storage.saveCurrentEpisode(activeEpisode);
+
+                    setTimeout(() => {
+                        showSummaryScreen();
+                    }, 400);
+                },
+                (failReason) => {
+                    alert("Fallo de estabilización: " + failReason);
+                }
+            );
+
+            stabilizationEngine.start(initialProgress);
+        }
+
+        function onStabilizationTap() {
+            if (stabilizationEngine) stabilizationEngine.triggerBeatTap();
+        }
+
+        // ==================== PANTALLA 3: RESUMEN Y CIERRE ====================
+        function showSummaryScreen() {
+            if (stabilizationEngine) stabilizationEngine.stop();
+
+            document.getElementById('view-stabilization').style.display = 'none';
+            document.getElementById('view-summary').style.display = 'block';
+
+            document.getElementById('sum-patient-name').textContent = activeEpisode.operador_nombre;
+            document.getElementById('sum-patient-uid').textContent = activeEpisode.operador_uid;
+            document.getElementById('sum-total-time').textContent = activeEpisode.duration_total_segundos;
+        }
+
+        function confirmEpisodeClose() {
+            // Descontar recurso localmente de forma idempotente
+            storage.decrementReanimation();
+            updateReanimUI();
+
+            // Encolar para sincronización
+            storage.enqueueForSync(activeEpisode);
+            storage.clearCurrentEpisode();
+
+            // Intentar sincronizar si hay red
+            storage.flushSyncQueue();
+
+            // Resetear interfaz para el siguiente paciente
+            activeEpisode = null;
+            document.getElementById('view-summary').style.display = 'none';
+            document.getElementById('view-scan-patient').style.display = 'block';
+            document.getElementById('manual-uid-input').value = '';
+        }
+
+        // Salir a pantalla completa y navegar
+        function exitAndReturn(targetUrl = '/simulacion') {
+            try {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                }
+            } catch (e) {}
+            window.location.href = targetUrl;
+        }
+
+        // Auto-fullscreen al primer toque táctil
+        function autoEnterFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                let elem = document.documentElement;
+                if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
+                else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+            }
+        }
+        document.addEventListener('touchstart', autoEnterFullscreen, { once: true, passive: true });
+        document.addEventListener('click', autoEnterFullscreen, { once: true });
+    </script>
+</body>
+</html>

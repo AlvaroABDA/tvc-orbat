@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 import dynamic_targets_engine
 import imint_engine
 import op_dinamico_engine
+from field_medic import medic_engine
 import math
 
 def calculate_azimuth(lat_origin, lng_origin, lat_target, lng_target):
@@ -2316,6 +2317,12 @@ def patch_db():
         except Exception:
             pass
 
+        # Inicializar tablas de Field Medic
+        try:
+            medic_engine.init_medic_db(conn)
+        except Exception as e:
+            print("Error inicializando tablas field_medic:", e)
+
         conn.close()
 
 @app.route('/api/docs', methods=['GET'])
@@ -2354,6 +2361,63 @@ def delete_doc(id):
     conn.commit()
     conn.close()
     return jsonify({'status': 'success'})
+
+# ==================== FIELD MEDIC ROUTES ====================
+@app.route('/medic', methods=['GET'])
+def view_medic():
+    """
+    Ruta PWA principal del módulo médico.
+    Permite acceso directo vía QR de carnet (?token=UID) o desde la interfaz.
+    """
+    conn = get_db_connection()
+    user_role = session.get('role', 'player')
+    user_faction = session.get('faction', 'Syldavia')
+    equipo_id = session.get('equipo_id')
+    
+    # Identificador del sanitario (usar UID de sesión, equipo o sanitario asignado)
+    sanitario_id = session.get('sanitario_id') or session.get('user') or (f"MED-{equipo_id}" if equipo_id else "MED-ALFA")
+    
+    # Cargar recursos disponibles del médico
+    recursos = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id)
+    config = medic_engine.load_medic_config()
+    
+    # Si viene con token de operador directo vía QR
+    preloaded_token = request.args.get('token', '')
+
+    from jinja2 import ChoiceLoader, FileSystemLoader
+    # Asegurar que Flask encuentre las plantillas de field_medic/templates
+    custom_loader = ChoiceLoader([
+        app.jinja_loader,
+        FileSystemLoader(os.path.join(os.path.dirname(__file__), 'field_medic', 'templates'))
+    ])
+    app.jinja_loader = custom_loader
+
+    return render_template(
+        'medic_app.html',
+        sanitario_id=sanitario_id,
+        recursos=recursos,
+        config=config,
+        preloaded_token=preloaded_token,
+        user_role=user_role,
+        user_faction=user_faction
+    )
+
+@app.route('/api/medico/recursos', methods=['GET'])
+def api_medico_recursos():
+    conn = get_db_connection()
+    sanitario_id = request.args.get('sanitario_id') or session.get('sanitario_id') or "MED-ALFA"
+    recursos = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id)
+    return jsonify(recursos)
+
+@app.route('/api/medico/sync', methods=['POST'])
+def api_medico_sync():
+    """
+    Endpoint de sincronización idempotente de episodios médicos.
+    """
+    payload = request.json or {}
+    conn = get_db_connection()
+    result, status_code = medic_engine.sync_episodio_medico(conn, payload)
+    return jsonify(result), status_code
 
 patch_db()
 
