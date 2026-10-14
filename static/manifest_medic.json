@@ -1,0 +1,22 @@
+{
+  "name": "TVC Field Medic",
+  "short_name": "FieldMedic",
+  "start_url": "/medic",
+  "display": "standalone",
+  "background_color": "#0a0c0e",
+  "theme_color": "#111418",
+  "orientation": "portrait",
+  "description": "Suite Médica Táctica Offline para operadores TVC-ORBAT",
+  "icons": [
+    {
+      "src": "/static/imgs/medic_icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/imgs/medic_icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

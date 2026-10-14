@@ -9,6 +9,15 @@
         "tiempo_limite_segundos": 60,
         "decay_pasivo_por_segundo_pct": 1.0
     },
+    "fase1_neumotorax": {
+        "velocidad_ciclo_ms": 1800,
+        "zona_descompresion_min_pct": 65.0,
+        "zona_descompresion_max_pct": 85.0,
+        "aciertos_requeridos": 4,
+        "penalizacion_por_error_pct": 15.0,
+        "progreso_por_acierto_pct": 25.0,
+        "tiempo_limite_segundos": 60
+    },
     "fase2_estabilizacion": {
         "bpm_ritmo": 60,
         "tolerancia_ms": 180,

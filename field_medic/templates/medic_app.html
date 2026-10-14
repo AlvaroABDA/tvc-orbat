@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ORBAT - Field Medic</title>
+    <link rel="manifest" href="/static/manifest_medic.json">
+    <meta name="theme-color" content="#111418">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
     <style>
@@ -247,6 +249,32 @@
 
     <div class="content-area">
 
+        <!-- ==================== PANTALLA INSTALADOR PWA (SI NO ESTÁ INSTALADA) ==================== -->
+        <section id="view-pwa-install" class="tactical-card" style="display: none; border-color: var(--accent-cyan);">
+            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+            <div style="text-align: center; margin-bottom: 12px;">
+                <span class="material-symbols-outlined" style="font-size: 42px; color: var(--accent-cyan);">install_mobile</span>
+                <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.15rem; margin: 6px 0; color: #fff;">DESCARGAR APP FIELD MEDIC</h2>
+                <div style="font-size: 0.75rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">SUITE OFFLINE INDEPENDIENTE</div>
+            </div>
+
+            <p style="color: #ccc; font-size: 0.85rem; line-height: 1.4; margin-bottom: 15px;">
+                Para operar en el terreno <b>sin conexión y a pantalla completa</b>, instale esta suite en su dispositivo móvil.
+            </p>
+
+            <button class="btn-action-large btn-cyan" id="btn-pwa-install-action" onclick="installPWA()" style="margin-bottom: 10px;">
+                📲 INSTALAR EN EL MÓVIL
+            </button>
+
+            <div id="pwa-ios-instructions" style="display: none; background: rgba(0,0,0,0.5); border: 1px dashed var(--border-color); border-radius: 4px; padding: 10px; font-size: 0.78rem; color: #aaa; line-height: 1.4; margin-bottom: 10px;">
+                <b>En iPhone / Safari:</b> Pulsa el botón de compartir (<span style="font-size: 14px;">⎋</span>) y selecciona <b>"Añadir a la pantalla de inicio"</b>.
+            </div>
+
+            <button class="btn-header" onclick="skipInstallAndOpen()" style="width: 100%; justify-content: center; background: transparent; border: 1px dashed var(--border-color); color: #888; font-size: 0.75rem; padding: 8px;">
+                CONTINUAR EN EL NAVEGADOR
+            </button>
+        </section>
+
         <!-- ==================== PANTALLA 0: SELECCIÓN / ESCANEO DE PACIENTE ==================== -->
         <section id="view-scan-patient" class="tactical-card" style="display: block;">
             <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
@@ -259,8 +287,21 @@
                 📷 ESCANEAR CARNET (QR)
             </button>
 
+            <!-- Selector de simulación rápida de escenario para pruebas -->
+            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 15px;">
+                <label style="font-size: 0.72rem; color: #aaa; font-family: 'Share Tech Mono', monospace; display: block; margin-bottom: 6px;">TIPO DE LESIÓN TÁCTICA A TRATAR</label>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-header active-injury-tab" id="btn-select-hemorrhage" onclick="selectInjuryType('HEMORRAGIA_ACTIVA')" style="flex: 1; justify-content: center; border-color: var(--accent-red); color: #fff; background: rgba(255,51,68,0.2);">
+                        HEMORRAGIA
+                    </button>
+                    <button type="button" class="btn-header" id="btn-select-pneumothorax" onclick="selectInjuryType('NEUMOTORAX_TENSION')" style="flex: 1; justify-content: center; border-color: #555; color: #aaa;">
+                        NEUMOTÓRAX
+                    </button>
+                </div>
+            </div>
+
             <!-- Entrada de contingencia manual por si la cámara física falla -->
-            <div style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 15px;">
+            <div style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 10px;">
                 <label style="font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">INGRESO MANUAL DE UID / TOKEN</label>
                 <div style="display: flex; gap: 8px; margin-top: 5px;">
                     <input type="text" id="manual-uid-input" placeholder="Ej: SYL-042 o UID" style="flex: 1; padding: 10px; background: #000; border: 1px solid var(--border-color); color: #fff; font-family: 'Share Tech Mono', monospace; border-radius: 4px;">
@@ -299,6 +340,39 @@
 
             <button class="btn-action-large btn-red" id="btn-tap-hemorrhage" onclick="onHemorrhageTap()">
                 APLICAR PRESIÓN
+            </button>
+        </section>
+
+        <!-- ==================== PANTALLA 1 ALTERNATIVA: NEUMOTÓRAX A TENSIÓN ==================== -->
+        <section id="view-pneumothorax" class="tactical-card" style="display: none;">
+            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+            
+            <!-- Monitor Rojo -->
+            <div class="patient-monitor state-red" id="pneumothorax-monitor">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" id="patient-name-display-pneumo">OPERADOR HERIDO</div>
+                    <div style="font-size: 0.75rem; color: #ff9999; font-family: 'Share Tech Mono', monospace;">ESTADO: NEUMOTÓRAX A TENSIÓN</div>
+                </div>
+                <div class="monitor-dot" style="background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red);"></div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
+                «El operador presenta un neumotórax a tensión. Descomprima la cavidad torácica mediante la válvula del parche oclusivo en la ventana óptima de presión».
+            </p>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
+                <span>DESCOMPRESIÓN TORÁCICA</span>
+                <span id="pneumothorax-pct-val">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="pneumothorax-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
+            </div>
+
+            <!-- Canvas Manómetro Neumotórax -->
+            <canvas id="pneumothorax-canvas" width="450" height="110" style="width: 100%; border-radius: 6px; margin: 10px 0; background: #000;"></canvas>
+
+            <button class="btn-action-large btn-red" id="btn-tap-pneumothorax" onclick="onPneumothoraxTap()">
+                VENTEAR / DESCOMPRIMIR VÁLVULA
             </button>
         </section>
 
@@ -380,6 +454,7 @@
     <!-- Carga de Scripts Modulares Field Medic -->
     <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=1"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/pneumothorax_game.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=1"></script>
     <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=1"></script>
 
@@ -391,16 +466,48 @@
         let activeEpisode = null;
         let qrScanner = null;
         let hemorrhageEngine = null;
+        let pneumothoraxEngine = null;
         let stabilizationEngine = null;
+        let selectedInjuryType = 'HEMORRAGIA_ACTIVA';
+        let deferredInstallPrompt = null;
+
+        // Registrar Service Worker para soporte Offline completo
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/sw_medic.js')
+                .then(() => console.log("Field Medic Service Worker registrado."))
+                .catch(err => console.warn("SW error:", err));
+        }
+
+        // Detectar si la app se ejecuta instalada (standalone) o en navegador
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+            if (!isStandalone) {
+                document.getElementById('view-pwa-install').style.display = 'block';
+                document.getElementById('view-scan-patient').style.display = 'none';
+            }
+        });
 
         // Inicialización al cargar la página
         window.addEventListener('DOMContentLoaded', () => {
             updateReanimUI();
             storage.flushSyncQueue(); // Intentar sincronizar cola offline si hay red
 
+            // Detectar iOS para instrucciones de instalación
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (!isStandalone && isIOS) {
+                document.getElementById('view-pwa-install').style.display = 'block';
+                document.getElementById('view-scan-patient').style.display = 'none';
+                document.getElementById('pwa-ios-instructions').style.display = 'block';
+                document.getElementById('btn-pwa-install-action').style.display = 'none';
+            }
+
             // Si se accede directamente escaneando el carnet (?token=UID)
             const preloadedToken = "{{ preloaded_token | default('', true) }}";
             if (preloadedToken && preloadedToken.trim() !== '') {
+                skipInstallAndOpen();
                 startNewEpisodeWithToken(preloadedToken.trim());
                 return;
             }
@@ -408,9 +515,51 @@
             // Comprobar si hay un episodio interrumpido para recuperarlo
             const saved = storage.getCurrentEpisode();
             if (saved && saved.fase_actual !== 'completed') {
+                skipInstallAndOpen();
                 resumeEpisode(saved);
             }
         });
+
+        // Instalador PWA
+        function installPWA() {
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                deferredInstallPrompt.userChoice.then((choice) => {
+                    if (choice.outcome === 'accepted') {
+                        skipInstallAndOpen();
+                    }
+                    deferredInstallPrompt = null;
+                });
+            } else {
+                alert("Para instalar: abra las opciones de su navegador y elija 'Añadir a la pantalla de inicio'.");
+            }
+        }
+
+        function skipInstallAndOpen() {
+            document.getElementById('view-pwa-install').style.display = 'none';
+            document.getElementById('view-scan-patient').style.display = 'block';
+        }
+
+        function selectInjuryType(type) {
+            selectedInjuryType = type;
+            const btnH = document.getElementById('btn-select-hemorrhage');
+            const btnP = document.getElementById('btn-select-pneumothorax');
+            if (type === 'HEMORRAGIA_ACTIVA') {
+                btnH.style.borderColor = 'var(--accent-red)';
+                btnH.style.color = '#fff';
+                btnH.style.background = 'rgba(255,51,68,0.2)';
+                btnP.style.borderColor = '#555';
+                btnP.style.color = '#aaa';
+                btnP.style.background = 'transparent';
+            } else {
+                btnP.style.borderColor = 'var(--accent-red)';
+                btnP.style.color = '#fff';
+                btnP.style.background = 'rgba(255,51,68,0.2)';
+                btnH.style.borderColor = '#555';
+                btnH.style.color = '#aaa';
+                btnH.style.background = 'transparent';
+            }
+        }
 
         function updateReanimUI() {
             const val = storage.getLocalReanimations(medicConfig.reanimaciones_iniciales_medico || 3);
@@ -448,7 +597,6 @@
 
         // ==================== INICIO / RECUPERACIÓN DE EPISODIO ====================
         function startNewEpisodeWithToken(token) {
-            // Verificar si el sanitario dispone de reanimaciones
             const reanims = storage.getLocalReanimations();
             if (reanims <= 0) {
                 alert("ATENCIÓN: Ha agotado su cupo de reanimaciones asignadas para este despliegue.");
@@ -460,23 +608,31 @@
                 sanitario_id: sanitarioId,
                 operador_uid: token,
                 operador_nombre: "OPERADOR " + token,
-                fase_actual: "hemorrhage_control",
+                escenario_id: selectedInjuryType,
+                fase_actual: selectedInjuryType === 'NEUMOTORAX_TENSION' ? 'pneumothorax_control' : 'hemorrhage_control',
                 hemorragia_controlada: false,
                 estabilizacion_completada: false,
-                hemorrhage_progress: 0,
+                phase1_progress: 0,
                 stabilization_progress: 0,
                 start_time: Date.now(),
                 duration_total_segundos: 0
             };
 
             storage.saveCurrentEpisode(activeEpisode);
-            launchHemorrhagePhase();
+
+            if (selectedInjuryType === 'NEUMOTORAX_TENSION') {
+                launchPneumothoraxPhase();
+            } else {
+                launchHemorrhagePhase();
+            }
         }
 
         function resumeEpisode(saved) {
             activeEpisode = saved;
             if (activeEpisode.fase_actual === 'hemorrhage_control') {
-                launchHemorrhagePhase(activeEpisode.hemorrhage_progress || 0);
+                launchHemorrhagePhase(activeEpisode.phase1_progress || 0);
+            } else if (activeEpisode.fase_actual === 'pneumothorax_control') {
+                launchPneumothoraxPhase(activeEpisode.phase1_progress || 0);
             } else if (activeEpisode.fase_actual === 'patient_stabilization') {
                 launchStabilizationPhase(activeEpisode.stabilization_progress || 0);
             }
@@ -485,6 +641,7 @@
         // ==================== FASE 1: CONTROL DE HEMORRAGIA ====================
         function launchHemorrhagePhase(initialProgress = 0) {
             document.getElementById('view-scan-patient').style.display = 'none';
+            document.getElementById('view-pneumothorax').style.display = 'none';
             document.getElementById('view-stabilization').style.display = 'none';
             document.getElementById('view-summary').style.display = 'none';
             document.getElementById('view-hemorrhage').style.display = 'block';
@@ -498,7 +655,7 @@
                 (pct) => {
                     document.getElementById('hemorrhage-pct-val').textContent = Math.round(pct) + "%";
                     document.getElementById('hemorrhage-bar').style.width = pct + "%";
-                    activeEpisode.hemorrhage_progress = pct;
+                    activeEpisode.phase1_progress = pct;
                     storage.saveCurrentEpisode(activeEpisode);
                 },
                 (result) => {
@@ -507,7 +664,6 @@
                     activeEpisode.fase_actual = "patient_stabilization";
                     storage.saveCurrentEpisode(activeEpisode);
 
-                    // Transición automática e inmediata sin selección
                     setTimeout(() => {
                         launchStabilizationPhase(0);
                     }, 500);
@@ -522,6 +678,48 @@
 
         function onHemorrhageTap() {
             if (hemorrhageEngine) hemorrhageEngine.triggerTap();
+        }
+
+        // ==================== FASE 1 ALTERNATIVA: NEUMOTÓRAX A TENSIÓN ====================
+        function launchPneumothoraxPhase(initialProgress = 0) {
+            document.getElementById('view-scan-patient').style.display = 'none';
+            document.getElementById('view-hemorrhage').style.display = 'none';
+            document.getElementById('view-stabilization').style.display = 'none';
+            document.getElementById('view-summary').style.display = 'none';
+            document.getElementById('view-pneumothorax').style.display = 'block';
+
+            document.getElementById('patient-name-display-pneumo').textContent = activeEpisode.operador_nombre;
+
+            const canvas = document.getElementById('pneumothorax-canvas');
+            pneumothoraxEngine = new PneumothoraxGame(
+                canvas,
+                medicConfig.fase1_neumotorax,
+                (pct) => {
+                    document.getElementById('pneumothorax-pct-val').textContent = Math.round(pct) + "%";
+                    document.getElementById('pneumothorax-bar').style.width = pct + "%";
+                    activeEpisode.phase1_progress = pct;
+                    storage.saveCurrentEpisode(activeEpisode);
+                },
+                (result) => {
+                    // ÉXITO DESCOMPRESIÓN FASE 1
+                    activeEpisode.hemorragia_controlada = true; // Marca fase 1 superada
+                    activeEpisode.fase_actual = "patient_stabilization";
+                    storage.saveCurrentEpisode(activeEpisode);
+
+                    setTimeout(() => {
+                        launchStabilizationPhase(0);
+                    }, 500);
+                },
+                (failReason) => {
+                    alert("Intervención fallida: " + failReason);
+                }
+            );
+
+            pneumothoraxEngine.start(initialProgress);
+        }
+
+        function onPneumothoraxTap() {
+            if (pneumothoraxEngine) pneumothoraxEngine.triggerVentTap();
         }
 
         // ==================== FASE 2: ESTABILIZACIÓN RÍTMICA ====================
