@@ -295,64 +295,73 @@
             justify-content: space-between;
             padding: 20px;
             pointer-events: none;
-            background: radial-gradient(circle at center, transparent 40%, rgba(0,0,0,0.6) 100%);
+            /* Máscara de Prismáticos Tácticos Militares con viñeteado */
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.95), inset 0 0 180px rgba(0, 0, 0, 0.85);
+            background: radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(0,0,0,0.4) 65%, rgba(0, 0, 0, 0.92) 85%);
+        }
+
+        /* Binocular Lens Mask Rings */
+        .binocular-rings {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0.35;
+        }
+
+        .binocular-circle {
+            width: 88vh;
+            height: 88vh;
+            max-width: 95vw;
+            max-height: 95vw;
+            border: 2px solid rgba(0, 240, 255, 0.4);
+            border-radius: 50%;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
+            position: absolute;
         }
 
         .camera-top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 10px 15px;
-            border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(5px);
+            background: rgba(10, 15, 20, 0.75);
+            padding: 8px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            backdrop-filter: blur(8px);
             pointer-events: auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
+        /* Mil-Dot Reticle Central */
         .camera-center-reticle {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 240px; height: 240px;
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            width: 320px; height: 320px;
             pointer-events: none;
-            transition: all 0.2s;
+            transition: all 0.25s ease;
         }
 
-        .reticle-corner {
-            position: absolute;
-            width: 20px; height: 20px;
-            border-color: var(--accent-cyan);
-        }
-        .rc-tl { top: 15px; left: 15px; border-top: 2px solid; border-left: 2px solid; }
-        .rc-tr { top: 15px; right: 15px; border-top: 2px solid; border-right: 2px solid; }
-        .rc-bl { bottom: 15px; left: 15px; border-bottom: 2px solid; border-left: 2px solid; }
-        .rc-br { bottom: 15px; right: 15px; border-bottom: 2px solid; border-right: 2px solid; }
-
-        .reticle-cross {
-            position: absolute;
-            width: 20px; height: 1px;
-            background: rgba(0, 240, 255, 0.6);
-        }
-        .reticle-cross.vert {
-            width: 1px; height: 20px;
+        .reticle-svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
         }
 
         .camera-bottom-panel {
-            background: rgba(0, 0, 0, 0.7);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(10, 15, 20, 0.85);
+            border: 1px solid rgba(0, 240, 255, 0.3);
             border-radius: 8px;
-            padding: 15px;
-            backdrop-filter: blur(8px);
+            padding: 14px;
+            backdrop-filter: blur(10px);
             pointer-events: auto;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
         }
 
         .dwell-bar-wrap {
@@ -368,6 +377,8 @@
             width: 0%;
             height: 100%;
             background: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green);
+        }
             transition: width 0.1s linear;
         }
 
@@ -558,25 +569,82 @@
         <!-- Live Video Element -->
         <video id="camera-video" playsinline autoplay muted></video>
 
+        <div class="binocular-rings">
+            <div class="binocular-circle"></div>
+        </div>
+
         <div class="camera-overlay">
             <!-- Camera Top Bar -->
             <div class="camera-top-bar">
-                <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #00ffcc;">
-                    VISOR TÁCTICO [<span id="cam-heading-val">000°</span>]
+                <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #00ffcc; display: flex; align-items: center; gap: 10px;">
+                    <span>OPT: 8x42 MIL</span>
+                    <span style="color: #666;">|</span>
+                    <span>HDG: <b id="cam-heading-val" style="color: #fff;">000°</b></span>
+                    <span style="color: #666;">|</span>
+                    <span id="cam-lrf-status" style="color: var(--accent-cyan);">LRF: STBY</span>
                 </div>
                 <button class="btn-header" onclick="closeCameraView()" style="padding: 4px 10px;">
                     VOLVER A TRACKER
                 </button>
             </div>
 
-            <!-- Central HUD Reticle -->
+            <!-- Central Binoculars Mil-Dot Reticle (SVG) -->
             <div class="camera-center-reticle" id="cam-reticle">
-                <div class="reticle-corner rc-tl"></div>
-                <div class="reticle-corner rc-tr"></div>
-                <div class="reticle-corner rc-bl"></div>
-                <div class="reticle-corner rc-br"></div>
-                <div class="reticle-cross"></div>
-                <div class="reticle-cross vert"></div>
+                <svg class="reticle-svg" viewBox="-160 -160 320 320" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Outer Optical Ring -->
+                    <circle cx="0" cy="0" r="140" fill="none" stroke="rgba(0, 240, 255, 0.25)" stroke-width="1.5" stroke-dasharray="6,4"/>
+                    <circle cx="0" cy="0" r="100" fill="none" stroke="rgba(0, 240, 255, 0.15)" stroke-width="1"/>
+                    
+                    <!-- Main Crosshairs -->
+                    <line x1="-150" y1="0" x2="-20" y2="0" stroke="rgba(0, 240, 255, 0.7)" stroke-width="1.5"/>
+                    <line x1="20" y1="0" x2="150" y2="0" stroke="rgba(0, 240, 255, 0.7)" stroke-width="1.5"/>
+                    <line x1="0" y1="-150" x2="0" y2="-20" stroke="rgba(0, 240, 255, 0.7)" stroke-width="1.5"/>
+                    <line x1="0" y1="20" x2="0" y2="150" stroke="rgba(0, 240, 255, 0.7)" stroke-width="1.5"/>
+
+                    <!-- Center Free Gap & Tiny Aim Dot -->
+                    <circle cx="0" cy="0" r="2" fill="rgba(0, 240, 255, 0.9)"/>
+
+                    <!-- Horizontal Mil-Dots & Hash Marks -->
+                    <!-- Left side -->
+                    <circle cx="-35" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="-55" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <line x1="-75" y1="-6" x2="-75" y2="6" stroke="rgba(0, 240, 255, 0.8)" stroke-width="1.2"/>
+                    <circle cx="-95" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="-115" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <line x1="-135" y1="-10" x2="-135" y2="10" stroke="rgba(0, 240, 255, 0.9)" stroke-width="1.5"/>
+                    <text x="-135" y="-14" fill="rgba(0, 240, 255, 0.6)" font-family="monospace" font-size="8" text-anchor="middle">10</text>
+
+                    <!-- Right side -->
+                    <circle cx="35" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="55" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <line x1="75" y1="-6" x2="75" y2="6" stroke="rgba(0, 240, 255, 0.8)" stroke-width="1.2"/>
+                    <circle cx="95" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="115" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <line x1="135" y1="-10" x2="135" y2="10" stroke="rgba(0, 240, 255, 0.9)" stroke-width="1.5"/>
+                    <text x="135" y="-14" fill="rgba(0, 240, 255, 0.6)" font-family="monospace" font-size="8" text-anchor="middle">10</text>
+
+                    <!-- Vertical Mil-Dots & Hash Marks -->
+                    <!-- Top side -->
+                    <circle cx="0" cy="-35" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="0" cy="-55" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <line x1="-6" y1="-75" x2="6" y2="-75" stroke="rgba(0, 240, 255, 0.8)" stroke-width="1.2"/>
+                    <circle cx="0" cy="-95" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="0" cy="-115" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <line x1="-10" y1="-135" x2="10" y2="-135" stroke="rgba(0, 240, 255, 0.9)" stroke-width="1.5"/>
+
+                    <!-- Bottom side (Ballistic elevation scale) -->
+                    <circle cx="0" cy="35" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="0" cy="55" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <line x1="-6" y1="75" x2="6" y2="75" stroke="rgba(0, 240, 255, 0.8)" stroke-width="1.2"/>
+                    <circle cx="0" cy="95" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="0" cy="115" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <line x1="-10" y1="135" x2="10" y2="135" stroke="rgba(0, 240, 255, 0.9)" stroke-width="1.5"/>
+
+                    <!-- Stadiametric Rangefinder (Lower Left) -->
+                    <path d="M -110 90 Q -70 85 -40 70" fill="none" stroke="rgba(0, 240, 255, 0.45)" stroke-width="1"/>
+                    <line x1="-110" y1="90" x2="-40" y2="90" stroke="rgba(0, 240, 255, 0.45)" stroke-width="1"/>
+                    <text x="-90" y="102" fill="rgba(0, 240, 255, 0.5)" font-family="monospace" font-size="7">1.7m TGT</text>
+                </svg>
             </div>
 
             <!-- Bottom Panel -->
@@ -842,11 +910,15 @@
             const dwellBar = document.getElementById('dwell-bar');
             const btnAcquire = document.getElementById('btn-acquire');
             const instructions = document.getElementById('cam-instructions');
+            const lrfStatus = document.getElementById('cam-lrf-status');
 
             if (onTarget) {
-                reticle.style.borderColor = "var(--accent-green)";
-                reticle.style.boxShadow = "0 0 25px rgba(46, 204, 113, 0.5)";
-                instructions.textContent = "¡SEÑAL DETECTADA! MANTENGA EL RUMBO...";
+                reticle.style.filter = "drop-shadow(0 0 12px rgba(46, 204, 113, 0.9))";
+                if (lrfStatus) {
+                    lrfStatus.textContent = "LRF: LOCK";
+                    lrfStatus.style.color = "var(--accent-green)";
+                }
+                instructions.textContent = "¡SEÑAL TÉRMICA DETECTADA! MANTENGA EL RUMBO...";
                 instructions.style.color = "var(--accent-green)";
                 dwellWrap.style.display = "block";
 
@@ -869,8 +941,11 @@
                 }
             } else {
                 // Perdió el blanco
-                reticle.style.borderColor = "rgba(0, 240, 255, 0.3)";
-                reticle.style.boxShadow = "none";
+                reticle.style.filter = "none";
+                if (lrfStatus) {
+                    lrfStatus.textContent = "LRF: STBY";
+                    lrfStatus.style.color = "var(--accent-cyan)";
+                }
                 instructions.textContent = "Barra el horizonte horizontalmente buscando el azimut del contacto...";
                 instructions.style.color = "#ccc";
                 dwellWrap.style.display = "none";

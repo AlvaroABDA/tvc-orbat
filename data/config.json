@@ -3,7 +3,7 @@
   "op_dinamico": {
     "distancia_nominal_metros": 50.0,
     "radio_activacion_metros": 10.0,
-    "tolerancia_angular_grados": 15.0,
+    "tolerancia_angular_grados": 25.0,
     "tiempo_adquisicion_segundos": 1.5,
     "duracion_sesion_minutos": 45
   }
