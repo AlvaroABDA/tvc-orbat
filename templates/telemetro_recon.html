@@ -267,7 +267,7 @@
             border: 1px solid var(--border-color);
         }
 
-        /* Camera HUD View */
+        /* Camera HUD View - Inmersión Táctica Militar */
         #view-camera {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -276,6 +276,8 @@
             display: none;
             flex-direction: column;
             overflow: hidden;
+            font-family: 'Share Tech Mono', monospace;
+            user-select: none;
         }
 
         #camera-video {
@@ -284,65 +286,138 @@
             width: 100%; height: 100%;
             object-fit: cover;
             z-index: 1;
+            filter: contrast(1.1) brightness(0.95);
+        }
+
+        /* Máscara de Prismáticos Militares con viñeteado óptico y líneas de escaneo CRT */
+        .binocular-mask {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 50%, transparent 48%, rgba(2, 6, 10, 0.45) 60%, rgba(2, 5, 8, 0.94) 78%, #000 95%);
+            box-shadow: inset 0 0 120px rgba(0,0,0,0.95);
+        }
+
+        /* Efecto scanline táctico sutil */
+        .hud-scanlines {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 3;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 6px 100%;
+            opacity: 0.7;
+        }
+
+        /* Marco de alerta perimetral en estado de lock-on */
+        .hud-alert-frame {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 4;
+            pointer-events: none;
+            border: 3px solid transparent;
+            box-sizing: border-box;
+            transition: all 0.25s ease;
+        }
+
+        .hud-alert-frame.locked {
+            border-color: rgba(46, 204, 113, 0.7);
+            box-shadow: inset 0 0 40px rgba(46, 204, 113, 0.35);
+            animation: pulse-border 1.2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: rgba(46, 204, 113, 0.85); box-shadow: inset 0 0 50px rgba(46, 204, 113, 0.4); }
+            50% { border-color: rgba(46, 204, 113, 0.25); box-shadow: inset 0 0 15px rgba(46, 204, 113, 0.1); }
         }
 
         .camera-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            z-index: 2;
+            z-index: 5;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 20px;
+            padding: 14px;
             pointer-events: none;
-            /* Máscara de Prismáticos Tácticos Militares con viñeteado */
-            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.95), inset 0 0 180px rgba(0, 0, 0, 0.85);
-            background: radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(0,0,0,0.4) 65%, rgba(0, 0, 0, 0.92) 85%);
         }
 
-        /* Binocular Lens Mask Rings */
-        .binocular-rings {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0.35;
-        }
-
-        .binocular-circle {
-            width: 88vh;
-            height: 88vh;
-            max-width: 95vw;
-            max-height: 95vw;
-            border: 2px solid rgba(0, 240, 255, 0.4);
-            border-radius: 50%;
-            box-shadow: 0 0 25px rgba(0, 240, 255, 0.2);
-            position: absolute;
-        }
-
+        /* Barra Superior Táctica con Cinta de Rumbo Digital */
         .camera-top-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: rgba(8, 14, 20, 0.82);
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            backdrop-filter: blur(10px);
+            pointer-events: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+        }
+
+        .top-bar-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(10, 15, 20, 0.75);
-            padding: 8px 14px;
-            border-radius: 6px;
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            backdrop-filter: blur(8px);
-            pointer-events: auto;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
 
-        /* Mil-Dot Reticle Central */
+        .hud-meta-badge {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 1px;
+        }
+
+        /* Cinta de Rumbo Digital (Compass Tape) */
+        .compass-tape-container {
+            width: 100%;
+            height: 22px;
+            position: relative;
+            overflow: hidden;
+            border-top: 1px solid rgba(0, 240, 255, 0.25);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .compass-tape-track {
+            display: flex;
+            align-items: center;
+            position: absolute;
+            white-space: nowrap;
+            transition: transform 0.1s linear;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            color: rgba(0, 240, 255, 0.7);
+            letter-spacing: 2px;
+        }
+
+        .compass-tape-center-mark {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid #ffcc00;
+            top: 0;
+            z-index: 2;
+        }
+
+        /* Retícula Central con Mil-Dots Militares y Brackets de Adquisición */
         .camera-center-reticle {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             width: 320px; height: 320px;
             pointer-events: none;
-            transition: all 0.25s ease;
+            transition: all 0.2s ease;
         }
 
         .reticle-svg {
@@ -351,56 +426,156 @@
             overflow: visible;
         }
 
+        /* Brackets de fijación táctica alrededor del blanco */
+        .lock-brackets {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform-origin: 0 0;
+        }
+
+        .lock-brackets.active {
+            stroke: #2ecc71 !important;
+            filter: drop-shadow(0 0 8px #2ecc71);
+            animation: bracket-pulse 0.8s infinite alternate;
+        }
+
+        @keyframes bracket-pulse {
+            from { transform: scale(1); }
+            to { transform: scale(0.92); }
+        }
+
+        /* Escala Lateral de Clinómetro / Elevación */
+        .hud-side-telemetry {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            color: rgba(0, 240, 255, 0.75);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(6, 12, 18, 0.65);
+            padding: 8px 10px;
+            border-left: 2px solid var(--accent-cyan);
+            backdrop-filter: blur(4px);
+        }
+
         .camera-bottom-panel {
-            background: rgba(10, 15, 20, 0.85);
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            border-radius: 8px;
-            padding: 14px;
-            backdrop-filter: blur(10px);
+            background: rgba(8, 14, 20, 0.9);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            border-radius: 6px;
+            padding: 12px 14px;
+            backdrop-filter: blur(12px);
             pointer-events: auto;
             display: flex;
             flex-direction: column;
             gap: 10px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.7);
         }
 
+        /* Banner de aviso de objetivo */
+        .target-warning-banner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-align: center;
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            color: #ccc;
+            transition: all 0.3s ease;
+        }
+
+        .target-warning-banner.tracking {
+            background: rgba(255, 170, 0, 0.18);
+            border-color: #ffaa00;
+            color: #ffcc00;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
+        }
+
+        .target-warning-banner.locked {
+            background: rgba(46, 204, 113, 0.22);
+            border-color: var(--accent-green);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.45);
+        }
+
+        /* Barra de Progreso Dwell Militar */
         .dwell-bar-wrap {
             width: 100%;
-            height: 8px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 4px;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            border-radius: 2px;
             overflow: hidden;
             display: none;
+            position: relative;
         }
 
         .dwell-bar {
             width: 0%;
             height: 100%;
-            background: var(--accent-green);
-            box-shadow: 0 0 10px var(--accent-green);
-        }
-            transition: width 0.1s linear;
+            background: linear-gradient(90deg, #ffaa00, var(--accent-green));
+            box-shadow: 0 0 12px var(--accent-green);
+            transition: width 0.08s linear;
         }
 
+        /* Botón Táctico de Adquisición Militar */
         .btn-acquire {
-            background: var(--accent-green);
-            color: #000;
-            border: 2px solid #fff;
-            padding: 16px;
-            border-radius: 6px;
+            position: relative;
+            background: linear-gradient(135deg, #1e824c 0%, #27ae60 50%, #2ecc71 100%);
+            color: #fff;
+            border: 2px solid #a3e4d7;
+            padding: 16px 20px;
+            border-radius: 4px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.1rem;
+            font-size: 1.05rem;
             font-weight: 900;
             letter-spacing: 2px;
             cursor: pointer;
             display: none;
-            animation: pulse-green 1s infinite alternate;
-            box-shadow: 0 0 20px var(--accent-green);
+            overflow: hidden;
+            box-shadow: 0 0 25px rgba(46, 204, 113, 0.6), inset 0 0 15px rgba(255,255,255,0.25);
+            text-transform: uppercase;
+            animation: pulse-tactical-btn 1.4s infinite ease-in-out;
         }
 
-        @keyframes pulse-green {
-            from { transform: scale(1); box-shadow: 0 0 10px var(--accent-green); }
-            to { transform: scale(1.03); box-shadow: 0 0 25px var(--accent-green); }
+        .btn-acquire::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            animation: sweep-light 2s infinite;
+        }
+
+        @keyframes sweep-light {
+            0% { left: -100%; }
+            50%, 100% { left: 100%; }
+        }
+
+        @keyframes pulse-tactical-btn {
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(46, 204, 113, 0.6), inset 0 0 10px rgba(255,255,255,0.2);
+            }
+            50% {
+                transform: scale(1.02);
+                box-shadow: 0 0 35px rgba(46, 204, 113, 0.9), inset 0 0 20px rgba(255,255,255,0.4);
+                border-color: #ffffff;
+            }
+        }
+
+        .btn-acquire:active {
+            transform: scale(0.97);
+            filter: brightness(1.2);
         }
 
         .fallback-banner {
@@ -569,98 +744,135 @@
         <!-- Live Video Element -->
         <video id="camera-video" playsinline autoplay muted></video>
 
-        <div class="binocular-rings">
-            <div class="binocular-circle"></div>
-        </div>
+        <!-- Viñeteado óptico y Scanlines CRT militares -->
+        <div class="binocular-mask"></div>
+        <div class="hud-scanlines"></div>
+        <div class="hud-alert-frame" id="hud-alert-frame"></div>
 
         <div class="camera-overlay">
-            <!-- Camera Top Bar -->
+            <!-- Camera Top Bar: Cinta de Rumbo + Métricas Militares -->
             <div class="camera-top-bar">
-                <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #00ffcc; display: flex; align-items: center; gap: 10px;">
-                    <span>OPT: 8x42 MIL</span>
-                    <span style="color: #666;">|</span>
-                    <span>HDG: <b id="cam-heading-val" style="color: #fff;">000°</b></span>
-                    <span style="color: #666;">|</span>
-                    <span id="cam-lrf-status" style="color: var(--accent-cyan);">LRF: STBY</span>
+                <div class="top-bar-row">
+                    <div class="hud-meta-badge">
+                        <span style="color: #00ffcc; font-weight: bold;">OPT: 8x42 MIL-SPEC</span>
+                        <span style="color: #555;">|</span>
+                        <span>HDG: <b id="cam-heading-val" style="color: #fff; font-size: 0.95rem;">000°</b></span>
+                        <span style="color: #555;">|</span>
+                        <span id="cam-lrf-status" style="color: var(--accent-cyan); font-weight: bold;">LRF: STANDBY</span>
+                    </div>
+                    <button class="btn-header" onclick="closeCameraView()" style="padding: 4px 10px; font-size: 0.75rem;">
+                        SALIR DEL VISOR
+                    </button>
                 </div>
-                <button class="btn-header" onclick="closeCameraView()" style="padding: 4px 10px;">
-                    VOLVER A TRACKER
-                </button>
+                <!-- Cinta de Rumbo Digital Táctica -->
+                <div class="compass-tape-container">
+                    <div class="compass-tape-center-mark"></div>
+                    <div class="compass-tape-track" id="compass-tape-track">
+                        N · · · 030 · · · 060 · · · E · · · 120 · · · 150 · · · S · · · 210 · · · 240 · · · W · · · 300 · · · 330 · · · N
+                    </div>
+                </div>
             </div>
 
-            <!-- Central Binoculars Mil-Dot Reticle (SVG) -->
+            <!-- Telemetría Lateral Izquierda/Derecha (Estadística de Pitch y Distancia Estimada) -->
+            <div class="hud-side-telemetry">
+                <span style="color: #888;">TGT RNG</span>
+                <span style="color: #fff; font-weight: bold;" id="hud-target-rng">50.0 M</span>
+                <span style="color: #888; margin-top: 4px;">ELEV</span>
+                <span style="color: #00f0ff;" id="hud-pitch-val">0.0°</span>
+                <span style="color: #888; margin-top: 4px;">ZOOM</span>
+                <span style="color: #fff;">1.0X</span>
+            </div>
+
+            <!-- Central Binoculars Mil-Dot Reticle (SVG) con Brackets de Bloqueo -->
             <div class="camera-center-reticle" id="cam-reticle">
                 <svg class="reticle-svg" viewBox="-160 -160 320 320" xmlns="http://www.w3.org/2000/svg">
-                    <!-- Outer Optical Ring -->
-                    <circle cx="0" cy="0" r="140" fill="none" stroke="rgba(0, 240, 255, 0.25)" stroke-width="1.5" stroke-dasharray="6,4"/>
-                    <circle cx="0" cy="0" r="100" fill="none" stroke="rgba(0, 240, 255, 0.15)" stroke-width="1"/>
+                    <!-- Outer Optical Ring con graduación en mils -->
+                    <circle cx="0" cy="0" r="145" fill="none" stroke="rgba(0, 240, 255, 0.3)" stroke-width="1.5" stroke-dasharray="8,5"/>
+                    <circle cx="0" cy="0" r="105" fill="none" stroke="rgba(0, 240, 255, 0.18)" stroke-width="1"/>
                     
                     <!-- Main Crosshairs -->
-                    <line x1="-150" y1="0" x2="-20" y2="0" stroke="rgba(0, 240, 255, 0.7)" stroke-width="1.5"/>
-                    <line x1="20" y1="0" x2="150" y2="0" stroke="rgba(0, 240, 255, 0.7)" stroke-width="1.5"/>
-                    <line x1="0" y1="-150" x2="0" y2="-20" stroke="rgba(0, 240, 255, 0.7)" stroke-width="1.5"/>
-                    <line x1="0" y1="20" x2="0" y2="150" stroke="rgba(0, 240, 255, 0.7)" stroke-width="1.5"/>
+                    <line x1="-150" y1="0" x2="-22" y2="0" stroke="rgba(0, 240, 255, 0.75)" stroke-width="1.5"/>
+                    <line x1="22" y1="0" x2="150" y2="0" stroke="rgba(0, 240, 255, 0.75)" stroke-width="1.5"/>
+                    <line x1="0" y1="-150" x2="0" y2="-22" stroke="rgba(0, 240, 255, 0.75)" stroke-width="1.5"/>
+                    <line x1="0" y1="22" x2="0" y2="150" stroke="rgba(0, 240, 255, 0.75)" stroke-width="1.5"/>
 
-                    <!-- Center Free Gap & Tiny Aim Dot -->
-                    <circle cx="0" cy="0" r="2" fill="rgba(0, 240, 255, 0.9)"/>
+                    <!-- Brackets Tácticos de Fijación (Giran o cambian a verde cuando se detecta el objetivo) -->
+                    <g id="tgt-lock-brackets" class="lock-brackets" stroke="rgba(0, 240, 255, 0.6)" stroke-width="2" fill="none">
+                        <!-- Top-Left Bracket -->
+                        <path d="M -22 -14 L -22 -22 L -14 -22"/>
+                        <!-- Top-Right Bracket -->
+                        <path d="M 14 -22 L 22 -22 L 22 -14"/>
+                        <!-- Bottom-Left Bracket -->
+                        <path d="M -22 14 L -22 22 L -14 22"/>
+                        <!-- Bottom-Right Bracket -->
+                        <path d="M 14 22 L 22 22 L 22 14"/>
+                    </g>
+
+                    <!-- Center Free Gap & Tiny Laser Aim Dot -->
+                    <circle cx="0" cy="0" r="2" fill="rgba(0, 240, 255, 0.95)" id="cam-aim-dot"/>
 
                     <!-- Horizontal Mil-Dots & Hash Marks -->
                     <!-- Left side -->
-                    <circle cx="-35" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <circle cx="-55" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <line x1="-75" y1="-6" x2="-75" y2="6" stroke="rgba(0, 240, 255, 0.8)" stroke-width="1.2"/>
-                    <circle cx="-95" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <circle cx="-115" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="-35" cy="0" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <circle cx="-55" cy="0" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <line x1="-75" y1="-6" x2="-75" y2="6" stroke="rgba(0, 240, 255, 0.85)" stroke-width="1.2"/>
+                    <circle cx="-95" cy="0" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <circle cx="-115" cy="0" r="2" fill="rgba(0, 240, 255, 0.85)"/>
                     <line x1="-135" y1="-10" x2="-135" y2="10" stroke="rgba(0, 240, 255, 0.9)" stroke-width="1.5"/>
-                    <text x="-135" y="-14" fill="rgba(0, 240, 255, 0.6)" font-family="monospace" font-size="8" text-anchor="middle">10</text>
+                    <text x="-135" y="-14" fill="rgba(0, 240, 255, 0.7)" font-family="monospace" font-size="8" text-anchor="middle">10</text>
 
                     <!-- Right side -->
-                    <circle cx="35" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <circle cx="55" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <line x1="75" y1="-6" x2="75" y2="6" stroke="rgba(0, 240, 255, 0.8)" stroke-width="1.2"/>
-                    <circle cx="95" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <circle cx="115" cy="0" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="35" cy="0" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <circle cx="55" cy="0" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <line x1="75" y1="-6" x2="75" y2="6" stroke="rgba(0, 240, 255, 0.85)" stroke-width="1.2"/>
+                    <circle cx="95" cy="0" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <circle cx="115" cy="0" r="2" fill="rgba(0, 240, 255, 0.85)"/>
                     <line x1="135" y1="-10" x2="135" y2="10" stroke="rgba(0, 240, 255, 0.9)" stroke-width="1.5"/>
-                    <text x="135" y="-14" fill="rgba(0, 240, 255, 0.6)" font-family="monospace" font-size="8" text-anchor="middle">10</text>
+                    <text x="135" y="-14" fill="rgba(0, 240, 255, 0.7)" font-family="monospace" font-size="8" text-anchor="middle">10</text>
 
                     <!-- Vertical Mil-Dots & Hash Marks -->
                     <!-- Top side -->
-                    <circle cx="0" cy="-35" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <circle cx="0" cy="-55" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <line x1="-6" y1="-75" x2="6" y2="-75" stroke="rgba(0, 240, 255, 0.8)" stroke-width="1.2"/>
-                    <circle cx="0" cy="-95" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <circle cx="0" cy="-115" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="0" cy="-35" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <circle cx="0" cy="-55" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <line x1="-6" y1="-75" x2="6" y2="-75" stroke="rgba(0, 240, 255, 0.85)" stroke-width="1.2"/>
+                    <circle cx="0" cy="-95" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <circle cx="0" cy="-115" r="2" fill="rgba(0, 240, 255, 0.85)"/>
                     <line x1="-10" y1="-135" x2="10" y2="-135" stroke="rgba(0, 240, 255, 0.9)" stroke-width="1.5"/>
 
                     <!-- Bottom side (Ballistic elevation scale) -->
-                    <circle cx="0" cy="35" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <circle cx="0" cy="55" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <line x1="-6" y1="75" x2="6" y2="75" stroke="rgba(0, 240, 255, 0.8)" stroke-width="1.2"/>
-                    <circle cx="0" cy="95" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
-                    <circle cx="0" cy="115" r="1.8" fill="rgba(0, 240, 255, 0.8)"/>
+                    <circle cx="0" cy="35" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <circle cx="0" cy="55" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <line x1="-6" y1="75" x2="6" y2="75" stroke="rgba(0, 240, 255, 0.85)" stroke-width="1.2"/>
+                    <circle cx="0" cy="95" r="2" fill="rgba(0, 240, 255, 0.85)"/>
+                    <circle cx="0" cy="115" r="2" fill="rgba(0, 240, 255, 0.85)"/>
                     <line x1="-10" y1="135" x2="10" y2="135" stroke="rgba(0, 240, 255, 0.9)" stroke-width="1.5"/>
 
                     <!-- Stadiametric Rangefinder (Lower Left) -->
-                    <path d="M -110 90 Q -70 85 -40 70" fill="none" stroke="rgba(0, 240, 255, 0.45)" stroke-width="1"/>
-                    <line x1="-110" y1="90" x2="-40" y2="90" stroke="rgba(0, 240, 255, 0.45)" stroke-width="1"/>
-                    <text x="-90" y="102" fill="rgba(0, 240, 255, 0.5)" font-family="monospace" font-size="7">1.7m TGT</text>
+                    <path d="M -110 90 Q -70 85 -40 70" fill="none" stroke="rgba(0, 240, 255, 0.5)" stroke-width="1"/>
+                    <line x1="-110" y1="90" x2="-40" y2="90" stroke="rgba(0, 240, 255, 0.5)" stroke-width="1"/>
+                    <text x="-95" y="102" fill="rgba(0, 240, 255, 0.6)" font-family="monospace" font-size="7">STADIA 1.7m VEH</text>
                 </svg>
             </div>
 
-            <!-- Bottom Panel -->
+            <!-- Bottom Tactical Control Panel -->
             <div class="camera-bottom-panel">
-                <div id="cam-instructions" style="font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #ccc; text-align: center;">
-                    Barra el horizonte horizontalmente buscando el azimut del contacto...
+                <!-- Banner de Alerta / Aviso Militar Inmersivo -->
+                <div class="target-warning-banner" id="cam-warning-banner">
+                    <span id="cam-warning-icon">🔍</span>
+                    <span id="cam-instructions">BARRIDO HORIZONTAL EN CURSO: LOCALICE EL AZIMUT DEL CONTACTO...</span>
                 </div>
 
-                <!-- Dwell Progress Bar -->
+                <!-- Dwell Progress Bar Militar -->
                 <div class="dwell-bar-wrap" id="dwell-wrap">
                     <div class="dwell-bar" id="dwell-bar"></div>
                 </div>
 
-                <!-- Big Acquire Button -->
+                <!-- Botón Táctico de Adquisición / Fijación Militar -->
                 <button id="btn-acquire" class="btn-acquire" onclick="triggerAcquire()">
-                    CONTACTO DETECTADO — IDENTIFICAR ➔
+                    <span style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <span>🎯 CONTACTO FIJADO — ADQUIRIR OBJETIVO</span>
+                        <span style="font-size: 1.25rem;">➔</span>
+                    </span>
                 </button>
 
                 <!-- iOS Sensor Permission Prompt if needed -->
@@ -868,6 +1080,47 @@
             }).catch(console.error);
         }
 
+        // ==================== GENERADOR DE AUDIO TÁCTICO MILITAR (WEB AUDIO API) ====================
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) audioCtx = new AudioContextClass();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        // Tono de radar / barrido o pulso de proximidad
+        function playTacticalBeep(freq = 880, duration = 0.08, type = 'sine') {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) { /* ignore audio restrictions */ }
+        }
+
+        // Tono militar de Lock-On conseguido (doble pulso agudo)
+        function playLockAcquiredSound() {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                playTacticalBeep(1200, 0.12, 'square');
+                setTimeout(() => playTacticalBeep(1600, 0.18, 'square'), 120);
+            } catch (e) {}
+        }
+
         function stopCompass() {
             window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
             window.removeEventListener('deviceorientation', handleOrientation, true);
@@ -893,6 +1146,21 @@
             currentHeading = Math.round(heading);
             document.getElementById('cam-heading-val').textContent = `${String(currentHeading).padStart(3, '0')}°`;
 
+            // Actualizar inclinación (pitch / beta)
+            if (e.beta !== null && e.beta !== undefined) {
+                const pitch = Math.round(e.beta - 90); // Estimación vertical
+                const pitchEl = document.getElementById('hud-pitch-val');
+                if (pitchEl) pitchEl.textContent = `${pitch > 0 ? '+' : ''}${pitch}°`;
+            }
+
+            // Mover la cinta de rumbo táctica (Compass Tape)
+            const tapeTrack = document.getElementById('compass-tape-track');
+            if (tapeTrack) {
+                // Desplazamiento proporcional según los 360 grados
+                const offset = -(currentHeading % 360) * 1.5;
+                tapeTrack.style.transform = `translateX(${offset}px)`;
+            }
+
             checkAzimuthAim();
         }
 
@@ -910,44 +1178,83 @@
             const dwellBar = document.getElementById('dwell-bar');
             const btnAcquire = document.getElementById('btn-acquire');
             const instructions = document.getElementById('cam-instructions');
+            const banner = document.getElementById('cam-warning-banner');
+            const icon = document.getElementById('cam-warning-icon');
             const lrfStatus = document.getElementById('cam-lrf-status');
+            const alertFrame = document.getElementById('hud-alert-frame');
+            const lockBrackets = document.getElementById('tgt-lock-brackets');
+            const aimDot = document.getElementById('cam-aim-dot');
 
             if (onTarget) {
-                reticle.style.filter = "drop-shadow(0 0 12px rgba(46, 204, 113, 0.9))";
+                // Estado: Alineado dentro de la tolerancia (Seguimiento / Lock-on)
+                reticle.style.filter = "drop-shadow(0 0 14px rgba(46, 204, 113, 0.95))";
+                if (lockBrackets) lockBrackets.classList.add('active');
+                if (aimDot) aimDot.setAttribute('fill', '#2ecc71');
+                
                 if (lrfStatus) {
-                    lrfStatus.textContent = "LRF: LOCK";
-                    lrfStatus.style.color = "var(--accent-green)";
+                    lrfStatus.textContent = "LRF: LOCKING";
+                    lrfStatus.style.color = "#ffaa00";
                 }
-                instructions.textContent = "¡SEÑAL TÉRMICA DETECTADA! MANTENGA EL RUMBO...";
-                instructions.style.color = "var(--accent-green)";
+
+                if (banner) {
+                    banner.className = "target-warning-banner tracking";
+                    if (icon) icon.textContent = "🎯";
+                }
+                instructions.textContent = "¡SEÑAL TÉRMICA DETECTADA! MANTENIENDO TRAZA...";
                 dwellWrap.style.display = "block";
 
                 if (!isAimingOnTarget) {
                     isAimingOnTarget = true;
                     aimStartTime = Date.now();
+                    playTacticalBeep(850, 0.1, 'sine');
 
                     dwellInterval = setInterval(() => {
                         const elapsed = (Date.now() - aimStartTime) / 1000;
                         const pct = Math.min(100, (elapsed / dwellDurationSec) * 100);
                         dwellBar.style.width = `${pct}%`;
 
+                        // Sonido periódico de tracking cada tercio del tiempo
+                        if (Math.floor(elapsed * 10) % 5 === 0) {
+                            playTacticalBeep(920 + (pct * 4), 0.05, 'triangle');
+                        }
+
                         if (elapsed >= dwellDurationSec) {
                             clearInterval(dwellInterval);
                             btnAcquire.style.display = "block";
-                            instructions.textContent = "¡CONTACTO FIJADO! PULSE PARA IDENTIFICAR";
-                            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                            
+                            if (lrfStatus) {
+                                lrfStatus.textContent = "LRF: LOCKED 50.0m";
+                                lrfStatus.style.color = "var(--accent-green)";
+                            }
+                            if (banner) {
+                                banner.className = "target-warning-banner locked";
+                                if (icon) icon.textContent = "⚡";
+                            }
+                            if (alertFrame) alertFrame.classList.add('locked');
+
+                            instructions.textContent = "¡OBJETIVO CONFIRMADO Y FIJADO! TRANSMITA COORDENADAS";
+                            playLockAcquiredSound();
+
+                            if (navigator.vibrate) navigator.vibrate([120, 60, 150]);
                         }
                     }, 50);
                 }
             } else {
-                // Perdió el blanco
+                // Perdió el blanco o fuera de ángulo
                 reticle.style.filter = "none";
+                if (lockBrackets) lockBrackets.classList.remove('active');
+                if (aimDot) aimDot.setAttribute('fill', 'rgba(0, 240, 255, 0.95)');
+                if (alertFrame) alertFrame.classList.remove('locked');
+
                 if (lrfStatus) {
-                    lrfStatus.textContent = "LRF: STBY";
+                    lrfStatus.textContent = "LRF: STANDBY";
                     lrfStatus.style.color = "var(--accent-cyan)";
                 }
-                instructions.textContent = "Barra el horizonte horizontalmente buscando el azimut del contacto...";
-                instructions.style.color = "#ccc";
+                if (banner) {
+                    banner.className = "target-warning-banner";
+                    if (icon) icon.textContent = "🔍";
+                }
+                instructions.textContent = "BARRIDO HORIZONTAL EN CURSO: LOCALICE EL AZIMUT DEL CONTACTO...";
                 dwellWrap.style.display = "none";
                 dwellBar.style.width = "0%";
                 btnAcquire.style.display = "none";
