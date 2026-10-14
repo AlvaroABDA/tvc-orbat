@@ -1401,9 +1401,22 @@ def scan_qr():
             return jsonify({'status': 'error', 'message': 'Debes seleccionar un equipo.'}), 400
             
         conn.execute('INSERT INTO respawn (poi_id, faccion_id, equipo_id) VALUES (?, ?, ?)', (poi['id'], faccion_id, equipo_id))
+        
+        # RECARGA AUTOMÁTICA DE BOTIQUINES / REANIMACIONES DEL MÉDICO AL PASAR POR RESPAWN
+        sanitario_id = f"MED-{equipo_id}"
+        config_med = medic_engine.load_medic_config()
+        reanim_full = config_med.get("reanimaciones_iniciales_medico", 3)
+        conn.execute('''
+            INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, reanimaciones_usadas, actualizado_en)
+            VALUES (?, ?, 0, CURRENT_TIMESTAMP)
+            ON CONFLICT(sanitario_id) DO UPDATE SET
+                reanimaciones_disponibles = ?,
+                actualizado_en = CURRENT_TIMESTAMP
+        ''', (sanitario_id, reanim_full, reanim_full))
+
         conn.commit()
         conn.close()
-        return jsonify({'status': 'success', 'message': "Respawn registrado correctamente."})
+        return jsonify({'status': 'success', 'message': "Respawn registrado y recursos médicos recargados al 100%."})
         
     else:
         conn.close()
@@ -2418,6 +2431,62 @@ def api_medico_sync():
     conn = get_db_connection()
     result, status_code = medic_engine.sync_episodio_medico(conn, payload)
     return jsonify(result), status_code
+
+# ==================== ADMIN MÉDICOS DASHBOARD ====================
+@app.route('/api/admin/medicos', methods=['GET'])
+def api_admin_medicos():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    conn = get_db_connection()
+    equipos = conn.execute('''
+        SELECT e.id, e.nombre as equipo_nombre, f.nombre as faccion,
+               (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = e.id) as miembros_count
+        FROM Equipo e
+        LEFT JOIN Faccion f ON e.faccion_id = f.id
+        ORDER BY f.nombre, e.nombre
+    ''').fetchall()
+
+    config = medic_engine.load_medic_config()
+    default_reanim = config.get("reanimaciones_iniciales_medico", 3)
+    
+    lista = []
+    for eq in equipos:
+        sanitario_id = f"MED-{eq['id']}"
+        rec = conn.execute('SELECT reanimaciones_disponibles, reanimaciones_usadas FROM MedicoRecursos WHERE sanitario_id = ?', (sanitario_id,)).fetchone()
+        disponibles = rec['reanimaciones_disponibles'] if rec else default_reanim
+        usadas = rec['reanimaciones_usadas'] if rec else 0
+
+        lista.append({
+            'sanitario_id': sanitario_id,
+            'equipo_id': eq['id'],
+            'equipo_nombre': eq['equipo_nombre'],
+            'faccion': eq['faccion'] or 'Sin facción',
+            'miembros_count': eq['miembros_count'] or 0,
+            'reanimaciones_disponibles': disponibles,
+            'reanimaciones_usadas': usadas
+        })
+    return jsonify(lista)
+
+@app.route('/api/admin/medicos/update', methods=['POST'])
+def api_admin_medicos_update():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json or {}
+    sanitario_id = data.get('sanitario_id')
+    reanimaciones = data.get('reanimaciones')
+    if not sanitario_id or reanimaciones is None:
+        return jsonify({'status': 'error', 'message': 'Datos incompletos'}), 400
+
+    conn = get_db_connection()
+    conn.execute('''
+        INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, actualizado_en)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(sanitario_id) DO UPDATE SET
+            reanimaciones_disponibles = ?,
+            actualizado_en = CURRENT_TIMESTAMP
+    ''', (sanitario_id, int(reanimaciones), int(reanimaciones)))
+    conn.commit()
+    return jsonify({'status': 'success', 'message': f'Cupo fijado a {reanimaciones}'})
 
 patch_db()
 

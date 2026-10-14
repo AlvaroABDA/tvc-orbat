@@ -1,19 +1,19 @@
 /**
- * Fase 1 Alternativa: Neumotórax a Tensión / Parche Oclusivo
- * Mecánica de descompresión pulmonar por sincronización de válvula torácica.
- * Manómetro de presión intratorácica con ciclo de respiración y ventana de descompresión.
+ * Fase 1 Alternativa: Neumotórax a Tensión / Punción Torácica (Needle Decompression)
+ * Mecánica de "Mantener y Soltar" (Hold to Charge & Release in Target) en Dial Circular.
+ * El sanitario mantiene pulsado para presurizar el catéter y suelta exactamente dentro del sector verde.
  */
 class PneumothoraxGame {
     constructor(canvas, config, onProgressUpdate, onSuccess, onFail) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.config = config || {
-            velocidad_ciclo_ms: 1800,
-            zona_descompresion_min_pct: 65.0,
-            zona_descompresion_max_pct: 85.0,
-            aciertos_requeridos: 4,
-            penalizacion_por_error_pct: 15.0,
-            progreso_por_acierto_pct: 25.0,
+            velocidad_carga: 75.0, // % por segundo al mantener pulsado
+            zona_valvula_min: 68.0,
+            zona_valvula_max: 88.0,
+            aciertos_requeridos: 3,
+            penalizacion_por_error_pct: 20.0,
+            progreso_por_acierto_pct: 34.0,
             tiempo_limite_segundos: 60
         };
 
@@ -27,18 +27,20 @@ class PneumothoraxGame {
         this.lastTime = 0;
         this.elapsedTime = 0;
 
-        // Manómetro de presión: 0..100
-        this.pressure = 20;
-        this.pressureDir = 1;
-        this.hitStreak = 0;
+        // Estado del catéter / Válvula: Carga de 0 a 100
+        this.charge = 0;
+        this.isHolding = false;
+        this.holdStartTime = 0;
 
-        this.feedbackText = "";
-        this.feedbackColor = "#fff";
+        this.feedbackText = "MANTÉN PULSADO PARA CARGAR CATÉTER Y SUELTA EN EL SECTOR VERDE";
+        this.feedbackColor = "#aaa";
         this.feedbackTimer = 0;
     }
 
     start(initialProgress = 0) {
         this.progress = Math.max(0, Math.min(100, initialProgress));
+        this.charge = 0;
+        this.isHolding = false;
         this.isRunning = true;
         this.lastTime = performance.now();
         this.loop(this.lastTime);
@@ -46,41 +48,54 @@ class PneumothoraxGame {
 
     stop() {
         this.isRunning = false;
+        this.isHolding = false;
         if (this.animFrameId) {
             cancelAnimationFrame(this.animFrameId);
             this.animFrameId = null;
         }
     }
 
-    triggerVentTap() {
+    startHold() {
         if (!this.isRunning) return;
+        this.isHolding = true;
+        this.charge = 0;
+        this.feedbackText = "CARGANDO PRESIÓN DEL CATÉTER...";
+        this.feedbackColor = "#ffaa00";
+    }
 
-        // La válvula debe abrirse en el pico de presión torácica (zona dulce: 65% a 85%)
-        const inVentZone = (this.pressure >= this.config.zona_descompresion_min_pct && 
-                            this.pressure <= this.config.zona_descompresion_max_pct);
+    releaseHold() {
+        if (!this.isRunning || !this.isHolding) return;
+        this.isHolding = false;
 
-        if (inVentZone) {
-            this.hitStreak++;
+        const inTarget = (this.charge >= this.config.zona_valvula_min && this.charge <= this.config.zona_valvula_max);
+
+        if (inTarget) {
             this.progress = Math.min(100, this.progress + this.config.progreso_por_acierto_pct);
-            this.showFeedback("¡DESCOMPRESIÓN EFECTIVA!", "#2ecc71");
-            this.onProgressUpdate(this.progress, { hit: true, streak: this.hitStreak });
+            this.showFeedback("¡PUNCIÓN EXITOSA! AIRE LIBERADO", "#2ecc71");
+            this.onProgressUpdate(this.progress, { hit: true, charge: this.charge });
 
             if (this.progress >= 100) {
                 this.stop();
                 this.onSuccess({ duration: this.elapsedTime });
+                return;
             }
         } else {
-            this.hitStreak = 0;
             this.progress = Math.max(0, this.progress - this.config.penalizacion_por_error_pct);
-            this.showFeedback("¡VENTEO PREMATURO / COLAPSO!", "#ff3344");
-            this.onProgressUpdate(this.progress, { hit: false });
+            if (this.charge < this.config.zona_valvula_min) {
+                this.showFeedback("¡PRESIÓN INSUFICIENTE (SOLTADO PRONTO)!", "#ff3344");
+            } else {
+                this.showFeedback("¡SOBREPRESIÓN / DAÑO TISULAR!", "#ff3344");
+            }
+            this.onProgressUpdate(this.progress, { hit: false, charge: this.charge });
         }
+
+        this.charge = 0;
     }
 
     showFeedback(text, color) {
         this.feedbackText = text;
         this.feedbackColor = color;
-        this.feedbackTimer = 0.8;
+        this.feedbackTimer = 1.2;
     }
 
     loop(timestamp) {
@@ -90,16 +105,14 @@ class PneumothoraxGame {
         this.lastTime = timestamp;
         this.elapsedTime += delta;
 
-        // Oscilar presión intratorácica simulando ciclo respiratorio tenso
-        const speed = 100 / (this.config.velocidad_ciclo_ms / 1000);
-        this.pressure += this.pressureDir * speed * delta;
-
-        if (this.pressure >= 100) {
-            this.pressure = 100;
-            this.pressureDir = -1;
-        } else if (this.pressure <= 10) {
-            this.pressure = 10;
-            this.pressureDir = 1;
+        if (this.isHolding) {
+            this.charge += this.config.velocidad_carga * delta;
+            if (this.charge > 105) {
+                // Se pasó de rosca por mantener demasiado
+                this.releaseHold();
+            }
+        } else if (this.charge > 0) {
+            this.charge = Math.max(0, this.charge - (150 * delta));
         }
 
         if (this.feedbackTimer > 0) {
@@ -117,56 +130,63 @@ class PneumothoraxGame {
 
         ctx.clearRect(0, 0, w, h);
 
-        // Fondo manómetro
-        ctx.fillStyle = "#070b10";
+        // Fondo HUD táctico circular
+        ctx.fillStyle = "#06090d";
         ctx.fillRect(0, 0, w, h);
 
-        // Riel manómetro arqueado / barra de presión
-        const barX = 20;
-        const barY = h * 0.45;
-        const barW = w - 40;
-        const barH = 24;
+        const centerX = w / 2;
+        const centerY = h * 0.52;
+        const radius = Math.min(centerX - 30, h * 0.42);
 
-        ctx.fillStyle = "rgba(20, 25, 35, 0.9)";
-        ctx.strokeStyle = "rgba(0, 240, 255, 0.3)";
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(barX, barY, barW, barH);
-        ctx.fillRect(barX, barY, barW, barH);
+        // Arco base de manómetro (210 grados)
+        const startAngle = Math.PI * 0.8;
+        const endAngle = Math.PI * 2.2;
+        const totalAngle = endAngle - startAngle;
 
-        // Zona segura de descompresión (Vent Window)
-        const zMinX = barX + (this.config.zona_descompresion_min_pct / 100 * barW);
-        const zMaxX = barX + (this.config.zona_descompresion_max_pct / 100 * barW);
-        ctx.fillStyle = "rgba(46, 204, 113, 0.3)";
-        ctx.strokeStyle = "#2ecc71";
-        ctx.lineWidth = 2;
-        ctx.fillRect(zMinX, barY + 2, (zMaxX - zMinX), barH - 4);
-        ctx.strokeRect(zMinX, barY + 2, (zMaxX - zMinX), barH - 4);
+        ctx.lineWidth = 14;
+        ctx.lineCap = "round";
 
-        // Aguja / Nivel de presión
-        const pX = barX + (this.pressure / 100 * barW);
-        ctx.fillStyle = this.pressure > 85 ? "#ff3344" : "#ffaa00";
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 10;
-        ctx.fillRect(pX - 4, barY - 6, 8, barH + 12);
-        ctx.shadowBlur = 0;
+        // Fondo del arco
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.stroke();
 
-        // Etiquetas
+        // Sector Verde Objetivo (Ventana de Punción)
+        const t1 = startAngle + (this.config.zona_valvula_min / 100 * totalAngle);
+        const t2 = startAngle + (this.config.zona_valvula_max / 100 * totalAngle);
+        ctx.strokeStyle = "rgba(46, 204, 113, 0.5)";
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, t1, t2);
+        ctx.stroke();
+
+        // Arco de Carga (Dinámico al mantener pulsado)
+        if (this.charge > 0) {
+            const currentAngle = startAngle + (Math.min(100, this.charge) / 100 * totalAngle);
+            ctx.strokeStyle = this.charge > this.config.zona_valvula_max ? "#ff3344" : 
+                              (this.charge >= this.config.zona_valvula_min ? "#2ecc71" : "#00f0ff");
+            ctx.shadowColor = ctx.strokeStyle;
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, startAngle, currentAngle);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        }
+
+        // Centro: Indicador numérico de presión y catéter
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 20px 'Orbitron', sans-serif";
+        ctx.fillText(`${Math.min(100, Math.round(this.charge))}%`, centerX, centerY - 2);
+
         ctx.fillStyle = "#888";
         ctx.font = "10px 'Share Tech Mono', monospace";
-        ctx.textAlign = "left";
-        ctx.fillText("BAJA", barX, barY - 10);
-        ctx.textAlign = "center";
-        ctx.fillText("VENTEO ÓPTIMO (PSI)", barX + (barW * 0.75), barY - 10);
-        ctx.textAlign = "right";
-        ctx.fillText("SOBREPRESIÓN", barX + barW, barY - 10);
+        ctx.fillText("PRESIÓN CATÉTER (PSI)", centerX, centerY + 16);
 
-        // Feedback
-        if (this.feedbackTimer > 0) {
-            ctx.fillStyle = this.feedbackColor;
-            ctx.font = "bold 13px 'Share Tech Mono', monospace";
-            ctx.textAlign = "center";
-            ctx.fillText(this.feedbackText, w / 2, h - 8);
-        }
+        // Feedback Text
+        ctx.fillStyle = this.feedbackColor;
+        ctx.font = "11px 'Share Tech Mono', monospace";
+        ctx.fillText(this.feedbackText, centerX, h - 8);
     }
 }
 

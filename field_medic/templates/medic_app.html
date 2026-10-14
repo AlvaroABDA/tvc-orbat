@@ -287,9 +287,10 @@
                 📷 ESCANEAR CARNET (QR)
             </button>
 
-            <!-- Selector de simulación rápida de escenario para pruebas -->
-            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 15px;">
-                <label style="font-size: 0.72rem; color: #aaa; font-family: 'Share Tech Mono', monospace; display: block; margin-bottom: 6px;">TIPO DE LESIÓN TÁCTICA A TRATAR</label>
+            {% if user_role == 'admin' %}
+            <!-- Selector exclusivo de Admin para forzar escenario en pruebas -->
+            <div style="background: rgba(255,170,0,0.1); border: 1px dashed var(--accent-gold); border-radius: 6px; padding: 10px; margin-bottom: 15px;">
+                <label style="font-size: 0.72rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace; display: block; margin-bottom: 6px;">[ADMIN] FORZAR TIPO DE LESIÓN</label>
                 <div style="display: flex; gap: 8px;">
                     <button type="button" class="btn-header active-injury-tab" id="btn-select-hemorrhage" onclick="selectInjuryType('HEMORRAGIA_ACTIVA')" style="flex: 1; justify-content: center; border-color: var(--accent-red); color: #fff; background: rgba(255,51,68,0.2);">
                         HEMORRAGIA
@@ -299,6 +300,7 @@
                     </button>
                 </div>
             </div>
+            {% endif %}
 
             <!-- Entrada de contingencia manual por si la cámara física falla -->
             <div style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 10px;">
@@ -368,11 +370,13 @@
                 <div class="progress-bar-fill" id="pneumothorax-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
             </div>
 
-            <!-- Canvas Manómetro Neumotórax -->
-            <canvas id="pneumothorax-canvas" width="450" height="110" style="width: 100%; border-radius: 6px; margin: 10px 0; background: #000;"></canvas>
+            <!-- Canvas Radial Manómetro Neumotórax -->
+            <canvas id="pneumothorax-canvas" width="450" height="180" style="width: 100%; border-radius: 6px; margin: 10px 0; background: #000;"></canvas>
 
-            <button class="btn-action-large btn-red" id="btn-tap-pneumothorax" onclick="onPneumothoraxTap()">
-                VENTEAR / DESCOMPRIMIR VÁLVULA
+            <button class="btn-action-large btn-red" id="btn-tap-pneumothorax"
+                    onmousedown="onPneumoStartHold(event)" onmouseup="onPneumoReleaseHold(event)"
+                    ontouchstart="onPneumoStartHold(event)" ontouchend="onPneumoReleaseHold(event)">
+                MANTENER PARA CARGAR CATÉTER (SOLTAR EN VERDE)
             </button>
         </section>
 
@@ -492,6 +496,14 @@
 
         // Inicialización al cargar la página
         window.addEventListener('DOMContentLoaded', () => {
+            // Sincronizar reanimaciones iniciales recibidas del servidor
+            const serverReanims = {{ recursos.reanimaciones_disponibles | default(3) }};
+            const currentLocal = storage.getLocalReanimations(serverReanims);
+            // Si el servidor ha recargado los usos (por admin o respawn), actualizar local
+            if (serverReanims > currentLocal) {
+                storage.setLocalReanimations(serverReanims);
+            }
+
             updateReanimUI();
             storage.flushSyncQueue(); // Intentar sincronizar cola offline si hay red
 
@@ -603,13 +615,21 @@
                 return;
             }
 
+            const userRole = "{{ user_role }}";
+            let injury = selectedInjuryType;
+            // Si es jugador normal, asignar escenario aleatorio
+            if (userRole !== 'admin') {
+                const scenarios = ['HEMORRAGIA_ACTIVA', 'NEUMOTORAX_TENSION'];
+                injury = scenarios[Math.floor(Math.random() * scenarios.length)];
+            }
+
             activeEpisode = {
                 episode_id: "EP-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7).toUpperCase(),
                 sanitario_id: sanitarioId,
                 operador_uid: token,
                 operador_nombre: "OPERADOR " + token,
-                escenario_id: selectedInjuryType,
-                fase_actual: selectedInjuryType === 'NEUMOTORAX_TENSION' ? 'pneumothorax_control' : 'hemorrhage_control',
+                escenario_id: injury,
+                fase_actual: injury === 'NEUMOTORAX_TENSION' ? 'pneumothorax_control' : 'hemorrhage_control',
                 hemorragia_controlada: false,
                 estabilizacion_completada: false,
                 phase1_progress: 0,
@@ -620,7 +640,7 @@
 
             storage.saveCurrentEpisode(activeEpisode);
 
-            if (selectedInjuryType === 'NEUMOTORAX_TENSION') {
+            if (injury === 'NEUMOTORAX_TENSION') {
                 launchPneumothoraxPhase();
             } else {
                 launchHemorrhagePhase();
@@ -718,8 +738,14 @@
             pneumothoraxEngine.start(initialProgress);
         }
 
-        function onPneumothoraxTap() {
-            if (pneumothoraxEngine) pneumothoraxEngine.triggerVentTap();
+        function onPneumoStartHold(e) {
+            if (e && e.cancelable) e.preventDefault();
+            if (pneumothoraxEngine) pneumothoraxEngine.startHold();
+        }
+
+        function onPneumoReleaseHold(e) {
+            if (e && e.cancelable) e.preventDefault();
+            if (pneumothoraxEngine) pneumothoraxEngine.releaseHold();
         }
 
         // ==================== FASE 2: ESTABILIZACIÓN RÍTMICA ====================

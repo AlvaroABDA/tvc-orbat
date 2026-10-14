@@ -442,9 +442,10 @@
             <h2 class="view-title" style="text-align: center;">PANEL DE SEGURIDAD GLOBAL</h2>
             
             <div style="width: 100%; max-width: 900px; margin: 0 auto;">
-                <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
                     <button class="btn admin-tab-btn active" data-tab="tab-credenciales">CREDENCIALES</button>
                     <button class="btn admin-tab-btn" data-tab="tab-artilleria">ARTILLERÍA</button>
+                    <button class="btn admin-tab-btn" data-tab="tab-medicos" style="color: #2ecc71; border-color: rgba(46,204,113,0.4);">✚ MÉDICOS</button>
                     <button class="btn admin-tab-btn" data-tab="tab-zafarrancho" style="color: var(--danger-color); border-color: var(--danger-color);">ZAFARRANCHO</button>
                 </div>
                 
@@ -556,8 +557,38 @@
                             </table>
                         </div>
                     </div>
+                <div id="tab-medicos" class="admin-tab-content" style="display: none;">
+                    <!-- GESTIÓN DE MÉDICOS Y REANIMACIONES -->
+                    <div class="panel management-panel">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                            <div>
+                                <h3 style="color: #2ecc71; margin: 0;">GESTIÓN DE RECURSOS MÉDICOS</h3>
+                                <p style="color: #aaa; margin: 5px 0 0 0; font-size: 0.85rem;">
+                                    Asigna cupos de reanimación por sanitario/unidad y consulta el registro de curaciones. Los sanitarios recargan sus usos al escanear el punto de RESPAWN de su facción.
+                                </p>
+                            </div>
+                            <button id="btn-refresh-medicos" class="btn outline btn-sm" onclick="cargarAdminMedicos()" style="font-size: 0.8rem; border-color: #2ecc71; color: #2ecc71;">Actualizar</button>
+                        </div>
+
+                        <div style="overflow-x: auto;">
+                            <table class="table-tactical" style="table-layout: fixed; width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align: left; width: 25%;">SANITARIO / ID</th>
+                                        <th style="text-align: left; width: 25%;">UNIDAD</th>
+                                        <th style="text-align: center; width: 15%;">MIEMBROS</th>
+                                        <th style="text-align: center; width: 15%;">USOS DISPONIBLES</th>
+                                        <th style="text-align: center; width: 20%;">AJUSTAR / RECARGAR</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-medicos-tbody">
+                                    <!-- Llenado dinámico por JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-                
+
                 <div id="tab-zafarrancho" class="admin-tab-content" style="display: none;">
                     <!-- REINICIO DE ESTADISTICAS -->
                     <div class="panel management-panel" style="border: 2px solid #a32a2a;">
@@ -576,9 +607,70 @@
                         document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
                         
                         btn.classList.add('active');
-                        document.getElementById(btn.getAttribute('data-tab')).style.display = 'block';
+                        const targetId = btn.getAttribute('data-tab');
+                        document.getElementById(targetId).style.display = 'block';
+
+                        if (targetId === 'tab-medicos') {
+                            cargarAdminMedicos();
+                        }
                     });
                 });
+
+                async function cargarAdminMedicos() {
+                    const tbody = document.getElementById('admin-medicos-tbody');
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#888;">Cargando sanitarios y unidades...</td></tr>';
+                    try {
+                        const res = await fetch('/api/admin/medicos');
+                        const data = await res.json();
+                        tbody.innerHTML = '';
+                        if (!data || data.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#888;">No hay unidades ni sanitarios dados de alta.</td></tr>';
+                            return;
+                        }
+                        data.forEach(m => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td style="font-weight: bold; color: #fff;">${m.sanitario_id}</td>
+                                <td>${m.equipo_nombre} <span style="font-size:0.75rem; color:#aaa;">(${m.faccion})</span></td>
+                                <td style="text-align: center;">${m.miembros_count} pax</td>
+                                <td style="text-align: center;"><b style="color: #2ecc71; font-size: 1.1rem;" id="reanim-val-${m.sanitario_id}">${m.reanimaciones_disponibles}</b></td>
+                                <td style="text-align: center;">
+                                    <div style="display: inline-flex; gap: 5px; align-items: center;">
+                                        <input type="number" id="input-quota-${m.sanitario_id}" value="${m.reanimaciones_disponibles}" min="0" max="99" style="width: 55px; padding: 4px; text-align: center; background: #000; border: 1px solid #555; color: #fff; font-weight: bold;">
+                                        <button class="btn btn-sm" onclick="guardarCupoMedico('${m.sanitario_id}')" style="padding: 4px 8px; font-size: 0.75rem; background: rgba(46,204,113,0.2); border-color: #2ecc71; color: #2ecc71;">FIJAR</button>
+                                        <button class="btn btn-sm" onclick="recargarFullMedico('${m.sanitario_id}', ${m.miembros_count})" title="Recargar cupo según miembros" style="padding: 4px 6px; font-size: 0.75rem;">+AUTO</button>
+                                    </div>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } catch (e) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px; color:#ff4444;">Error cargando recursos médicos.</td></tr>';
+                    }
+                }
+
+                async function guardarCupoMedico(sanitarioId) {
+                    const val = parseInt(document.getElementById(`input-quota-${sanitarioId}`).value, 10);
+                    if (isNaN(val) || val < 0) return alert("Valor inválido.");
+                    try {
+                        const res = await fetch('/api/admin/medicos/update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sanitario_id: sanitarioId, reanimaciones: val })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            document.getElementById(`reanim-val-${sanitarioId}`).textContent = val;
+                            alert(`Cupo actualizado a ${val} reanimaciones.`);
+                        } else alert(data.message || "Error al actualizar.");
+                    } catch (e) { alert("Error de conexión."); }
+                }
+
+                async function recargarFullMedico(sanitarioId, miembrosCount) {
+                    const defaultVal = Math.max(3, Math.ceil(miembrosCount / 2));
+                    document.getElementById(`input-quota-${sanitarioId}`).value = defaultVal;
+                    guardarCupoMedico(sanitarioId);
+                }
             </script>
         </section>
 
