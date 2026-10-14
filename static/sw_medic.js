@@ -1,11 +1,17 @@
-const CACHE_NAME = 'tvc-medic-v3';
+const CACHE_NAME = 'tvc-medic-v5';
 const ASSETS_TO_CACHE = [
   '/medic',
   '/static/manifest_medic.json',
   '/static/js/field_medic/episode_storage.js',
   '/static/js/field_medic/hemorrhage_game.js',
   '/static/js/field_medic/pneumothorax_game.js',
+  '/static/js/field_medic/tourniquet_game.js',
+  '/static/js/field_medic/suture_game.js',
   '/static/js/field_medic/stabilization_game.js',
+  '/static/js/field_medic/vitals_hold_game.js',
+  '/static/js/field_medic/dual_vitals_game.js',
+  '/static/js/field_medic/memory_sequence_game.js',
+  '/static/js/field_medic/line_correction_game.js',
   '/static/js/field_medic/qr_scanner.js',
   'https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap',
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0'

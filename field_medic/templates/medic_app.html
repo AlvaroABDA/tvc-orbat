@@ -316,15 +316,40 @@
                 </div>
             </div>
 
-            <!-- Selector exclusivo de Admin para forzar escenario en pruebas -->
+            <!-- Selector exclusivo de Admin para forzar minijuegos en pruebas -->
             <div style="background: rgba(255,170,0,0.06); border: 1px solid rgba(218,165,32,0.3); border-radius: 4px; padding: 12px; margin-bottom: 15px; backdrop-filter: blur(8px);">
-                <label style="font-size: 0.72rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace; display: block; margin-bottom: 8px;">[ADMIN] FORZAR TIPO DE LESIÓN</label>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-header active-injury-tab" id="btn-select-hemorrhage" onclick="selectInjuryType('HEMORRAGIA_ACTIVA')" style="flex: 1; justify-content: center; border-color: var(--accent-red); color: #fff; background: rgba(255,51,68,0.2);">
-                        HEMORRAGIA
+                <label style="font-size: 0.72rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace; display: block; margin-bottom: 6px;">[ADMIN] FASE 1: HEMORRAGIA / LESIÓN INICIAL</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px;">
+                    <button type="button" class="btn-header admin-fase1-btn" id="btn-fase1-compresion" onclick="selectFase1Variant('COMPRESION_RIEL')" style="justify-content: center; font-size: 0.72rem; padding: 6px 4px; border-color: var(--accent-red); color: #fff; background: rgba(255,51,68,0.2);">
+                        [A] COMPRESIÓN
                     </button>
-                    <button type="button" class="btn-header" id="btn-select-pneumothorax" onclick="selectInjuryType('NEUMOTORAX_TENSION')" style="flex: 1; justify-content: center; border-color: rgba(255,255,255,0.15); color: #888;">
-                        NEUMOTÓRAX
+                    <button type="button" class="btn-header admin-fase1-btn" id="btn-fase1-torniquete" onclick="selectFase1Variant('TORNIQUETE_CIRCULAR')" style="justify-content: center; font-size: 0.72rem; padding: 6px 4px; border-color: #555; color: #aaa;">
+                        [B] TORNIQUETE
+                    </button>
+                    <button type="button" class="btn-header admin-fase1-btn" id="btn-fase1-sutura" onclick="selectFase1Variant('SUTURA_OBJETIVOS')" style="justify-content: center; font-size: 0.72rem; padding: 6px 4px; border-color: #555; color: #aaa;">
+                        [C] SUTURA
+                    </button>
+                    <button type="button" class="btn-header admin-fase1-btn" id="btn-fase1-neumotorax" onclick="selectFase1Variant('NEUMOTORAX_PUNCION')" style="justify-content: center; font-size: 0.72rem; padding: 6px 4px; border-color: #555; color: #aaa;">
+                        [ALT] NEUMOTÓRAX
+                    </button>
+                </div>
+
+                <label style="font-size: 0.72rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace; display: block; margin-bottom: 6px;">[ADMIN] FASE 2: ESTABILIZACIÓN VITAL</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <button type="button" class="btn-header admin-fase2-btn" id="btn-fase2-ritmo" onclick="selectFase2Variant('RITMO_ECG')" style="justify-content: center; font-size: 0.72rem; padding: 6px 4px; border-color: var(--accent-green); color: #fff; background: rgba(46,204,113,0.2);">
+                        [A] RITMO ECG
+                    </button>
+                    <button type="button" class="btn-header admin-fase2-btn" id="btn-fase2-constantes" onclick="selectFase2Variant('CONSTANTES_RANGO')" style="justify-content: center; font-size: 0.72rem; padding: 6px 4px; border-color: #555; color: #aaa;">
+                        [B] CONSTANTES
+                    </button>
+                    <button type="button" class="btn-header admin-fase2-btn" id="btn-fase2-doble" onclick="selectFase2Variant('DOBLE_INDICADOR')" style="justify-content: center; font-size: 0.72rem; padding: 6px 4px; border-color: #555; color: #aaa;">
+                        [C] 2 INDICADORES
+                    </button>
+                    <button type="button" class="btn-header admin-fase2-btn" id="btn-fase2-secuencia" onclick="selectFase2Variant('SECUENCIA_VISUAL')" style="justify-content: center; font-size: 0.72rem; padding: 6px 4px; border-color: #555; color: #aaa;">
+                        [D] SECUENCIA
+                    </button>
+                    <button type="button" class="btn-header admin-fase2-btn" id="btn-fase2-linea" onclick="selectFase2Variant('CORRECCION_LINEA')" style="grid-column: span 2; justify-content: center; font-size: 0.72rem; padding: 6px 4px; border-color: #555; color: #aaa;">
+                        [E] CORREGIR LÍNEA DE VIDA
                     </button>
                 </div>
             </div>
@@ -340,20 +365,18 @@
             </div>
         </section>
 
-        <!-- ==================== PANTALLA 1: CASO Y CONTROL DE HEMORRAGIA ==================== -->
+        <!-- ==================== PANTALLA 1-A: HEMORRAGIA COMPRESIÓN (RIEL) ==================== -->
         <section id="view-hemorrhage" class="tactical-card" style="display: none;">
-            
-            <!-- Monitor Rojo -->
             <div class="patient-monitor state-red" id="hemorrhage-monitor">
                 <div>
-                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" id="patient-name-display">OPERADOR HERIDO</div>
-                    <div style="font-size: 0.75rem; color: #ff9999; font-family: 'Share Tech Mono', monospace;">ESTADO: HEMORRAGIA ACTIVA</div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" class="patient-name-target">OPERADOR HERIDO</div>
+                    <div style="font-size: 0.75rem; color: #ff9999; font-family: 'Share Tech Mono', monospace;">ESTADO: HEMORRAGIA ACTIVA // COMPRESIÓN DIRECTA</div>
                 </div>
                 <div class="monitor-dot" style="background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red);"></div>
             </div>
 
             <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
-                «El operador presenta una hemorragia simulada. Debes controlar la pérdida antes de iniciar la fase de estabilización».
+                «El operador presenta una hemorragia activa. Aplique presión directa sobre el riel cuando la aguja cruce la zona verde».
             </p>
 
             <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
@@ -364,17 +387,64 @@
                 <div class="progress-bar-fill" id="hemorrhage-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
             </div>
 
-            <!-- Canvas Riel Precisión Táctil -->
             <canvas id="hemorrhage-canvas" style="width: 100%; height: 190px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
         </section>
 
-        <!-- ==================== PANTALLA 1 ALTERNATIVA: NEUMOTÓRAX A TENSIÓN ==================== -->
+        <!-- ==================== PANTALLA 1-B: TORNIQUETE CON OBJETIVO CIRCULAR ==================== -->
+        <section id="view-tourniquet" class="tactical-card" style="display: none;">
+            <div class="patient-monitor state-red" id="tourniquet-monitor">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" class="patient-name-target">OPERADOR HERIDO</div>
+                    <div style="font-size: 0.75rem; color: #ff9999; font-family: 'Share Tech Mono', monospace;">ESTADO: HEMORRAGIA // TORNIQUETE TÁCTICO</div>
+                </div>
+                <div class="monitor-dot" style="background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red);"></div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
+                «Ajuste el torniquete táctico pulsando el sensor en el momento exacto en que se active el sector objetivo».
+            </p>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
+                <span>PRESIÓN DE TORNIQUETE</span>
+                <span id="tourniquet-pct-val">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="tourniquet-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
+            </div>
+
+            <canvas id="tourniquet-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+        </section>
+
+        <!-- ==================== PANTALLA 1-C: SUTURA POR OBJETIVOS CONSECUTIVOS ==================== -->
+        <section id="view-suture" class="tactical-card" style="display: none;">
+            <div class="patient-monitor state-red" id="suture-monitor">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" class="patient-name-target">OPERADOR HERIDO</div>
+                    <div style="font-size: 0.75rem; color: #ff9999; font-family: 'Share Tech Mono', monospace;">ESTADO: HERIDA ABIERTA // SUTURA DE URGENCIA</div>
+                </div>
+                <div class="monitor-dot" style="background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red);"></div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
+                «Aproxime los bordes de la herida pulsando consecutivamente sobre cada punto de sutura táctico que aparezca».
+            </p>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
+                <span>CIERRE DE HERIDA</span>
+                <span id="suture-pct-val">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="suture-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
+            </div>
+
+            <canvas id="suture-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+        </section>
+
+        <!-- ==================== PANTALLA 1-ALT: NEUMOTÓRAX A TENSIÓN ==================== -->
         <section id="view-pneumothorax" class="tactical-card" style="display: none;">
-            
-            <!-- Monitor Rojo -->
             <div class="patient-monitor state-red" id="pneumothorax-monitor">
                 <div>
-                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" id="patient-name-display-pneumo">OPERADOR HERIDO</div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" class="patient-name-target">OPERADOR HERIDO</div>
                     <div style="font-size: 0.75rem; color: #ff9999; font-family: 'Share Tech Mono', monospace;">ESTADO: NEUMOTÓRAX A TENSIÓN</div>
                 </div>
                 <div class="monitor-dot" style="background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red);"></div>
@@ -392,24 +462,21 @@
                 <div class="progress-bar-fill" id="pneumothorax-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
             </div>
 
-            <!-- Canvas Radial Manómetro Neumotórax -->
             <canvas id="pneumothorax-canvas" style="width: 100%; height: 220px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
         </section>
 
-        <!-- ==================== PANTALLA 2: ESTABILIZACIÓN RÍTMICA ==================== -->
+        <!-- ==================== PANTALLA 2-A: ESTABILIZACIÓN RÍTMICA ECG ==================== -->
         <section id="view-stabilization" class="tactical-card" style="display: none;">
-
-            <!-- Monitor Amarillo -->
-            <div class="patient-monitor state-yellow" id="stabilization-monitor">
+            <div class="patient-monitor state-yellow">
                 <div>
-                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" id="patient-name-display-2">OPERADOR</div>
-                    <div style="font-size: 0.75rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace;" id="stabilization-status-text">HEMORRAGIA CONTROLADA — ESTABILIZACIÓN EN CURSO</div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" class="patient-name-target">OPERADOR</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace;">HEMORRAGIA CONTROLADA — RITMO CARDÍACO ECG</div>
                 </div>
-                <div class="monitor-dot" id="stabilization-monitor-dot" style="background: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold);"></div>
+                <div class="monitor-dot" style="background: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold);"></div>
             </div>
 
             <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
-                Sincronice sus pulsaciones rítmicas con el pulso cardíaco del monitor cuando la onda alcance el recuadro central.
+                Sincronice sus pulsaciones rítmicas con el latido cardíaco del monitor cuando la onda alcance el sensor central.
             </p>
 
             <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
@@ -420,8 +487,107 @@
                 <div class="progress-bar-fill" id="stabilization-bar" style="background: linear-gradient(90deg, var(--accent-gold), var(--accent-green));"></div>
             </div>
 
-            <!-- Canvas ECG -->
             <canvas id="stabilization-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+        </section>
+
+        <!-- ==================== PANTALLA 2-B: MANTENER CONSTANTES EN RANGO ==================== -->
+        <section id="view-vitals-hold" class="tactical-card" style="display: none;">
+            <div class="patient-monitor state-yellow">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" class="patient-name-target">OPERADOR</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace;">HEMORRAGIA CONTROLADA — CONTROL DE CONSTANTES</div>
+                </div>
+                <div class="monitor-dot" style="background: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold);"></div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
+                Mantenga la presión arterial en rango seguro tocando el sensor cada vez que el indicador oscilante cruce la zona verde.
+            </p>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
+                <span>ESTABILIZACIÓN DE CONSTANTES</span>
+                <span id="vitals-hold-pct-val">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="vitals-hold-bar" style="background: linear-gradient(90deg, var(--accent-gold), var(--accent-green));"></div>
+            </div>
+
+            <canvas id="vitals-hold-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+        </section>
+
+        <!-- ==================== PANTALLA 2-C: EQUILIBRAR DOS INDICADORES ==================== -->
+        <section id="view-dual-vitals" class="tactical-card" style="display: none;">
+            <div class="patient-monitor state-yellow">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" class="patient-name-target">OPERADOR</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace;">HEMORRAGIA CONTROLADA — ATENCIÓN VITAL ALTERNA</div>
+                </div>
+                <div class="monitor-dot" style="background: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold);"></div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
+                Equilibre simultáneamente ambos canales vitales: pulse en la mitad superior para el Canal Alfa y en la inferior para el Canal Bravo.
+            </p>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
+                <span>EQUILIBRIO VITAL DUAL</span>
+                <span id="dual-vitals-pct-val">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="dual-vitals-bar" style="background: linear-gradient(90deg, var(--accent-gold), var(--accent-green));"></div>
+            </div>
+
+            <canvas id="dual-vitals-canvas" style="width: 100%; height: 220px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+        </section>
+
+        <!-- ==================== PANTALLA 2-D: SECUENCIA DE ESTABILIZACIÓN ==================== -->
+        <section id="view-memory-sequence" class="tactical-card" style="display: none;">
+            <div class="patient-monitor state-yellow">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" class="patient-name-target">OPERADOR</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace;">HEMORRAGIA CONTROLADA — SECUENCIA DE MEMORIA</div>
+                </div>
+                <div class="monitor-dot" style="background: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold);"></div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
+                Memorice la secuencia de iluminación de los cuadrantes vitales y reprodúzcala tocando los nodos en el orden exacto.
+            </p>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
+                <span>SECUENCIA VITAL</span>
+                <span id="memory-sequence-pct-val">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="memory-sequence-bar" style="background: linear-gradient(90deg, var(--accent-gold), var(--accent-green));"></div>
+            </div>
+
+            <canvas id="memory-sequence-canvas" style="width: 100%; height: 220px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+        </section>
+
+        <!-- ==================== PANTALLA 2-E: CORREGIR LÍNEA DE VIDA ==================== -->
+        <section id="view-line-correction" class="tactical-card" style="display: none;">
+            <div class="patient-monitor state-yellow">
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.9rem; color: #fff;" class="patient-name-target">OPERADOR</div>
+                    <div style="font-size: 0.75rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace;">HEMORRAGIA CONTROLADA — CORRECCIÓN VECTORIAL</div>
+                </div>
+                <div class="monitor-dot" style="background: var(--accent-gold); box-shadow: 0 0 10px var(--accent-gold);"></div>
+            </div>
+
+            <p style="font-size: 0.85rem; color: #ccc; margin: 0 0 10px 0; line-height: 1.4;">
+                Mantenga pulsado el sensor para aplicar contrafuerza y mantener la línea de vida dentro del pasillo verde de seguridad.
+            </p>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
+                <span>CORRECCIÓN DE TRAYECTORIA</span>
+                <span id="line-correction-pct-val">0%</span>
+            </div>
+            <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" id="line-correction-bar" style="background: linear-gradient(90deg, var(--accent-gold), var(--accent-green));"></div>
+            </div>
+
+            <canvas id="line-correction-canvas" style="width: 100%; height: 220px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
         </section>
 
         <!-- ==================== PANTALLA 3: RESUMEN Y CIERRE ==================== -->
@@ -466,11 +632,17 @@
     </div>
 
     <!-- Carga de Scripts Modulares Field Medic -->
-    <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=4"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=4"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/pneumothorax_game.js') }}?v=4"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=4"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=4"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/tourniquet_game.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/suture_game.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/pneumothorax_game.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/vitals_hold_game.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/dual_vitals_game.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/memory_sequence_game.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/line_correction_game.js') }}?v=5"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=5"></script>
 
     <script>
         const sanitarioId = "{{ sanitario_id }}";
@@ -479,10 +651,21 @@
         const storage = new EpisodeStorage(sanitarioId);
         let activeEpisode = null;
         let qrScanner = null;
+
+        // Motores de minijuegos activos
         let hemorrhageEngine = null;
+        let tourniquetEngine = null;
+        let sutureEngine = null;
         let pneumothoraxEngine = null;
         let stabilizationEngine = null;
-        let selectedInjuryType = 'HEMORRAGIA_ACTIVA';
+        let vitalsHoldEngine = null;
+        let dualVitalsEngine = null;
+        let memorySequenceEngine = null;
+        let lineCorrectionEngine = null;
+
+        // Variantes seleccionadas por Admin
+        let selectedFase1Variant = 'COMPRESION_RIEL';
+        let selectedFase2Variant = 'RITMO_ECG';
         let deferredInstallPrompt = null;
 
         // Registrar Service Worker para soporte Offline completo
@@ -506,18 +689,15 @@
 
         // Inicialización al cargar la página
         window.addEventListener('DOMContentLoaded', () => {
-            // Sincronizar reanimaciones iniciales recibidas del servidor
             const serverReanims = {{ recursos.reanimaciones_disponibles | default(3) }};
             const currentLocal = storage.getLocalReanimations(serverReanims);
-            // Si el servidor ha recargado los usos (por admin o respawn), actualizar local
             if (serverReanims > currentLocal) {
                 storage.setLocalReanimations(serverReanims);
             }
 
             updateReanimUI();
-            storage.flushSyncQueue(); // Intentar sincronizar cola offline si hay red
+            storage.flushSyncQueue();
 
-            // Detectar iOS para instrucciones de instalación
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
             if (!isStandalone && isIOS) {
                 document.getElementById('view-pwa-install').style.display = 'block';
@@ -526,7 +706,6 @@
                 document.getElementById('btn-pwa-install-action').style.display = 'none';
             }
 
-            // Si se accede directamente escaneando el carnet (?token=UID)
             const preloadedToken = "{{ preloaded_token | default('', true) }}";
             if (preloadedToken && preloadedToken.trim() !== '') {
                 skipInstallAndOpen();
@@ -534,7 +713,6 @@
                 return;
             }
 
-            // Comprobar si hay un episodio interrumpido para recuperarlo
             const saved = storage.getCurrentEpisode();
             if (saved && saved.fase_actual !== 'completed') {
                 skipInstallAndOpen();
@@ -562,24 +740,33 @@
             document.getElementById('view-scan-patient').style.display = 'block';
         }
 
-        function selectInjuryType(type) {
-            selectedInjuryType = type;
-            const btnH = document.getElementById('btn-select-hemorrhage');
-            const btnP = document.getElementById('btn-select-pneumothorax');
-            if (type === 'HEMORRAGIA_ACTIVA') {
-                btnH.style.borderColor = 'var(--accent-red)';
-                btnH.style.color = '#fff';
-                btnH.style.background = 'rgba(255,51,68,0.2)';
-                btnP.style.borderColor = '#555';
-                btnP.style.color = '#aaa';
-                btnP.style.background = 'transparent';
-            } else {
-                btnP.style.borderColor = 'var(--accent-red)';
-                btnP.style.color = '#fff';
-                btnP.style.background = 'rgba(255,51,68,0.2)';
-                btnH.style.borderColor = '#555';
-                btnH.style.color = '#aaa';
-                btnH.style.background = 'transparent';
+        function selectFase1Variant(variant) {
+            selectedFase1Variant = variant;
+            document.querySelectorAll('.admin-fase1-btn').forEach(btn => {
+                btn.style.borderColor = '#555';
+                btn.style.color = '#aaa';
+                btn.style.background = 'transparent';
+            });
+            const el = document.getElementById('btn-fase1-' + variant.toLowerCase().replace('_', '-'));
+            if (el) {
+                el.style.borderColor = 'var(--accent-red)';
+                el.style.color = '#fff';
+                el.style.background = 'rgba(255,51,68,0.2)';
+            }
+        }
+
+        function selectFase2Variant(variant) {
+            selectedFase2Variant = variant;
+            document.querySelectorAll('.admin-fase2-btn').forEach(btn => {
+                btn.style.borderColor = '#555';
+                btn.style.color = '#aaa';
+                btn.style.background = 'transparent';
+            });
+            const el = document.getElementById('btn-fase2-' + variant.toLowerCase().replace('_', '-'));
+            if (el) {
+                el.style.borderColor = 'var(--accent-green)';
+                el.style.color = '#fff';
+                el.style.background = 'rgba(46,204,113,0.2)';
             }
         }
 
@@ -659,6 +846,37 @@
             startNewEpisodeWithToken(val);
         }
 
+        // ==================== LIMPIEZA DE MOTORES Y VISTAS ====================
+        function hideAllViews() {
+            const ids = [
+                'view-pwa-install', 'view-scan-patient', 'view-hemorrhage', 'view-tourniquet',
+                'view-suture', 'view-pneumothorax', 'view-stabilization', 'view-vitals-hold',
+                'view-dual-vitals', 'view-memory-sequence', 'view-line-correction', 'view-summary'
+            ];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+        }
+
+        function stopAllEngines() {
+            if (hemorrhageEngine) { hemorrhageEngine.stop(); hemorrhageEngine = null; }
+            if (tourniquetEngine) { tourniquetEngine.stop(); tourniquetEngine = null; }
+            if (sutureEngine) { sutureEngine.stop(); sutureEngine = null; }
+            if (pneumothoraxEngine) { pneumothoraxEngine.stop(); pneumothoraxEngine = null; }
+            if (stabilizationEngine) { stabilizationEngine.stop(); stabilizationEngine = null; }
+            if (vitalsHoldEngine) { vitalsHoldEngine.stop(); vitalsHoldEngine = null; }
+            if (dualVitalsEngine) { dualVitalsEngine.stop(); dualVitalsEngine = null; }
+            if (memorySequenceEngine) { memorySequenceEngine.stop(); memorySequenceEngine = null; }
+            if (lineCorrectionEngine) { lineCorrectionEngine.stop(); lineCorrectionEngine = null; }
+        }
+
+        function updatePatientLabels(name) {
+            document.querySelectorAll('.patient-name-target').forEach(el => {
+                el.textContent = name;
+            });
+        }
+
         // ==================== INICIO / RECUPERACIÓN DE EPISODIO ====================
         function startNewEpisodeWithToken(token) {
             const cleanToken = (token || '').trim();
@@ -693,11 +911,17 @@
                     return;
                 }
             }
-            let injury = selectedInjuryType;
-            // Si es jugador normal, asignar escenario aleatorio
+
+            // Selección de variantes
+            let fase1Var = selectedFase1Variant;
+            let fase2Var = selectedFase2Variant;
+
+            // Si es jugador normal, asignar variantes de forma variada y equilibrada
             if (userRole !== 'admin') {
-                const scenarios = ['HEMORRAGIA_ACTIVA', 'NEUMOTORAX_TENSION'];
-                injury = scenarios[Math.floor(Math.random() * scenarios.length)];
+                const f1Options = ['COMPRESION_RIEL', 'TORNIQUETE_CIRCULAR', 'SUTURA_OBJETIVOS', 'NEUMOTORAX_PUNCION'];
+                const f2Options = ['RITMO_ECG', 'CONSTANTES_RANGO', 'DOBLE_INDICADOR', 'SECUENCIA_VISUAL', 'CORRECCION_LINEA'];
+                fase1Var = f1Options[Math.floor(Math.random() * f1Options.length)];
+                fase2Var = f2Options[Math.floor(Math.random() * f2Options.length)];
             }
 
             activeEpisode = {
@@ -705,8 +929,10 @@
                 sanitario_id: sanitarioId,
                 operador_uid: token,
                 operador_nombre: "OPERADOR " + token,
-                escenario_id: injury,
-                fase_actual: injury === 'NEUMOTORAX_TENSION' ? 'pneumothorax_control' : 'hemorrhage_control',
+                escenario_id: fase1Var,
+                fase1_variante: fase1Var,
+                fase2_variante: fase2Var,
+                fase_actual: 'hemorrhage_control',
                 hemorragia_controlada: false,
                 estabilizacion_completada: false,
                 phase1_progress: 0,
@@ -716,186 +942,248 @@
             };
 
             storage.saveCurrentEpisode(activeEpisode);
-
-            if (injury === 'NEUMOTORAX_TENSION') {
-                launchPneumothoraxPhase();
-            } else {
-                launchHemorrhagePhase();
-            }
+            launchPhase1(fase1Var, 0);
         }
 
         function resumeEpisode(saved) {
             activeEpisode = saved;
-            if (activeEpisode.fase_actual === 'hemorrhage_control') {
-                launchHemorrhagePhase(activeEpisode.phase1_progress || 0);
-            } else if (activeEpisode.fase_actual === 'pneumothorax_control') {
-                launchPneumothoraxPhase(activeEpisode.phase1_progress || 0);
+            if (activeEpisode.fase_actual === 'hemorrhage_control' || activeEpisode.fase_actual === 'pneumothorax_control') {
+                const v1 = activeEpisode.fase1_variante || (activeEpisode.escenario_id === 'NEUMOTORAX_TENSION' ? 'NEUMOTORAX_PUNCION' : 'COMPRESION_RIEL');
+                launchPhase1(v1, activeEpisode.phase1_progress || 0);
             } else if (activeEpisode.fase_actual === 'patient_stabilization') {
-                launchStabilizationPhase(activeEpisode.stabilization_progress || 0);
+                const v2 = activeEpisode.fase2_variante || 'RITMO_ECG';
+                launchPhase2(v2, activeEpisode.stabilization_progress || 0);
+            } else if (activeEpisode.fase_actual === 'completed') {
+                showSummaryScreen();
             }
         }
 
-        // ==================== FASE 1: CONTROL DE HEMORRAGIA ====================
-        function launchHemorrhagePhase(initialProgress = 0) {
-            document.getElementById('view-scan-patient').style.display = 'none';
-            document.getElementById('view-pneumothorax').style.display = 'none';
-            document.getElementById('view-stabilization').style.display = 'none';
-            document.getElementById('view-summary').style.display = 'none';
-            document.getElementById('view-hemorrhage').style.display = 'block';
+        // ==================== FASE 1: DISPATCHER DE VARIANTES ====================
+        function launchPhase1(variant, initialProgress = 0) {
+            stopAllEngines();
+            hideAllViews();
+            updatePatientLabels(activeEpisode.operador_nombre);
 
-            document.getElementById('patient-name-display').textContent = activeEpisode.operador_nombre;
+            const onFase1Success = () => {
+                activeEpisode.hemorragia_controlada = true;
+                activeEpisode.fase_actual = "patient_stabilization";
+                storage.saveCurrentEpisode(activeEpisode);
+                setTimeout(() => {
+                    launchPhase2(activeEpisode.fase2_variante || 'RITMO_ECG', 0);
+                }, 450);
+            };
 
-            const canvas = document.getElementById('hemorrhage-canvas');
-            hemorrhageEngine = new HemorrhageGame(
-                canvas,
-                medicConfig.fase1_hemorragia,
-                (pct) => {
-                    document.getElementById('hemorrhage-pct-val').textContent = Math.round(pct) + "%";
-                    document.getElementById('hemorrhage-bar').style.width = pct + "%";
-                    activeEpisode.phase1_progress = pct;
-                    storage.saveCurrentEpisode(activeEpisode);
-                },
-                (result) => {
-                    // ÉXITO FASE 1
-                    activeEpisode.hemorragia_controlada = true;
-                    activeEpisode.fase_actual = "patient_stabilization";
-                    storage.saveCurrentEpisode(activeEpisode);
-
-                    setTimeout(() => {
-                        launchStabilizationPhase(0);
-                    }, 500);
-                },
-                (failReason) => {
-                    alert("Intervención fallida: " + failReason);
-                }
-            );
-
-            hemorrhageEngine.start(initialProgress);
+            if (variant === 'TORNIQUETE_CIRCULAR') {
+                document.getElementById('view-tourniquet').style.display = 'block';
+                const canvas = document.getElementById('tourniquet-canvas');
+                tourniquetEngine = new TourniquetGame(
+                    canvas,
+                    medicConfig.fase1_torniquete,
+                    (pct) => {
+                        document.getElementById('tourniquet-pct-val').textContent = Math.round(pct) + "%";
+                        document.getElementById('tourniquet-bar').style.width = pct + "%";
+                        activeEpisode.phase1_progress = pct;
+                        storage.saveCurrentEpisode(activeEpisode);
+                    },
+                    onFase1Success,
+                    (err) => console.warn(err)
+                );
+                tourniquetEngine.start(initialProgress);
+            } else if (variant === 'SUTURA_OBJETIVOS') {
+                document.getElementById('view-suture').style.display = 'block';
+                const canvas = document.getElementById('suture-canvas');
+                sutureEngine = new SutureGame(
+                    canvas,
+                    medicConfig.fase1_sutura,
+                    (pct) => {
+                        document.getElementById('suture-pct-val').textContent = Math.round(pct) + "%";
+                        document.getElementById('suture-bar').style.width = pct + "%";
+                        activeEpisode.phase1_progress = pct;
+                        storage.saveCurrentEpisode(activeEpisode);
+                    },
+                    onFase1Success,
+                    (err) => console.warn(err)
+                );
+                sutureEngine.start(initialProgress);
+            } else if (variant === 'NEUMOTORAX_PUNCION' || variant === 'NEUMOTORAX_TENSION') {
+                document.getElementById('view-pneumothorax').style.display = 'block';
+                const canvas = document.getElementById('pneumothorax-canvas');
+                pneumothoraxEngine = new PneumothoraxGame(
+                    canvas,
+                    medicConfig.fase1_neumotorax,
+                    (pct) => {
+                        document.getElementById('pneumothorax-pct-val').textContent = Math.round(pct) + "%";
+                        document.getElementById('pneumothorax-bar').style.width = pct + "%";
+                        activeEpisode.phase1_progress = pct;
+                        storage.saveCurrentEpisode(activeEpisode);
+                    },
+                    onFase1Success,
+                    (err) => console.warn(err)
+                );
+                pneumothoraxEngine.start(initialProgress);
+            } else {
+                // COMPRESION_RIEL / HEMORRAGIA_ACTIVA
+                document.getElementById('view-hemorrhage').style.display = 'block';
+                const canvas = document.getElementById('hemorrhage-canvas');
+                hemorrhageEngine = new HemorrhageGame(
+                    canvas,
+                    medicConfig.fase1_hemorragia,
+                    (pct) => {
+                        document.getElementById('hemorrhage-pct-val').textContent = Math.round(pct) + "%";
+                        document.getElementById('hemorrhage-bar').style.width = pct + "%";
+                        activeEpisode.phase1_progress = pct;
+                        storage.saveCurrentEpisode(activeEpisode);
+                    },
+                    onFase1Success,
+                    (err) => console.warn(err)
+                );
+                hemorrhageEngine.start(initialProgress);
+            }
         }
 
-        function onHemorrhageTap() {
-            if (hemorrhageEngine) hemorrhageEngine.triggerTap();
-        }
+        // ==================== FASE 2: DISPATCHER DE VARIANTES ====================
+        function launchPhase2(variant, initialProgress = 0) {
+            stopAllEngines();
+            hideAllViews();
+            updatePatientLabels(activeEpisode.operador_nombre);
 
-        // ==================== FASE 1 ALTERNATIVA: NEUMOTÓRAX A TENSIÓN ====================
-        function launchPneumothoraxPhase(initialProgress = 0) {
-            document.getElementById('view-scan-patient').style.display = 'none';
-            document.getElementById('view-hemorrhage').style.display = 'none';
-            document.getElementById('view-stabilization').style.display = 'none';
-            document.getElementById('view-summary').style.display = 'none';
-            document.getElementById('view-pneumothorax').style.display = 'block';
+            const onFase2Success = () => {
+                activeEpisode.estabilizacion_completada = true;
+                activeEpisode.fase_actual = "completed";
+                activeEpisode.duration_total_segundos = Math.round((Date.now() - activeEpisode.start_time) / 1000);
+                activeEpisode.resultado_final = "EXITO";
+                storage.saveCurrentEpisode(activeEpisode);
+                setTimeout(() => {
+                    showSummaryScreen();
+                }, 400);
+            };
 
-            document.getElementById('patient-name-display-pneumo').textContent = activeEpisode.operador_nombre;
-
-            const canvas = document.getElementById('pneumothorax-canvas');
-            pneumothoraxEngine = new PneumothoraxGame(
-                canvas,
-                medicConfig.fase1_neumotorax,
-                (pct) => {
-                    document.getElementById('pneumothorax-pct-val').textContent = Math.round(pct) + "%";
-                    document.getElementById('pneumothorax-bar').style.width = pct + "%";
-                    activeEpisode.phase1_progress = pct;
-                    storage.saveCurrentEpisode(activeEpisode);
-                },
-                (result) => {
-                    // ÉXITO DESCOMPRESIÓN FASE 1
-                    activeEpisode.hemorragia_controlada = true; // Marca fase 1 superada
-                    activeEpisode.fase_actual = "patient_stabilization";
-                    storage.saveCurrentEpisode(activeEpisode);
-
-                    setTimeout(() => {
-                        launchStabilizationPhase(0);
-                    }, 500);
-                },
-                (failReason) => {
-                    alert("Intervención fallida: " + failReason);
-                }
-            );
-
-            pneumothoraxEngine.start(initialProgress);
-        }
-
-        function onPneumoStartHold(e) {
-            if (e && e.cancelable) e.preventDefault();
-            if (pneumothoraxEngine) pneumothoraxEngine.startHold();
-        }
-
-        function onPneumoReleaseHold(e) {
-            if (e && e.cancelable) e.preventDefault();
-            if (pneumothoraxEngine) pneumothoraxEngine.releaseHold();
-        }
-
-        // ==================== FASE 2: ESTABILIZACIÓN RÍTMICA ====================
-        function launchStabilizationPhase(initialProgress = 0) {
-            if (hemorrhageEngine) hemorrhageEngine.stop();
-
-            document.getElementById('view-hemorrhage').style.display = 'none';
-            document.getElementById('view-summary').style.display = 'none';
-            document.getElementById('view-stabilization').style.display = 'block';
-
-            document.getElementById('patient-name-display-2').textContent = activeEpisode.operador_nombre;
-
-            const canvas = document.getElementById('stabilization-canvas');
-            stabilizationEngine = new StabilizationGame(
-                canvas,
-                medicConfig.fase2_estabilizacion,
-                (pct) => {
-                    document.getElementById('stabilization-pct-val').textContent = Math.round(pct) + "%";
-                    document.getElementById('stabilization-bar').style.width = pct + "%";
-                    activeEpisode.stabilization_progress = pct;
-                    storage.saveCurrentEpisode(activeEpisode);
-                },
-                (result) => {
-                    // ÉXITO FASE 2
-                    activeEpisode.estabilizacion_completada = true;
-                    activeEpisode.fase_actual = "completed";
-                    activeEpisode.duration_total_segundos = Math.round((Date.now() - activeEpisode.start_time) / 1000);
-                    activeEpisode.resultado_final = "EXITO";
-                    storage.saveCurrentEpisode(activeEpisode);
-
-                    setTimeout(() => {
-                        showSummaryScreen();
-                    }, 400);
-                },
-                (failReason) => {
-                    alert("Fallo de estabilización: " + failReason);
-                }
-            );
-
-            stabilizationEngine.start(initialProgress);
-        }
-
-        function onStabilizationTap() {
-            if (stabilizationEngine) stabilizationEngine.triggerBeatTap();
+            if (variant === 'CONSTANTES_RANGO') {
+                document.getElementById('view-vitals-hold').style.display = 'block';
+                const canvas = document.getElementById('vitals-hold-canvas');
+                vitalsHoldEngine = new VitalsHoldGame(
+                    canvas,
+                    medicConfig.fase2_constantes_rango,
+                    (pct) => {
+                        document.getElementById('vitals-hold-pct-val').textContent = Math.round(pct) + "%";
+                        document.getElementById('vitals-hold-bar').style.width = pct + "%";
+                        activeEpisode.stabilization_progress = pct;
+                        storage.saveCurrentEpisode(activeEpisode);
+                    },
+                    onFase2Success,
+                    (err) => console.warn(err)
+                );
+                vitalsHoldEngine.start(initialProgress);
+            } else if (variant === 'DOBLE_INDICADOR') {
+                document.getElementById('view-dual-vitals').style.display = 'block';
+                const canvas = document.getElementById('dual-vitals-canvas');
+                dualVitalsEngine = new DualVitalsGame(
+                    canvas,
+                    medicConfig.fase2_doble_indicador,
+                    (pct) => {
+                        document.getElementById('dual-vitals-pct-val').textContent = Math.round(pct) + "%";
+                        document.getElementById('dual-vitals-bar').style.width = pct + "%";
+                        activeEpisode.stabilization_progress = pct;
+                        storage.saveCurrentEpisode(activeEpisode);
+                    },
+                    onFase2Success,
+                    (err) => console.warn(err)
+                );
+                dualVitalsEngine.start(initialProgress);
+            } else if (variant === 'SECUENCIA_VISUAL') {
+                document.getElementById('view-memory-sequence').style.display = 'block';
+                const canvas = document.getElementById('memory-sequence-canvas');
+                memorySequenceEngine = new MemorySequenceGame(
+                    canvas,
+                    medicConfig.fase2_secuencia_visual,
+                    (pct) => {
+                        document.getElementById('memory-sequence-pct-val').textContent = Math.round(pct) + "%";
+                        document.getElementById('memory-sequence-bar').style.width = pct + "%";
+                        activeEpisode.stabilization_progress = pct;
+                        storage.saveCurrentEpisode(activeEpisode);
+                    },
+                    onFase2Success,
+                    (err) => console.warn(err)
+                );
+                memorySequenceEngine.start(initialProgress);
+            } else if (variant === 'CORRECCION_LINEA') {
+                document.getElementById('view-line-correction').style.display = 'block';
+                const canvas = document.getElementById('line-correction-canvas');
+                lineCorrectionEngine = new LineCorrectionGame(
+                    canvas,
+                    medicConfig.fase2_correccion_linea,
+                    (pct) => {
+                        document.getElementById('line-correction-pct-val').textContent = Math.round(pct) + "%";
+                        document.getElementById('line-correction-bar').style.width = pct + "%";
+                        activeEpisode.stabilization_progress = pct;
+                        storage.saveCurrentEpisode(activeEpisode);
+                    },
+                    onFase2Success,
+                    (err) => console.warn(err)
+                );
+                lineCorrectionEngine.start(initialProgress);
+            } else {
+                // RITMO_ECG (Variante A por defecto)
+                document.getElementById('view-stabilization').style.display = 'block';
+                const canvas = document.getElementById('stabilization-canvas');
+                stabilizationEngine = new StabilizationGame(
+                    canvas,
+                    medicConfig.fase2_estabilizacion,
+                    (pct) => {
+                        document.getElementById('stabilization-pct-val').textContent = Math.round(pct) + "%";
+                        document.getElementById('stabilization-bar').style.width = pct + "%";
+                        activeEpisode.stabilization_progress = pct;
+                        storage.saveCurrentEpisode(activeEpisode);
+                    },
+                    onFase2Success,
+                    (err) => console.warn(err)
+                );
+                stabilizationEngine.start(initialProgress);
+            }
         }
 
         // ==================== PANTALLA 3: RESUMEN Y CIERRE ====================
         function showSummaryScreen() {
-            if (stabilizationEngine) stabilizationEngine.stop();
-
-            document.getElementById('view-stabilization').style.display = 'none';
+            stopAllEngines();
+            hideAllViews();
             document.getElementById('view-summary').style.display = 'block';
 
             document.getElementById('sum-patient-name').textContent = activeEpisode.operador_nombre;
             document.getElementById('sum-patient-uid').textContent = activeEpisode.operador_uid;
             document.getElementById('sum-total-time').textContent = activeEpisode.duration_total_segundos;
+
+            // Formatear nombres legibles de variantes superadas
+            const f1Labels = {
+                'COMPRESION_RIEL': 'HEMORRAGIA (COMPRESIÓN)',
+                'TORNIQUETE_CIRCULAR': 'HEMORRAGIA (TORNIQUETE)',
+                'SUTURA_OBJETIVOS': 'HERIDA (SUTURA DE PRECISIÓN)',
+                'NEUMOTORAX_PUNCION': 'NEUMOTÓRAX A TENSIÓN (PUNCIÓN)'
+            };
+            const f2Labels = {
+                'RITMO_ECG': 'ESTABILIZACIÓN (RITMO CARDÍACO)',
+                'CONSTANTES_RANGO': 'ESTABILIZACIÓN (CONSTANTES EN RANGO)',
+                'DOBLE_INDICADOR': 'ESTABILIZACIÓN (ATENCIÓN ALTERNA DUAL)',
+                'SECUENCIA_VISUAL': 'ESTABILIZACIÓN (SECUENCIA VISUAL)',
+                'CORRECCION_LINEA': 'ESTABILIZACIÓN (CORRECCIÓN VECTORIAL)'
+            };
+
+            const f1Name = f1Labels[activeEpisode.fase1_variante] || activeEpisode.escenario_id;
+            const f2Name = f2Labels[activeEpisode.fase2_variante] || 'ESTABILIZACIÓN VITAL';
+            const sumInjuryEl = document.getElementById('sum-injury-name');
+            if (sumInjuryEl) sumInjuryEl.textContent = `${f1Name} + ${f2Name}`;
         }
 
         function confirmEpisodeClose() {
-            // Descontar recurso localmente de forma idempotente
+            stopAllEngines();
             storage.decrementReanimation();
             updateReanimUI();
 
-            // Encolar para sincronización
             storage.enqueueForSync(activeEpisode);
             storage.clearCurrentEpisode();
-
-            // Intentar sincronizar si hay red
             storage.flushSyncQueue();
 
-            // Resetear interfaz para el siguiente paciente
             activeEpisode = null;
-            document.getElementById('view-summary').style.display = 'none';
+            hideAllViews();
             document.getElementById('view-scan-patient').style.display = 'block';
             document.getElementById('manual-uid-input').value = '';
         }

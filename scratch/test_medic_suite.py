@@ -124,5 +124,74 @@ class TestFieldMedicSuite(unittest.TestCase):
         data = res.get_json()
         self.assertEqual(data["status"], "success")
 
+    def test_07_medic_config_has_all_9_game_variants(self):
+        config = medic_engine.load_medic_config()
+        expected_keys = [
+            "fase1_hemorragia",
+            "fase1_neumotorax",
+            "fase1_torniquete",
+            "fase1_sutura",
+            "fase2_estabilizacion",
+            "fase2_constantes_rango",
+            "fase2_doble_indicador",
+            "fase2_secuencia_visual",
+            "fase2_correccion_linea"
+        ]
+        for k in expected_keys:
+            self.assertIn(k, config, f"Missing minigame configuration key: {k}")
+            self.assertIsInstance(config[k], dict, f"Minigame config for {k} should be a dictionary")
+
+    def test_08_medic_template_renders_all_canvases_and_scripts(self):
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'player'
+            sess['faction'] = 'Syldavia'
+            sess['sanitario_id'] = 'MED-UNIT-TEST'
+
+        res = self.client.get('/medic?token=SYL-999')
+        self.assertEqual(res.status_code, 200)
+        html = res.data.decode('utf-8')
+        
+        # Verify canvases
+        canvases = [
+            'hemorrhage-canvas',
+            'pneumothorax-canvas',
+            'tourniquet-canvas',
+            'suture-canvas',
+            'stabilization-canvas',
+            'vitals-hold-canvas',
+            'dual-vitals-canvas',
+            'memory-sequence-canvas',
+            'line-correction-canvas'
+        ]
+        for canvas_id in canvases:
+            self.assertIn(canvas_id, html, f"Canvas ID {canvas_id} not found in /medic template")
+
+        # Verify scripts
+        scripts = [
+            'tourniquet_game.js',
+            'suture_game.js',
+            'vitals_hold_game.js',
+            'dual_vitals_game.js',
+            'memory_sequence_game.js',
+            'line_correction_game.js'
+        ]
+        for script_name in scripts:
+            self.assertIn(script_name, html, f"Script {script_name} not linked in /medic template")
+
+    def test_09_static_assets_for_new_minigames_exist(self):
+        scripts = [
+            '/static/js/field_medic/tourniquet_game.js',
+            '/static/js/field_medic/suture_game.js',
+            '/static/js/field_medic/vitals_hold_game.js',
+            '/static/js/field_medic/dual_vitals_game.js',
+            '/static/js/field_medic/memory_sequence_game.js',
+            '/static/js/field_medic/line_correction_game.js',
+            '/static/sw_medic.js'
+        ]
+        for script_path in scripts:
+            res = self.client.get(script_path)
+            self.assertEqual(res.status_code, 200, f"Static asset {script_path} failed with {res.status_code}")
+
 if __name__ == '__main__':
     unittest.main()
+
