@@ -2392,6 +2392,15 @@ def view_medic():
     
     # Cargar recursos disponibles del médico
     recursos = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id)
+    if user_role == 'admin' and recursos.get('reanimaciones_disponibles', 0) < 10:
+        conn.execute('''
+            INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, actualizado_en)
+            VALUES (?, 99, CURRENT_TIMESTAMP)
+            ON CONFLICT(sanitario_id) DO UPDATE SET reanimaciones_disponibles = 99
+        ''', (sanitario_id,))
+        conn.commit()
+        recursos['reanimaciones_disponibles'] = 99
+    
     config = medic_engine.load_medic_config()
     
     # Si viene con token de operador directo vía QR
@@ -2439,6 +2448,27 @@ def api_admin_medicos():
         return jsonify({'error': 'Unauthorized'}), 403
     conn = get_db_connection()
     
+    config = medic_engine.load_medic_config()
+    default_reanim = config.get("reanimaciones_iniciales_medico", 3)
+    lista = []
+
+    # 0. Cuenta de Administrador / HQ
+    rec_admin = conn.execute("SELECT reanimaciones_disponibles, reanimaciones_usadas FROM MedicoRecursos WHERE sanitario_id = 'admin' OR sanitario_id = 'MED-ADMIN'").fetchone()
+    admin_disp = rec_admin['reanimaciones_disponibles'] if rec_admin else 99
+    admin_usad = rec_admin['reanimaciones_usadas'] if rec_admin else 0
+    lista.append({
+        'sanitario_id': 'admin',
+        'nombre_medico': 'ADMINISTRADOR (HQ)',
+        'rol': 'Oficial Médico / Mando General',
+        'equipo_id': 0,
+        'equipo_nombre': 'Control Central / HQ',
+        'faccion': 'Global',
+        'miembros_count': 99,
+        'reanimaciones_disponibles': admin_disp,
+        'reanimaciones_usadas': admin_usad,
+        'is_admin': True
+    })
+
     # 1. Buscar miembros con rol médico o sanitario asignados en unidades
     medicos_db = conn.execute('''
         SELECT m.id as miembro_id, m.nombre_jugador, m.rol, m.uid,
@@ -2450,10 +2480,6 @@ def api_admin_medicos():
         WHERE LOWER(m.rol) LIKE '%medico%' OR LOWER(m.rol) LIKE '%sanitario%'
         ORDER BY f.nombre, e.nombre, m.nombre_jugador
     ''').fetchall()
-
-    config = medic_engine.load_medic_config()
-    default_reanim = config.get("reanimaciones_iniciales_medico", 3)
-    lista = []
 
     if medicos_db:
         for med in medicos_db:
@@ -2472,7 +2498,8 @@ def api_admin_medicos():
                 'faccion': med['faccion'] or 'Sin facción',
                 'miembros_count': med['miembros_count'] or 0,
                 'reanimaciones_disponibles': disponibles,
-                'reanimaciones_usadas': usadas
+                'reanimaciones_usadas': usadas,
+                'is_admin': False
             })
     else:
         # Fallback a equipos si no hay miembros con rol médico asignado todavía
@@ -2497,7 +2524,8 @@ def api_admin_medicos():
                 'faccion': eq['faccion'] or 'Sin facción',
                 'miembros_count': eq['miembros_count'] or 0,
                 'reanimaciones_disponibles': disponibles,
-                'reanimaciones_usadas': usadas
+                'reanimaciones_usadas': usadas,
+                'is_admin': False
             })
 
     return jsonify(lista)
@@ -2521,7 +2549,60 @@ def api_admin_medicos_update():
             actualizado_en = CURRENT_TIMESTAMP
     ''', (sanitario_id, int(reanimaciones), int(reanimaciones)))
     conn.commit()
-    return jsonify({'status': 'success', 'message': f'Cupo fijado a {reanimaciones}'})
+    return jsonify({'status': 'success', 'message': f'Cupo fijado a {reanimaciones}', 'reanimaciones': int(reanimaciones)})
+
+@app.route('/api/admin/medicos/refill-all', methods=['POST'])
+def api_admin_medicos_refill_all():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    conn = get_db_connection()
+    config = medic_engine.load_medic_config()
+    default_reanim = config.get("reanimaciones_iniciales_medico", 3)
+    
+    medicos_db = conn.execute('''
+        SELECT m.nombre_jugador, e.id as equipo_id,
+               (SELECT COUNT(*) FROM Miembro m2 WHERE m2.equipo_id = e.id) as miembros_count
+        FROM Miembro m
+        JOIN Equipo e ON m.equipo_id = e.id
+        WHERE LOWER(m.rol) LIKE '%medico%' OR LOWER(m.rol) LIKE '%sanitario%'
+    ''').fetchall()
+    
+    count = 0
+    if medicos_db:
+        for med in medicos_db:
+            sanitario_id = f"MED-{med['nombre_jugador'].upper()}" if med['nombre_jugador'] else f"MED-{med['equipo_id']}"
+            pax = med['miembros_count'] or 0
+            val = max(default_reanim, (pax + 1) // 2)
+            conn.execute('''
+                INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, actualizado_en)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(sanitario_id) DO UPDATE SET
+                    reanimaciones_disponibles = ?,
+                    actualizado_en = CURRENT_TIMESTAMP
+            ''', (sanitario_id, val, val))
+            count += 1
+    else:
+        equipos = conn.execute('SELECT id FROM Equipo').fetchall()
+        for eq in equipos:
+            sanitario_id = f"MED-{eq['id']}"
+            conn.execute('''
+                INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, actualizado_en)
+                VALUES (?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(sanitario_id) DO UPDATE SET
+                    reanimaciones_disponibles = ?,
+                    actualizado_en = CURRENT_TIMESTAMP
+            ''', (sanitario_id, default_reanim, default_reanim))
+            count += 1
+            
+    conn.execute('''
+        INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, actualizado_en)
+        VALUES ('admin', 99, CURRENT_TIMESTAMP)
+        ON CONFLICT(sanitario_id) DO UPDATE SET
+            reanimaciones_disponibles = 99,
+            actualizado_en = CURRENT_TIMESTAMP
+    ''')
+    conn.commit()
+    return jsonify({'status': 'success', 'message': f'Recargados {count} sanitarios + Administrador (99).'})
 
 patch_db()
 

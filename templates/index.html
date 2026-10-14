@@ -572,6 +572,18 @@
                             <button id="btn-refresh-medicos" class="btn outline btn-sm" onclick="cargarAdminMedicos()" style="font-size: 0.8rem; border-color: #2ecc71; color: #2ecc71;">Actualizar</button>
                         </div>
 
+                        <div style="background: rgba(0,0,0,0.4); border: 1px solid #444; padding: 0.8rem 1rem; margin-bottom: 1.2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <strong style="color: var(--accent-gold, #e2b938); font-size: 0.85rem; text-transform: uppercase;">⚡ Acciones Rápidas de Mando (Admin):</strong>
+                                <div style="color: #aaa; font-size: 0.75rem;">Asigna recursos a tu perfil de Administrador o recarga a todos los sanitarios desplegados.</div>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-sm" onclick="asignarAdminRapido(10)" style="font-size: 0.75rem; border-color: #e2b938; color: #e2b938; border-radius: 0;">+10 a Admin</button>
+                                <button class="btn btn-sm" onclick="asignarAdminRapido(99)" style="font-size: 0.75rem; border-color: #00f0ff; color: #00f0ff; border-radius: 0;">Admin 99 (INF)</button>
+                                <button class="btn btn-sm outline" onclick="recargarTodosSanitarios()" style="font-size: 0.75rem; border-color: #2ecc71; color: #2ecc71; border-radius: 0;">+AUTO a Todos</button>
+                            </div>
+                        </div>
+
                         <div style="overflow-x: auto;">
                             <table class="table-tactical" style="table-layout: fixed; width: 100%;">
                                 <thead>
@@ -631,17 +643,28 @@
                         }
                         data.forEach(m => {
                             const tr = document.createElement('tr');
-                            const nombreMed = m.nombre_medico ? `<div style="color: #2ecc71; font-size: 0.95rem; font-weight: bold;">✚ ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #888;">ID: ${m.sanitario_id}</div>` : `<b style="color: #fff;">${m.sanitario_id}</b>`;
+                            if (m.is_admin) {
+                                tr.style.background = 'rgba(226, 185, 56, 0.08)';
+                                tr.style.borderLeft = '3px solid #e2b938';
+                            }
+                            const nombreMed = m.is_admin 
+                                ? `<div style="color: #e2b938; font-size: 0.95rem; font-weight: bold;">⭐ ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #aaa;">ID: ${m.sanitario_id}</div>`
+                                : (m.nombre_medico ? `<div style="color: #2ecc71; font-size: 0.95rem; font-weight: bold;">✚ ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #888;">ID: ${m.sanitario_id}</div>` : `<b style="color: #fff;">${m.sanitario_id}</b>`);
+                            
+                            const btnExtra = m.is_admin 
+                                ? `<button class="btn btn-sm" onclick="asignarAdminRapido(99)" title="Modo Test / Ilimitado" style="padding: 4px 6px; font-size: 0.75rem; border-radius: 0; color: #00f0ff; border-color: #00f0ff;">99 INF</button>`
+                                : `<button class="btn btn-sm" onclick="recargarFullMedico('${m.sanitario_id}', ${m.miembros_count})" title="Recargar cupo según miembros" style="padding: 4px 6px; font-size: 0.75rem; border-radius: 0;">+AUTO</button>`;
+
                             tr.innerHTML = `
                                 <td>${nombreMed}</td>
                                 <td><b>${m.equipo_nombre}</b> <br><span style="font-size:0.75rem; color:#aaa;">(${m.faccion})</span></td>
                                 <td style="text-align: center;">${m.miembros_count} pax</td>
-                                <td style="text-align: center;"><b style="color: #2ecc71; font-size: 1.1rem;" id="reanim-val-${m.sanitario_id}">${m.reanimaciones_disponibles}</b></td>
+                                <td style="text-align: center;"><b style="color: ${m.is_admin ? '#e2b938' : '#2ecc71'}; font-size: 1.1rem;" id="reanim-val-${m.sanitario_id}">${m.reanimaciones_disponibles}</b></td>
                                 <td style="text-align: center;">
                                     <div style="display: inline-flex; gap: 5px; align-items: center;">
                                         <input type="number" id="input-quota-${m.sanitario_id}" value="${m.reanimaciones_disponibles}" min="0" max="99" style="width: 55px; padding: 4px; text-align: center; background: #000; border: 1px solid #555; color: #fff; font-weight: bold; border-radius: 0;">
-                                        <button class="btn btn-sm" onclick="guardarCupoMedico('${m.sanitario_id}')" style="padding: 4px 8px; font-size: 0.75rem; background: rgba(46,204,113,0.2); border-color: #2ecc71; color: #2ecc71; border-radius: 0;">FIJAR</button>
-                                        <button class="btn btn-sm" onclick="recargarFullMedico('${m.sanitario_id}', ${m.miembros_count})" title="Recargar cupo según miembros" style="padding: 4px 6px; font-size: 0.75rem; border-radius: 0;">+AUTO</button>
+                                        <button class="btn btn-sm" onclick="guardarCupoMedico('${m.sanitario_id}')" style="padding: 4px 8px; font-size: 0.75rem; background: ${m.is_admin ? 'rgba(226,185,56,0.2)' : 'rgba(46,204,113,0.2)'}; border-color: ${m.is_admin ? '#e2b938' : '#2ecc71'}; color: ${m.is_admin ? '#e2b938' : '#2ecc71'}; border-radius: 0;">FIJAR</button>
+                                        ${btnExtra}
                                     </div>
                                 </td>
                             `;
@@ -673,6 +696,34 @@
                     const defaultVal = Math.max(3, Math.ceil(miembrosCount / 2));
                     document.getElementById(`input-quota-${sanitarioId}`).value = defaultVal;
                     guardarCupoMedico(sanitarioId);
+                }
+
+                async function asignarAdminRapido(cant) {
+                    try {
+                        const res = await fetch('/api/admin/medicos/update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sanitario_id: 'admin', reanimaciones: cant })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            alert(`Asignadas ${cant} reanimaciones a la cuenta de Administrador.`);
+                            cargarAdminMedicos();
+                        }
+                    } catch(e) { alert("Error al asignar recursos a admin."); }
+                }
+
+                async function recargarTodosSanitarios() {
+                    if (!confirm("¿Deseas recargar automáticamente el cupo de todos los sanitarios según el tamaño de su escuadra?")) return;
+                    try {
+                        const res = await fetch('/api/admin/medicos/refill-all', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const data = await res.json();
+                        alert(data.message || "Recarga masiva completada.");
+                        cargarAdminMedicos();
+                    } catch(e) { alert("Error en la recarga masiva."); }
                 }
             </script>
         </section>

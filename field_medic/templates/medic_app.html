@@ -250,9 +250,12 @@
             <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--text-muted);" id="header-sanitario-tag">SANITARIO: {{ sanitario_id }}</div>
         </div>
 
-        <div class="reanim-counter-badge" title="Reanimaciones restantes disponibles para este evento">
+        <div class="reanim-counter-badge" title="Reanimaciones restantes disponibles para este evento" {% if user_role == 'admin' %}onclick="openAdminRefillPrompt()" style="cursor: pointer;"{% endif %}>
             <span class="reanim-cross">✚</span>
             <span id="reanim-count-val">3</span>
+            {% if user_role == 'admin' %}
+            <span style="font-size: 0.65rem; color: #ffeb3b; border: 1px solid #ffeb3b; padding: 0 4px; line-height: 1.2; margin-left: 4px;" title="Clic para recargar rápido">+ADMIN</span>
+            {% endif %}
         </div>
     </header>
 
@@ -295,6 +298,24 @@
             </button>
 
             {% if user_role == 'admin' %}
+            <!-- Panel de Administración / Auto-asignación de recursos -->
+            <div style="background: rgba(226, 185, 56, 0.08); border: 1px solid rgba(226, 185, 56, 0.35); padding: 12px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label style="font-size: 0.72rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace; font-weight: bold; margin: 0;">⚡ [ADMIN] ASIGNAR / RECARGAR RECURSOS PROPIOS</label>
+                    <span style="font-size: 0.7rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">{{ sanitario_id }}</span>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px;">
+                    <button type="button" class="btn-header" onclick="adminAddReanims(5)" style="flex: 1; min-width: 65px; justify-content: center; font-size: 0.75rem; padding: 6px;">+5 USOS</button>
+                    <button type="button" class="btn-header" onclick="adminAddReanims(10)" style="flex: 1; min-width: 65px; justify-content: center; font-size: 0.75rem; padding: 6px;">+10 USOS</button>
+                    <button type="button" class="btn-header" onclick="adminSetReanims(99)" style="flex: 1; min-width: 65px; justify-content: center; font-size: 0.75rem; padding: 6px; border-color: #00f0ff; color: #00f0ff;">99 (INF)</button>
+                    <button type="button" class="btn-header" onclick="adminSetReanims(3)" style="flex: 1; min-width: 65px; justify-content: center; font-size: 0.75rem; padding: 6px;">RESET 3</button>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                    <input type="number" id="admin-custom-input" placeholder="Cantidad exacta" min="0" max="999" style="width: 120px; padding: 6px; background: #000; border: 1px solid #555; color: #fff; font-family: monospace; text-align: center;">
+                    <button type="button" class="btn-header" onclick="adminSetFromInput()" style="flex: 1; justify-content: center; font-size: 0.75rem; background: rgba(226, 185, 56, 0.2); border-color: var(--accent-gold); color: #fff;">APLICAR CUPO</button>
+                </div>
+            </div>
+
             <!-- Selector exclusivo de Admin para forzar escenario en pruebas -->
             <div style="background: rgba(255,170,0,0.06); border: 1px solid rgba(218,165,32,0.3); border-radius: 4px; padding: 12px; margin-bottom: 15px; backdrop-filter: blur(8px);">
                 <label style="font-size: 0.72rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace; display: block; margin-bottom: 8px;">[ADMIN] FORZAR TIPO DE LESIÓN</label>
@@ -581,6 +602,48 @@
             document.getElementById('reanim-count-val').textContent = val;
         }
 
+        // ==================== ASIGNACIÓN DE RECURSOS ADMIN ====================
+        function adminAddReanims(count) {
+            const current = storage.getLocalReanimations();
+            adminSetReanims(current + count);
+        }
+
+        function adminSetFromInput() {
+            const inp = document.getElementById('admin-custom-input');
+            const val = parseInt(inp ? inp.value : 0, 10);
+            if (isNaN(val) || val < 0) {
+                alert("Introduce una cantidad numérica válida.");
+                return;
+            }
+            adminSetReanims(val);
+        }
+
+        async function adminSetReanims(val) {
+            storage.setLocalReanimations(val);
+            updateReanimUI();
+            try {
+                await fetch('/api/admin/medicos/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sanitario_id: sanitarioId, reanimaciones: val })
+                });
+            } catch(e) {
+                console.warn("Offline admin sync:", e);
+            }
+            alert(`Cupo actualizado a ${val} reanimaciones.`);
+        }
+
+        function openAdminRefillPrompt() {
+            const current = storage.getLocalReanimations();
+            const ans = prompt(`[ADMIN] Asignar recursos médicos a ${sanitarioId}:\nIntroduce nueva cantidad de reanimaciones disponibles:`, current + 10);
+            if (ans !== null && ans.trim() !== '') {
+                const num = parseInt(ans.trim(), 10);
+                if (!isNaN(num) && num >= 0) {
+                    adminSetReanims(num);
+                }
+            }
+        }
+
         // ==================== ESCÁNER QR ====================
         function openQRScanner() {
             const modal = document.getElementById('scanner-modal');
@@ -612,13 +675,38 @@
 
         // ==================== INICIO / RECUPERACIÓN DE EPISODIO ====================
         function startNewEpisodeWithToken(token) {
-            const reanims = storage.getLocalReanimations();
-            if (reanims <= 0) {
-                alert("ATENCIÓN: Ha agotado su cupo de reanimaciones asignadas para este despliegue.");
+            const cleanToken = (token || '').trim();
+            const upperToken = cleanToken.toUpperCase();
+            const userRole = "{{ user_role }}";
+
+            // RECARGA MEDIANTE PUNTO DE RESPAWN / CÓDIGO QR DE SUMINISTRO
+            if (upperToken.includes('RESPAWN') || upperToken.includes('RECARGA') || upperToken.includes('SUPPLY') || upperToken.includes('BASE')) {
+                const addQty = userRole === 'admin' ? 10 : 3;
+                const newTotal = storage.getLocalReanimations() + addQty;
+                storage.setLocalReanimations(newTotal);
+                updateReanimUI();
+                fetch('/api/admin/medicos/update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sanitario_id: sanitarioId, reanimaciones: newTotal })
+                }).catch(() => {});
+                alert(`📦 ¡PUNTO DE REAPROVISIONAMIENTO ESCANEADO!\n\nBotiquines y material de reanimación recargados (+${addQty}).\nTotal disponible: ${newTotal}`);
                 return;
             }
 
-            const userRole = "{{ user_role }}";
+            const reanims = storage.getLocalReanimations();
+            if (reanims <= 0) {
+                if (userRole === 'admin') {
+                    if (confirm("Cupo de reanimaciones agotado.\n\nComo ADMINISTRADOR, ¿deseas autorecargar +10 usos inmediatamente para continuar con la prueba?")) {
+                        adminAddReanims(10);
+                    } else {
+                        return;
+                    }
+                } else {
+                    alert("ATENCIÓN: Ha agotado su cupo de reanimaciones asignadas para este despliegue.");
+                    return;
+                }
+            }
             let injury = selectedInjuryType;
             // Si es jugador normal, asignar escenario aleatorio
             if (userRole !== 'admin') {
