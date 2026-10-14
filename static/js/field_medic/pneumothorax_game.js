@@ -1,7 +1,7 @@
 /**
  * Fase 1 Alternativa: Neumotórax a Tensión / Punción Torácica (Needle Decompression)
  * Mecánica táctica de "Mantener y Soltar" directamente sobre la pantalla táctil.
- * El sanitario mantiene pulsado sobre el círculo del sensor y suelta en la ventana verde.
+ * La ventana objetivo de descompresión (sector verde) es variable y cambia de posición en cada intento.
  */
 class PneumothoraxGame {
     constructor(canvas, config, onProgressUpdate, onSuccess, onFail) {
@@ -11,8 +11,8 @@ class PneumothoraxGame {
         const raw = config || {};
         this.config = {
             velocidad_carga: Number(raw.velocidad_carga) || 75.0,
-            zona_valvula_min: Number(raw.zona_valvula_min !== undefined ? raw.zona_valvula_min : raw.zona_descompresion_min_pct) || 65.0,
-            zona_valvula_max: Number(raw.zona_valvula_max !== undefined ? raw.zona_valvula_max : raw.zona_descompresion_max_pct) || 85.0,
+            zona_valvula_min: Number(raw.zona_valvula_min !== undefined ? raw.zona_valvula_min : raw.zona_descompresion_min_pct) || 60.0,
+            zona_valvula_max: Number(raw.zona_valvula_max !== undefined ? raw.zona_valvula_max : raw.zona_descompresion_max_pct) || 82.0,
             aciertos_requeridos: Number(raw.aciertos_requeridos) || 4,
             penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 15.0,
             progreso_por_acierto_pct: Number(raw.progreso_por_acierto_pct) || 25.0,
@@ -29,10 +29,14 @@ class PneumothoraxGame {
         this.lastTime = 0;
         this.elapsedTime = 0;
 
-        // Estado del catéter / Válvula: Carga de 0 a 100
+        // Estado del catéter / Válvula: Carga de 0 a 100 PSI
         this.charge = 0;
         this.isHolding = false;
         this.pulseTime = 0;
+
+        // Ventana objetivo dinámica y variable
+        this.targetMin = this.config.zona_valvula_min;
+        this.targetMax = this.config.zona_valvula_max;
 
         this.feedbackText = "MANTÉN PULSADO EL CÍRCULO CENTRAL Y SUELTA EN EL SECTOR VERDE";
         this.feedbackColor = "#888";
@@ -74,13 +78,35 @@ class PneumothoraxGame {
         const dpr = window.devicePixelRatio || 1;
         const rect = this.canvas.getBoundingClientRect();
         const cssW = rect.width > 0 ? rect.width : 360;
-        const cssH = 220; // Proporción óptima para móvil vertical
+        const cssH = 220; // Proporción calibrada para pantalla móvil vertical
         
         this.w = cssW;
         this.h = cssH;
         this.canvas.width = Math.round(cssW * dpr);
         this.canvas.height = Math.round(cssH * dpr);
         this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    repositionTarget() {
+        // Ventana de presión variable: ancho base configurado (~18-22%)
+        const baseWidth = (this.config.zona_valvula_max - this.config.zona_valvula_min) || 20;
+        // Variación sutil de +-3% en el ancho de la ventana
+        const widthVariation = (Math.random() * 6) - 3;
+        const targetWidth = Math.max(14, Math.min(26, baseWidth + widthVariation));
+
+        // Rango disponible en el manómetro: entre 30% y 88%
+        const minPossible = 30;
+        const maxPossible = 90 - targetWidth;
+        
+        let newMin;
+        let attempts = 0;
+        do {
+            newMin = Math.round(minPossible + (Math.random() * (maxPossible - minPossible)));
+            attempts++;
+        } while (attempts < 6 && this.targetMin !== undefined && Math.abs(newMin - this.targetMin) < 14);
+
+        this.targetMin = newMin;
+        this.targetMax = Math.round(newMin + targetWidth);
     }
 
     start(initialProgress = 0) {
@@ -90,6 +116,7 @@ class PneumothoraxGame {
         this.isHolding = false;
         this.isRunning = true;
         this.lastTime = performance.now();
+        this.repositionTarget(); // Posición y margen dinámico inicial
         this.loop(this.lastTime);
     }
 
@@ -115,11 +142,12 @@ class PneumothoraxGame {
         this.isHolding = false;
 
         const currentCharge = Number(this.charge) || 0;
-        const inTarget = (currentCharge >= this.config.zona_valvula_min && currentCharge <= this.config.zona_valvula_max);
+        const inTarget = (currentCharge >= this.targetMin && currentCharge <= this.targetMax);
 
         if (inTarget) {
             this.progress = Math.min(100, this.progress + this.config.progreso_por_acierto_pct);
             this.showFeedback("¡DESCOMPRESIÓN EXITOSA! AIRE LIBERADO", "#2ecc71");
+            this.repositionTarget(); // Cambiar sector y margen dinámicamente al acertar
             this.onProgressUpdate(this.progress, { hit: true, charge: currentCharge });
 
             if (this.progress >= 100) {
@@ -129,11 +157,12 @@ class PneumothoraxGame {
             }
         } else {
             this.progress = Math.max(0, this.progress - this.config.penalizacion_por_error_pct);
-            if (currentCharge < this.config.zona_valvula_min) {
+            if (currentCharge < this.targetMin) {
                 this.showFeedback("¡PRESIÓN INSUFICIENTE (SOLTADO PRONTO)!", "#ff3344");
             } else {
                 this.showFeedback("¡SOBREPRESIÓN / DAÑO TISULAR!", "#ff3344");
             }
+            this.repositionTarget(); // Reubicar la ventana también al fallar
             this.onProgressUpdate(this.progress, { hit: false, charge: currentCharge });
         }
 
@@ -193,8 +222,22 @@ class PneumothoraxGame {
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
         }
 
+        // Telemetría superior
+        ctx.fillStyle = "#666";
+        ctx.font = "9px 'Share Tech Mono', monospace";
+        ctx.textAlign = "left";
+        ctx.fillText(`VENTANA PLEURAL: ${this.targetMin}-${this.targetMax} PSI`, 12, 16);
+
+        const currentCharge = Math.min(100, Math.max(0, this.charge || 0));
+        const inZone = (currentCharge >= this.targetMin && currentCharge <= this.targetMax);
+        const overZone = currentCharge > this.targetMax;
+
+        ctx.textAlign = "right";
+        ctx.fillStyle = inZone ? "#2ecc71" : (overZone ? "#ff3344" : "#888");
+        ctx.fillText(this.isHolding ? `PRESIÓN: ${Math.round(currentCharge)} PSI` : "CATÉTER LISTO", w - 12, 16);
+
         const centerX = w / 2;
-        const centerY = h * 0.48;
+        const centerY = h * 0.49;
         const radius = Math.min(centerX - 35, h * 0.38);
 
         // Arco base de manómetro (210 grados)
@@ -211,9 +254,9 @@ class PneumothoraxGame {
         ctx.arc(centerX, centerY, radius, startAngle, endAngle);
         ctx.stroke();
 
-        // Sector Verde Objetivo (Ventana de Punción)
-        const t1 = startAngle + (this.config.zona_valvula_min / 100 * totalAngle);
-        const t2 = startAngle + (this.config.zona_valvula_max / 100 * totalAngle);
+        // Sector Verde Objetivo Variable (Ventana de Punción dinámica)
+        const t1 = startAngle + (this.targetMin / 100 * totalAngle);
+        const t2 = startAngle + (this.targetMax / 100 * totalAngle);
         ctx.strokeStyle = "rgba(46, 204, 113, 0.45)";
         ctx.lineWidth = 14;
         ctx.beginPath();
@@ -228,12 +271,8 @@ class PneumothoraxGame {
         ctx.stroke();
 
         // Arco de Carga (Dinámico al mantener pulsado)
-        const currentCharge = Math.min(100, Math.max(0, this.charge || 0));
         if (currentCharge > 0) {
             const currentAngle = startAngle + (currentCharge / 100 * totalAngle);
-            const inZone = (currentCharge >= this.config.zona_valvula_min && currentCharge <= this.config.zona_valvula_max);
-            const overZone = currentCharge > this.config.zona_valvula_max;
-            
             ctx.strokeStyle = overZone ? "#ff3344" : (inZone ? "#2ecc71" : "#00f0ff");
             ctx.lineWidth = 12;
             ctx.beginPath();
@@ -243,8 +282,6 @@ class PneumothoraxGame {
 
         // ==================== CÍRCULO SUTIL TÁCTICO DE PULSACIÓN ====================
         const innerRadius = Math.min(radius * 0.55, 48);
-        const inZone = (currentCharge >= this.config.zona_valvula_min && currentCharge <= this.config.zona_valvula_max);
-        const overZone = currentCharge > this.config.zona_valvula_max;
 
         let circleStroke = "rgba(0, 240, 255, 0.25)";
         let circleFill = "rgba(0, 0, 0, 0.5)";
@@ -330,4 +367,3 @@ class PneumothoraxGame {
 }
 
 window.PneumothoraxGame = PneumothoraxGame;
-

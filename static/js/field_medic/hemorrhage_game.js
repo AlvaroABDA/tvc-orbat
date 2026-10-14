@@ -1,7 +1,7 @@
 /**
  * Fase 1: Minijuego de Control de Hemorragia
  * Mecánica táctica de precisión temporal directamente sobre la pantalla táctil.
- * El sanitario pulsa sobre el círculo central en el momento en que el marcador cruza la zona verde.
+ * La barra de margen (zona objetivo) es variable y cambia de posición y ancho dinámicamente en cada intento.
  */
 class HemorrhageGame {
     constructor(canvas, config, onProgressUpdate, onSuccess, onFail) {
@@ -36,7 +36,7 @@ class HemorrhageGame {
         this.markerPos = 0; // 0..1
         this.markerDir = 1;
 
-        // Zona objetivo (centro aleatorio o dinámico)
+        // Zona objetivo variable
         this.targetWidth = this.config.ancho_zona_objetivo_pct / 100;
         this.targetStart = 0.5 - (this.targetWidth / 2);
         this.targetEnd = 0.5 + (this.targetWidth / 2);
@@ -99,16 +99,29 @@ class HemorrhageGame {
     }
 
     repositionTarget() {
-        const margin = 0.12;
+        const baseWidth = (this.config.ancho_zona_objetivo_pct / 100) || 0.22;
+        // Variación aleatoria del ancho (+- 3.5%)
+        const widthVariation = (Math.random() * 0.07) - 0.035;
+        this.targetWidth = Math.max(0.14, Math.min(0.28, baseWidth + widthVariation));
+
+        const margin = 0.10;
         const available = 1 - (2 * margin) - this.targetWidth;
-        this.targetStart = margin + (Math.random() * available);
+        
+        let newStart;
+        let attempts = 0;
+        do {
+            newStart = margin + (Math.random() * available);
+            attempts++;
+        } while (attempts < 6 && this.targetStart !== undefined && Math.abs(newStart - this.targetStart) < 0.16);
+
+        this.targetStart = newStart;
         this.targetEnd = this.targetStart + this.targetWidth;
     }
 
     triggerTap() {
         if (!this.isRunning) return;
 
-        this.tapRippleTime = 0.35; // Animación de onda
+        this.tapRippleTime = 0.35; // Animación de onda táctica
 
         // Verificar si el marcador está dentro de la zona objetivo
         const isHit = (this.markerPos >= this.targetStart && this.markerPos <= this.targetEnd);
@@ -120,7 +133,7 @@ class HemorrhageGame {
             this.progress = Math.min(100, this.progress + this.config.progreso_por_acierto_pct);
 
             this.showFeedback("¡PRECISIÓN! PRESIÓN EFECTIVA", "#2ecc71");
-            this.repositionTarget();
+            this.repositionTarget(); // Cambiar posición y ancho de la barra variable
 
             this.onProgressUpdate(this.progress, { hit: true, streak: this.hitStreak });
 
@@ -135,7 +148,8 @@ class HemorrhageGame {
             const penalty = this.config.penalizacion_por_error_pct + (this.consecutiveErrors > 1 ? 5 : 0);
             this.progress = Math.max(0, this.progress - penalty);
 
-            this.showFeedback("¡DESFASE! HEMORRAGIA ACTIVA", "#ff3344");
+            this.showFeedback("¡DESFASE! REUBICANDO PRESIÓN", "#ff3344");
+            this.repositionTarget(); // Cambiar posición y ancho también al fallar
             this.onProgressUpdate(this.progress, { hit: false, errors: this.consecutiveErrors });
         }
     }
@@ -205,8 +219,19 @@ class HemorrhageGame {
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
         }
 
+        // Telemetría superior
+        const isCurrentlyInside = (this.markerPos >= this.targetStart && this.markerPos <= this.targetEnd);
+        ctx.fillStyle = "#666";
+        ctx.font = "9px 'Share Tech Mono', monospace";
+        ctx.textAlign = "left";
+        ctx.fillText(`ZONA PRESIÓN: ${Math.round(this.targetStart * 100)}% - ${Math.round(this.targetEnd * 100)}%`, 16, 16);
+
+        ctx.textAlign = "right";
+        ctx.fillStyle = isCurrentlyInside ? "#2ecc71" : "#e2b938";
+        ctx.fillText(`AGUJA: ${Math.round(this.markerPos * 100)}%`, w - 16, 16);
+
         // ==================== 1. RIEL DE PRECISIÓN TEMPORAL ====================
-        const trackY = 22;
+        const trackY = 26;
         const trackH = 22;
         const trackMargin = 16;
         const trackW = w - (2 * trackMargin);
@@ -227,9 +252,8 @@ class HemorrhageGame {
         ctx.fillRect(targetX1, trackY + 1, targetW_px, trackH - 2);
         ctx.strokeRect(targetX1, trackY + 1, targetW_px, trackH - 2);
 
-        // Marcador móvil (Aguja dorada / cian)
+        // Marcador móvil (Aguja dorada / verde si entra)
         const markerX = trackMargin + (this.markerPos * trackW);
-        const isCurrentlyInside = (this.markerPos >= this.targetStart && this.markerPos <= this.targetEnd);
         ctx.fillStyle = isCurrentlyInside ? "#2ecc71" : "#e2b938";
         ctx.fillRect(markerX - 3, trackY - 6, 6, trackH + 12);
         ctx.strokeStyle = "#fff";
@@ -238,7 +262,7 @@ class HemorrhageGame {
 
         // ==================== 2. CÍRCULO SUTIL TÁCTICO DE PULSACIÓN ====================
         const centerX = w / 2;
-        const centerY = h * 0.64;
+        const centerY = h * 0.65;
         const circleRadius = 36;
 
         // Pulso sutil de atención
@@ -292,4 +316,3 @@ class HemorrhageGame {
 }
 
 window.HemorrhageGame = HemorrhageGame;
-
