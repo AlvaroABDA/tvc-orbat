@@ -578,6 +578,53 @@
             filter: brightness(1.2);
         }
 
+        /* Soporte Adaptativo para Móviles en Pantalla Completa y Horizontal (Landscape) */
+        @media (orientation: landscape), (max-height: 500px) {
+            .camera-overlay {
+                padding: 6px 12px;
+            }
+            .camera-top-bar {
+                padding: 4px 8px;
+                gap: 3px;
+            }
+            .hud-meta-badge {
+                font-size: 0.72rem;
+                gap: 6px;
+            }
+            .compass-tape-container {
+                height: 16px;
+            }
+            .compass-tape-track {
+                font-size: 0.65rem;
+            }
+            .camera-center-reticle {
+                width: 220px;
+                height: 220px;
+            }
+            .hud-side-telemetry {
+                right: 8px;
+                padding: 4px 6px;
+                font-size: 0.68rem;
+                gap: 4px;
+            }
+            .camera-bottom-panel {
+                padding: 6px 10px;
+                gap: 6px;
+            }
+            .target-warning-banner {
+                padding: 4px 8px;
+                font-size: 0.75rem;
+            }
+            .btn-acquire {
+                padding: 10px 14px;
+                font-size: 0.88rem;
+                letter-spacing: 1px;
+            }
+            .binocular-mask {
+                background: radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(2, 6, 10, 0.4) 75%, rgba(2, 5, 8, 0.94) 90%, #000 98%);
+            }
+        }
+
         .fallback-banner {
             border: 1px dashed rgba(218, 165, 32, 0.4);
             background: rgba(218, 165, 32, 0.08);
@@ -761,6 +808,9 @@
                         <span id="cam-lrf-status" style="color: var(--accent-cyan); font-weight: bold;">LRF: STANDBY</span>
                     </div>
                     <div style="display: flex; gap: 6px; align-items: center;">
+                        <button type="button" class="btn-header" onclick="toggleFullscreen()" style="padding: 4px 8px; font-size: 0.72rem; color: #fff;" title="Pantalla completa">
+                            ⛶ PANTALLA COMPLETA
+                        </button>
                         <button type="button" id="btn-calib-heading" class="btn-header" onclick="toggleInvertHeading()" style="padding: 4px 8px; font-size: 0.72rem; color: #00ffcc;" title="Invertir rumbo 180° si la brújula apunta en dirección opuesta">
                             ⚙️ INVERTIR 180°
                         </button>
@@ -1035,9 +1085,23 @@
             }
         }
 
+        let targetIsLocked = false; // Bloqueo persistente (latch): una vez fijado, el botón permanece activo
+
         // 4. Modo Cámara + Brújula
         async function openCameraView() {
-            document.getElementById('view-camera').style.display = 'flex';
+            const camEl = document.getElementById('view-camera');
+            camEl.style.display = 'flex';
+
+            // Intentar poner en pantalla completa en el móvil
+            try {
+                if (camEl.requestFullscreen) {
+                    await camEl.requestFullscreen();
+                } else if (camEl.webkitRequestFullscreen) {
+                    await camEl.webkitRequestFullscreen();
+                }
+            } catch (fsErr) {
+                console.warn("Fullscreen no permitido sin interacción directa o no soportado:", fsErr);
+            }
 
             // Iniciar cámara trasera
             try {
@@ -1061,28 +1125,45 @@
                 cameraStream.getTracks().forEach(t => t.stop());
                 cameraStream = null;
             }
+            if (document.fullscreenElement) {
+                try { document.exitFullscreen(); } catch (e) {}
+            }
             document.getElementById('view-camera').style.display = 'none';
         }
 
-        function startCompass() {
-            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                // iOS 13+ requiere pedir permiso explícito
-                document.getElementById('btn-ios-permission').style.display = 'block';
+        function toggleFullscreen() {
+            const camEl = document.getElementById('view-camera');
+            if (!document.fullscreenElement) {
+                if (camEl.requestFullscreen) camEl.requestFullscreen().catch(console.warn);
+                else if (camEl.webkitRequestFullscreen) camEl.webkitRequestFullscreen();
             } else {
-                window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-                window.addEventListener('deviceorientation', handleOrientation, true);
+                if (document.exitFullscreen) document.exitFullscreen().catch(console.warn);
+            }
+        }
+
+        function startCompass() {
+            // Activar todos los eventos posibles en capture para asegurar que el navegador envíe datos
+            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+            window.addEventListener('deviceorientation', handleOrientation, true);
+
+            // iOS 13+ verificación de permisos explícitos
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                document.getElementById('btn-ios-permission').style.display = 'block';
             }
         }
 
         function requestIOSOrientationPermission() {
-            DeviceOrientationEvent.requestPermission().then(response => {
-                if (response === 'granted') {
-                    document.getElementById('btn-ios-permission').style.display = 'none';
-                    window.addEventListener('deviceorientation', handleOrientation, true);
-                } else {
-                    alert("Permiso de brújula denegado.");
-                }
-            }).catch(console.error);
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(response => {
+                    if (response === 'granted') {
+                        document.getElementById('btn-ios-permission').style.display = 'none';
+                        window.addEventListener('deviceorientation', handleOrientation, true);
+                        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+                    } else {
+                        alert("Permiso de brújula denegado.");
+                    }
+                }).catch(console.error);
+            }
         }
 
         // ==================== GENERADOR DE AUDIO TÁCTICO MILITAR (WEB AUDIO API) ====================
@@ -1248,6 +1329,12 @@
             const lockBrackets = document.getElementById('tgt-lock-brackets');
             const aimDot = document.getElementById('cam-aim-dot');
 
+            // Si ya está fijado (targetIsLocked), mantenemos el botón visible y activo para facilitar la pulsación
+            if (targetIsLocked) {
+                btnAcquire.style.display = "block";
+                return;
+            }
+
             if (onTarget) {
                 // Estado: Alineado dentro de la tolerancia (Seguimiento / Lock-on)
                 reticle.style.filter = "drop-shadow(0 0 14px rgba(46, 204, 113, 0.95))";
@@ -1283,6 +1370,7 @@
 
                         if (elapsed >= dwellDurationSec) {
                             clearInterval(dwellInterval);
+                            targetIsLocked = true; // Bloqueo persistente (latch)
                             btnAcquire.style.display = "block";
                             
                             if (lrfStatus) {
@@ -1295,7 +1383,7 @@
                             }
                             if (alertFrame) alertFrame.classList.add('locked');
 
-                            instructions.textContent = "¡OBJETIVO CONFIRMADO Y FIJADO! TRANSMITA COORDENADAS";
+                            instructions.textContent = "¡OBJETIVO FIJADO! PULSE PARA ADQUIRIR";
                             playLockAcquiredSound();
 
                             if (navigator.vibrate) navigator.vibrate([120, 60, 150]);
@@ -1303,7 +1391,7 @@
                     }, 50);
                 }
             } else {
-                // Perdió el blanco o fuera de ángulo
+                // Perdió el blanco o fuera de ángulo (solo resetea si aún no ha completado el lock-on)
                 reticle.style.filter = "none";
                 if (lockBrackets) lockBrackets.classList.remove('active');
                 if (aimDot) aimDot.setAttribute('fill', 'rgba(0, 240, 255, 0.95)');
