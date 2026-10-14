@@ -24,9 +24,11 @@
     "fase1_torniquete": {
         "segmentos_totales": 8,
         "aciertos_requeridos": 4,
-        "duracion_activacion_ms": 220,
-        "intervalo_entre_activaciones_ms": 30,
-        "penalizacion_por_error_pct": 10.0,
+        "velocidad_rotacion_segundos": 2.4,
+        "tolerancia_grados": 12.0,
+        "duracion_activacion_ms": 300,
+        "intervalo_entre_activaciones_ms": 0,
+        "penalizacion_por_error_pct": 8.0,
         "progreso_por_acierto_pct": 25.0,
         "tiempo_limite_segundos": 45
     },
