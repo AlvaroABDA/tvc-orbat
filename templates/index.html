@@ -557,6 +557,8 @@
                             </table>
                         </div>
                     </div>
+                </div>
+
                 <div id="tab-medicos" class="admin-tab-content" style="display: none;">
                     <!-- GESTIÓN DE MÉDICOS Y REANIMACIONES -->
                     <div class="panel management-panel">
@@ -629,16 +631,17 @@
                         }
                         data.forEach(m => {
                             const tr = document.createElement('tr');
+                            const nombreMed = m.nombre_medico ? `<div style="color: #2ecc71; font-size: 0.95rem; font-weight: bold;">✚ ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #888;">ID: ${m.sanitario_id}</div>` : `<b style="color: #fff;">${m.sanitario_id}</b>`;
                             tr.innerHTML = `
-                                <td style="font-weight: bold; color: #fff;">${m.sanitario_id}</td>
-                                <td>${m.equipo_nombre} <span style="font-size:0.75rem; color:#aaa;">(${m.faccion})</span></td>
+                                <td>${nombreMed}</td>
+                                <td><b>${m.equipo_nombre}</b> <br><span style="font-size:0.75rem; color:#aaa;">(${m.faccion})</span></td>
                                 <td style="text-align: center;">${m.miembros_count} pax</td>
                                 <td style="text-align: center;"><b style="color: #2ecc71; font-size: 1.1rem;" id="reanim-val-${m.sanitario_id}">${m.reanimaciones_disponibles}</b></td>
                                 <td style="text-align: center;">
                                     <div style="display: inline-flex; gap: 5px; align-items: center;">
-                                        <input type="number" id="input-quota-${m.sanitario_id}" value="${m.reanimaciones_disponibles}" min="0" max="99" style="width: 55px; padding: 4px; text-align: center; background: #000; border: 1px solid #555; color: #fff; font-weight: bold;">
-                                        <button class="btn btn-sm" onclick="guardarCupoMedico('${m.sanitario_id}')" style="padding: 4px 8px; font-size: 0.75rem; background: rgba(46,204,113,0.2); border-color: #2ecc71; color: #2ecc71;">FIJAR</button>
-                                        <button class="btn btn-sm" onclick="recargarFullMedico('${m.sanitario_id}', ${m.miembros_count})" title="Recargar cupo según miembros" style="padding: 4px 6px; font-size: 0.75rem;">+AUTO</button>
+                                        <input type="number" id="input-quota-${m.sanitario_id}" value="${m.reanimaciones_disponibles}" min="0" max="99" style="width: 55px; padding: 4px; text-align: center; background: #000; border: 1px solid #555; color: #fff; font-weight: bold; border-radius: 0;">
+                                        <button class="btn btn-sm" onclick="guardarCupoMedico('${m.sanitario_id}')" style="padding: 4px 8px; font-size: 0.75rem; background: rgba(46,204,113,0.2); border-color: #2ecc71; color: #2ecc71; border-radius: 0;">FIJAR</button>
+                                        <button class="btn btn-sm" onclick="recargarFullMedico('${m.sanitario_id}', ${m.miembros_count})" title="Recargar cupo según miembros" style="padding: 4px 6px; font-size: 0.75rem; border-radius: 0;">+AUTO</button>
                                     </div>
                                 </td>
                             `;

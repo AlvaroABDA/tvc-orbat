@@ -2438,33 +2438,68 @@ def api_admin_medicos():
     if session.get('role') != 'admin':
         return jsonify({'error': 'Unauthorized'}), 403
     conn = get_db_connection()
-    equipos = conn.execute('''
-        SELECT e.id, e.nombre as equipo_nombre, f.nombre as faccion,
-               (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = e.id) as miembros_count
-        FROM Equipo e
+    
+    # 1. Buscar miembros con rol médico o sanitario asignados en unidades
+    medicos_db = conn.execute('''
+        SELECT m.id as miembro_id, m.nombre_jugador, m.rol, m.uid,
+               e.id as equipo_id, e.nombre as equipo_nombre, f.nombre as faccion,
+               (SELECT COUNT(*) FROM Miembro m2 WHERE m2.equipo_id = e.id) as miembros_count
+        FROM Miembro m
+        JOIN Equipo e ON m.equipo_id = e.id
         LEFT JOIN Faccion f ON e.faccion_id = f.id
-        ORDER BY f.nombre, e.nombre
+        WHERE LOWER(m.rol) LIKE '%medico%' OR LOWER(m.rol) LIKE '%sanitario%'
+        ORDER BY f.nombre, e.nombre, m.nombre_jugador
     ''').fetchall()
 
     config = medic_engine.load_medic_config()
     default_reanim = config.get("reanimaciones_iniciales_medico", 3)
-    
     lista = []
-    for eq in equipos:
-        sanitario_id = f"MED-{eq['id']}"
-        rec = conn.execute('SELECT reanimaciones_disponibles, reanimaciones_usadas FROM MedicoRecursos WHERE sanitario_id = ?', (sanitario_id,)).fetchone()
-        disponibles = rec['reanimaciones_disponibles'] if rec else default_reanim
-        usadas = rec['reanimaciones_usadas'] if rec else 0
 
-        lista.append({
-            'sanitario_id': sanitario_id,
-            'equipo_id': eq['id'],
-            'equipo_nombre': eq['equipo_nombre'],
-            'faccion': eq['faccion'] or 'Sin facción',
-            'miembros_count': eq['miembros_count'] or 0,
-            'reanimaciones_disponibles': disponibles,
-            'reanimaciones_usadas': usadas
-        })
+    if medicos_db:
+        for med in medicos_db:
+            sanitario_id = f"MED-{med['nombre_jugador'].upper()}" if med['nombre_jugador'] else f"MED-{med['equipo_id']}"
+            # Comprobar si existe recurso por nombre o por ID de equipo
+            rec = conn.execute('SELECT reanimaciones_disponibles, reanimaciones_usadas FROM MedicoRecursos WHERE sanitario_id = ? OR sanitario_id = ?', (sanitario_id, f"MED-{med['equipo_id']}")).fetchone()
+            disponibles = rec['reanimaciones_disponibles'] if rec else default_reanim
+            usadas = rec['reanimaciones_usadas'] if rec else 0
+
+            lista.append({
+                'sanitario_id': sanitario_id,
+                'nombre_medico': med['nombre_jugador'],
+                'rol': med['rol'],
+                'equipo_id': med['equipo_id'],
+                'equipo_nombre': med['equipo_nombre'],
+                'faccion': med['faccion'] or 'Sin facción',
+                'miembros_count': med['miembros_count'] or 0,
+                'reanimaciones_disponibles': disponibles,
+                'reanimaciones_usadas': usadas
+            })
+    else:
+        # Fallback a equipos si no hay miembros con rol médico asignado todavía
+        equipos = conn.execute('''
+            SELECT e.id, e.nombre as equipo_nombre, f.nombre as faccion,
+                   (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = e.id) as miembros_count
+            FROM Equipo e
+            LEFT JOIN Faccion f ON e.faccion_id = f.id
+            ORDER BY f.nombre, e.nombre
+        ''').fetchall()
+        for eq in equipos:
+            sanitario_id = f"MED-{eq['id']}"
+            rec = conn.execute('SELECT reanimaciones_disponibles, reanimaciones_usadas FROM MedicoRecursos WHERE sanitario_id = ?', (sanitario_id,)).fetchone()
+            disponibles = rec['reanimaciones_disponibles'] if rec else default_reanim
+            usadas = rec['reanimaciones_usadas'] if rec else 0
+            lista.append({
+                'sanitario_id': sanitario_id,
+                'nombre_medico': 'Sanitario de Unidad',
+                'rol': 'Médico General',
+                'equipo_id': eq['id'],
+                'equipo_nombre': eq['equipo_nombre'],
+                'faccion': eq['faccion'] or 'Sin facción',
+                'miembros_count': eq['miembros_count'] or 0,
+                'reanimaciones_disponibles': disponibles,
+                'reanimaciones_usadas': usadas
+            })
+
     return jsonify(lista)
 
 @app.route('/api/admin/medicos/update', methods=['POST'])

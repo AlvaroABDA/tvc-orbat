@@ -8,18 +8,21 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
     <style>
         :root {
-            --bg-dark: #07090b;
-            --panel-bg: rgba(14, 18, 24, 0.72);
-            --border-color: rgba(255, 255, 255, 0.12);
+            --bg-dark: #1e1e1e;
+            --panel-bg: rgba(30, 30, 30, 0.95);
+            --border-color: #333333;
             --accent-cyan: #00f0ff;
-            --accent-gold: #daa520;
+            --accent-gold: #e2b938;
             --accent-green: #2ecc71;
             --accent-red: #ff3344;
-            --text-main: #f0f6fc;
-            --text-muted: #8b949e;
+            --text-main: #e0e0e0;
+            --text-muted: #888888;
         }
 
-        * { box-sizing: border-box; }
+        * { 
+            box-sizing: border-box; 
+            border-radius: 0 !important;
+        }
 
         body {
             background-color: var(--bg-dark);
@@ -29,11 +32,9 @@
             padding: 20px 15px;
             min-height: 100vh;
             background-image: 
-                radial-gradient(circle at 50% 15%, rgba(0, 240, 255, 0.04) 0%, transparent 60%),
-                radial-gradient(circle at 85% 85%, rgba(218, 165, 32, 0.03) 0%, transparent 60%),
-                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-            background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -57,11 +58,10 @@
         }
 
         .btn-volver {
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(0, 0, 0, 0.6);
             border: 1px solid var(--border-color);
             color: var(--text-main);
             padding: 8px 14px;
-            border-radius: 4px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
@@ -69,15 +69,13 @@
             font-size: 0.82rem;
             font-family: 'Share Tech Mono', monospace;
             text-decoration: none;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            transition: all 0.2s;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: all 0.15s ease;
+            text-transform: uppercase;
         }
 
         .btn-volver:hover {
-            background: rgba(255, 255, 255, 0.12);
-            border-color: var(--accent-cyan);
+            border-color: #666;
+            background: rgba(255, 255, 255, 0.05);
             color: #fff;
         }
 
@@ -85,11 +83,9 @@
             font-family: 'Share Tech Mono', monospace;
             font-size: 0.8rem;
             color: var(--accent-cyan);
-            background: rgba(0, 240, 255, 0.08);
+            background: #111;
             padding: 6px 12px;
-            border-radius: 4px;
-            border: 1px solid rgba(0, 240, 255, 0.25);
-            backdrop-filter: blur(8px);
+            border: 1px solid #333;
         }
 
         .title-block {
@@ -114,27 +110,23 @@
             letter-spacing: 1px;
         }
 
-        /* Tactical Cards - Glass Táctico Duro */
+        /* Tactical Cards - ORBAT Puro */
         .card-menu {
             position: relative;
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
             padding: 22px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.15s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
             display: flex;
             flex-direction: column;
             gap: 14px;
         }
 
         .card-menu:hover {
-            border-color: rgba(0, 240, 255, 0.5);
-            box-shadow: 0 12px 35px rgba(0, 240, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
+            border-color: #666;
+            background: #222;
         }
 
         .card-menu:active {
@@ -156,13 +148,12 @@
         .card-icon {
             width: 46px;
             height: 46px;
-            border-radius: 4px;
             display: flex;
             justify-content: center;
             align-items: center;
             font-size: 24px;
             border: 1px solid var(--border-color);
-            backdrop-filter: blur(8px);
+            background: #111;
         }
 
         .icon-mortero {
