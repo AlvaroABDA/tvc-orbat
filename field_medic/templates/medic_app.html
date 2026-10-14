@@ -240,9 +240,9 @@
 
     <!-- Cabecera Médica Oficial -->
     <header class="medic-header">
-        <button onclick="exitAndReturn()" class="btn-header">
+        <button id="header-back-btn" onclick="handleHeaderBack()" class="btn-header">
             <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
-            SALIR
+            <span id="header-back-text">SALIR</span>
         </button>
 
         <div style="text-align: center;">
@@ -388,6 +388,18 @@
             </div>
 
             <canvas id="hemorrhage-canvas" style="width: 100%; height: 190px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="font-size: 0.75rem; padding: 7px 12px; border-color: #555; color: #ff9999; background: rgba(255,51,68,0.1);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span>
+                    VOLVER AL MENÚ
+                </button>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn-header" onclick="adminAutoPassPhase()" style="font-size: 0.75rem; padding: 7px 12px; border-color: var(--accent-gold); color: #fff; background: rgba(226,185,56,0.2);" title="Completar esta fase al 100% de inmediato">
+                    ⚡ [ADMIN] COMPLETAR FASE
+                </button>
+                {% endif %}
+            </div>
         </section>
 
         <!-- ==================== PANTALLA 1-B: TORNIQUETE CON OBJETIVO CIRCULAR ==================== -->
@@ -413,6 +425,18 @@
             </div>
 
             <canvas id="tourniquet-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="font-size: 0.75rem; padding: 7px 12px; border-color: #555; color: #ff9999; background: rgba(255,51,68,0.1);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span>
+                    VOLVER AL MENÚ
+                </button>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn-header" onclick="adminAutoPassPhase()" style="font-size: 0.75rem; padding: 7px 12px; border-color: var(--accent-gold); color: #fff; background: rgba(226,185,56,0.2);" title="Completar esta fase al 100% de inmediato">
+                    ⚡ [ADMIN] COMPLETAR FASE
+                </button>
+                {% endif %}
+            </div>
         </section>
 
         <!-- ==================== PANTALLA 1-C: SUTURA POR OBJETIVOS CONSECUTIVOS ==================== -->
@@ -438,6 +462,18 @@
             </div>
 
             <canvas id="suture-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="font-size: 0.75rem; padding: 7px 12px; border-color: #555; color: #ff9999; background: rgba(255,51,68,0.1);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span>
+                    VOLVER AL MENÚ
+                </button>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn-header" onclick="adminAutoPassPhase()" style="font-size: 0.75rem; padding: 7px 12px; border-color: var(--accent-gold); color: #fff; background: rgba(226,185,56,0.2);" title="Completar esta fase al 100% de inmediato">
+                    ⚡ [ADMIN] COMPLETAR FASE
+                </button>
+                {% endif %}
+            </div>
         </section>
 
         <!-- ==================== PANTALLA 1-ALT: NEUMOTÓRAX A TENSIÓN ==================== -->
@@ -463,6 +499,18 @@
             </div>
 
             <canvas id="pneumothorax-canvas" style="width: 100%; height: 220px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="font-size: 0.75rem; padding: 7px 12px; border-color: #555; color: #ff9999; background: rgba(255,51,68,0.1);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span>
+                    VOLVER AL MENÚ
+                </button>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn-header" onclick="adminAutoPassPhase()" style="font-size: 0.75rem; padding: 7px 12px; border-color: var(--accent-gold); color: #fff; background: rgba(226,185,56,0.2);" title="Completar esta fase al 100% de inmediato">
+                    ⚡ [ADMIN] COMPLETAR FASE
+                </button>
+                {% endif %}
+            </div>
         </section>
 
         <!-- ==================== PANTALLA 2-A: ESTABILIZACIÓN RÍTMICA ECG ==================== -->
@@ -488,6 +536,18 @@
             </div>
 
             <canvas id="stabilization-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="font-size: 0.75rem; padding: 7px 12px; border-color: #555; color: #ff9999; background: rgba(255,51,68,0.1);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span>
+                    VOLVER AL MENÚ
+                </button>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn-header" onclick="adminAutoPassPhase()" style="font-size: 0.75rem; padding: 7px 12px; border-color: var(--accent-gold); color: #fff; background: rgba(226,185,56,0.2);" title="Completar esta fase al 100% de inmediato">
+                    ⚡ [ADMIN] COMPLETAR FASE
+                </button>
+                {% endif %}
+            </div>
         </section>
 
         <!-- ==================== PANTALLA 2-B: MANTENER CONSTANTES EN RANGO ==================== -->
@@ -513,6 +573,18 @@
             </div>
 
             <canvas id="vitals-hold-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="font-size: 0.75rem; padding: 7px 12px; border-color: #555; color: #ff9999; background: rgba(255,51,68,0.1);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span>
+                    VOLVER AL MENÚ
+                </button>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn-header" onclick="adminAutoPassPhase()" style="font-size: 0.75rem; padding: 7px 12px; border-color: var(--accent-gold); color: #fff; background: rgba(226,185,56,0.2);" title="Completar esta fase al 100% de inmediato">
+                    ⚡ [ADMIN] COMPLETAR FASE
+                </button>
+                {% endif %}
+            </div>
         </section>
 
         <!-- ==================== PANTALLA 2-C: EQUILIBRAR DOS INDICADORES ==================== -->
@@ -538,6 +610,18 @@
             </div>
 
             <canvas id="dual-vitals-canvas" style="width: 100%; height: 220px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="font-size: 0.75rem; padding: 7px 12px; border-color: #555; color: #ff9999; background: rgba(255,51,68,0.1);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span>
+                    VOLVER AL MENÚ
+                </button>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn-header" onclick="adminAutoPassPhase()" style="font-size: 0.75rem; padding: 7px 12px; border-color: var(--accent-gold); color: #fff; background: rgba(226,185,56,0.2);" title="Completar esta fase al 100% de inmediato">
+                    ⚡ [ADMIN] COMPLETAR FASE
+                </button>
+                {% endif %}
+            </div>
         </section>
 
         <!-- ==================== PANTALLA 2-D: SECUENCIA DE ESTABILIZACIÓN ==================== -->
@@ -563,6 +647,18 @@
             </div>
 
             <canvas id="memory-sequence-canvas" style="width: 100%; height: 220px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="font-size: 0.75rem; padding: 7px 12px; border-color: #555; color: #ff9999; background: rgba(255,51,68,0.1);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span>
+                    VOLVER AL MENÚ
+                </button>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn-header" onclick="adminAutoPassPhase()" style="font-size: 0.75rem; padding: 7px 12px; border-color: var(--accent-gold); color: #fff; background: rgba(226,185,56,0.2);" title="Completar esta fase al 100% de inmediato">
+                    ⚡ [ADMIN] COMPLETAR FASE
+                </button>
+                {% endif %}
+            </div>
         </section>
 
         <!-- ==================== PANTALLA 2-E: CORREGIR LÍNEA DE VIDA ==================== -->
@@ -588,6 +684,18 @@
             </div>
 
             <canvas id="line-correction-canvas" style="width: 100%; height: 220px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; gap: 8px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="font-size: 0.75rem; padding: 7px 12px; border-color: #555; color: #ff9999; background: rgba(255,51,68,0.1);">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span>
+                    VOLVER AL MENÚ
+                </button>
+                {% if user_role == 'admin' %}
+                <button type="button" class="btn-header" onclick="adminAutoPassPhase()" style="font-size: 0.75rem; padding: 7px 12px; border-color: var(--accent-gold); color: #fff; background: rgba(226,185,56,0.2);" title="Completar esta fase al 100% de inmediato">
+                    ⚡ [ADMIN] COMPLETAR FASE
+                </button>
+                {% endif %}
+            </div>
         </section>
 
         <!-- ==================== PANTALLA 3: RESUMEN Y CIERRE ==================== -->
@@ -604,7 +712,7 @@
 
             <div style="background: rgba(0,0,0,0.45); border: 1px solid var(--glass-panel-border); border-radius: 4px; padding: 14px; font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.7; backdrop-filter: blur(8px);">
                 <div>PACIENTE: <b id="sum-patient-name" style="color: #fff;">--</b> (<span id="sum-patient-uid">--</span>)</div>
-                <div>LESIÓN FICTICIA: <span style="color: #ffaa00;">HEMORRAGIA ACTIVA</span></div>
+                <div>LESIÓN TRATADA: <span id="sum-injury-name" style="color: #ffaa00;">HEMORRAGIA ACTIVA</span></div>
                 <div>CONTROL HEMORRAGIA: <b style="color: var(--accent-green);">SÍ (100%)</b></div>
                 <div>ESTABILIZACIÓN VITAL: <b style="color: var(--accent-green);">SÍ (100%)</b></div>
                 <div>TIEMPO TOTAL: <span id="sum-total-time" style="color: #00f0ff;">--</span> SEG</div>
@@ -615,9 +723,14 @@
                 <i>Nota doctrinal:</i> El cumplimiento de la estabilización no habilita al operador de forma automática para el combate. Respete las normas de evacuación o respawn establecidas por la organización.
             </p>
 
-            <button class="btn-action-large btn-cyan" onclick="confirmEpisodeClose()">
-                CONFIRMAR Y CERRAR ATENCIÓN
-            </button>
+            <div style="display: flex; gap: 8px; margin-top: 15px;">
+                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="flex: 1; justify-content: center; padding: 12px; border-color: #555; color: #aaa;">
+                    CANCELAR
+                </button>
+                <button type="button" class="btn-action-large btn-cyan" onclick="confirmEpisodeClose()" style="flex: 2; margin-top: 0;">
+                    CONFIRMAR Y CERRAR
+                </button>
+            </div>
         </section>
 
     </div>
@@ -696,6 +809,7 @@
             }
 
             updateReanimUI();
+            updateHeaderNav();
             storage.flushSyncQueue();
 
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
@@ -738,6 +852,7 @@
         function skipInstallAndOpen() {
             document.getElementById('view-pwa-install').style.display = 'none';
             document.getElementById('view-scan-patient').style.display = 'block';
+            updateHeaderNav();
         }
 
         function selectFase1Variant(variant) {
@@ -963,6 +1078,7 @@
             stopAllEngines();
             hideAllViews();
             updatePatientLabels(activeEpisode.operador_nombre);
+            updateHeaderNav();
 
             const onFase1Success = () => {
                 activeEpisode.hemorragia_controlada = true;
@@ -1046,6 +1162,7 @@
             stopAllEngines();
             hideAllViews();
             updatePatientLabels(activeEpisode.operador_nombre);
+            updateHeaderNav();
 
             const onFase2Success = () => {
                 activeEpisode.estabilizacion_completada = true;
@@ -1147,6 +1264,7 @@
             stopAllEngines();
             hideAllViews();
             document.getElementById('view-summary').style.display = 'block';
+            updateHeaderNav();
 
             document.getElementById('sum-patient-name').textContent = activeEpisode.operador_nombre;
             document.getElementById('sum-patient-uid').textContent = activeEpisode.operador_uid;
@@ -1186,6 +1304,78 @@
             hideAllViews();
             document.getElementById('view-scan-patient').style.display = 'block';
             document.getElementById('manual-uid-input').value = '';
+            updateHeaderNav();
+        }
+
+        // Cancelar / abortar intervención y regresar a la pantalla de escaneo / admin
+        function abortEpisodeToScan() {
+            stopAllEngines();
+            storage.clearCurrentEpisode();
+            activeEpisode = null;
+            hideAllViews();
+            document.getElementById('view-scan-patient').style.display = 'block';
+            document.getElementById('manual-uid-input').value = '';
+            updateHeaderNav();
+        }
+
+        // Auto-completar fase actual (exclusivo admin para pruebas rápidas de flujo)
+        function adminAutoPassPhase() {
+            if (!activeEpisode) return;
+            if (activeEpisode.fase_actual === 'hemorrhage_control' || activeEpisode.fase_actual === 'pneumothorax_control') {
+                stopAllEngines();
+                activeEpisode.phase1_progress = 100;
+                activeEpisode.hemorragia_controlada = true;
+                activeEpisode.fase_actual = "patient_stabilization";
+                storage.saveCurrentEpisode(activeEpisode);
+                launchPhase2(activeEpisode.fase2_variante || 'RITMO_ECG', 0);
+            } else if (activeEpisode.fase_actual === 'patient_stabilization') {
+                stopAllEngines();
+                activeEpisode.stabilization_progress = 100;
+                activeEpisode.estabilizacion_completada = true;
+                activeEpisode.fase_actual = "completed";
+                activeEpisode.duration_total_segundos = Math.round((Date.now() - activeEpisode.start_time) / 1000);
+                activeEpisode.resultado_final = "EXITO";
+                storage.saveCurrentEpisode(activeEpisode);
+                showSummaryScreen();
+            }
+        }
+
+        function isAnyGameViewVisible() {
+            const gameViewIds = [
+                'view-hemorrhage', 'view-tourniquet', 'view-suture', 'view-pneumothorax',
+                'view-stabilization', 'view-vitals-hold', 'view-dual-vitals',
+                'view-memory-sequence', 'view-line-correction', 'view-summary'
+            ];
+            return gameViewIds.some(id => {
+                const el = document.getElementById(id);
+                return el && el.style.display !== 'none';
+            });
+        }
+
+        function updateHeaderNav() {
+            const backBtn = document.getElementById('header-back-btn');
+            const backBtnText = document.getElementById('header-back-text');
+            if (!backBtn || !backBtnText) return;
+
+            if (activeEpisode || isAnyGameViewVisible()) {
+                backBtnText.textContent = "VOLVER AL MENÚ";
+                backBtn.style.borderColor = "var(--accent-red)";
+                backBtn.style.color = "#ff9999";
+                backBtn.style.background = "rgba(255, 51, 68, 0.15)";
+            } else {
+                backBtnText.textContent = "SALIR";
+                backBtn.style.borderColor = "var(--panel-border)";
+                backBtn.style.color = "#ffffff";
+                backBtn.style.background = "rgba(0, 0, 0, 0.6)";
+            }
+        }
+
+        function handleHeaderBack() {
+            if (activeEpisode || isAnyGameViewVisible()) {
+                abortEpisodeToScan();
+            } else {
+                exitAndReturn();
+            }
         }
 
         // Salir a pantalla completa y navegar

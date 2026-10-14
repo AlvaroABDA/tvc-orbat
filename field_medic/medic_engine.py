@@ -36,12 +36,12 @@ def load_medic_config():
         },
         "fase1_torniquete": {
             "segmentos_totales": 8,
-            "aciertos_requeridos": 5,
-            "duracion_activacion_ms": 850,
-            "intervalo_entre_activaciones_ms": 500,
-            "penalizacion_por_error_pct": 15.0,
-            "progreso_por_acierto_pct": 20.0,
-            "tiempo_limite_segundos": 60
+            "aciertos_requeridos": 4,
+            "duracion_activacion_ms": 220,
+            "intervalo_entre_activaciones_ms": 30,
+            "penalizacion_por_error_pct": 10.0,
+            "progreso_por_acierto_pct": 25.0,
+            "tiempo_limite_segundos": 45
         },
         "fase1_sutura": {
             "puntos_requeridos": 6,

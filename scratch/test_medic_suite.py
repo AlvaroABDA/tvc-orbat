@@ -192,6 +192,25 @@ class TestFieldMedicSuite(unittest.TestCase):
             res = self.client.get(script_path)
             self.assertEqual(res.status_code, 200, f"Static asset {script_path} failed with {res.status_code}")
 
+    def test_10_navigation_and_admin_controls_present_and_fast_tourniquet(self):
+        config = medic_engine.load_medic_config()
+        self.assertLessEqual(config["fase1_torniquete"]["duracion_activacion_ms"], 300)
+        self.assertLessEqual(config["fase1_torniquete"]["intervalo_entre_activaciones_ms"], 50)
+        self.assertEqual(config["fase1_torniquete"]["aciertos_requeridos"], 4)
+
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'admin'
+            sess['faction'] = 'Syldavia'
+            sess['sanitario_id'] = 'MED-ADMIN-TEST'
+
+        res = self.client.get('/medic')
+        self.assertEqual(res.status_code, 200)
+        html = res.data.decode('utf-8')
+        self.assertIn('header-back-btn', html)
+        self.assertIn('abortEpisodeToScan()', html)
+        self.assertIn('adminAutoPassPhase()', html)
+
 if __name__ == '__main__':
     unittest.main()
+
 

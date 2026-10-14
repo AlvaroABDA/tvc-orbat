@@ -11,12 +11,12 @@ class TourniquetGame {
         const raw = config || {};
         this.config = {
             segmentos_totales: Number(raw.segmentos_totales) || 8,
-            aciertos_requeridos: Number(raw.aciertos_requeridos) || 5,
-            duracion_activacion_ms: Number(raw.duracion_activacion_ms) || 850,
-            intervalo_entre_activaciones_ms: Number(raw.intervalo_entre_activaciones_ms) || 500,
-            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 15.0,
-            progreso_por_acierto_pct: Number(raw.progreso_por_acierto_pct) || 20.0,
-            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 60
+            aciertos_requeridos: Number(raw.aciertos_requeridos) || 4,
+            duracion_activacion_ms: Number(raw.duracion_activacion_ms) || 220,
+            intervalo_entre_activaciones_ms: Number(raw.intervalo_entre_activaciones_ms) || 30,
+            penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 10.0,
+            progreso_por_acierto_pct: Number(raw.progreso_por_acierto_pct) || 25.0,
+            tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 45
         };
 
         this.onProgressUpdate = onProgressUpdate || (() => {});
@@ -29,7 +29,7 @@ class TourniquetGame {
         this.lastTime = 0;
         this.elapsedTime = 0;
 
-        // Estado de activación secuencial
+        // Estado de activación secuencial táctica
         this.activeSegment = 0; // índice del segmento actualmente encendido
         this.targetSegment = 0; // índice del segmento objetivo marcado en verde
         this.isLit = false;
@@ -38,11 +38,14 @@ class TourniquetGame {
         this.hitsCount = 0;
         this.hasTappedCurrentCycle = false;
 
+        this.windlassAngle = 0;
+        this.targetWindlassAngle = 0;
+
         this.pulseTime = 0;
         this.tapRippleTime = 0;
         this.lastTapSuccess = false;
 
-        this.feedbackText = "PULSA CUANDO EL SECTOR ACTIVO COINCIDA CON LA MARCA OBJETIVO";
+        this.feedbackText = "TOCA CUANDO EL HAZ COINCIDA CON EL SECTOR OBJETIVO";
         this.feedbackColor = "#888";
         this.feedbackTimer = 0;
 
@@ -92,6 +95,8 @@ class TourniquetGame {
         this.isLit = true;
         this.stateTimer = this.config.duracion_activacion_ms / 1000;
         this.hasTappedCurrentCycle = false;
+        this.windlassAngle = (this.hitsCount * (Math.PI / 2));
+        this.targetWindlassAngle = this.windlassAngle;
         this.loop(this.lastTime);
     }
 
@@ -108,7 +113,7 @@ class TourniquetGame {
         if (this.hasTappedCurrentCycle) return; // Evitar spam de toques en un mismo ciclo
 
         this.hasTappedCurrentCycle = true;
-        this.tapRippleTime = 0.4;
+        this.tapRippleTime = 0.35;
 
         // Éxito si está iluminado y coincide con el segmento objetivo
         const isHit = (this.isLit && this.activeSegment === this.targetSegment);
@@ -118,14 +123,16 @@ class TourniquetGame {
             this.hitStreak++;
             this.hitsCount++;
             this.progress = Math.min(100, (this.hitsCount / this.config.aciertos_requeridos) * 100);
-            this.showFeedback(`¡TORNIQUETE AJUSTADO! (${this.hitsCount}/${this.config.aciertos_requeridos})`, "#2ecc71");
+            this.targetWindlassAngle += Math.PI / 2; // Giro de 90° de la barra de molinete táctico
+            this.showFeedback(`¡APRIETE VÁLIDO! (${this.hitsCount}/${this.config.aciertos_requeridos})`, "#2ecc71");
             
-            // Reubicar segmento objetivo aleatoriamente
-            let newTarget;
-            do {
-                newTarget = Math.floor(Math.random() * this.config.segmentos_totales);
-            } while (newTarget === this.targetSegment && this.config.segmentos_totales > 2);
-            this.targetSegment = newTarget;
+            // Reubicar segmento objetivo al menos 2 sectores adelante para dar tiempo de anticipación táctica
+            const advance = 2 + Math.floor(Math.random() * Math.max(1, this.config.segmentos_totales - 3));
+            this.targetSegment = (this.targetSegment + advance) % this.config.segmentos_totales;
+
+            // Inmediatamente transicionar al siguiente sector sin quedarse congelado
+            this.isLit = false;
+            this.stateTimer = this.config.intervalo_entre_activaciones_ms / 1000;
 
             this.onProgressUpdate(this.progress, { hit: true, streak: this.hitStreak, hits: this.hitsCount });
 
@@ -137,7 +144,7 @@ class TourniquetGame {
             this.hitStreak = 0;
             this.progress = Math.max(0, this.progress - this.config.penalizacion_por_error_pct);
             this.hitsCount = Math.max(0, Math.floor((this.progress / 100) * this.config.aciertos_requeridos));
-            this.showFeedback("¡DESFASE! PRESIÓN DE TORNIQUETE INSUFICIENTE", "#ff3344");
+            this.showFeedback("¡DESFASE! PRESIÓN INSUFICIENTE", "#ff3344");
             this.onProgressUpdate(this.progress, { hit: false, errors: 1 });
         }
     }
@@ -155,6 +162,9 @@ class TourniquetGame {
         this.lastTime = timestamp;
         this.elapsedTime += delta;
         this.pulseTime += delta;
+
+        // Suavizar giro cinético del molinete
+        this.windlassAngle += (this.targetWindlassAngle - this.windlassAngle) * 0.25;
 
         if (this.tapRippleTime > 0) this.tapRippleTime -= delta;
         if (this.feedbackTimer > 0) this.feedbackTimer -= delta;
@@ -264,7 +274,7 @@ class TourniquetGame {
 
         // Onda expansiva táctica al tocar
         if (this.tapRippleTime > 0) {
-            const ripProgress = 1 - (this.tapRippleTime / 0.4);
+            const ripProgress = 1 - (this.tapRippleTime / 0.35);
             const ripR = centerR + (ripProgress * 40);
             ctx.save();
             ctx.strokeStyle = this.lastTapSuccess ? "rgba(46, 204, 113, 0.8)" : "rgba(255, 51, 68, 0.8)";
@@ -283,6 +293,24 @@ class TourniquetGame {
         ctx.lineWidth = isMatchNow ? 2.5 : 1.5;
         ctx.stroke();
 
+        // Barra del Molinete Táctico Giratorio
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(this.windlassAngle);
+        const rodLen = centerR * 1.35;
+        const rodH = 6;
+        ctx.fillStyle = isMatchNow ? "#2ecc71" : "#555555";
+        ctx.strokeStyle = isMatchNow ? "#a8f5c4" : "#222222";
+        ctx.lineWidth = 1;
+        ctx.fillRect(-rodLen / 2, -rodH / 2, rodLen, rodH);
+        ctx.strokeRect(-rodLen / 2, -rodH / 2, rodLen, rodH);
+        
+        // Empuñaduras moleteadas
+        ctx.fillStyle = isMatchNow ? "#ffffff" : "#888888";
+        ctx.fillRect(-rodLen / 2 - 2, -rodH, 4, rodH * 2);
+        ctx.fillRect(rodLen / 2 - 2, -rodH, 4, rodH * 2);
+        ctx.restore();
+
         // Miras en cruz táctica
         const markLen = 5;
         ctx.strokeStyle = isMatchNow ? "#2ecc71" : "rgba(0, 240, 255, 0.6)";
@@ -297,13 +325,13 @@ class TourniquetGame {
         // Textos dentro del círculo central
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillStyle = isMatchNow ? "#2ecc71" : "#fff";
-        ctx.font = "bold 11px 'Orbitron', monospace";
-        ctx.fillText(isMatchNow ? "¡AJUSTAR!" : "TORNIQUETE", centerX, centerY - 4);
+        ctx.fillStyle = isMatchNow ? "#2ecc71" : "#ffffff";
+        ctx.font = "bold 10px 'Orbitron', monospace";
+        ctx.fillText(isMatchNow ? "¡APRIETA!" : "MOLINETE", centerX, centerY - 6);
 
-        ctx.fillStyle = isMatchNow ? "#a8f5c4" : "#888";
+        ctx.fillStyle = isMatchNow ? "#a8f5c4" : "#aaaaaa";
         ctx.font = "8px 'Share Tech Mono', monospace";
-        ctx.fillText(isMatchNow ? "TOCA AQUÍ" : "ESPERANDO", centerX, centerY + 9);
+        ctx.fillText(isMatchNow ? "TOCA AHORA" : "SINCRONIZANDO", centerX, centerY + 8);
 
         // Feedback Text inferior
         ctx.textBaseline = "alphabetic";
