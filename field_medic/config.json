@@ -10,7 +10,10 @@
         "decay_pasivo_por_segundo_pct": 1.0
     },
     "fase1_neumotorax": {
+        "velocidad_carga": 75.0,
         "velocidad_ciclo_ms": 1800,
+        "zona_valvula_min": 65.0,
+        "zona_valvula_max": 85.0,
         "zona_descompresion_min_pct": 65.0,
         "zona_descompresion_max_pct": 85.0,
         "aciertos_requeridos": 4,
