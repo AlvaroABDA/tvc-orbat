@@ -158,6 +158,10 @@ function initNavigation() {
             sections.forEach(s => s.classList.remove('active'));
             
             btn.classList.add('active');
+            // Auto scroll active button into view on mobile bottom bar
+            if (window.innerWidth <= 768) {
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
             const targetId = btn.dataset.target;
             if (targetId) {
                 const targetElement = document.getElementById(targetId);
@@ -166,11 +170,25 @@ function initNavigation() {
                 }
             }
             
+            if (targetId === 'view-mapa') {
+                setTimeout(() => {
+                    if (typeof initMap === 'function') initMap();
+                    if (typeof map !== 'undefined' && map) map.invalidateSize();
+                    if (typeof loadMapData === 'function') loadMapData();
+                }, 100);
+            }
             if (targetId === 'view-mortero' && typeof morteroMap !== 'undefined' && morteroMap) {
                 setTimeout(() => morteroMap.invalidateSize(), 100);
             }
         });
     });
+
+    // Prevenir doble toque accidental que dispare el zoom de iOS Safari en botones e interfaz
+    document.addEventListener('dblclick', (e) => {
+        if (!e.target.closest('#tactical-map, .leaflet-container, .quill')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
 
     const sidebarBtns = document.querySelectorAll('.sidebar-tab');
     const sidebarPanels = document.querySelectorAll('.sidebar-content');

@@ -39,6 +39,7 @@ def init_db():
             estado_medalla TEXT,
             estado_sancion TEXT,
             password_hash TEXT,
+            ultimo_op_usado_id INTEGER,
             FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
         )
     ''')
@@ -102,6 +103,25 @@ def init_db():
             lat REAL,
             lng REAL,
             descripcion TEXT,
+            autor_nombre TEXT,
+            creado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            caduca_en DATETIME,
+            FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS BalizaEquipo (
+            equipo_id INTEGER PRIMARY KEY,
+            faccion_id INTEGER NOT NULL,
+            gps_lat REAL NOT NULL,
+            gps_lng REAL NOT NULL,
+            map_lat REAL,
+            map_lng REAL,
+            grid_coord TEXT,
+            en_zona INTEGER DEFAULT 1,
+            actualizado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (equipo_id) REFERENCES Equipo (id),
             FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
         )
     ''')
@@ -358,6 +378,26 @@ def init_db():
             image_url TEXT,
             intel_text TEXT,
             entorno_text TEXT
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS op_secundario_sesion (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            token_sesion TEXT UNIQUE NOT NULL,
+            source_op_id INTEGER NOT NULL,
+            faccion_id INTEGER NOT NULL,
+            equipo_id INTEGER,
+            sec_lat REAL NOT NULL,
+            sec_lng REAL NOT NULL,
+            desplazamiento_bearing REAL NOT NULL,
+            azimut_busqueda REAL NOT NULL,
+            estado TEXT NOT NULL DEFAULT 'GENERADO',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            expires_at DATETIME NOT NULL,
+            FOREIGN KEY (source_op_id) REFERENCES puntos_interes (id),
+            FOREIGN KEY (equipo_id) REFERENCES Equipo (id),
+            FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
         )
     ''')
 

@@ -3,8 +3,10 @@ import sqlite3
 import os
 import secrets
 import time
+from datetime import datetime, timedelta
 import dynamic_targets_engine
 import imint_engine
+import op_dinamico_engine
 import math
 
 def calculate_azimuth(lat_origin, lng_origin, lat_target, lng_target):
@@ -68,6 +70,35 @@ class GPSMapper:
         y = self.D * lng + self.E * lat + self.F
         return y, x
 
+    def get_grid_coordinate(self, map_lat, map_lng):
+        canvas_y = 2000.0 - float(map_lat)
+        canvas_x = float(map_lng)
+        origin_x = 66.15
+        origin_y = 59.5
+        grid_size_x = 31.71
+        grid_size_y = 29.9435
+
+        col_idx = math.floor((canvas_x - origin_x) / grid_size_x) + 1
+        row_idx = math.floor((canvas_y - origin_y) / grid_size_y) + 1
+
+        if col_idx < 1 or row_idx < 1 or col_idx > 100 or row_idx > 100:
+            return "FUERA MAPA"
+
+        first_letter = chr(65 + math.floor((col_idx - 1) / 26))
+        second_letter = chr(65 + ((col_idx - 1) % 26))
+        letters = first_letter + second_letter
+        numbers = str(row_idx).zfill(2)
+
+        frac_x = ((canvas_x - origin_x) % grid_size_x) / grid_size_x
+        frac_y = ((canvas_y - origin_y) % grid_size_y) / grid_size_y
+
+        if 0.33 < frac_x < 0.67 and 0.33 < frac_y < 0.67:
+            sub = "C"
+        else:
+            sub = ("N" if frac_y < 0.5 else "S") + ("O" if frac_x < 0.5 else "E")
+
+        return f"{letters}{numbers}-{sub}"
+
 gps_mapper = GPSMapper()
 
 
@@ -80,6 +111,10 @@ MINIGAME_PASSWORDS = {
     'mortero': {
         'Syldavia': 'fuego-syl',
         'Volkovia': 'fuego-vol'
+    },
+    'telemetro_recon': {
+        'Syldavia': 'recon-syl',
+        'Volkovia': 'recon-vol'
     }
 }
 
@@ -105,9 +140,10 @@ def close_connection(exception):
 
 @app.after_request
 def add_header(response):
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-    response.headers['Pragma'] = 'no-cache'
-    response.headers['Expires'] = '-1'
+    if not request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
     return response
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -127,7 +163,7 @@ def login():
         if usuario and password:
             conn = get_db_connection()
             eq = conn.execute('''
-                SELECT e.id, e.password_hash, e.estado_sancion, f.nombre as faccion_nombre 
+                SELECT e.id, e.nombre, e.password_hash, e.estado_sancion, f.nombre as faccion_nombre 
                 FROM Equipo e 
                 JOIN Faccion f ON e.faccion_id = f.id 
                 WHERE LOWER(e.codigo) = LOWER(?) AND e.codigo != '' AND e.codigo IS NOT NULL
@@ -150,6 +186,7 @@ def login():
                     session['faction'] = eq['faccion_nombre']
                     session['role'] = 'equipo'
                     session['equipo_id'] = eq['id']
+                    session['equipo_nombre'] = eq['nombre']
                     return redirect(url_for('index'))
             
         return render_template('login.html', error='Credenciales incorrectas o no autorizadas')
@@ -223,6 +260,66 @@ def mortero_app():
                            user_faction=session['faction'],
                            equipo_id=session.get('equipo_id'),
                            alcance_base=alcance_base)
+
+@app.route('/simulacion')
+def simulacion_menu():
+    if 'role' not in session:
+        return redirect(url_for('login'))
+    return render_template('simulacion_menu.html',
+                           user_role=session.get('role', 'player'),
+                           user_faction=session.get('faction'),
+                           unlocked_minigames=session.get('unlocked_minigames', []))
+
+@app.route('/telemetro_recon')
+def telemetro_recon():
+    if 'role' not in session:
+        return redirect(url_for('login'))
+    user_role = session.get('role', 'player')
+    user_faction = session.get('faction')
+    equipo_id = session.get('equipo_id')
+    unlocked = ('telemetro_recon' in session.get('unlocked_minigames', [])) or (user_role == 'admin')
+
+    conn = get_db_connection()
+    f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
+    fac_id = f_row['id'] if f_row else None
+
+    if user_role == 'admin':
+        ops_rows = conn.execute("SELECT id, nombre, lat, lng, tolerancia_metros, token_qr, faccion_id FROM puntos_interes WHERE tipo = 'OP' ORDER BY faccion_id, nombre").fetchall()
+    else:
+        ops_rows = conn.execute("SELECT id, nombre, lat, lng, tolerancia_metros, token_qr, faccion_id FROM puntos_interes WHERE tipo = 'OP' AND (faccion_id = ? OR faccion_id IS NULL) ORDER BY nombre", (fac_id,)).fetchall()
+
+    ultimo_op_usado_id = None
+    if equipo_id and user_role != 'admin':
+        eq = conn.execute("SELECT ultimo_op_usado_id FROM Equipo WHERE id = ?", (equipo_id,)).fetchone()
+        if eq:
+            ultimo_op_usado_id = eq['ultimo_op_usado_id']
+
+    ops = []
+    active_op_id = None
+    active_sesion = None
+    for r in ops_rows:
+        item = dict(r)
+        item['bloqueado'] = (item['id'] == ultimo_op_usado_id)
+        ses = op_dinamico_engine.get_active_session(item['id'], conn)
+        item['sesion_activa'] = ses is not None
+        if ses:
+            item['sesion'] = ses
+            active_op_id = item['id']
+            active_sesion = ses
+        ops.append(item)
+    conn.close()
+
+    cfg = op_dinamico_engine.get_op_dinamico_config()
+
+    return render_template('telemetro_recon.html',
+                           user_role=user_role,
+                           user_faction=user_faction,
+                           equipo_id=equipo_id,
+                           unlocked=unlocked,
+                           ops=ops,
+                           active_op_id=active_op_id,
+                           active_sesion=active_sesion,
+                           config=cfg)
 
 @app.route('/api/facciones', methods=['GET'])
 def get_facciones():
@@ -803,8 +900,22 @@ def update_grupo(id):
 def manage_marcadores():
     conn = get_db_connection()
     if request.method == 'GET':
+        # Auto-purgar marcadores caducados
+        try:
+            conn.execute("DELETE FROM MarcadorMapa WHERE caduca_en IS NOT NULL AND caduca_en < datetime('now')")
+            conn.commit()
+        except Exception:
+            pass
+
         faccion_id = request.args.get('faccion_id')
-        query = 'SELECT * FROM MarcadorMapa'
+        query = '''
+            SELECT id, faccion_id, tipo, lat, lng, descripcion, autor_nombre, creado_en, caduca_en,
+                   CAST((strftime('%s', 'now') - strftime('%s', COALESCE(creado_en, datetime('now')))) AS INTEGER) as segundos_transcurridos,
+                   CASE WHEN caduca_en IS NOT NULL THEN
+                       CAST((strftime('%s', caduca_en) - strftime('%s', 'now')) AS INTEGER)
+                   ELSE NULL END as segundos_restantes
+            FROM MarcadorMapa
+        '''
         params = ()
         if faccion_id:
             query += ' WHERE faccion_id = ?'
@@ -814,16 +925,39 @@ def manage_marcadores():
         return jsonify([dict(row) for row in marcadores])
     
     elif request.method == 'POST':
-        data = request.json
+        data = request.json or {}
+        ttl_minutos = data.get('ttl_minutos')
+        caduca_en = None
+        if ttl_minutos is not None:
+            try:
+                ttl_val = int(ttl_minutos)
+                if ttl_val > 0:
+                    caduca_en = (datetime.utcnow() + timedelta(minutes=ttl_val)).strftime('%Y-%m-%d %H:%M:%S')
+            except (ValueError, TypeError):
+                pass
+
+        autor_nombre = data.get('autor_nombre')
+        if not autor_nombre:
+            if session.get('role') == 'admin':
+                autor_nombre = "MANDO"
+            elif session.get('equipo_nombre'):
+                autor_nombre = session.get('equipo_nombre')
+            elif session.get('equipo_id'):
+                eq_row = conn.execute('SELECT nombre FROM Equipo WHERE id = ?', (session.get('equipo_id'),)).fetchone()
+                autor_nombre = eq_row['nombre'] if eq_row else "Equipo"
+            else:
+                autor_nombre = "Operador"
+
         cursor = conn.cursor()
         cursor.execute(
-            'INSERT INTO MarcadorMapa (faccion_id, tipo, lat, lng, descripcion) VALUES (?, ?, ?, ?, ?)',
-            (data['faccion_id'], data['tipo'], data['lat'], data['lng'], data.get('descripcion', ''))
+            '''INSERT INTO MarcadorMapa (faccion_id, tipo, lat, lng, descripcion, autor_nombre, creado_en, caduca_en)
+               VALUES (?, ?, ?, ?, ?, ?, datetime('now'), ?)''',
+            (data['faccion_id'], data['tipo'], data['lat'], data['lng'], data.get('descripcion', ''), autor_nombre, caduca_en)
         )
         new_id = cursor.lastrowid
         conn.commit()
         conn.close()
-        return jsonify({'id': new_id, 'status': 'success'}), 201
+        return jsonify({'id': new_id, 'status': 'success', 'caduca_en': caduca_en, 'autor_nombre': autor_nombre}), 201
     
     elif request.method == 'DELETE':
         faccion_id = request.args.get('faccion_id')
@@ -843,12 +977,153 @@ def delete_marcador(id):
 
 @app.route('/api/mapa/marcadores/<int:id>', methods=['PUT'])
 def update_marcador(id):
-    data = request.json
+    data = request.json or {}
     conn = get_db_connection()
     conn.execute('UPDATE MarcadorMapa SET lat = ?, lng = ? WHERE id = ?', (data['lat'], data['lng'], id))
     conn.commit()
     conn.close()
     return jsonify({'status': 'success'})
+
+# --- RUTAS BFT (BLUE FORCE TRACKING / BALIZAS EN TIEMPO REAL) ---
+
+@app.route('/api/bft/beacon', methods=['POST'])
+def post_bft_beacon():
+    role = session.get('role')
+    if role not in ['equipo', 'admin']:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    data = request.json or {}
+    conn = get_db_connection()
+
+    equipo_id = session.get('equipo_id')
+    faccion_name = session.get('faction')
+    faccion_id = None
+
+    if role == 'admin':
+        if data.get('equipo_id'):
+            equipo_id = int(data.get('equipo_id'))
+        if data.get('faccion_id'):
+            faccion_id = int(data.get('faccion_id'))
+        elif data.get('faccion'):
+            f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (data.get('faccion'),)).fetchone()
+            faccion_id = f_row['id'] if f_row else 1
+        else:
+            faccion_id = 1
+        if not equipo_id:
+            eq_default = conn.execute('SELECT id FROM Equipo WHERE faccion_id = ? LIMIT 1', (faccion_id,)).fetchone()
+            if not eq_default:
+                eq_default = conn.execute('SELECT id FROM Equipo LIMIT 1').fetchone()
+            if eq_default:
+                equipo_id = eq_default['id']
+
+    if not equipo_id:
+        conn.close()
+        return jsonify({'error': 'No equipo_id specified'}), 400
+
+    if not faccion_id:
+        eq_row = conn.execute('SELECT faccion_id FROM Equipo WHERE id = ?', (equipo_id,)).fetchone()
+        if not eq_row:
+            conn.close()
+            return jsonify({'error': 'Equipo no encontrado'}), 404
+        faccion_id = eq_row['faccion_id']
+
+    gps_lat = data.get('gps_lat')
+    gps_lng = data.get('gps_lng')
+
+    if gps_lat is not None and gps_lng is not None:
+        try:
+            gps_lat = float(gps_lat)
+            gps_lng = float(gps_lng)
+        except (ValueError, TypeError):
+            conn.close()
+            return jsonify({'error': 'Coordenadas GPS no válidas'}), 400
+
+        map_y, map_x = gps_mapper.gps_to_map(gps_lat, gps_lng)
+        map_lat = round(map_y, 2)
+        map_lng = round(map_x, 2)
+        grid_coord = gps_mapper.get_grid_coordinate(map_lat, map_lng)
+        en_zona = 1 if (0 <= map_lat <= 2000 and 0 <= map_lng <= 3000 and grid_coord != "FUERA MAPA") else 0
+    elif data.get('map_lat') is not None and data.get('map_lng') is not None:
+        try:
+            map_lat = float(data.get('map_lat'))
+            map_lng = float(data.get('map_lng'))
+        except (ValueError, TypeError):
+            conn.close()
+            return jsonify({'error': 'Coordenadas de mapa no válidas'}), 400
+        grid_coord = gps_mapper.get_grid_coordinate(map_lat, map_lng)
+        en_zona = 1 if (0 <= map_lat <= 2000 and 0 <= map_lng <= 3000 and grid_coord != "FUERA MAPA") else 0
+        gps_lat = float(data.get('gps_lat', 0.0))
+        gps_lng = float(data.get('gps_lng', 0.0))
+    else:
+        conn.close()
+        return jsonify({'error': 'Coordenadas requeridas'}), 400
+
+    conn.execute('''
+        INSERT INTO BalizaEquipo (equipo_id, faccion_id, gps_lat, gps_lng, map_lat, map_lng, grid_coord, en_zona, actualizado_en)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(equipo_id) DO UPDATE SET
+            faccion_id=excluded.faccion_id,
+            gps_lat=excluded.gps_lat,
+            gps_lng=excluded.gps_lng,
+            map_lat=excluded.map_lat,
+            map_lng=excluded.map_lng,
+            grid_coord=excluded.grid_coord,
+            en_zona=excluded.en_zona,
+            actualizado_en=excluded.actualizado_en
+    ''', (equipo_id, faccion_id, gps_lat, gps_lng, map_lat, map_lng, grid_coord, en_zona))
+    conn.commit()
+    conn.close()
+
+    return jsonify({
+        'status': 'success',
+        'en_zona': en_zona,
+        'grid_coord': grid_coord,
+        'map_lat': map_lat,
+        'map_lng': map_lng,
+        'gps_lat': gps_lat,
+        'gps_lng': gps_lng
+    })
+
+@app.route('/api/bft/beacons', methods=['GET'])
+def get_bft_beacons():
+    conn = get_db_connection()
+    user_role = session.get('role')
+    user_faction = session.get('faction')
+
+    faccion_id = request.args.get('faccion_id')
+
+    forced_faccion_id = None
+    if user_role != 'admin':
+        f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
+        if not f_row:
+            conn.close()
+            return jsonify([])
+        forced_faccion_id = f_row['id']
+    else:
+        if faccion_id and faccion_id != 'All':
+            try:
+                forced_faccion_id = int(faccion_id)
+            except ValueError:
+                pass
+
+    query = '''
+        SELECT b.*, e.nombre as equipo_nombre, COALESCE(e.logo_url, e.foto_url) as logo_url,
+               f.nombre as faccion_nombre, f.color as faccion_color,
+               CAST((strftime('%s', 'now') - strftime('%s', b.actualizado_en)) AS INTEGER) as segundos_transcurridos
+        FROM BalizaEquipo b
+        JOIN Equipo e ON b.equipo_id = e.id
+        JOIN Faccion f ON b.faccion_id = f.id
+    '''
+    params = ()
+    if forced_faccion_id:
+        query += ' WHERE b.faccion_id = ?'
+        params = (forced_faccion_id,)
+
+    query += ' ORDER BY b.actualizado_en DESC'
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+
+    return jsonify([dict(r) for r in rows])
 
 @app.route('/api/mapa/rutas', methods=['GET', 'POST', 'DELETE'])
 def manage_rutas():
@@ -1333,6 +1608,9 @@ def api_imint_confirm():
     
     target_info = imint_engine.confirm_imint_target(source_op_id, faccion_id, equipo_id, is_fake, genera_colateral, image_url, intel_text, entorno_text)
     
+    # Destruir / completar la sesión del OP secundario dinámico una vez confirmado el objetivo
+    op_dinamico_engine.destroy_op_secundario_by_source_op(source_op_id)
+    
     target_dict = dict(target_info)
     
     # Calculate azimuth and distance from OP (Need to convert OP GPS to Map Pixels first)
@@ -1364,7 +1642,82 @@ def api_imint_abort():
     target_id = data.get('target_id')
     
     imint_engine.abort_imint_mission(source_op_id, equipo_id, target_id)
+    op_dinamico_engine.destroy_op_secundario_by_source_op(source_op_id)
     return jsonify({'status': 'success'})
+
+@app.route('/api/op-dinamico/iniciar', methods=['POST'])
+def api_op_dinamico_iniciar():
+    if 'role' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    data = request.json or {}
+    source_op_id = data.get('op_id')
+    if not source_op_id:
+        return jsonify({'error': 'op_id requerido'}), 400
+    user_role = session.get('role', 'player')
+    user_faction = session.get('faction')
+    equipo_id = session.get('equipo_id')
+
+    conn = get_db_connection()
+    op = conn.execute("SELECT * FROM puntos_interes WHERE id = ? AND tipo = 'OP'", (source_op_id,)).fetchone()
+    if not op:
+        conn.close()
+        return jsonify({'error': 'OP no encontrado'}), 404
+
+    faccion_id = op['faccion_id']
+    if not faccion_id:
+        f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
+        faccion_id = f_row['id'] if f_row else 1
+
+    if equipo_id and user_role != 'admin':
+        eq = conn.execute("SELECT ultimo_op_usado_id FROM Equipo WHERE id = ?", (equipo_id,)).fetchone()
+        if eq and eq['ultimo_op_usado_id'] == int(source_op_id):
+            conn.close()
+            return jsonify({'error': 'Sector bloqueado. Mando exige alternar al siguiente Punto de Observación.'}), 403
+
+    conn.close()
+    try:
+        ses = op_dinamico_engine.get_or_create_op_secundario(source_op_id, faccion_id, equipo_id, gps_mapper)
+        return jsonify({'status': 'success', 'session': ses})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/op-dinamico/posicion', methods=['POST'])
+def api_op_dinamico_posicion():
+    if 'role' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    data = request.json or {}
+    token_sesion = data.get('token_sesion')
+    try:
+        lat = float(data.get('lat'))
+        lng = float(data.get('lng'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Coordenadas lat/lng requeridas'}), 400
+
+    res = op_dinamico_engine.check_player_proximity(token_sesion, lat, lng)
+    if 'error' in res:
+        return jsonify(res), 400
+    return jsonify(res)
+
+@app.route('/api/op-dinamico/adquirir', methods=['POST'])
+def api_op_dinamico_adquirir():
+    if 'role' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    data = request.json or {}
+    token_sesion = data.get('token_sesion')
+    lat = data.get('lat')
+    lng = data.get('lng')
+    player_lat = float(lat) if lat is not None else None
+    player_lng = float(lng) if lng is not None else None
+
+    res = op_dinamico_engine.acquire_contact(token_sesion, player_lat, player_lng)
+    if not res.get('success'):
+        return jsonify(res), 400
+
+    if res.get('token_qr'):
+        session['active_op_token'] = res['token_qr']
+        session.modified = True
+
+    return jsonify(res)
 
 
 @app.route('/api/analytics')
@@ -1876,6 +2229,11 @@ def patch_db():
         except Exception as e:
             pass # Column already exists or error
         try:
+            conn.execute('ALTER TABLE Equipo ADD COLUMN ultimo_op_usado_id INTEGER;')
+            conn.commit()
+        except Exception:
+            pass
+        try:
             conn.execute("ALTER TABLE Historial_Asignacion ADD COLUMN estado TEXT DEFAULT 'Aprobada';")
             conn.commit()
         except Exception:
@@ -1894,6 +2252,70 @@ def patch_db():
             conn.commit()
         except Exception:
             pass
+
+        # Migraciones para MarcadorMapa (autor_nombre, creado_en, caduca_en)
+        try:
+            conn.execute('ALTER TABLE MarcadorMapa ADD COLUMN autor_nombre TEXT;')
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute('ALTER TABLE MarcadorMapa ADD COLUMN creado_en DATETIME;')
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute('ALTER TABLE MarcadorMapa ADD COLUMN caduca_en DATETIME;')
+            conn.commit()
+        except Exception:
+            pass
+
+        # Migración para BalizaEquipo
+        try:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS BalizaEquipo (
+                    equipo_id INTEGER PRIMARY KEY,
+                    faccion_id INTEGER NOT NULL,
+                    gps_lat REAL NOT NULL,
+                    gps_lng REAL NOT NULL,
+                    map_lat REAL,
+                    map_lng REAL,
+                    grid_coord TEXT,
+                    en_zona INTEGER DEFAULT 1,
+                    actualizado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (equipo_id) REFERENCES Equipo (id),
+                    FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
+                )
+            ''')
+            conn.commit()
+        except Exception:
+            pass
+
+        # Migración para op_secundario_sesion
+        try:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS op_secundario_sesion (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    token_sesion TEXT UNIQUE NOT NULL,
+                    source_op_id INTEGER NOT NULL,
+                    faccion_id INTEGER NOT NULL,
+                    equipo_id INTEGER,
+                    sec_lat REAL NOT NULL,
+                    sec_lng REAL NOT NULL,
+                    desplazamiento_bearing REAL NOT NULL,
+                    azimut_busqueda REAL NOT NULL,
+                    estado TEXT NOT NULL DEFAULT 'GENERADO',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    expires_at DATETIME NOT NULL,
+                    FOREIGN KEY (source_op_id) REFERENCES puntos_interes (id),
+                    FOREIGN KEY (equipo_id) REFERENCES Equipo (id),
+                    FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
+                )
+            ''')
+            conn.commit()
+        except Exception:
+            pass
+
         conn.close()
 
 @app.route('/api/docs', methods=['GET'])

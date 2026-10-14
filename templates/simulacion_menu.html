@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ORBAT - Herramientas de Simulación</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        :root {
+            --bg-dark: #0d0f12;
+            --panel-bg: rgba(22, 27, 34, 0.85);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --accent-cyan: #00f0ff;
+            --accent-gold: #daa520;
+            --accent-green: #2ecc71;
+            --accent-red: #ff3344;
+            --text-main: #f0f6fc;
+            --text-muted: #8b949e;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px 15px;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 50% 20%, rgba(0, 240, 255, 0.05) 0%, transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(218, 165, 32, 0.04) 0%, transparent 60%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 40px 40px, 40px 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header */
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .btn-volver {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-family: 'Share Tech Mono', monospace;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-volver:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent-cyan);
+        }
+
+        .user-tag {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-cyan);
+            background: rgba(0, 240, 255, 0.1);
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .title-block {
+            text-align: center;
+            margin: 10px 0 5px 0;
+        }
+
+        .title-block h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            letter-spacing: 2px;
+            color: #fff;
+            margin: 0 0 6px 0;
+            text-transform: uppercase;
+        }
+
+        .title-block p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin: 0;
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 1px;
+        }
+
+        /* Tactical Cards */
+        .card-menu {
+            position: relative;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 22px;
+            backdrop-filter: blur(12px);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card-menu:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(0, 240, 255, 0.15);
+        }
+
+        .card-menu:active {
+            transform: scale(0.99);
+        }
+
+        /* Tactical Corners */
+        .c-tl, .c-tr, .c-bl, .c-br {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            pointer-events: none;
+        }
+        .c-tl { top: -1px; left: -1px; border-top: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
+        .c-tr { top: -1px; right: -1px; border-top: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
+        .c-bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
+        .c-br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
+
+        .card-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-icon-title {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 26px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .icon-mortero {
+            background: rgba(255, 51, 68, 0.15);
+            color: var(--accent-red);
+            border-color: rgba(255, 51, 68, 0.3);
+        }
+
+        .icon-recon {
+            background: rgba(0, 240, 255, 0.15);
+            color: var(--accent-cyan);
+            border-color: rgba(0, 240, 255, 0.3);
+        }
+
+        .card-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.15rem;
+            letter-spacing: 1.5px;
+            color: #fff;
+            margin: 0 0 4px 0;
+        }
+
+        .card-badge {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .badge-ready {
+            background: rgba(46, 204, 113, 0.2);
+            color: var(--accent-green);
+            border: 1px solid rgba(46, 204, 113, 0.4);
+        }
+
+        .badge-locked {
+            background: rgba(218, 165, 32, 0.15);
+            color: var(--accent-gold);
+            border: 1px solid rgba(218, 165, 32, 0.3);
+        }
+
+        .card-desc {
+            color: #aaa;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 10px;
+            margin-top: 5px;
+        }
+
+        .btn-action {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid var(--accent-cyan);
+            color: var(--accent-cyan);
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover {
+            background: var(--accent-cyan);
+            color: #000;
+        }
+
+        .info-contingencia {
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 14px 16px;
+            font-size: 0.8rem;
+            color: #888;
+            line-height: 1.5;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .info-contingencia span {
+            color: var(--accent-gold);
+            font-size: 20px;
+        }
+
+        /* Modal PIN */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-box {
+            background: #181d24;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: 100%;
+            max-width: 380px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .modal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            margin: 0 0 8px 0;
+            color: #fff;
+        }
+
+        .input-pin {
+            width: 100%;
+            background: #0d0f12;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 12px;
+            font-size: 1.1rem;
+            font-family: 'Share Tech Mono', monospace;
+            border-radius: 6px;
+            text-align: center;
+            letter-spacing: 3px;
+            margin: 15px 0;
+        }
+
+        .input-pin:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-cancel {
+            flex: 1;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #aaa;
+            padding: 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .btn-confirm {
+            flex: 1;
+            background: var(--accent-cyan);
+            border: 1px solid var(--accent-cyan);
+            color: #000;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Top Nav -->
+        <div class="top-nav">
+            <a href="/" class="btn-volver">
+                <span class="material-symbols-outlined" style="font-size: 18px;">arrow_back</span>
+                ORBAT DASHBOARD
+            </a>
+            <div class="user-tag">
+                FACCIÓN: {{ user_faction | upper }}
+            </div>
+        </div>
+
+        <!-- Title Block -->
+        <div class="title-block">
+            <h1>Sistemas de Simulación</h1>
+            <p>[ HERRAMIENTAS Y MINIJUEGOS TÁCTICOS ]</p>
+        </div>
+
+        <!-- Card: Telémetro Recon -->
+        {% set recon_unlocked = (user_role == 'admin') or ('telemetro_recon' in unlocked_minigames) %}
+        <div class="card-menu" onclick="handleCardClick('telemetro_recon', {{ 'true' if recon_unlocked else 'false' }}, '/telemetro_recon')">
+            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+            
+            <div class="card-header-row">
+                <div class="card-icon-title">
+                    <div class="card-icon icon-recon">
+                        <span class="material-symbols-outlined">radar</span>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Telémetro Recon</h2>
+                        <div style="font-size: 0.75rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">RECONOCIMIENTO AVANZADO</div>
+                    </div>
+                </div>
+                <div>
+                    {% if recon_unlocked %}
+                    <span class="card-badge badge-ready">OPERATIVO</span>
+                    {% else %}
+                    <span class="card-badge badge-locked">🔒 REQUIERE PIN</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <p class="card-desc">
+                Despliegue de Puntos de Observación (OP) secundarios temporales mediante navegación GPS, exploración de azimut con cámara móvil y adquisición de objetivos IMINT.
+            </p>
+
+            <div class="card-footer">
+                <span>ESTADO: {{ 'AUTORIZADO' if recon_unlocked else 'ENCRIPTADO' }}</span>
+                <span class="btn-action">
+                    {{ 'ACCEDER' if recon_unlocked else 'DESBLOQUEAR' }} ➔
+                </span>
+            </div>
+        </div>
+
+        <!-- Card: Mortero / Artillería -->
+        {% set mortero_unlocked = (user_role == 'admin') or ('mortero' in unlocked_minigames) %}
+        <div class="card-menu" onclick="handleCardClick('mortero', {{ 'true' if mortero_unlocked else 'false' }}, '/mortero_app')">
+            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+            
+            <div class="card-header-row">
+                <div class="card-icon-title">
+                    <div class="card-icon icon-mortero">
+                        <span class="material-symbols-outlined">rocket_launch</span>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Artillería / Mortero</h2>
+                        <div style="font-size: 0.75rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">FUEGO INDIRECTO</div>
+                    </div>
+                </div>
+                <div>
+                    {% if mortero_unlocked %}
+                    <span class="card-badge badge-ready">OPERATIVO</span>
+                    {% else %}
+                    <span class="card-badge badge-locked">🔒 REQUIERE PIN</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <p class="card-desc">
+                Calculadora balística de mortero. Ejecuta misiones de fuego triangulando las coordenadas y azimuts facilitados por las unidades de reconocimiento.
+            </p>
+
+            <div class="card-footer">
+                <span>ESTADO: {{ 'AUTORIZADO' if mortero_unlocked else 'ENCRIPTADO' }}</span>
+                <span class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.1);">
+                    {{ 'ACCEDER' if mortero_unlocked else 'DESBLOQUEAR' }} ➔
+                </span>
+            </div>
+        </div>
+
+        <!-- Contingencia QR -->
+        <div class="info-contingencia">
+            <span class="material-symbols-outlined">info</span>
+            <div>
+                <b>PROTOCOLO DE CONTINGENCIA:</b> Si los sensores de geolocalización, cámara o brújula fallan en el campo, los códigos QR físicos situados en los OP permanentes continúan plenamente operativos como método de acceso alternativo.
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal PIN -->
+    <div id="modal-pin" class="modal-overlay">
+        <div class="modal-box">
+            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+            <h3 class="modal-title" id="modal-minigame-title">AUTORIZACIÓN REQUERIDA</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 10px 0;">Introduzca la clave de desbloqueo táctico suministrada por el mando.</p>
+            
+            <input type="password" id="input-pin-value" class="input-pin" placeholder="••••••••" autocomplete="off">
+            <div id="pin-error" style="color: var(--accent-red); font-size: 0.85rem; margin-bottom: 10px; display: none; font-family: 'Share Tech Mono', monospace;"></div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closePinModal()">CANCELAR</button>
+                <button class="btn-confirm" onclick="submitPin()">VERIFICAR</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMinigame = null;
+        let currentRedirectUrl = null;
+
+        function handleCardClick(minigame, isUnlocked, redirectUrl) {
+            if (isUnlocked) {
+                window.location.href = redirectUrl;
+            } else {
+                currentMinigame = minigame;
+                currentRedirectUrl = redirectUrl;
+                document.getElementById('modal-minigame-title').textContent = minigame === 'telemetro_recon' ? 'PIN: TELÉMETRO RECON' : 'PIN: ARTILLERÍA / MORTERO';
+                document.getElementById('input-pin-value').value = '';
+                document.getElementById('pin-error').style.display = 'none';
+                document.getElementById('modal-pin').style.display = 'flex';
+                setTimeout(() => document.getElementById('input-pin-value').focus(), 100);
+            }
+        }
+
+        function closePinModal() {
+            document.getElementById('modal-pin').style.display = 'none';
+            currentMinigame = null;
+            currentRedirectUrl = null;
+        }
+
+        async function submitPin() {
+            const pin = document.getElementById('input-pin-value').value.trim();
+            const errDiv = document.getElementById('pin-error');
+            if (!pin) {
+                errDiv.textContent = 'Debe introducir un código.';
+                errDiv.style.display = 'block';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/auth_minigame', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ minigame: currentMinigame, password: pin })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    window.location.href = currentRedirectUrl;
+                } else {
+                    errDiv.textContent = data.message || 'Código incorrecto.';
+                    errDiv.style.display = 'block';
+                }
+            } catch (e) {
+                errDiv.textContent = 'Error de enlace SATCOM.';
+                errDiv.style.display = 'block';
+            }
+        }
+
+        document.getElementById('input-pin-value').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') submitPin();
+        });
+    </script>
+</body>
+</html>

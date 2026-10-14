@@ -2,9 +2,9 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ORBAT Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -23,11 +23,7 @@
                   <button class="nav-icon-btn" data-target="view-stats" title="Inteligencia Táctica"><span class="material-symbols-outlined">analytics</span></button>
                   <button class="nav-icon-btn" data-target="view-docs" title="Reglamentos y Normativas"><span class="material-symbols-outlined">library_books</span></button>
                   
-                    {% if user_role == 'admin' or 'mortero' in unlocked_minigames %}
-                    <button class="nav-icon-btn" onclick="window.location.href='/mortero_app'" title="Mortero/Artillería"><span class="material-symbols-outlined">rocket_launch</span></button>
-                    {% else %}
-                    <button class="nav-icon-btn minigame-locked" data-minigame="mortero" title="Mortero/Artillería (Requiere Código)"><span class="material-symbols-outlined" style="color: #ffaa00;">rocket_launch</span></button>
-                    {% endif %}
+                    <button class="nav-icon-btn" onclick="window.location.href='/simulacion'" title="Herramientas de Simulación"><span class="material-symbols-outlined" style="color: #00f0ff;">sports_esports</span></button>
                     {% if user_role == 'admin' %}
                   <div class="nav-section-title-desktop" style="font-size: 0.65rem; color: #ff4d4d; text-align: center; margin: 20px 0 5px 0; text-transform: uppercase; font-family: var(--font-mono); letter-spacing: 1px; border-top: 1px solid rgba(255,77,77,0.3); padding-top: 10px;">MANDO / ADMIN</div>
                   <div class="nav-admin-divider" style="display: none;"></div>
@@ -276,6 +272,7 @@
                     <button id="btn-opfor" class="btn outline" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;" onclick="abrirOpfor()"><span class="material-symbols-outlined" style="font-size: 1.2rem;">policy</span> <span class="btn-text">Intel OPFOR</span></button>
                     <button id="btn-add-marker" class="btn warning" style="width: 100%; margin-bottom: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">warning</span> <span class="btn-text">Añadir Intel</span></button>
                     <button id="btn-add-tl-marker" class="btn primary" style="width: 100%; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">my_location</span> <span class="btn-text">Mi Posición (TL)</span></button>
+                    <button id="btn-transmit-bft" class="btn primary" style="width: 100%; margin-top: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;" title="Transmitir baliza GPS de mi unidad en tiempo real (BFT)"><span class="material-symbols-outlined" style="font-size: 1.2rem;">satellite_alt</span> <span class="btn-text">Baliza BFT (GPS)</span></button>
                     {% if user_role == 'admin' %}
                     <button id="btn-add-poi-map" class="btn outline" style="width: 100%; margin-top: 0.5rem; font-size: 0.85rem; display: flex; align-items: center; justify-content: flex-start; gap: 0.5rem;"><span class="material-symbols-outlined" style="font-size: 1.2rem;">add_location_alt</span> <span class="btn-text">Nuevo POI</span></button>
                     <hr style="border-color: #444; margin: 10px 0;">
@@ -291,6 +288,23 @@
 
             <!-- Map Canvas -->
             <div style="flex: 1; height: 100%; position: relative;">
+                <!-- Floating BFT Quick Transmit Button -->
+                <button id="btn-floating-bft" class="btn primary bft-quick-btn" title="Emitir Baliza BFT (GPS)" style="position: absolute; top: 15px; left: 15px; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.7); display: flex; align-items: center; gap: 6px; padding: 7px 12px; font-size: 0.8rem; font-family: var(--font-mono); font-weight: bold; letter-spacing: 1px; border: 1px solid var(--theme-color); backdrop-filter: blur(4px);">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">satellite_alt</span>
+                    <span class="bft-btn-label">EMITIR BFT</span>
+                </button>
+
+                <!-- Floating BFT Out of Bounds HUD -->
+                <div id="bft-out-of-bounds-container" class="bft-hud-panel" style="display: none; position: absolute; top: 58px; left: 15px; z-index: 1000; max-width: 320px; background: rgba(15, 18, 24, 0.94); border: 1px solid #ffaa00; border-radius: 6px; padding: 10px; box-shadow: 0 6px 20px rgba(0,0,0,0.8); font-family: var(--font-mono); font-size: 0.75rem; backdrop-filter: blur(4px);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,170,0,0.3); padding-bottom: 4px; margin-bottom: 6px; color: #ffaa00; font-weight: bold;">
+                        <span style="display: flex; align-items: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 16px;">warning</span> FUERA DE ZONA (BFT)</span>
+                        <span id="bft-out-of-bounds-count" style="background: rgba(255,170,0,0.2); padding: 1px 6px; border-radius: 3px;">0</span>
+                    </div>
+                    <div id="bft-out-of-bounds-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 140px; overflow-y: auto;">
+                        <!-- Injected by JS -->
+                    </div>
+                </div>
+
                 <div id="tactical-map" style="width: 100%; height: 100%; background-color: #111;"></div>
                 <!-- Tactical Tracker Widget -->
                 <div id="tactical-tracker" style="position: absolute; bottom: 30px; right: 30px; z-index: 1000; background: rgba(0,0,0,0.8); color: var(--theme-color); padding: 8px 15px; border: 1px solid var(--theme-color); border-radius: 4px; font-family: var(--font-mono); pointer-events: none; display: flex; flex-direction: column; align-items: flex-end; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
@@ -935,6 +949,56 @@
         </div>
     </div>
 
+    <!-- Modal Añadir Marcador Intel / ATAK -->
+    <div id="modal-intel" class="modal" style="z-index: 2000;">
+        <div class="modal-content military-report" style="max-width: 440px; width: 90%;">
+            <h2 style="text-align: center; border-bottom: 2px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: #ff4444;">radar</span> Registro Intel ATAK
+            </h2>
+            <form id="form-intel" style="display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" id="intel-lat">
+                <input type="hidden" id="intel-lng">
+                
+                <div class="form-group">
+                    <label>Tipo de Marcador</label>
+                    <select id="intel-tipo" class="form-control" style="background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
+                        <option value="intel" selected>⚠️ Amenaza / Contacto Enemigo</option>
+                        <option value="observacion">👁️ Reconocimiento / Observación</option>
+                        <option value="objetivo">🎯 Objetivo Táctico / POI</option>
+                        <option value="aviso">📢 Peligro / Alerta / Mina</option>
+                        <option value="tl_pos">📍 Posición Aliada / Puesto</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Caducidad / TTL (Time-To-Live)</label>
+                    <select id="intel-ttl" class="form-control" style="background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--border-color); padding: 8px; border-radius: 4px;">
+                        <option value="5">⏳ 5 Minutos (Contacto Inmediato)</option>
+                        <option value="15" selected>⏳ 15 Minutos (Estándar ATAK)</option>
+                        <option value="30">⏳ 30 Minutos (Vigilancia)</option>
+                        <option value="60">⏳ 1 Hora (Operación Prolongada)</option>
+                        <option value="0">♾️ Permanente (Sin Caducidad)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Descripción / Mensaje</label>
+                    <textarea id="intel-desc" class="form-control" rows="3" placeholder="Ej: Contacto de 3 infantes con DMR avanzando hacia SE" required style="background: rgba(0,0,0,0.5); color: #fff; border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; resize: vertical;"></textarea>
+                </div>
+
+                <div style="font-size: 0.8rem; color: #aaa; background: rgba(255,255,255,0.05); padding: 6px 10px; border-radius: 4px; border-left: 3px solid var(--theme-color); display: flex; justify-content: space-between; align-items: center;">
+                    <span>Cuadrícula: <strong id="intel-grid-preview" style="color: var(--theme-color);">--</strong></span>
+                    <span id="intel-gps-preview" style="font-size: 0.7rem; color: #888;"></span>
+                </div>
+
+                <div class="modal-actions" style="margin-top: 0.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button type="button" class="btn secondary" id="btn-cancel-intel">Cancelar</button>
+                    <button type="submit" class="btn primary">Registrar Marcador</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal OPORD Faccion -->
     <div id="modal-opord" class="modal">
         <div class="modal-content military-report">
@@ -1107,8 +1171,8 @@
         window.userFaction = "{{ user_faction }}";
         window.equipoId = "{{ session.get('equipo_id', '') }}";
     </script>
-    <script src="{{ url_for('static', filename='js/main.js') }}?v=53"></script>
-    <script src="{{ url_for('static', filename='js/map.js') }}?v=20"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=55"></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}?v=22"></script>
         </div>
     </div>
     <!-- Modal Instrucciones Mapa Táctico -->

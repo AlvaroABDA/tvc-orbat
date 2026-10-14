@@ -22,12 +22,22 @@
     padding: 0;
 }
 
+html {
+    height: 100%;
+    height: -webkit-fill-available;
+}
+
 body {
     font-family: var(--font-ui);
     background-color: var(--bg-dark);
     color: var(--text-main);
     line-height: 1.5;
+    height: 100%;
     height: 100vh;
+    height: 100dvh;
+    min-height: 100dvh;
+    max-height: 100dvh;
+    width: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -36,6 +46,8 @@ body {
         linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
     background-size: 20px 20px;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
 }
 
 /* Scrollbars */
@@ -69,13 +81,16 @@ body[data-theme="Khemed"] {
 
 /* Layout IDE style */
 .app-layout {
-        height: 100% !important;
+    height: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
     display: flex;
-    height: 100vh;
-    width: 100vw;
+    width: 100%;
+    max-width: 100vw;
     padding: 1rem;
     gap: 1rem;
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 /* Sidebar */
@@ -89,7 +104,14 @@ body[data-theme="Khemed"] {
     flex-direction: column;
     align-items: center;
     padding-top: 1rem;
+    padding-bottom: 1rem;
     z-index: 100;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    max-height: 100%;
+    flex-shrink: 0;
 }
 
 .logo-min {
@@ -98,6 +120,7 @@ body[data-theme="Khemed"] {
     font-size: 1.5rem;
     color: var(--text-main);
     margin-bottom: 2rem;
+    flex-shrink: 0;
 }
 
 .nav-menu {
@@ -105,6 +128,7 @@ body[data-theme="Khemed"] {
     flex-direction: column;
     gap: 1rem;
     width: 100%;
+    align-items: center;
 }
 
 .nav-icon-btn {
@@ -119,6 +143,8 @@ body[data-theme="Khemed"] {
     display: flex;
     justify-content: center;
     align-items: center;
+    touch-action: manipulation;
+    flex-shrink: 0;
 }
 
 .nav-icon-btn:hover {
@@ -498,6 +524,11 @@ body[data-theme="Khemed"] {
     border-left: 2px solid var(--theme-color);
     display: flex;
     flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    max-height: 100%;
 }
 
 .sidebar-tabs {
@@ -823,6 +854,36 @@ select option { color: #000; background: #fff; }
 }
 
 
+/* Short screens / Mobile Landscape */
+@media (max-height: 600px) {
+    .app-layout {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+    .sidebar-nav {
+        padding-top: 0.4rem;
+        padding-bottom: 0.4rem;
+        padding-left: max(5px, env(safe-area-inset-left, 0px));
+        width: 54px;
+    }
+    .logo-min {
+        font-size: 1.1rem;
+        margin-bottom: 0.4rem;
+    }
+    .nav-menu {
+        gap: 0.3rem;
+    }
+    .nav-icon-btn {
+        padding: 0.35rem 0;
+        height: 36px;
+        width: 36px;
+    }
+    .sidebar-nav .nav-section-title-desktop {
+        margin: 4px 0 2px 0 !important;
+        font-size: 0.55rem !important;
+    }
+}
+
 /* =========================================================
    MOBILE RESPONSIVENESS (PHASE 1)
    ========================================================= */
@@ -832,8 +893,11 @@ select option { color: #000; background: #fff; }
         padding: 0;
         margin: 0;
         height: 100%;
+        height: 100dvh;
+        max-height: 100dvh;
         width: 100%;
         overflow: hidden;
+        -webkit-text-size-adjust: 100%;
     }
     body {
         overflow: hidden;
@@ -841,40 +905,62 @@ select option { color: #000; background: #fff; }
     
     .app-layout {
         height: 100% !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
         flex-direction: column-reverse !important;
         padding: 0 !important;
         gap: 0 !important;
+        overflow: hidden !important;
     }
 
     .main-content {
         padding: 5px;
         gap: 5px;
         flex: 1;
-        overflow-y: auto;
+        overflow: hidden;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
     }
     
     .top-bar {
         border-radius: 0;
+        flex-shrink: 0;
+        padding-top: max(0px, env(safe-area-inset-top, 0px));
     }
     
     .view-section {
         border-radius: 0;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-y: contain;
     }
 
     /* 2. Sidebar to Bottom Nav Bar */
     .sidebar-nav {
-        width: 100vw;
-        height: 60px;
-        flex-direction: row;
-        justify-content: flex-start;
-        align-items: center;
-        padding: 0 10px;
-        border-radius: 0;
-        background-color: #111;
-        border-top: 1px solid var(--border-color);
-        z-index: 1000;
-        overflow-x: auto;
-        overflow-y: hidden;
+        width: 100% !important;
+        max-width: 100vw !important;
+        height: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+        min-height: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
+        flex-direction: row !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
+        padding: 0 10px !important;
+        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+        padding-left: max(10px, env(safe-area-inset-left, 0px)) !important;
+        padding-right: max(10px, env(safe-area-inset-right, 0px)) !important;
+        border-radius: 0 !important;
+        background-color: #111 !important;
+        border-top: 1px solid var(--border-color) !important;
+        z-index: 1000 !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        overscroll-behavior-x: contain !important;
+        flex-shrink: 0 !important;
+        box-sizing: border-box !important;
     }
     
     .logo-min, .sidebar-nav .nav-section-title-desktop {
@@ -906,35 +992,46 @@ select option { color: #000; background: #fff; }
     }
 
     .nav-menu {
-        display: flex;
-        flex-direction: row;
-        gap: 15px;
-        align-items: center;
-        height: 100%;
-        margin: 0;
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 12px !important;
+        align-items: center !important;
+        height: 100% !important;
+        margin: 0 !important;
+        width: auto !important;
+        min-width: max-content !important;
     }
 
     .nav-icon-btn {
-        width: 45px;
-        height: 45px;
-        margin: 0;
-        flex-shrink: 0;
+        width: 44px !important;
+        height: 44px !important;
+        margin: 0 !important;
+        flex-shrink: 0 !important;
+        touch-action: manipulation !important;
     }
     
+    /* Prevenir auto-zoom de iOS Safari en inputs al hacer foco (< 16px causa zoom) */
+    input, select, textarea,
+    input[type="text"], input[type="password"], input[type="number"], input[type="search"] {
+        font-size: 16px !important;
+    }
+
     /* 3. Modals sizing */
     .modal-content {
         width: 95vw !important;
         max-width: 100%;
-        max-height: 90vh;
-        overflow-y: auto;
+        max-height: 85dvh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
         padding: 15px;
     }
     
-        /* 4. Fix ORBAT Layout on Mobile */
+    /* 4. Fix ORBAT Layout on Mobile */
     #view-orbat {
         flex-direction: column !important;
         overflow-y: auto !important;
         overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
     }
     
     .orbat-content-wrapper {
@@ -952,6 +1049,8 @@ select option { color: #000; background: #fff; }
         border-left: none !important;
         border-right: none !important;
         border-top: 2px solid var(--theme-color) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
     }
     
     .sidebar-content {
@@ -983,20 +1082,16 @@ select option { color: #000; background: #fff; }
         width: calc(100% - 20px) !important;
         min-width: 0 !important;
         height: auto !important;
+        max-height: 40dvh !important;
         z-index: 1000 !important;
         background: rgba(20,20,20,0.9) !important;
         border: 1px solid rgba(255,255,255,0.2) !important;
         border-radius: 8px !important;
         box-shadow: 0 0 10px rgba(0,0,0,0.5) !important;
         overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
     }
     
-    #view-mapa .sidebar-panel > div {
-        padding: 0.5rem !important;
-    }
-    
-    
-    /* Hide map button texts on mobile and make them inline */
     #view-mapa .sidebar-panel > div {
         display: flex !important;
         flex-direction: row !important;
@@ -1024,10 +1119,10 @@ select option { color: #000; background: #fff; }
 
     /* 6. ORBAT Cards Vertical Stack and Shrink */
     .orbat-tree-container {
-        flex-direction: column !important; /* Stack vertically instead of horizontally */
+        flex-direction: column !important;
         gap: 5px !important;
         padding: 5px !important;
-        align-items: stretch !important; /* Make cards take full width */
+        align-items: stretch !important;
     }
     
     .mando-section {
@@ -1046,8 +1141,243 @@ select option { color: #000; background: #fff; }
     .grupo-pax { font-size: 0.85rem !important; padding: 1px 4px !important; }
     .grupo-body { padding: 0.2rem !important; gap: 0.2rem !important; }
     .grupo-logo { width: 35px !important; height: 35px !important; }
-    .editable-field { font-size: 0.7rem !important; }
-    .editable-field input, .editable-field select { font-size: 0.7rem !important; padding: 0.1rem 0.2rem !important; height: auto !important; }
+    .editable-field { font-size: 0.8rem !important; }
+    .editable-field input, .editable-field select {
+        font-size: 16px !important; /* Min 16px to prevent iOS Safari auto-zoom */
+        padding: 0.15rem 0.3rem !important;
+        height: auto !important;
+    }
     .equipo-card { padding: 0.25rem 0.5rem !important; font-size: 0.75rem !important; margin-bottom: 0.2rem !important; }
     .droppable-area { padding: 0.2rem !important; min-height: 25px !important; }
 }
+
+/* ==========================================================
+   ATAK-LITE TACTICAL INTEL & BFT (BLUE FORCE TRACKING) STYLES
+   ========================================================== */
+
+/* Tactical Intel Popups */
+.tactical-popup .leaflet-popup-content-wrapper {
+    background: rgba(14, 18, 24, 0.96) !important;
+    border: 1px solid var(--theme-color) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.85) !important;
+    color: #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 0 !important;
+    backdrop-filter: blur(8px) !important;
+    min-width: 220px;
+    max-width: 300px;
+}
+.tactical-popup .leaflet-popup-tip {
+    background: rgba(14, 18, 24, 0.96) !important;
+    border: 1px solid var(--theme-color) !important;
+}
+.tactical-popup .leaflet-popup-content {
+    margin: 0 !important;
+    line-height: 1.4 !important;
+    font-family: var(--font-main, 'Rajdhani', sans-serif) !important;
+}
+.tactical-popup a.leaflet-popup-close-button {
+    color: #aaa !important;
+    padding: 6px 8px 0 0 !important;
+}
+.tactical-popup a.leaflet-popup-close-button:hover {
+    color: #fff !important;
+}
+.tactical-card-header {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.4);
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+}
+.tactical-card-title {
+    font-family: var(--font-mono, 'Orbitron', monospace);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: uppercase;
+}
+.tactical-badge {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.68rem;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.tactical-card-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    font-size: 0.85rem;
+}
+.tactical-desc {
+    font-size: 0.88rem;
+    color: #f1f5f9;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 6px 8px;
+    border-radius: 4px;
+    border-left: 2px solid var(--theme-color);
+    word-break: break-word;
+}
+.tactical-meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    gap: 8px;
+}
+.tactical-timer-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 4px;
+    margin-top: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.tactical-card-footer {
+    padding: 6px 12px 8px 12px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* BFT Real-Time Beacons */
+.bft-beacon-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+.bft-pulse-ring {
+    position: absolute;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    animation: bft-pulse-anim 2.2s infinite ease-out;
+    pointer-events: none;
+}
+.bft-beacon-core {
+    position: relative;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    border: 2px solid #ffffff;
+    box-shadow: 0 0 10px rgba(0,0,0,0.9);
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+}
+.bft-team-label {
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.85);
+    color: #ffffff;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-family: var(--font-mono, monospace);
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+
+@keyframes bft-pulse-anim {
+    0% {
+        transform: scale(0.6);
+        opacity: 0.9;
+    }
+    70% {
+        transform: scale(1.7);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(1.7);
+        opacity: 0;
+    }
+}
+
+/* Marker Expiring Flashing */
+.intel-expiring {
+    animation: intel-flash 1s infinite alternate;
+}
+@keyframes intel-flash {
+    from { filter: drop-shadow(0 0 2px #ff4444); }
+    to { filter: drop-shadow(0 0 10px #ff4444) brightness(1.3); }
+}
+
+/* Out of Bounds HUD Styling */
+.bft-hud-panel {
+    backdrop-filter: blur(6px);
+    transition: all 0.3s ease;
+}
+.bft-hud-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+.bft-hud-badge {
+    background: rgba(255,170,0,0.25);
+    color: #ffaa00;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 0.7rem;
+}
+.bft-out-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 170, 0, 0.3);
+    border-radius: 4px;
+    padding: 5px 8px;
+}
+.bft-out-item-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    color: #ffcc00;
+}
+.bft-out-item-gps {
+    color: #94a3b8;
+    font-size: 0.7rem;
+}
+
+/* Quick transmit floating button */
+.bft-quick-btn {
+    transition: transform 0.2s, background-color 0.2s;
+}
+.bft-quick-btn:hover {
+    transform: scale(1.05);
+}
+.bft-quick-btn:active {
+    transform: scale(0.95);
+}
