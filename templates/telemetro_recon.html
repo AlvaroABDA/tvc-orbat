@@ -760,9 +760,14 @@
                         <span style="color: #555;">|</span>
                         <span id="cam-lrf-status" style="color: var(--accent-cyan); font-weight: bold;">LRF: STANDBY</span>
                     </div>
-                    <button class="btn-header" onclick="closeCameraView()" style="padding: 4px 10px; font-size: 0.75rem;">
-                        SALIR DEL VISOR
-                    </button>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <button type="button" id="btn-calib-heading" class="btn-header" onclick="toggleInvertHeading()" style="padding: 4px 8px; font-size: 0.72rem; color: #00ffcc;" title="Invertir rumbo 180° si la brújula apunta en dirección opuesta">
+                            ⚙️ INVERTIR 180°
+                        </button>
+                        <button type="button" class="btn-header" onclick="closeCameraView()" style="padding: 4px 10px; font-size: 0.75rem;">
+                            SALIR
+                        </button>
+                    </div>
                 </div>
                 <!-- Cinta de Rumbo Digital Táctica -->
                 <div class="compass-tape-container">
@@ -1129,22 +1134,80 @@
             isAimingOnTarget = false;
         }
 
+        // Algoritmo matemático trigonométrico de compensación 3D (W3C standard)
+        // Convierte los ángulos Euler (alpha, beta, gamma) en un rumbo de brújula verdadero
+        // independientemente de si el móvil se sostiene vertical (modo cámara) o plano (modo brújula).
+        function calculateCompassHeading(alpha, beta, gamma) {
+            if (alpha === null || beta === null || gamma === null) return 0;
+
+            const degToRad = Math.PI / 180;
+            const _x = beta ? beta * degToRad : 0; // Pitch [-180, 180)
+            const _y = gamma ? gamma * degToRad : 0; // Roll [-90, 90)
+            const _z = alpha ? alpha * degToRad : 0; // Yaw [0, 360)
+
+            const cX = Math.cos(_x);
+            const cY = Math.cos(_y);
+            const cZ = Math.cos(_z);
+            const sX = Math.sin(_x);
+            const sY = Math.sin(_y);
+            const sZ = Math.sin(_z);
+
+            // Matriz de rotación en espacio terrestre
+            // Vector apuntando hacia el horizonte desde la cámara trasera
+            const Vx = -cZ * sY - sZ * sX * cY;
+            const Vy = -sZ * sY + cZ * sX * cY;
+
+            // Arco tangente para calcular rumbo en plano horizontal
+            let heading = Math.atan2(Vx, Vy) * (180 / Math.PI);
+
+            // Normalizar a [0, 360)
+            if (heading < 0) {
+                heading += 360;
+            }
+
+            return heading;
+        }
+
+        let userHeadingOffset = 0; // Offset de calibración manual si el sensor tiene desviación
+
+        function toggleInvertHeading() {
+            userHeadingOffset = (userHeadingOffset === 0) ? 180 : 0;
+            const btn = document.getElementById('btn-calib-heading');
+            if (btn) {
+                btn.style.color = userHeadingOffset === 180 ? '#ffcc00' : '#00ffcc';
+                btn.textContent = userHeadingOffset === 180 ? '🔄 INV 180°' : '⚙️ CALIB';
+            }
+            checkAzimuthAim();
+        }
+
         function handleOrientation(e) {
             let heading = null;
 
-            // iOS
-            if (e.webkitCompassHeading !== undefined) {
+            // 1. En iOS Safari, webkitCompassHeading ya calcula el rumbo horario directamente
+            if (typeof e.webkitCompassHeading !== 'undefined' && e.webkitCompassHeading !== null) {
                 heading = e.webkitCompassHeading;
-            } 
-            // Android / W3C
+            }
+            // 2. En Android / navegadores modernos con orientación absoluta
             else if (e.alpha !== null) {
-                heading = e.absolute ? e.alpha : (360 - e.alpha);
+                if (e.beta !== null && e.gamma !== null) {
+                    // Si el teléfono está levantado verticalmente para mirar por la cámara
+                    heading = calculateCompassHeading(e.alpha, e.beta, e.gamma);
+                } else {
+                    // Fallback para sensor plano
+                    heading = (360 - e.alpha) % 360;
+                }
             }
 
-            if (heading === null) return;
+            if (heading === null || isNaN(heading)) return;
+
+            // Aplicar calibración manual si está activa
+            heading = (heading + userHeadingOffset) % 360;
 
             currentHeading = Math.round(heading);
-            document.getElementById('cam-heading-val').textContent = `${String(currentHeading).padStart(3, '0')}°`;
+            const headingValEl = document.getElementById('cam-heading-val');
+            if (headingValEl) {
+                headingValEl.textContent = `${String(currentHeading).padStart(3, '0')}°`;
+            }
 
             // Actualizar inclinación (pitch / beta)
             if (e.beta !== null && e.beta !== undefined) {
