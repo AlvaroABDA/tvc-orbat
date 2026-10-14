@@ -476,6 +476,15 @@
         let currentRedirectUrl = null;
 
         function handleCardClick(minigame, isUnlocked, redirectUrl) {
+            // Intentar activar pantalla completa en el gesto de pulsación
+            try {
+                let elem = document.documentElement;
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
+                    else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+                }
+            } catch (e) {}
+
             if (isUnlocked) {
                 window.location.href = redirectUrl;
             } else {
@@ -512,6 +521,13 @@
                 });
                 const data = await res.json();
                 if (data.success) {
+                    try {
+                        let elem = document.documentElement;
+                        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                            if (elem.requestFullscreen) elem.requestFullscreen().catch(() => {});
+                            else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
+                        }
+                    } catch (e) {}
                     window.location.href = currentRedirectUrl;
                 } else {
                     errDiv.textContent = data.message || 'Código incorrecto.';

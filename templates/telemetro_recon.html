@@ -647,10 +647,10 @@
 
     <!-- Top Bar -->
     <header class="telemetro-header">
-        <a href="/simulacion" class="btn-header">
+        <button onclick="exitAndReturn('/simulacion')" class="btn-header">
             <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
             SIMULACIÓN
-        </a>
+        </button>
         <div class="header-title-box">
             <h1>TELÉMETRO RECON</h1>
             <span>FACCIÓN: {{ user_faction | upper }}</span>
@@ -1532,6 +1532,31 @@
             // Disparar la comprobación de puntería
             checkAzimuthAim();
         }
+
+        // Salir de pantalla completa y navegar
+        function exitAndReturn(targetUrl = '/simulacion') {
+            try {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                }
+            } catch (e) {}
+            window.location.href = targetUrl;
+        }
+
+        // Salto automático a pantalla completa en la primera interacción (toque/clic) del usuario
+        function autoEnterFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                let elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(() => {});
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                }
+            }
+        }
+        document.addEventListener('touchstart', autoEnterFullscreen, { once: true, passive: true });
+        document.addEventListener('click', autoEnterFullscreen, { once: true });
     </script>
 </body>
 </html>

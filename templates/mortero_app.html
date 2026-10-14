@@ -93,7 +93,7 @@
             
             <!-- HEADER AISLADO -->
             <div id="mortero-panel-header">
-                <button class="btn-volver" onclick="window.location.href='/'">
+                <button class="btn-volver" onclick="exitAndReturn('/simulacion')">
                     <span class="material-symbols-outlined">arrow_back</span>
                     <span>VOLVER</span>
                 </button>
@@ -244,6 +244,31 @@
                 }
             }
         }
+
+        // Salir de pantalla completa y volver a la vista anterior
+        function exitAndReturn(targetUrl = '/simulacion') {
+            try {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                }
+            } catch (e) {}
+            window.location.href = targetUrl;
+        }
+
+        // Salto automático a pantalla completa en la primera interacción (toque/clic) del usuario
+        function autoEnterFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                let elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(() => {});
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                }
+            }
+        }
+        document.addEventListener('touchstart', autoEnterFullscreen, { once: true, passive: true });
+        document.addEventListener('click', autoEnterFullscreen, { once: true });
     </script>
 </body>
 </html>

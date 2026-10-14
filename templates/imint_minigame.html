@@ -84,10 +84,15 @@
     </style>
 </head>
 <body>
-    <div class="header" style="position: relative;">
-        <button onclick="document.getElementById('modal-instrucciones-imint').style.display='flex'" style="position: absolute; left: 15px; top: 15px; background: transparent; border: 1px solid #555; color: #fff; padding: 5px 10px; cursor: pointer; border-radius: 4px; font-weight: bold;" title="Instrucciones">?</button>
-        <h1>SISTEMA IMINT</h1>
-        <p>OP: {{ poi.nombre }}</p>
+    <div class="header" style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 5px 10px;">
+        <button onclick="exitAndReturn('/simulacion')" style="background: rgba(255,255,255,0.08); border: 1px solid #555; color: #fff; padding: 6px 12px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
+            <span>◀</span> VOLVER
+        </button>
+        <div style="text-align: center;">
+            <h1 style="margin: 0; font-size: 1.1rem;">SISTEMA IMINT</h1>
+            <p style="margin: 2px 0 0 0; font-size: 0.8rem;">OP: {{ poi.nombre }}</p>
+        </div>
+        <button onclick="document.getElementById('modal-instrucciones-imint').style.display='flex'" style="background: rgba(255,255,255,0.08); border: 1px solid #555; color: #fff; padding: 6px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 0.85rem;" title="Instrucciones">?</button>
     </div>
 
     <!-- FASE 1: Selección de Contacto -->
@@ -352,6 +357,31 @@
                 alert("Error de comunicaciones.");
             }
         }
+
+        // Salir de pantalla completa y navegar
+        function exitAndReturn(targetUrl = '/simulacion') {
+            try {
+                if (document.fullscreenElement || document.webkitFullscreenElement) {
+                    if (document.exitFullscreen) document.exitFullscreen();
+                    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                }
+            } catch (e) {}
+            window.location.href = targetUrl;
+        }
+
+        // Salto automático a pantalla completa en la primera interacción (toque/clic) del usuario
+        function autoEnterFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                let elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(() => {});
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                }
+            }
+        }
+        document.addEventListener('touchstart', autoEnterFullscreen, { once: true, passive: true });
+        document.addEventListener('click', autoEnterFullscreen, { once: true });
     </script>
 
     <!-- Modal Instrucciones IMINT -->
