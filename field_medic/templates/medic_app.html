@@ -8,11 +8,11 @@
     <meta name="theme-color" content="#111418">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
-    <style>
         :root {
-            --bg-dark: #0a0c0e;
-            --panel-bg: rgba(18, 22, 28, 0.95);
-            --border-color: rgba(255, 255, 255, 0.15);
+            --bg-dark: #07090b;
+            --glass-panel-bg: rgba(14, 18, 24, 0.72);
+            --glass-panel-border: rgba(255, 255, 255, 0.12);
+            --glass-panel-border-subtle: rgba(255, 255, 255, 0.07);
             --accent-cyan: #00f0ff;
             --accent-gold: #daa520;
             --accent-green: #2ecc71;
@@ -32,51 +32,73 @@
             overflow-x: hidden;
             display: flex; flex-direction: column;
             user-select: none;
+            background-image: 
+                radial-gradient(circle at 50% 10%, rgba(0, 240, 255, 0.04) 0%, transparent 60%),
+                radial-gradient(circle at 90% 90%, rgba(255, 51, 68, 0.03) 0%, transparent 50%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
         }
 
-        /* Top Bar Médica */
+        /* Top Bar Médica Flotante / Vidrio Táctico Duro */
         .medic-header {
-            background: #111418;
-            border-bottom: 1px solid var(--border-color);
-            padding: 8px 14px;
+            position: sticky;
+            top: 0;
+            background: rgba(10, 14, 18, 0.78);
+            border-bottom: 1px solid var(--glass-panel-border);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 10px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
         }
 
         .btn-header {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-panel-border);
             color: #fff;
-            padding: 6px 12px;
+            padding: 8px 14px;
             border-radius: 4px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
-            font-size: 0.8rem;
+            gap: 6px;
+            font-size: 0.82rem;
             font-family: 'Share Tech Mono', monospace;
             text-decoration: none;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        .btn-header:active {
+            background: rgba(255, 255, 255, 0.12);
+            transform: scale(0.97);
         }
 
         .reanim-counter-badge {
-            background: rgba(255, 51, 68, 0.15);
-            border: 1px solid var(--accent-red);
-            padding: 4px 10px;
+            background: rgba(255, 51, 68, 0.1);
+            border: 1px solid rgba(255, 51, 68, 0.5);
+            padding: 6px 12px;
             border-radius: 4px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             color: #fff;
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: bold;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 0 12px rgba(255, 51, 68, 0.2);
         }
 
         .reanim-cross {
             color: var(--accent-red);
-            font-size: 1.1rem;
+            font-size: 1.15rem;
             font-weight: 900;
         }
 
@@ -85,58 +107,53 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 15px;
-            max-width: 500px;
+            padding: 16px;
+            max-width: 520px;
             width: 100%;
             margin: 0 auto;
-            gap: 15px;
+            gap: 16px;
         }
 
+        /* Paneles Glass Táctico Duro (Sin adornos ni embellecedores en esquinas) */
         .tactical-card {
             position: relative;
-            background: var(--panel-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            backdrop-filter: blur(10px);
-        }
-
-        .c-tl, .c-tr, .c-bl, .c-br {
-            position: absolute;
-            width: 8px; height: 8px;
-            pointer-events: none;
-        }
-        .c-tl { top: -1px; left: -1px; border-top: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
-        .c-tr { top: -1px; right: -1px; border-top: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
-        .c-bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
-        .c-br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
-
-        /* Monitor de Estado Médico (Rojo / Amarillo / Verde) */
-        .patient-monitor {
-            padding: 12px;
+            background: var(--glass-panel-bg);
+            border: 1px solid var(--glass-panel-border);
             border-radius: 6px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 15px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* Monitor de Estado Médico (Rojo / Amarillo / Verde) con Vidrio Esmerilado Duro */
+        .patient-monitor {
+            padding: 14px 16px;
+            border-radius: 4px;
+            border: 1px solid var(--glass-panel-border);
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            transition: all 0.4s ease;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .patient-monitor.state-red {
-            background: rgba(255, 51, 68, 0.2);
-            border-color: var(--accent-red);
-            box-shadow: 0 0 15px rgba(255, 51, 68, 0.3);
+            background: rgba(255, 51, 68, 0.12);
+            border-color: rgba(255, 51, 68, 0.6);
+            box-shadow: 0 4px 20px rgba(255, 51, 68, 0.25), inset 0 0 15px rgba(255, 51, 68, 0.1);
         }
         .patient-monitor.state-yellow {
-            background: rgba(218, 165, 32, 0.2);
-            border-color: var(--accent-gold);
-            box-shadow: 0 0 15px rgba(218, 165, 32, 0.3);
+            background: rgba(218, 165, 32, 0.12);
+            border-color: rgba(218, 165, 32, 0.6);
+            box-shadow: 0 4px 20px rgba(218, 165, 32, 0.25), inset 0 0 15px rgba(218, 165, 32, 0.1);
         }
         .patient-monitor.state-green {
-            background: rgba(46, 204, 113, 0.2);
-            border-color: var(--accent-green);
-            box-shadow: 0 0 15px rgba(46, 204, 113, 0.3);
+            background: rgba(46, 204, 113, 0.12);
+            border-color: rgba(46, 204, 113, 0.6);
+            box-shadow: 0 4px 20px rgba(46, 204, 113, 0.25), inset 0 0 15px rgba(46, 204, 113, 0.1);
         }
 
         .monitor-dot {
@@ -149,51 +166,59 @@
             to { transform: scale(1.3); opacity: 1; }
         }
 
-        /* Botón Táctico de Intervención */
+        /* Botón Táctico Flotante Duro (Glass Militar) */
         .btn-action-large {
             width: 100%;
-            padding: 18px 20px;
-            border-radius: 6px;
+            padding: 16px 20px;
+            border-radius: 4px;
             font-family: 'Orbitron', sans-serif;
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 900;
             letter-spacing: 2px;
             cursor: pointer;
-            border: 2px solid;
+            border: 1px solid;
             text-transform: uppercase;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            transition: transform 0.08s ease, filter 0.08s ease;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+            transition: all 0.15s ease;
+            position: relative;
         }
         .btn-action-large:active {
-            transform: scale(0.97);
-            filter: brightness(1.3);
+            transform: translateY(2px) scale(0.99);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            filter: brightness(1.2);
         }
 
         .btn-red {
-            background: linear-gradient(135deg, #8b0000 0%, #ff3344 100%);
-            border-color: #ff9999;
+            background: rgba(255, 51, 68, 0.2);
+            border-color: var(--accent-red);
             color: #fff;
+            box-shadow: 0 8px 25px rgba(255, 51, 68, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
         .btn-cyan {
-            background: linear-gradient(135deg, #005577 0%, #00f0ff 100%);
-            border-color: #b3f7ff;
-            color: #000;
+            background: rgba(0, 240, 255, 0.16);
+            border-color: var(--accent-cyan);
+            color: #fff;
+            box-shadow: 0 8px 25px rgba(0, 240, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
         .btn-green {
-            background: linear-gradient(135deg, #1e824c 0%, #2ecc71 100%);
-            border-color: #a3e4d7;
+            background: rgba(46, 204, 113, 0.2);
+            border-color: var(--accent-green);
             color: #fff;
+            box-shadow: 0 8px 25px rgba(46, 204, 113, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.2);
         }
 
-        /* Barra de Progreso */
+        /* Barra de Progreso Glass */
         .progress-bar-wrap {
             width: 100%;
-            height: 12px;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid var(--border-color);
-            border-radius: 3px;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--glass-panel-border);
+            border-radius: 2px;
             overflow: hidden;
-            margin: 10px 0;
+            margin: 12px 0;
+            backdrop-filter: blur(8px);
         }
         .progress-bar-fill {
             height: 100%;
@@ -220,10 +245,10 @@
         .scanner-reticle {
             position: absolute;
             width: 250px; height: 250px;
-            border: 2px dashed #00f0ff;
-            border-radius: 12px;
+            border: 2px solid #00f0ff;
+            border-radius: 4px;
             pointer-events: none;
-            box-shadow: 0 0 0 9999px rgba(0,0,0,0.6);
+            box-shadow: 0 0 0 9999px rgba(0,0,0,0.65);
         }
     </style>
 </head>
@@ -250,8 +275,7 @@
     <div class="content-area">
 
         <!-- ==================== PANTALLA INSTALADOR PWA (SI NO ESTÁ INSTALADA) ==================== -->
-        <section id="view-pwa-install" class="tactical-card" style="display: none; border-color: var(--accent-cyan);">
-            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
+        <section id="view-pwa-install" class="tactical-card" style="display: none; border-color: rgba(0, 240, 255, 0.4);">
             <div style="text-align: center; margin-bottom: 12px;">
                 <span class="material-symbols-outlined" style="font-size: 42px; color: var(--accent-cyan);">install_mobile</span>
                 <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.15rem; margin: 6px 0; color: #fff;">DESCARGAR APP FIELD MEDIC</h2>
@@ -266,18 +290,17 @@
                 📲 INSTALAR EN EL MÓVIL
             </button>
 
-            <div id="pwa-ios-instructions" style="display: none; background: rgba(0,0,0,0.5); border: 1px dashed var(--border-color); border-radius: 4px; padding: 10px; font-size: 0.78rem; color: #aaa; line-height: 1.4; margin-bottom: 10px;">
+            <div id="pwa-ios-instructions" style="display: none; background: rgba(0,0,0,0.5); border: 1px dashed var(--glass-panel-border); border-radius: 4px; padding: 10px; font-size: 0.78rem; color: #aaa; line-height: 1.4; margin-bottom: 10px;">
                 <b>En iPhone / Safari:</b> Pulsa el botón de compartir (<span style="font-size: 14px;">⎋</span>) y selecciona <b>"Añadir a la pantalla de inicio"</b>.
             </div>
 
-            <button class="btn-header" onclick="skipInstallAndOpen()" style="width: 100%; justify-content: center; background: transparent; border: 1px dashed var(--border-color); color: #888; font-size: 0.75rem; padding: 8px;">
+            <button class="btn-header" onclick="skipInstallAndOpen()" style="width: 100%; justify-content: center; background: transparent; border: 1px dashed var(--glass-panel-border); color: #888; font-size: 0.75rem; padding: 8px;">
                 CONTINUAR EN EL NAVEGADOR
             </button>
         </section>
 
         <!-- ==================== PANTALLA 0: SELECCIÓN / ESCANEO DE PACIENTE ==================== -->
         <section id="view-scan-patient" class="tactical-card" style="display: block;">
-            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
             <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin: 0 0 8px 0; color: #fff;">ATENCIÓN MÉDICA TÁCTICA</h2>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px; line-height: 1.4;">
                 Escanee el código QR del carnet del operador herido para iniciar el protocolo de triaje y tratamiento.
@@ -289,13 +312,13 @@
 
             {% if user_role == 'admin' %}
             <!-- Selector exclusivo de Admin para forzar escenario en pruebas -->
-            <div style="background: rgba(255,170,0,0.1); border: 1px dashed var(--accent-gold); border-radius: 6px; padding: 10px; margin-bottom: 15px;">
-                <label style="font-size: 0.72rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace; display: block; margin-bottom: 6px;">[ADMIN] FORZAR TIPO DE LESIÓN</label>
+            <div style="background: rgba(255,170,0,0.06); border: 1px solid rgba(218,165,32,0.3); border-radius: 4px; padding: 12px; margin-bottom: 15px; backdrop-filter: blur(8px);">
+                <label style="font-size: 0.72rem; color: var(--accent-gold); font-family: 'Share Tech Mono', monospace; display: block; margin-bottom: 8px;">[ADMIN] FORZAR TIPO DE LESIÓN</label>
                 <div style="display: flex; gap: 8px;">
                     <button type="button" class="btn-header active-injury-tab" id="btn-select-hemorrhage" onclick="selectInjuryType('HEMORRAGIA_ACTIVA')" style="flex: 1; justify-content: center; border-color: var(--accent-red); color: #fff; background: rgba(255,51,68,0.2);">
                         HEMORRAGIA
                     </button>
-                    <button type="button" class="btn-header" id="btn-select-pneumothorax" onclick="selectInjuryType('NEUMOTORAX_TENSION')" style="flex: 1; justify-content: center; border-color: #555; color: #aaa;">
+                    <button type="button" class="btn-header" id="btn-select-pneumothorax" onclick="selectInjuryType('NEUMOTORAX_TENSION')" style="flex: 1; justify-content: center; border-color: rgba(255,255,255,0.15); color: #888;">
                         NEUMOTÓRAX
                     </button>
                 </div>
@@ -303,18 +326,17 @@
             {% endif %}
 
             <!-- Entrada de contingencia manual por si la cámara física falla -->
-            <div style="border-top: 1px solid var(--border-color); padding-top: 15px; margin-top: 10px;">
+            <div style="border-top: 1px solid var(--glass-panel-border); padding-top: 15px; margin-top: 10px;">
                 <label style="font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">INGRESO MANUAL DE UID / TOKEN</label>
-                <div style="display: flex; gap: 8px; margin-top: 5px;">
-                    <input type="text" id="manual-uid-input" placeholder="Ej: SYL-042 o UID" style="flex: 1; padding: 10px; background: #000; border: 1px solid var(--border-color); color: #fff; font-family: 'Share Tech Mono', monospace; border-radius: 4px;">
-                    <button class="btn-header" onclick="submitManualPatient()" style="padding: 10px 14px;">CARGAR</button>
+                <div style="display: flex; gap: 8px; margin-top: 8px;">
+                    <input type="text" id="manual-uid-input" placeholder="Ej: SYL-042 o UID" style="flex: 1; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-panel-border); color: #fff; font-family: 'Share Tech Mono', monospace; border-radius: 4px; outline: none; backdrop-filter: blur(8px);">
+                    <button class="btn-header" onclick="submitManualPatient()" style="padding: 10px 16px;">CARGAR</button>
                 </div>
             </div>
         </section>
 
         <!-- ==================== PANTALLA 1: CASO Y CONTROL DE HEMORRAGIA ==================== -->
         <section id="view-hemorrhage" class="tactical-card" style="display: none;">
-            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
             
             <!-- Monitor Rojo -->
             <div class="patient-monitor state-red" id="hemorrhage-monitor">
@@ -338,7 +360,7 @@
             </div>
 
             <!-- Canvas Riel Precisión -->
-            <canvas id="hemorrhage-canvas" width="450" height="110" style="width: 100%; border-radius: 6px; margin: 10px 0; background: #000;"></canvas>
+            <canvas id="hemorrhage-canvas" width="450" height="110" style="width: 100%; border-radius: 4px; margin: 10px 0; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-panel-border);"></canvas>
 
             <button class="btn-action-large btn-red" id="btn-tap-hemorrhage" onclick="onHemorrhageTap()">
                 APLICAR PRESIÓN
@@ -347,7 +369,6 @@
 
         <!-- ==================== PANTALLA 1 ALTERNATIVA: NEUMOTÓRAX A TENSIÓN ==================== -->
         <section id="view-pneumothorax" class="tactical-card" style="display: none;">
-            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
             
             <!-- Monitor Rojo -->
             <div class="patient-monitor state-red" id="pneumothorax-monitor">
@@ -371,7 +392,7 @@
             </div>
 
             <!-- Canvas Radial Manómetro Neumotórax -->
-            <canvas id="pneumothorax-canvas" width="450" height="180" style="width: 100%; border-radius: 6px; margin: 10px 0; background: #000;"></canvas>
+            <canvas id="pneumothorax-canvas" width="450" height="180" style="width: 100%; border-radius: 4px; margin: 10px 0; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-panel-border);"></canvas>
 
             <button class="btn-action-large btn-red" id="btn-tap-pneumothorax"
                     onmousedown="onPneumoStartHold(event)" onmouseup="onPneumoReleaseHold(event)"
@@ -382,7 +403,6 @@
 
         <!-- ==================== PANTALLA 2: ESTABILIZACIÓN RÍTMICA ==================== -->
         <section id="view-stabilization" class="tactical-card" style="display: none;">
-            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
 
             <!-- Monitor Amarillo -->
             <div class="patient-monitor state-yellow" id="stabilization-monitor">
@@ -406,7 +426,7 @@
             </div>
 
             <!-- Canvas ECG -->
-            <canvas id="stabilization-canvas" width="450" height="130" style="width: 100%; border-radius: 6px; margin: 10px 0; background: #000;"></canvas>
+            <canvas id="stabilization-canvas" width="450" height="130" style="width: 100%; border-radius: 4px; margin: 10px 0; background: rgba(0,0,0,0.6); border: 1px solid var(--glass-panel-border);"></canvas>
 
             <button class="btn-action-large btn-green" id="btn-tap-stabilization" onclick="onStabilizationTap()">
                 PULSAR RITMO VITAL
@@ -415,7 +435,6 @@
 
         <!-- ==================== PANTALLA 3: RESUMEN Y CIERRE ==================== -->
         <section id="view-summary" class="tactical-card" style="display: none;">
-            <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
 
             <!-- Monitor Verde -->
             <div class="patient-monitor state-green">
@@ -426,7 +445,7 @@
                 <div class="monitor-dot" style="background: var(--accent-green); box-shadow: 0 0 10px var(--accent-green);"></div>
             </div>
 
-            <div style="background: rgba(0,0,0,0.4); border: 1px dashed var(--border-color); border-radius: 6px; padding: 14px; font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.7;">
+            <div style="background: rgba(0,0,0,0.45); border: 1px solid var(--glass-panel-border); border-radius: 4px; padding: 14px; font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; margin-bottom: 20px; line-height: 1.7; backdrop-filter: blur(8px);">
                 <div>PACIENTE: <b id="sum-patient-name" style="color: #fff;">--</b> (<span id="sum-patient-uid">--</span>)</div>
                 <div>LESIÓN FICTICIA: <span style="color: #ffaa00;">HEMORRAGIA ACTIVA</span></div>
                 <div>CONTROL HEMORRAGIA: <b style="color: var(--accent-green);">SÍ (100%)</b></div>

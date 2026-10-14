@@ -99,26 +99,17 @@
             display: flex;
         }
 
-        /* Tactical Boxes */
+        /* Tactical Boxes - Glass Táctico Duro */
         .tactical-card {
             position: relative;
             background: var(--panel-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 18px;
-            backdrop-filter: blur(10px);
+            border-radius: 6px;
+            padding: 20px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
-
-        .c-tl, .c-tr, .c-bl, .c-br {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            pointer-events: none;
-        }
-        .c-tl { top: -1px; left: -1px; border-top: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
-        .c-tr { top: -1px; right: -1px; border-top: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
-        .c-bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
-        .c-br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--accent-cyan); border-right: 2px solid var(--accent-cyan); }
 
         /* OP List Item */
         .op-item {
@@ -665,7 +656,6 @@
         <!-- ==================== PANTALLA 1: SELECTOR DE OP ==================== -->
         <section id="view-selector" class="view-section active">
             <div class="tactical-card">
-                <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
                 <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin: 0 0 6px 0; color: #fff;">PUNTOS DE OBSERVACIÓN DISPONIBLES</h2>
                 <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 15px 0;">
                     Seleccione la estación permanente de su facción para desplegar el OP secundario a 50 metros. Recuerde que debe alternar entre OPs según doctrina táctica.
@@ -719,7 +709,6 @@
         <!-- ==================== PANTALLA 2: TRACKER GPS ==================== -->
         <section id="view-tracker" class="view-section">
             <div class="tactical-card">
-                <div class="c-tl"></div><div class="c-tr"></div><div class="c-bl"></div><div class="c-br"></div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                     <div>
                         <div style="font-size: 0.75rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">ENLACE GPS OPERATIVO</div>
