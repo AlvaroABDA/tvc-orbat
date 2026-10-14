@@ -229,9 +229,9 @@
 
     <!-- Cabecera Médica Oficial -->
     <header class="medic-header">
-        <button onclick="exitAndReturn('/simulacion')" class="btn-header">
+        <button onclick="exitAndReturn()" class="btn-header">
             <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
-            VOLVER
+            SALIR
         </button>
 
         <div style="text-align: center;">
@@ -600,14 +600,18 @@
         }
 
         // Salir a pantalla completa y navegar
-        function exitAndReturn(targetUrl = '/simulacion') {
+        function exitAndReturn() {
             try {
                 if (document.fullscreenElement || document.webkitFullscreenElement) {
                     if (document.exitFullscreen) document.exitFullscreen();
                     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
                 }
             } catch (e) {}
-            window.location.href = targetUrl;
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = '/';
+            }
         }
 
         // Auto-fullscreen al primer toque táctil
