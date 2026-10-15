@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import random
 import math
@@ -13,6 +14,8 @@ OBSERVATION_POINT_COOLDOWN = 10 # minutes
 CENTER_LAT = 1136.5
 CENTER_LNG = 1247.0
 MAX_RADIUS_PX = 640
+
+DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'orbat.db')
 
 def get_grid_coordinate(map_lat, map_lng):
     canvas_y = 2000 - map_lat
@@ -61,7 +64,7 @@ def calculate_distance(lat1, lng1, lat2, lng2):
     return (px_dist / 32.0) * 50.0
 
 def get_db_connection():
-    conn = sqlite3.connect('data/orbat.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 

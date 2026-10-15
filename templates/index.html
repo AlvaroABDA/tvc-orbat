@@ -500,6 +500,10 @@
                                     <label>Cadencia (Disparos / Minuto)</label>
                                     <input type="number" id="admin-cadencia" class="form-control" value="5">
                                 </div>
+                                <div class="form-group">
+                                    <label>Duración Radar en Mapa (minutos)</label>
+                                    <input type="number" id="admin-duracion-radar" class="form-control" value="15" min="1" max="60">
+                                </div>
                                 <button id="btn-admin-guardar-artilleria" class="btn primary" style="width: 100%;">Guardar Ajustes</button>
                                 <button id="btn-admin-limpiar-impactos" class="btn outline" style="width: 100%; border-color: var(--danger-color); color: var(--danger-color); margin-top: 10px;">Limpiar Impactos</button>
                             </div>
@@ -527,8 +531,9 @@
                         
                         <div style="margin-top: 2rem; border: 1px solid #444; padding: 1rem; background: rgba(0,0,0,0.2);">
                             <h4>Registro de Impactos Exitosos (Log)</h4>
-                            <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px;">
                                 <button id="btn-admin-refresh-art-log" class="btn outline btn-sm" style="font-size: 0.8rem;">Actualizar Log</button>
+                                <button id="btn-admin-clear-art-log" class="btn outline btn-sm" style="font-size: 0.8rem; border-color: var(--danger-color); color: var(--danger-color);">Limpiar Log</button>
                             </div>
                             <div style="overflow-x: auto;">
                                 <table class="table-tactical">
@@ -1345,8 +1350,8 @@
         window.userFaction = "{{ user_faction }}";
         window.equipoId = "{{ session.get('equipo_id', '') }}";
     </script>
-    <script src="{{ url_for('static', filename='js/main.js') }}?v=55"></script>
-    <script src="{{ url_for('static', filename='js/map.js') }}?v=22"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}?v=56"></script>
+    <script src="{{ url_for('static', filename='js/map.js') }}?v=23"></script>
         </div>
     </div>
     <!-- Modal Instrucciones Mapa Táctico -->

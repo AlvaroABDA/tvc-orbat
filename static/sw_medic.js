@@ -1,7 +1,8 @@
-const CACHE_NAME = 'tvc-medic-v7';
+const CACHE_NAME = 'tvc-medic-v8';
 const ASSETS_TO_CACHE = [
   '/medic',
   '/static/manifest_medic.json',
+  '/static/imgs/medic_icon.png',
   '/static/js/field_medic/episode_storage.js',
   '/static/js/field_medic/hemorrhage_game.js',
   '/static/js/field_medic/pneumothorax_game.js',
@@ -19,8 +20,17 @@ const ASSETS_TO_CACHE = [
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+    caches.open(CACHE_NAME).then(async (cache) => {
+      // Usar Promise.allSettled para que si alguna fuente externa falla no impida la instalación offline
+      await Promise.allSettled(
+        ASSETS_TO_CACHE.map(async (url) => {
+          try {
+            await cache.add(url);
+          } catch (err) {
+            console.warn('[SW Medic] No se pudo cachear:', url, err);
+          }
+        })
+      );
     }).then(() => self.skipWaiting())
   );
 });
@@ -30,7 +40,10 @@ self.addEventListener('activate', (e) => {
     caches.keys().then((keys) => {
       return Promise.all(
         keys.map((k) => {
-          if (k !== CACHE_NAME) return caches.delete(k);
+          if (k !== CACHE_NAME) {
+            console.log('[SW Medic] Borrando cache antigua:', k);
+            return caches.delete(k);
+          }
         })
       );
     }).then(() => self.clients.claim())
@@ -38,10 +51,52 @@ self.addEventListener('activate', (e) => {
 });
 
 self.addEventListener('fetch', (e) => {
-  // Estrategia Network first, falling back to cache
+  // Solo procesar peticiones GET (ignorar POST como sincronizaciones o APIs de backend)
+  if (e.request.method !== 'GET') {
+    return;
+  }
+
+  // Si es una peticion de navegacion (HTML de la aplicacion)
+  if (e.request.mode === 'navigate') {
+    e.respondWith(
+      fetch(e.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(async () => {
+          // Si no hay red, buscar en cache ignorando parametros de query (?token=...)
+          const match = await caches.match(e.request, { ignoreSearch: true });
+          if (match) return match;
+          return caches.match('/medic', { ignoreSearch: true });
+        })
+    );
+    return;
+  }
+
+  // Para recursos estaticos (scripts, css, imagenes, fuentes)
   e.respondWith(
-    fetch(e.request).catch(() => {
-      return caches.match(e.request);
-    })
+    fetch(e.request)
+      .then((response) => {
+        if (response && response.status === 200) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        }
+        return response;
+      })
+      .catch(async () => {
+        // En caso de estar offline, buscar coincidencia ignorando query params (?v=X)
+        const match = await caches.match(e.request, { ignoreSearch: true });
+        if (match) return match;
+        try {
+          const url = new URL(e.request.url);
+          return caches.match(url.pathname, { ignoreSearch: true });
+        } catch (err) {
+          return undefined;
+        }
+      })
   );
 });

@@ -347,7 +347,8 @@ def init_db():
             id INTEGER PRIMARY KEY,
             alcance_base INTEGER DEFAULT 800,
             radio_explosion INTEGER DEFAULT 15,
-            disparos_por_minuto INTEGER DEFAULT 5
+            disparos_por_minuto INTEGER DEFAULT 5,
+            duracion_radar_minutos INTEGER DEFAULT 15
         )
     ''')
     
@@ -397,6 +398,54 @@ def init_db():
             expires_at DATETIME NOT NULL,
             FOREIGN KEY (source_op_id) REFERENCES puntos_interes (id),
             FOREIGN KEY (equipo_id) REFERENCES Equipo (id),
+            FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Mortero_Disparo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            faccion TEXT,
+            origen_x TEXT,
+            origen_y INTEGER,
+            azimut REAL,
+            angulo REAL,
+            pixel_x REAL,
+            pixel_y REAL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            borrado BOOLEAN DEFAULT 0
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Mortero_Historial_Disparos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            faccion_id INTEGER,
+            lat REAL,
+            lng REAL,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Mortero_Radar (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            faccion_id_origen INTEGER,
+            lat REAL,
+            lng REAL,
+            radio REAL,
+            caduca_en DATETIME
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Log_Artilleria (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            faccion_id INTEGER,
+            tipo_objetivo TEXT,
+            objetivo_id TEXT,
+            descripcion TEXT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
         )
     ''')

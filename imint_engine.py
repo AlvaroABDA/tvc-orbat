@@ -6,13 +6,16 @@ import os
 from datetime import datetime, timedelta
 from dynamic_targets_engine import get_grid_coordinate, calculate_distance, CENTER_LAT, CENTER_LNG, MAX_RADIUS_PX, TARGET_MIN_DISTANCE, TARGET_LIFETIME
 
+DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'orbat.db')
+IMINT_DATA_PATH = os.path.join(os.path.dirname(__file__), 'data', 'imint_data.json')
+
 def get_db_connection():
-    conn = sqlite3.connect('data/orbat.db')
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
 def load_imint_data():
-    with open('data/imint_data.json', 'r', encoding='utf-8') as f:
+    with open(IMINT_DATA_PATH, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 def resolve_image_path(filtro, contexto, used_images):

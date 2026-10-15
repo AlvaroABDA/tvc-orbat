@@ -2569,19 +2569,34 @@ async function refreshMorteroState() {
         if(d.pixel_x && d.pixel_y) {
             const PIXELS_PER_METER = 31.71 / 50.0;
             const radiusPx = (data.radio_explosion || 15) * PIXELS_PER_METER;
-            let shotColor = 'red';
-            let shotFill = '#f03';
-            if (d.faccion === 'Syldavia') { shotColor = '#ffaa00'; shotFill = '#ffcc00'; }
-            else if (d.faccion === 'Volkovia') { shotColor = '#0088ff'; shotFill = '#00d2ff'; }
-            else if (d.faccion === 'Khemed') { shotColor = '#00cc00'; shotFill = '#00ff00'; }
+            let shotFill = '#ff4444';
+            if (d.faccion === 'Syldavia') { shotFill = '#e2b938'; }
+            else if (d.faccion === 'Volkovia') { shotFill = '#0088ff'; }
+            else if (d.faccion === 'Khemed') { shotFill = '#00cc00'; }
 
+            // Círculo de impacto: Contorno rojo para ambas facciones y relleno con color de la facción
             L.circle([d.pixel_x, d.pixel_y], {
-                color: shotColor,
-                opacity: 0.3,
-                fillColor: shotFill,
-                fillOpacity: 0.15,
+                color: '#ff2222',       // Contorno rojo
+                weight: 2.5,            // Borde nítido y visible
+                opacity: 0.9,           // Alta visibilidad del contorno
+                fillColor: shotFill,    // Color de la facción
+                fillOpacity: 0.35,      // Relleno visible sobre el terreno
                 radius: radiusPx
-            }).bindPopup(`<b>${d.faccion}</b><br>Impacto: ${d.timestamp}`).addTo(morteroShotsLayer);
+            }).bindPopup(`
+                <div style="font-family: sans-serif; font-size: 0.9rem;">
+                    <b style="color: ${shotFill};">${d.faccion}</b><br>
+                    <span style="color: #bbb; font-size: 0.8rem;">Impacto: ${d.timestamp}</span>
+                </div>
+            `).addTo(morteroShotsLayer);
+
+            // Marcador de punto central del impacto
+            L.circleMarker([d.pixel_x, d.pixel_y], {
+                radius: 2.5,
+                color: '#ff2222',
+                fillColor: '#ff2222',
+                fillOpacity: 1,
+                interactive: false
+            }).addTo(morteroShotsLayer);
         }
     });
     if(!morteroMap.hasLayer(morteroShotsLayer)) {
@@ -2642,6 +2657,9 @@ async function loadAdminArtilleria() {
         document.getElementById('admin-alcance-base').value = data.config.alcance_base;
         document.getElementById('admin-radio-explosion').value = data.config.radio_explosion;
         document.getElementById('admin-cadencia').value = data.config.disparos_por_minuto;
+        if (document.getElementById('admin-duracion-radar')) {
+            document.getElementById('admin-duracion-radar').value = data.config.duracion_radar_minutos || 15;
+        }
     }
     
     if (data.estados) {
@@ -2688,11 +2706,17 @@ document.getElementById('btn-admin-guardar-artilleria')?.addEventListener('click
     const alcance = document.getElementById('admin-alcance-base').value;
     const radio = document.getElementById('admin-radio-explosion').value;
     const cadencia = document.getElementById('admin-cadencia').value;
+    const duracion = document.getElementById('admin-duracion-radar')?.value || 15;
     
     await fetch('/api/admin/artilleria/config', {
         method: 'PUT',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ alcance_base: alcance, radio_explosion: radio, disparos_por_minuto: cadencia })
+        body: JSON.stringify({ 
+            alcance_base: alcance, 
+            radio_explosion: radio, 
+            disparos_por_minuto: cadencia,
+            duracion_radar_minutos: duracion 
+        })
     });
     alert("Ajustes de artillería guardados.");
 });
@@ -3329,27 +3353,54 @@ async function loadAdminArtilleriaLogs() {
     if (!list) return;
     try {
         const res = await fetch('/api/admin/artilleria/logs');
-        if(!res.ok) return;
+        if(!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            list.innerHTML = `<tr><td colspan="5" style="text-align: center; color: #ff6666; padding: 10px;">Error al cargar logs: ${err.error || res.statusText}</td></tr>`;
+            return;
+        }
         const logs = await res.json();
         list.innerHTML = '';
+        if (!logs || logs.length === 0) {
+            list.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #888; padding: 12px;">Sin impactos registrados</td></tr>';
+            return;
+        }
         logs.forEach(log => {
             const tr = document.createElement('tr');
-            const date = new Date(log.timestamp + 'Z').toLocaleString();
+            let dateStr = log.timestamp || '-';
+            try {
+                if (log.timestamp) {
+                    const iso = (log.timestamp.includes('T') ? log.timestamp : log.timestamp.replace(' ', 'T')) + 'Z';
+                    dateStr = new Date(iso).toLocaleString();
+                }
+            } catch(e) {}
             tr.innerHTML = `
-                <td>${date}</td>
-                <td><span style="color: var(--color-${(log.faccion_nombre||'').toLowerCase()});">${log.faccion_nombre}</span></td>
-                <td>${log.tipo_objetivo}</td>
-                <td>${log.objetivo_id}</td>
-                <td>${log.descripcion}</td>
+                <td>${dateStr}</td>
+                <td><span style="color: var(--color-${(log.faccion_nombre||'').toLowerCase()}); font-weight: bold;">${log.faccion_nombre || '-'}</span></td>
+                <td>${log.tipo_objetivo || '-'}</td>
+                <td>${log.objetivo_id || '-'}</td>
+                <td>${log.descripcion || '-'}</td>
             `;
             list.appendChild(tr);
         });
     } catch (e) {
         console.error(e);
+        list.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #ff6666; padding: 10px;">Error de conexión al cargar logs</td></tr>';
     }
 }
 
 document.getElementById('btn-admin-refresh-art-log')?.addEventListener('click', loadAdminArtilleriaLogs);
+document.getElementById('btn-admin-clear-art-log')?.addEventListener('click', async () => {
+    if (confirm("¿Estás seguro de que deseas vaciar el historial de impactos (Log)?")) {
+        try {
+            const res = await fetch('/api/admin/artilleria/logs', { method: 'DELETE' });
+            if (res.ok) {
+                loadAdminArtilleriaLogs();
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+});
 setTimeout(() => { if(typeof loadAdminArtilleriaLogs === 'function') loadAdminArtilleriaLogs(); }, 1200);
 
 // Geo-Validation Toggle Logic

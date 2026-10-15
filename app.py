@@ -1981,6 +1981,78 @@ def api_mortero_fijar():
     
     return jsonify({'status': 'success'})
 
+def ensure_artilleria_tables(conn):
+    try:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Mortero_Config (
+                id INTEGER PRIMARY KEY,
+                alcance_base INTEGER DEFAULT 800,
+                radio_explosion INTEGER DEFAULT 15,
+                disparos_por_minuto INTEGER DEFAULT 5,
+                duracion_radar_minutos INTEGER DEFAULT 15
+            )
+        ''')
+        try:
+            conn.execute('ALTER TABLE Mortero_Config ADD COLUMN duracion_radar_minutos INTEGER DEFAULT 15;')
+        except Exception:
+            pass
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Mortero_Estado (
+                faccion_id INTEGER PRIMARY KEY,
+                activo BOOLEAN DEFAULT 1,
+                lat REAL,
+                lng REAL,
+                ultimo_disparo DATETIME
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Mortero_Disparo (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                faccion TEXT,
+                origen_x TEXT,
+                origen_y INTEGER,
+                azimut REAL,
+                angulo REAL,
+                pixel_x REAL,
+                pixel_y REAL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                borrado BOOLEAN DEFAULT 0
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Mortero_Historial_Disparos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                faccion_id INTEGER,
+                lat REAL,
+                lng REAL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Mortero_Radar (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                faccion_id_origen INTEGER,
+                lat REAL,
+                lng REAL,
+                radio REAL,
+                caduca_en DATETIME
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Log_Artilleria (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                faccion_id INTEGER,
+                tipo_objetivo TEXT,
+                objetivo_id TEXT,
+                descripcion TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
+            )
+        ''')
+        conn.commit()
+    except Exception as e:
+        print("Error en ensure_artilleria_tables:", e)
+
 @app.route('/api/mortero/pintar', methods=['POST'])
 def api_mortero_pintar():
     if 'role' not in session:
@@ -2000,6 +2072,7 @@ def api_mortero_pintar():
         angulo = float(data.get('angulo', 45))
         
         conn = get_db_connection()
+        ensure_artilleria_tables(conn)
         cursor = conn.cursor()
         
         # Obtener config
@@ -2007,6 +2080,13 @@ def api_mortero_pintar():
         alcance_base = config['alcance_base'] if config else 180
         radio_explosion = config['radio_explosion'] if config else 50
         disparos_por_minuto = config['disparos_por_minuto'] if config else 2
+        duracion_radar_minutos = 15
+        if config:
+            try:
+                if 'duracion_radar_minutos' in config.keys() and config['duracion_radar_minutos']:
+                    duracion_radar_minutos = int(config['duracion_radar_minutos'])
+            except Exception:
+                pass
         
         # Obtener estado de este mortero
         estado = cursor.execute('SELECT * FROM Mortero_Estado WHERE faccion_id=?', (faccion_id,)).fetchone()
@@ -2052,12 +2132,12 @@ def api_mortero_pintar():
             (faccion_id, lat, lng, timestamp) VALUES (?, ?, ?, datetime('now'))''', 
             (faccion_id, estado['lat'], estado['lng']))
             
-        # Cleanup old shots (older than 5 minutes)
+        # Cleanup old shots (older than 10 minutes)
         cursor.execute('''DELETE FROM Mortero_Historial_Disparos 
-            WHERE timestamp < datetime('now', '-5 minutes')''')
+            WHERE timestamp < datetime('now', '-10 minutes')''')
             
         # Check Radar Condition
-        # Get all shots from this faction in the last 5 minutes
+        # Get all shots from this faction in the last 10 minutes
         recent_shots = cursor.execute('''SELECT lat, lng FROM Mortero_Historial_Disparos 
             WHERE faccion_id = ?''', (faccion_id,)).fetchall()
             
@@ -2076,13 +2156,13 @@ def api_mortero_pintar():
                 avg_lat = sum([rs['lat'] for rs in recent_shots]) / len(recent_shots)
                 avg_lng = sum([rs['lng'] for rs in recent_shots]) / len(recent_shots)
                 
-                # Cleanup any expired markers first
-                cursor.execute("DELETE FROM Mortero_Radar WHERE caduca_en < datetime('now')")
+                # Cleanup any expired markers or previous marker for this faction
+                cursor.execute("DELETE FROM Mortero_Radar WHERE faccion_id_origen = ? OR caduca_en < datetime('now')", (faccion_id,))
                 
-                # Insert a new radar marker valid for 60 seconds (as requested for testing)
-                cursor.execute('''INSERT INTO Mortero_Radar 
+                # Insert a new radar marker valid for configured duration (e.g. 15 minutes)
+                cursor.execute(f'''INSERT INTO Mortero_Radar 
                     (faccion_id_origen, lat, lng, radio, caduca_en) 
-                    VALUES (?, ?, ?, ?, datetime('now', '+60 seconds'))''',
+                    VALUES (?, ?, ?, ?, datetime('now', '+{int(duracion_radar_minutos)} minutes'))''',
                     (faccion_id, avg_lat, avg_lng, 50.0))
         
         # Update cooldown
@@ -2107,30 +2187,33 @@ def api_mortero_pintar():
         import dynamic_targets_engine
         destroyed_dynamic_targets = dynamic_targets_engine.check_artillery_impact(faccion_id, impacto_lat, impacto_lng, radio_explosion)
         
-        # LOG ARTILLERIA
-        if destruido:
-            cursor.execute('INSERT INTO Log_Artilleria (faccion_id, tipo_objetivo, objetivo_id, descripcion) VALUES (?, ?, ?, ?)', 
-                           (faccion_id, 'CONTRABATERIA', str(enemy_id), 'Mortero enemigo destruido'))
-        if destroyed_dynamic_targets:
-            for tgt in destroyed_dynamic_targets:
-                tgt_id = tgt['id']
-                if tgt_id.startswith('COL-'):
-                    tipo = 'DAÑO COLATERAL'
-                    desc = f'Objetivo Civil {tgt_id} destruido (Pérdida de PC aliado)'
-                elif tgt['is_fake']:
-                    tipo = 'OBJETIVO FALSO'
-                    desc = f'Señuelo civil {tgt_id} impactado por error (Pérdida de PC aliado)'
-                elif tgt['faccion_id'] != faccion_id:
-                    tipo = 'FUEGO AMIGO'
-                    desc = f'Fuego amigo sobre {tgt_id} (Pérdida de PC aliado)'
-                else:
-                    tipo = 'BLANCO VALIDO'
-                    desc = f'Blanco enemigo {tgt_id} impactado y destruido con éxito'
-                    
+        # LOG ARTILLERIA (Safe logging block)
+        try:
+            if destruido:
                 cursor.execute('INSERT INTO Log_Artilleria (faccion_id, tipo_objetivo, objetivo_id, descripcion) VALUES (?, ?, ?, ?)', 
-                               (faccion_id, tipo, tgt_id, desc))
-        
-        conn.commit()
+                               (faccion_id, 'CONTRABATERIA', str(enemy_id), 'Mortero enemigo destruido'))
+            if destroyed_dynamic_targets:
+                for tgt in destroyed_dynamic_targets:
+                    tgt_id = tgt.get('id', 'TGT')
+                    tgt_id_str = str(tgt_id)
+                    if tgt_id_str.startswith('COL-') or '-COL' in tgt_id_str:
+                        tipo = 'DAÑO COLATERAL'
+                        desc = f'Objetivo Civil {tgt_id_str} destruido (Pérdida de PC aliado)'
+                    elif tgt.get('is_fake'):
+                        tipo = 'OBJETIVO FALSO'
+                        desc = f'Señuelo civil {tgt_id_str} impactado por error (Pérdida de PC aliado)'
+                    elif tgt.get('faccion_id') != faccion_id:
+                        tipo = 'FUEGO AMIGO'
+                        desc = f'Fuego amigo sobre {tgt_id_str} (Pérdida de PC aliado)'
+                    else:
+                        tipo = 'BLANCO VALIDO'
+                        desc = f'Blanco enemigo {tgt_id_str} impactado y destruido con éxito'
+                        
+                    cursor.execute('INSERT INTO Log_Artilleria (faccion_id, tipo_objetivo, objetivo_id, descripcion) VALUES (?, ?, ?, ?)', 
+                                   (faccion_id, tipo, tgt_id_str, desc))
+            conn.commit()
+        except Exception as log_err:
+            print("Error registrando Log_Artilleria:", log_err)
                 
         return jsonify({'lat': impacto_lat, 'lng': impacto_lng, 'enemy_destroyed': destruido, 'dynamic_targets_destroyed': destroyed_dynamic_targets})
     except Exception as e:
@@ -2149,8 +2232,9 @@ def api_mortero_todos():
         faccion_name = request.args.get('faccion')
         
     conn = get_db_connection()
+    ensure_artilleria_tables(conn)
     if session.get('role') == 'admin' and faccion_name == 'All':
-        disparos = conn.execute('SELECT * FROM Mortero_Disparo ORDER BY timestamp DESC LIMIT 300').fetchall()
+        disparos = conn.execute('SELECT * FROM Mortero_Disparo WHERE borrado = 0 ORDER BY timestamp DESC LIMIT 300').fetchall()
         faccion_id = None
     else:
         disparos = conn.execute("SELECT * FROM Mortero_Disparo WHERE faccion = ? AND borrado = 0 AND timestamp >= datetime('now', '-15 minutes') ORDER BY timestamp DESC LIMIT 50", (faccion_name,)).fetchall()
@@ -2200,8 +2284,12 @@ def admin_put_artilleria_config():
     if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
     data = request.json
     conn = get_db_connection()
-    conn.execute('UPDATE Mortero_Config SET alcance_base=?, radio_explosion=?, disparos_por_minuto=? WHERE id=1', 
-                (data.get('alcance_base'), data.get('radio_explosion'), data.get('disparos_por_minuto')))
+    ensure_artilleria_tables(conn)
+    duracion = int(data.get('duracion_radar_minutos', 15) or 15)
+    conn.execute('''UPDATE Mortero_Config 
+                    SET alcance_base=?, radio_explosion=?, disparos_por_minuto=?, duracion_radar_minutos=? 
+                    WHERE id=1''', 
+                (data.get('alcance_base'), data.get('radio_explosion'), data.get('disparos_por_minuto'), duracion))
     conn.commit()
     conn.close()
     return jsonify({'status': 'success'})
@@ -2226,11 +2314,16 @@ def admin_delete_artilleria():
     conn.close()
     return jsonify({'status': 'success'})
 
-@app.route('/api/admin/artilleria/logs', methods=['GET'])
+@app.route('/api/admin/artilleria/logs', methods=['GET', 'DELETE'])
 def admin_get_artilleria_logs():
     if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
     conn = get_db_connection()
     try:
+        ensure_artilleria_tables(conn)
+        if request.method == 'DELETE':
+            conn.execute('DELETE FROM Log_Artilleria')
+            conn.commit()
+            return jsonify({'status': 'success'})
         logs = conn.execute('SELECT l.*, f.nombre as faccion_nombre FROM Log_Artilleria l LEFT JOIN Faccion f ON l.faccion_id = f.id ORDER BY timestamp DESC').fetchall()
         return jsonify([dict(r) for r in logs])
     except Exception as e:
@@ -2451,6 +2544,12 @@ def patch_db():
             medic_engine.init_medic_db(conn)
         except Exception as e:
             print("Error inicializando tablas field_medic:", e)
+
+        # Inicializar tablas de Mortero y Log Artilleria
+        try:
+            ensure_artilleria_tables(conn)
+        except Exception as e:
+            print("Error inicializando tablas de artilleria:", e)
 
         conn.close()
 

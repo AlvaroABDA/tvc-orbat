@@ -1265,7 +1265,16 @@ async function loadRadarMarkers() {
                 dashArray: '5, 10'
             }).addTo(map);
             
-            circle.bindPopup('<b>RADAR: Posible artillería enemiga</b>');
+            let expiryHtml = '';
+            if (r.caduca_en) {
+                try {
+                    const caducaIso = (r.caduca_en.includes('T') ? r.caduca_en : r.caduca_en.replace(' ', 'T')) + 'Z';
+                    const diffMs = new Date(caducaIso) - new Date();
+                    const minsLeft = Math.max(0, Math.ceil(diffMs / 60000));
+                    expiryHtml = `<br><span style="font-size: 0.8rem; color: #ff9999;">Activo durante: ~${minsLeft} min</span>`;
+                } catch(e) {}
+            }
+            circle.bindPopup(`<b>RADAR: Posible artillería enemiga</b>${expiryHtml}`);
             radarMarkers.push(circle);
         });
     } catch(e) {
