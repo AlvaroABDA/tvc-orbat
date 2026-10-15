@@ -173,6 +173,18 @@
                             pinBoxes[index - 1].focus();
                         }
                     });
+
+                    box.addEventListener('paste', (e) => {
+                        e.preventDefault();
+                        const text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 4);
+                        if (!text) return;
+                        for (let i = 0; i < pinBoxes.length; i++) {
+                            pinBoxes[i].value = text[i] || '';
+                        }
+                        updateRealPassword();
+                        const nextIndex = Math.min(text.length, pinBoxes.length - 1);
+                        pinBoxes[nextIndex].focus();
+                    });
                 });
                 
                 function updateRealPassword() {

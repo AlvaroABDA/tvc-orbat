@@ -1116,6 +1116,13 @@ function initModal() {
         e.preventDefault();
         
         const id = document.getElementById('eq-id').value;
+        const newPassword = document.getElementById('eq-password') ? document.getElementById('eq-password').value.trim() : '';
+
+        if (newPassword && !/^\d{4}$/.test(newPassword)) {
+            alert('El nuevo PIN debe contener exactamente 4 dígitos numéricos.');
+            return;
+        }
+
         const payload = {
             nombre: document.getElementById('eq-nombre').value,
             faccion_id: document.getElementById('eq-faccion').value,
@@ -1125,7 +1132,7 @@ function initModal() {
             jugadores_manual: document.getElementById('eq-jugadores-manual').checked,
             tipo: document.getElementById('eq-tipo').value,
             codigo: document.getElementById('eq-codigo') ? document.getElementById('eq-codigo').value : '',
-            password: document.getElementById('eq-password') ? document.getElementById('eq-password').value : '',
+            password: newPassword,
             misiones_preferidas: document.getElementById('eq-misiones-preferidas').value,
             tags_comportamiento: document.getElementById('eq-tags') ? document.getElementById('eq-tags').value : '[]',
             estado_medalla: document.getElementById('eq-estado-medalla') ? document.getElementById('eq-estado-medalla').value : 'verde',
@@ -1179,33 +1186,57 @@ function initModal() {
         });
         
         const resJson = await res.json();
+        if (!res.ok) {
+            alert('Error al guardar el expediente: ' + (resJson.error || 'Error del servidor'));
+            return;
+        }
+
         const finalId = id ? id : resJson.id;
+        let uploadErrors = [];
         
         const logoInput = document.getElementById('eq-logo');
         if (logoInput && logoInput.files.length > 0) {
             const formData = new FormData();
             formData.append('logo', logoInput.files[0]);
-            await fetch(`/api/equipos/${finalId}/logo`, {
-                method: 'POST',
-                body: formData
-            });
+            try {
+                const rLogo = await fetch(`/api/equipos/${finalId}/logo`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const dLogo = await rLogo.json();
+                if (!rLogo.ok) uploadErrors.push(dLogo.error || 'Error subiendo logo');
+            } catch (err) {
+                uploadErrors.push('Error de red al subir logo');
+            }
         }
         
         const fotoInput = document.getElementById('eq-foto');
         if (fotoInput && fotoInput.files.length > 0) {
             const formDataFoto = new FormData();
             formDataFoto.append('foto', fotoInput.files[0]);
-            await fetch(`/api/equipos/${finalId}/foto`, {
-                method: 'POST',
-                body: formDataFoto
-            });
+            try {
+                const rFoto = await fetch(`/api/equipos/${finalId}/foto`, {
+                    method: 'POST',
+                    body: formDataFoto
+                });
+                const dFoto = await rFoto.json();
+                if (!rFoto.ok) uploadErrors.push(dFoto.error || 'Error subiendo foto de equipo');
+            } catch (err) {
+                uploadErrors.push('Error de red al subir foto de equipo');
+            }
+        }
+
+        if (uploadErrors.length > 0) {
+            alert('Expediente guardado, pero ocurrieron errores con las imágenes:\n- ' + uploadErrors.join('\n- '));
+        } else {
+            alert('Expediente guardado correctamente.');
         }
 
         closeModal();
         await loadEquipos();
-    if(window.userRole === "admin") loadPOIs();
+        if(window.userRole === "admin") loadPOIs();
         await loadORBAT();
-    initMortero();
+        initMortero();
     });
 }
 
@@ -1357,7 +1388,8 @@ function addMiembroRow(m = null) {
     const tel = m ? (m.telefono || '') : '';
     const email = m ? (m.email || '') : '';
     
-    const fotoBtn = (m && m.id) ? `<button type="button" class="btn primary btn-foto-miembro" title="Subir Foto" style="padding: 0.25rem 0.5rem; margin-right: 5px;" onclick="uploadFotoMiembro(${m.id})">📸</button>` : '';
+    const hasFoto = m && m.foto_url;
+    const fotoBtn = (m && m.id) ? `<button type="button" class="btn primary btn-foto-miembro" title="${hasFoto ? 'Cambiar Foto' : 'Subir Foto'}" style="padding: 0.25rem 0.5rem; margin-right: 5px;" onclick="uploadFotoMiembro(${m.id})">${hasFoto ? '📸✓' : '📸'}</button>` : '';
     const carnetBtn = (m && m.id) ? `<a href="/carnet/${m.id}" target="_blank" title="Ver Carnet" class="btn secondary" style="padding: 0.25rem 0.5rem; text-decoration: none;">🪪</a>` : '<span style="font-size: 0.7rem; color: #888;">(Guardar antes)</span>';
 
     tr.innerHTML = `
@@ -3409,12 +3441,28 @@ window.uploadFotoMiembro = function(id) {
             method: 'POST',
             body: formData
         })
-        .then(res => res.json())
-        .then(data => {
-            if(data.status === 'success') {
+        .then(res => res.json().then(data => ({ status: res.status, ok: res.ok, body: data })))
+        .then(result => {
+            if (result.ok && result.body.status === 'success') {
                 alert('Foto de jugador subida correctamente.');
+                const btn = document.querySelector(`button[onclick="uploadFotoMiembro(${id})"]`);
+                if (btn) {
+                    btn.innerHTML = '📸✓';
+                    btn.title = 'Cambiar Foto';
+                }
+                if (typeof todosEquipos !== 'undefined' && Array.isArray(todosEquipos)) {
+                    for (const eq of todosEquipos) {
+                        if (eq.miembros) {
+                            const found = eq.miembros.find(x => x.id === id);
+                            if (found) {
+                                found.foto_url = result.body.foto_url;
+                                break;
+                            }
+                        }
+                    }
+                }
             } else {
-                alert('Error al subir foto: ' + data.error);
+                alert('Error al subir foto: ' + (result.body.error || 'Error del servidor'));
             }
         })
         .catch(err => {

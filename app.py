@@ -1,6 +1,8 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, g
 import sqlite3
 import os
+import glob
+from PIL import Image, ImageOps
 import secrets
 import time
 from datetime import datetime, timedelta
@@ -105,6 +107,48 @@ gps_mapper = GPSMapper()
 
 app = Flask(__name__)
 app.secret_key = 'tvc-milsim-secret-key-2026'
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # Máximo 10 MB por subida
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return jsonify({'error': 'El archivo excede el tamaño máximo permitido de 10 MB'}), 413
+
+def clean_old_files(directory, pattern):
+    """Elimina archivos previos para asegurar que solo exista uno por entidad en disco."""
+    try:
+        for f in glob.glob(os.path.join(directory, pattern)):
+            if os.path.isfile(f):
+                os.remove(f)
+    except Exception as e:
+        print(f"Error limpiando archivos en {directory}: {e}")
+
+def save_optimized_image(file_storage, target_filepath, max_dim=1200):
+    """
+    Normaliza la orientación EXIF de fotos móviles y redimensiona/comprime
+    para evitar saturación de almacenamiento y consumo excesivo de ancho de banda.
+    """
+    img = Image.open(file_storage)
+    img = ImageOps.exif_transpose(img)
+    img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+    
+    ext = os.path.splitext(target_filepath)[1].lower()
+    if ext in ['.jpg', '.jpeg', '.jfif']:
+        if img.mode in ('RGBA', 'LA', 'P'):
+            bg = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            bg.paste(img, mask=img.split()[-1] if 'A' in img.getbands() else None)
+            img = bg
+        else:
+            img = img.convert('RGB')
+        img.save(target_filepath, 'JPEG', quality=85, optimize=True)
+    elif ext == '.png':
+        img.save(target_filepath, 'PNG', optimize=True)
+    elif ext == '.webp':
+        img.save(target_filepath, 'WEBP', quality=85)
+    else:
+        file_storage.seek(0)
+        file_storage.save(target_filepath)
 
 DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'orbat.db')
 
@@ -177,7 +221,7 @@ def login():
                 is_valid = False
                 if eq['password_hash'] == password:
                     is_valid = True
-                elif eq['password_hash'].startswith('pbkdf2:sha256:') and check_password_hash(eq['password_hash'], password):
+                elif eq['password_hash'] and eq['password_hash'].startswith('pbkdf2:sha256:') and check_password_hash(eq['password_hash'], password):
                     is_valid = True
                 if is_valid:
                     if eq['estado_sancion'] in ['Sancionado', 'Expulsado', 'Inactivo']:
@@ -430,7 +474,9 @@ def manage_equipos():
 
 @app.route('/api/equipos/<int:id>/logo', methods=['POST'])
 def upload_equipo_logo(id):
-    if session.get('role') != 'admin':
+    is_admin = session.get('role') == 'admin'
+    is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == id)
+    if not (is_admin or is_owner):
         return jsonify({'error': 'Unauthorized'}), 403
     if 'logo' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
@@ -441,8 +487,8 @@ def upload_equipo_logo(id):
         
     # Get extension
     ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
-        return jsonify({'error': 'Invalid image format'}), 400
+    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.jfif']:
+        return jsonify({'error': 'Formato de imagen no válido'}), 400
         
     # Obtener nombre del equipo para el archivo
     conn = get_db_connection()
@@ -451,21 +497,33 @@ def upload_equipo_logo(id):
         conn.close()
         return jsonify({'error': 'Equipo no encontrado'}), 404
         
-    safe_name = "".join([c for c in equipo['nombre'] if c.isalnum() or c in (' ', '_', '-')]).replace(' ', '_')
-    filename = f"{safe_name}{ext}"
-    filepath = os.path.join(app.root_path, 'static', 'imgs', 'logos_equipos', filename)
-    file.save(filepath)
+    folder = os.path.join(app.root_path, 'static', 'imgs', 'logos_equipos')
+    os.makedirs(folder, exist_ok=True)
+    # 1 logo por equipo: limpiar cualquier archivo anterior en disco
+    clean_old_files(folder, f"{id}_*.*")
+
+    safe_name = "".join([c for c in equipo['nombre'] if c.isalnum() or c in (' ', '_', '-')]).replace(' ', '_').strip()
+    if not safe_name:
+        safe_name = f"equipo_{id}"
+    filename = f"{id}_{safe_name}{ext}"
+    filepath = os.path.join(folder, filename)
     
-    # Update db
-    conn.execute('UPDATE Equipo SET logo_url = ? WHERE id = ?', (f"/static/imgs/logos_equipos/{filename}", id))
+    # Procesar, redimensionar y optimizar (máx 600px para logos)
+    save_optimized_image(file, filepath, max_dim=600)
+    
+    # Update db with cache-busting timestamp
+    logo_url = f"/static/imgs/logos_equipos/{filename}?v={int(time.time())}"
+    conn.execute('UPDATE Equipo SET logo_url = ? WHERE id = ?', (logo_url, id))
     conn.commit()
     conn.close()
     
-    return jsonify({'status': 'success', 'logo_url': f"/static/imgs/logos_equipos/{filename}"})
+    return jsonify({'status': 'success', 'logo_url': logo_url})
 
 @app.route('/api/equipos/<int:id>/foto', methods=['POST'])
 def upload_equipo_foto(id):
-    if session.get('role') != 'admin':
+    is_admin = session.get('role') == 'admin'
+    is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == id)
+    if not (is_admin or is_owner):
         return jsonify({'error': 'Unauthorized'}), 403
     if 'foto' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
@@ -476,8 +534,8 @@ def upload_equipo_foto(id):
         
     # Get extension
     ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
-        return jsonify({'error': 'Invalid image format'}), 400
+    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.jfif']:
+        return jsonify({'error': 'Formato de imagen no válido'}), 400
         
     # Obtener nombre del equipo
     conn = get_db_connection()
@@ -486,59 +544,84 @@ def upload_equipo_foto(id):
         conn.close()
         return jsonify({'error': 'Equipo no encontrado'}), 404
         
-    safe_name = "".join([c for c in equipo['nombre'] if c.isalnum() or c in (' ', '_', '-')]).replace(' ', '_')
-    filename = f"{safe_name}{ext}"
-    filepath = os.path.join(app.root_path, 'static', 'imgs', 'fotos_equipos', filename)
-    file.save(filepath)
+    folder = os.path.join(app.root_path, 'static', 'imgs', 'fotos_equipos')
+    os.makedirs(folder, exist_ok=True)
+    # 1 foto por equipo: limpiar cualquier archivo anterior en disco
+    clean_old_files(folder, f"{id}_*.*")
+
+    safe_name = "".join([c for c in equipo['nombre'] if c.isalnum() or c in (' ', '_', '-')]).replace(' ', '_').strip()
+    if not safe_name:
+        safe_name = f"equipo_{id}"
+    filename = f"{id}_{safe_name}{ext}"
+    filepath = os.path.join(folder, filename)
     
-    # Update db
-    conn.execute('UPDATE Equipo SET foto_url = ? WHERE id = ?', (f"/static/imgs/fotos_equipos/{filename}", id))
+    # Procesar, redimensionar y optimizar (máx 1200px para foto de equipo)
+    save_optimized_image(file, filepath, max_dim=1200)
+    
+    # Update db with cache-busting timestamp
+    foto_url = f"/static/imgs/fotos_equipos/{filename}?v={int(time.time())}"
+    conn.execute('UPDATE Equipo SET foto_url = ? WHERE id = ?', (foto_url, id))
     conn.commit()
     conn.close()
     
-    return jsonify({'status': 'success', 'foto_url': f"/static/imgs/fotos_equipos/{filename}"})
+    return jsonify({'status': 'success', 'foto_url': foto_url})
 
 @app.route('/api/equipos/<int:id>', methods=['PUT', 'DELETE'])
 def update_delete_equipo(id):
     conn = get_db_connection()
     cursor = conn.cursor()
+    is_admin = session.get('role') == 'admin'
+    is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == id)
+
     if request.method == 'PUT':
+        if not (is_admin or is_owner):
+            conn.close()
+            return jsonify({'error': 'Unauthorized'}), 403
+
         data = request.json
-        is_admin = session.get('role') == 'admin'
-        
         if is_admin:
             cursor.execute(
                 'UPDATE Equipo SET nombre = ?, jugadores = ?, jugadores_manual = ?, faccion_id = ?, tipo = ?, valoracion = ?, codigo = ?, misiones_preferidas = ?, tags_comportamiento = ?, estado_medalla = ?, estado_sancion = ? WHERE id = ?',
                 (data['nombre'], data['jugadores'], data.get('jugadores_manual', False), data['faccion_id'], data.get('tipo', ''), data.get('valoracion', ''), data.get('codigo', ''), data.get('misiones_preferidas', ''), data.get('tags_comportamiento', '[]'), data.get('estado_medalla', 'verde'), data.get('estado_sancion', 'Autorizado'), id)
             )
-            
-            # Update password if provided
-            raw_password = data.get('password', '').strip()
-            if raw_password:
-                pwd_hash = raw_password
-                cursor.execute('UPDATE Equipo SET password_hash = ? WHERE id = ?', (pwd_hash, id))
         else:
             # Equips can only update their own safe fields
             cursor.execute(
                 'UPDATE Equipo SET jugadores = ?, jugadores_manual = ?, tipo = ?, misiones_preferidas = ?, tags_comportamiento = ? WHERE id = ?',
                 (data['jugadores'], data.get('jugadores_manual', False), data.get('tipo', ''), data.get('misiones_preferidas', ''), data.get('tags_comportamiento', '[]'), id)
             )
+            
+        # Update password / PIN if provided (both admin and team owner)
+        raw_password = str(data.get('password', '')).strip()
+        if raw_password:
+            if not is_admin and (len(raw_password) != 4 or not raw_password.isdigit()):
+                conn.close()
+                return jsonify({'error': 'El PIN debe tener exactamente 4 dígitos numéricos'}), 400
+            cursor.execute('UPDATE Equipo SET password_hash = ? WHERE id = ?', (raw_password, id))
         
         # Update members (smart approach: update existing, delete missing, insert new)
         if 'miembros' in data and isinstance(data['miembros'], list):
             incoming_ids = [m['id'] for m in data['miembros'] if m.get('id')]
+            jugadores_dir = os.path.join(app.root_path, 'static', 'imgs', 'fotos_jugadores')
             if incoming_ids:
                 placeholders = ','.join('?' * len(incoming_ids))
+                # Limpiar fotos en disco de los miembros eliminados
+                del_members = cursor.execute(f'SELECT id FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids).fetchall()
+                for dm in del_members:
+                    clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
                 cursor.execute(f'DELETE FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids)
             else:
+                del_members = cursor.execute('SELECT id FROM Miembro WHERE equipo_id = ?', (id,)).fetchall()
+                for dm in del_members:
+                    clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
                 cursor.execute('DELETE FROM Miembro WHERE equipo_id = ?', (id,))
                 
             import uuid
             for m in data['miembros']:
                 if m.get('id'):
                     cursor.execute(
-                        'UPDATE Miembro SET nombre_jugador = ?, rol = ?, armamento = ?, nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, bando_original = ?, activo = ? WHERE id = ?',
-                        (m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1), m['id'])
+                        'UPDATE Miembro SET nombre_jugador = ?, rol = ?, armamento = ?, nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, bando_original = ?, activo = ? WHERE id = ? AND equipo_id = ?',
+                        (m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1), m['id'], id)
                     )
                 else:
                     new_uid = str(uuid.uuid4()).split('-')[0].upper()
@@ -547,8 +630,8 @@ def update_delete_equipo(id):
                         (id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1))
                     )
                 
-        # Update historial
-        if 'historial' in data and isinstance(data['historial'], list):
+        # Update historial (only admin can modify team history)
+        if is_admin and 'historial' in data and isinstance(data['historial'], list):
             cursor.execute('DELETE FROM Historial_Equipo WHERE equipo_id = ?', (id,))
             for h in data['historial']:
                 cursor.execute(
@@ -561,6 +644,19 @@ def update_delete_equipo(id):
         return jsonify({'status': 'success'})
     
     elif request.method == 'DELETE':
+        if not is_admin:
+            conn.close()
+            return jsonify({'error': 'Unauthorized'}), 403
+
+        # Limpiar logo y foto del equipo en disco
+        clean_old_files(os.path.join(app.root_path, 'static', 'imgs', 'logos_equipos'), f"{id}_*.*")
+        clean_old_files(os.path.join(app.root_path, 'static', 'imgs', 'fotos_equipos'), f"{id}_*.*")
+        # Limpiar fotos de sus miembros en disco
+        m_rows = cursor.execute('SELECT id FROM Miembro WHERE equipo_id = ?', (id,)).fetchall()
+        jugadores_dir = os.path.join(app.root_path, 'static', 'imgs', 'fotos_jugadores')
+        for mr in m_rows:
+            clean_old_files(jugadores_dir, f"miembro_{mr['id']}.*")
+
         cursor.execute('DELETE FROM Equipo WHERE id = ?', (id,))
         conn.commit()
         conn.close()
@@ -2178,8 +2274,6 @@ def view_carnet(id):
 
 @app.route('/api/miembros/<int:id>/foto', methods=['POST'])
 def upload_miembro_foto(id):
-    if session.get('role') != 'admin':
-        return jsonify({'error': 'Unauthorized'}), 403
     if 'foto' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -2188,16 +2282,33 @@ def upload_miembro_foto(id):
         return jsonify({'error': 'No file selected'}), 400
         
     ext = os.path.splitext(file.filename)[1].lower()
-    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif']:
-        return jsonify({'error': 'Invalid image format'}), 400
+    if ext not in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.jfif']:
+        return jsonify({'error': 'Formato de imagen no válido'}), 400
         
-    filename = f"miembro_{id}{ext}"
-    filepath = os.path.join(app.root_path, 'static', 'imgs', 'fotos_jugadores', filename)
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    file.save(filepath)
-    
     conn = get_db_connection()
-    foto_url = f"/static/imgs/fotos_jugadores/{filename}"
+    miembro = conn.execute('SELECT equipo_id FROM Miembro WHERE id = ?', (id,)).fetchone()
+    if not miembro:
+        conn.close()
+        return jsonify({'error': 'Miembro no encontrado'}), 404
+        
+    is_admin = session.get('role') == 'admin'
+    is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == miembro['equipo_id'])
+    if not (is_admin or is_owner):
+        conn.close()
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    folder = os.path.join(app.root_path, 'static', 'imgs', 'fotos_jugadores')
+    os.makedirs(folder, exist_ok=True)
+    # 1 foto por jugador: limpiar cualquier archivo anterior en disco
+    clean_old_files(folder, f"miembro_{id}.*")
+    
+    filename = f"miembro_{id}{ext}"
+    filepath = os.path.join(folder, filename)
+    
+    # Procesar, orientar según EXIF y optimizar (máx 1000px)
+    save_optimized_image(file, filepath, max_dim=1000)
+    
+    foto_url = f"/static/imgs/fotos_jugadores/{filename}?v={int(time.time())}"
     conn.execute('UPDATE Miembro SET foto_url = ? WHERE id = ?', (foto_url, id))
     conn.commit()
     conn.close()
@@ -2249,6 +2360,11 @@ def patch_db():
             pass
         try:
             conn.execute("ALTER TABLE Historial_Asignacion ADD COLUMN estado TEXT DEFAULT 'Aprobada';")
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE Miembro ADD COLUMN foto_url TEXT;")
             conn.commit()
         except Exception:
             pass
