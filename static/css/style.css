@@ -280,6 +280,14 @@ body[data-theme="Khemed"] {
     background: rgba(255,255,255,0.05);
 }
 
+/* ORBAT Mobile Controls (Hidden on Desktop) */
+.orbat-mobile-filter-bar {
+    display: none;
+}
+.sidebar-panel-mobile-header {
+    display: none;
+}
+
 /* ORBAT Tree layout */
 .orbat-tree-container {
     flex: 1;
@@ -853,6 +861,138 @@ select option { color: #000; background: #fff; }
     background-size: 30px 30px;
 }
 
+/* Componentes específicos de móvil (ocultos en escritorio) */
+.orbat-mobile-filter-bar {
+    display: none;
+}
+.sidebar-panel-mobile-header {
+    display: none;
+}
+.map-sidebar-mobile-header {
+    display: none;
+}
+.drawer-backdrop {
+    display: none;
+}
+
+/* Mando Card base styles */
+.mando-card {
+    display: flex;
+    flex-direction: row;
+    padding: 0.85rem 1rem;
+    align-items: center;
+    gap: 1.2rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.mando-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mando-logo-container {
+    flex-shrink: 0;
+}
+
+.mando-logo-img {
+    width: 60px;
+    height: 60px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.mando-logo-symbol {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    background: rgba(0,0,0,0.25);
+    border-radius: 8px;
+}
+
+.mando-title-pax {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mando-title {
+    font-size: 1.25rem;
+    font-family: var(--font-mono);
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0,0,0,0.35);
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    word-break: break-word;
+}
+
+.mando-pax-badge {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--theme-color);
+    font-weight: bold;
+    background: rgba(0,0,0,0.4);
+    padding: 2px 8px;
+    border: 1px solid var(--theme-color);
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    width: fit-content;
+}
+
+.mando-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    border-left: 1px solid var(--border-color);
+    padding-left: 1.2rem;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.mando-opord-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+/* Tactical Tracker base HUD */
+.tactical-tracker-hud {
+    position: absolute;
+    bottom: 30px;
+    right: 30px;
+    z-index: 1000;
+    background: rgba(0,0,0,0.8);
+    color: var(--theme-color);
+    padding: 8px 15px;
+    border: 1px solid var(--theme-color);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+}
+.tactical-tracker-hud #tracker-coord {
+    font-weight: bold;
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+}
+.tactical-tracker-hud #tracker-gps {
+    font-size: 0.75rem;
+    color: #ccc;
+}
 
 /* Short screens / Mobile Landscape */
 @media (max-height: 600px) {
@@ -1032,32 +1172,198 @@ select option { color: #000; background: #fff; }
         overflow-y: auto !important;
         overflow-x: hidden !important;
         -webkit-overflow-scrolling: touch !important;
+        padding: 6px !important;
+        padding-bottom: 75px !important; /* Espacio para que la barra inferior no tape squads */
+        position: relative !important;
     }
     
     .orbat-content-wrapper {
-        flex: none !important;
+        flex: 1 1 auto !important;
+        width: 100% !important;
         height: auto !important;
-        min-height: 50vh !important;
+        min-height: 0 !important;
+        overflow-x: hidden !important;
+        padding-bottom: 20px !important;
+    }
+
+    .orbat-top-actions {
+        justify-content: space-between !important;
+        margin-bottom: 6px !important;
+    }
+    .orbat-top-actions .btn {
+        flex: 1 !important;
+        font-size: 0.78rem !important;
+        padding: 5px 8px !important;
+        justify-content: center !important;
+    }
+
+    /* Selector móvil de secciones tácticas ORBAT (más minimalista) */
+    .orbat-mobile-filter-bar {
+        display: flex !important;
+        gap: 4px !important;
+        overflow-x: auto !important;
+        padding: 2px 0 8px 0 !important;
+        width: 100% !important;
+        -webkit-overflow-scrolling: touch !important;
+        flex-shrink: 0 !important;
+    }
+
+    .orbat-filter-btn {
+        flex: 1 1 auto !important;
+        min-width: 60px !important;
+        padding: 6px 8px !important;
+        background: rgba(0, 0, 0, 0.6) !important;
+        border: 1px solid var(--border-color) !important;
+        color: var(--text-muted) !important;
+        font-family: var(--font-mono) !important;
+        font-size: 0.72rem !important;
+        font-weight: bold !important;
+        letter-spacing: 0.5px !important;
+        border-radius: 4px !important;
+        cursor: pointer !important;
+        text-align: center !important;
+        white-space: nowrap !important;
+        transition: all 0.2s ease !important;
+    }
+
+    .orbat-filter-btn.active {
+        background: rgba(255, 255, 255, 0.12) !important;
+        color: var(--theme-color) !important;
+        border-color: var(--theme-color) !important;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.6) !important;
+    }
+
+    .orbat-filter-tray-btn {
+        background: rgba(var(--theme-rgb, 30, 144, 255), 0.15) !important;
+        border-color: var(--theme-color) !important;
+        color: #fff !important;
+    }
+
+    /* Filtro instantáneo CSS de secciones */
+    #orbat-tree-container.filter-mando .tree-split { display: none !important; }
+    #orbat-tree-container.filter-mando .section-mando { display: block !important; }
+
+    #orbat-tree-container.filter-goe .section-mando { display: none !important; }
+    #orbat-tree-container.filter-goe .column-gad { display: none !important; }
+    #orbat-tree-container.filter-goe .column-goe { display: flex !important; }
+
+    #orbat-tree-container.filter-gad .section-mando { display: none !important; }
+    #orbat-tree-container.filter-gad .column-goe { display: none !important; }
+    #orbat-tree-container.filter-gad .column-gad { display: flex !important; }
+
+    /* Fondo semitransparente cuando el cajón de Bandeja está abierto */
+    .drawer-backdrop {
+        display: none;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background: rgba(0, 0, 0, 0.65) !important;
+        backdrop-filter: blur(3px) !important;
+        z-index: 1040 !important;
+    }
+    .drawer-backdrop.active {
+        display: block !important;
+    }
+
+    /* Bandeja anclada abajo del todo en móvil, justo encima de la barra de navegación */
+    #view-orbat {
+        position: relative !important;
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+    }
+
+    #view-orbat .orbat-content-wrapper {
+        flex: 1 !important;
+        min-height: 0 !important;
+        overflow-y: auto !important;
+        padding: 8px 8px 46px 8px !important; /* Margen inferior para que el último grupo no quede tapado por la bandeja */
     }
 
     #view-orbat .sidebar-panel {
+        position: absolute !important;
+        bottom: 0px !important;
+        left: 0px !important;
         width: 100% !important;
         min-width: 100% !important;
-        flex: none !important;
         height: auto !important;
-        max-height: 50vh !important;
+        max-height: 38px !important; /* Colapsado por defecto, siempre visible justo encima de la barra de navegación */
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: none !important;
+        background: rgba(14, 18, 24, 0.96) !important;
+        border-top: 2px solid var(--theme-color) !important;
+        border-radius: 10px 10px 0 0 !important;
         border-left: none !important;
         border-right: none !important;
-        border-top: 2px solid var(--theme-color) !important;
+        border-bottom: none !important;
+        z-index: 1000 !important;
+        backdrop-filter: blur(10px) !important;
+        box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.75) !important;
+        overflow: hidden !important;
+        transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    #view-orbat .sidebar-panel.drawer-open {
+        max-height: 55dvh !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
     }
-    
-    .sidebar-content {
-        padding: 0.5rem !important;
+
+    .sidebar-panel-mobile-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 6px 14px !important;
+        background: rgba(0, 0, 0, 0.45) !important;
+        cursor: pointer !important;
+        font-family: var(--font-mono) !important;
+        font-size: 0.78rem !important;
+        color: #fff !important;
+        font-weight: bold !important;
+        letter-spacing: 0.5px !important;
+        user-select: none !important;
+        height: 38px !important;
+        box-sizing: border-box !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     
-    /* 5. Map Fullscreen with floating HUD */
+    #view-orbat .sidebar-content {
+        padding: 0.6rem 0.8rem !important;
+        overflow-y: auto !important;
+    }
+    #view-orbat .sidebar-content h3 {
+        display: none !important;
+    }
+    #view-orbat .sidebar-tabs {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    #view-orbat .sidebar-tab {
+        padding: 0.5rem !important;
+        font-size: 0.85rem !important;
+    }
+    #unassigned-teams, #unassigned-missions {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+        padding: 8px !important;
+        min-height: 80px !important;
+    }
+    #unassigned-teams .equipo-card,
+    #unassigned-missions .mision-card {
+        flex: 1 1 calc(50% - 6px) !important;
+        max-width: 100% !important;
+        padding: 6px 8px !important;
+        font-size: 0.82rem !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* 5. Map Fullscreen with floating HUD and Collapsible Panel */
     #view-mapa.active {
         display: block !important;
         position: relative !important;
@@ -1075,80 +1381,559 @@ select option { color: #000; background: #fff; }
         z-index: 1 !important;
     }
     
-    #view-mapa .sidebar-panel {
+    .main-content:has(#view-orbat.active),
+    .main-content:has(#view-mapa.active) {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+        padding-bottom: 0 !important;
+    }
+    
+    /* Panel lateral del mapa en móvil: anclado abajo del todo (roster accesible sin tapar el mapa) */
+    #map-sidebar-panel {
         position: absolute !important;
-        bottom: 10px !important;
-        left: 10px !important;
-        width: calc(100% - 20px) !important;
-        min-width: 0 !important;
+        bottom: 0px !important;
+        left: 0px !important;
+        width: 100% !important;
+        min-width: 100% !important;
         height: auto !important;
-        max-height: 40dvh !important;
+        max-height: 36px !important; /* Colapsado por defecto, pegado al fondo */
         z-index: 1000 !important;
-        background: rgba(20,20,20,0.9) !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
-        border-radius: 8px !important;
-        box-shadow: 0 0 10px rgba(0,0,0,0.5) !important;
+        background: rgba(14, 18, 24, 0.96) !important;
+        border-top: 2px solid var(--theme-color) !important;
+        border-left: none !important;
+        border-right: none !important;
+        border-bottom: none !important;
+        border-radius: 10px 10px 0 0 !important;
+        box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.7) !important;
+        backdrop-filter: blur(8px) !important;
+        overflow: hidden !important;
+        transition: max-height 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    }
+
+    #map-sidebar-panel.panel-open {
+        max-height: 52dvh !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
     }
-    
-    #view-mapa .sidebar-panel > div {
+
+    .map-sidebar-mobile-header {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 6px 14px !important;
+        cursor: pointer !important;
+        font-family: var(--font-mono) !important;
+        font-size: 0.78rem !important;
+        color: #fff !important;
+        font-weight: bold !important;
+        letter-spacing: 0.5px !important;
+        user-select: none !important;
+        height: 38px !important;
+        box-sizing: border-box !important;
+        background: rgba(0, 0, 0, 0.45) !important;
+    }
+
+    .map-sidebar-section {
+        padding: 0.5rem 0.8rem !important;
+    }
+
+    #map-units-container {
         display: flex !important;
         flex-direction: row !important;
         flex-wrap: wrap !important;
-        gap: 5px !important;
-        padding: 5px !important;
+        gap: 6px !important;
     }
-    #view-mapa .sidebar-panel h3, #view-mapa .sidebar-panel hr {
-        display: none !important; /* Hide headers and dividers */
-    }
-    #view-mapa .sidebar-panel button {
-        width: auto !important;
-        flex: 1 1 auto !important;
+    #map-units-container button {
+        flex: 1 1 calc(50% - 6px) !important;
+        padding: 5px 8px !important;
+        font-size: 0.78rem !important;
+        margin: 0 !important;
+        text-align: center !important;
         justify-content: center !important;
-        padding: 5px 10px !important;
     }
-    #view-mapa .sidebar-panel .btn-text {
+
+    .map-tools-grid {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+    }
+    .map-tools-grid button {
+        flex: 1 1 calc(50% - 6px) !important;
+        padding: 6px 8px !important;
+        font-size: 0.78rem !important;
+        margin: 0 !important;
+        justify-content: center !important;
+    }
+    .map-tools-grid hr {
         display: none !important;
     }
 
+    /* Cuadro de coordenadas en mapa (Micro-HUD minimalista arriba a la derecha) */
     #tactical-tracker {
-        bottom: 110px !important;
-        right: 10px !important;
+        position: absolute !important;
+        top: 12px !important;
+        right: 55px !important; /* Despeja los controles de zoom a la derecha */
+        bottom: auto !important;
+        left: auto !important;
+        z-index: 999 !important;
+        padding: 3px 8px !important;
+        background: rgba(10, 14, 20, 0.8) !important;
+        border: 1px solid var(--theme-color) !important;
+        border-radius: 4px !important;
+        font-family: var(--font-mono) !important;
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 8px !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+        backdrop-filter: blur(4px) !important;
+        pointer-events: none !important;
     }
 
-    /* 6. ORBAT Cards Vertical Stack and Shrink */
+    #tactical-tracker #tracker-coord {
+        font-size: 0.82rem !important;
+        font-weight: bold !important;
+        letter-spacing: 1px !important;
+        color: var(--theme-color) !important;
+    }
+
+    #tactical-tracker #tracker-gps {
+        font-size: 0.68rem !important;
+        color: #94a3b8 !important;
+    }
+
+    #btn-floating-bft {
+        position: absolute !important;
+        top: 12px !important;
+        left: 12px !important;
+        z-index: 999 !important;
+        padding: 4px 8px !important;
+        font-size: 0.72rem !important;
+        font-family: var(--font-mono) !important;
+        font-weight: bold !important;
+        border: 1px solid var(--theme-color) !important;
+        background: rgba(10, 14, 20, 0.85) !important;
+        backdrop-filter: blur(4px) !important;
+    }
+
+    /* 6. ORBAT Cards Vertical Stack and Touch Ergonomics */
     .orbat-tree-container {
+        display: flex !important;
         flex-direction: column !important;
-        gap: 5px !important;
-        padding: 5px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 10px !important;
+        padding: 2px !important;
         align-items: stretch !important;
+        overflow-x: hidden !important;
+        border: none !important;
+        background: transparent !important;
     }
     
     .mando-section {
         width: 100% !important;
-        margin-bottom: 0.5rem !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+        margin-bottom: 0.4rem !important;
     }
-    
-    .squad-column {
+
+    .mando-card {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        padding: 8px 10px !important;
+        gap: 8px !important;
         width: 100% !important;
-        min-width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+    }
+
+    .mando-header-row {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 10px !important;
+        width: 100% !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding-bottom: 6px !important;
+    }
+
+    .mando-logo-img, .mando-logo-symbol {
+        width: 38px !important;
+        height: 38px !important;
+        font-size: 1.3rem !important;
+        flex-shrink: 0 !important;
+    }
+
+    .mando-title-pax {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex: 1 !important;
+        min-width: 0 !important;
+    }
+
+    .mando-title {
+        font-size: 0.95rem !important;
+        padding: 2px 6px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+    }
+
+    .mando-pax-badge {
+        font-size: 0.78rem !important;
+        padding: 2px 6px !important;
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+    }
+
+    .mando-content {
+        border-left: none !important;
+        padding-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .mando-opord-actions .btn {
+        flex: 1 1 auto !important;
+        font-size: 0.76rem !important;
+        padding: 4px 6px !important;
+        justify-content: center !important;
     }
     
-    /* Shrink elements */
-    .grupo-header { padding: 0.2rem 0.5rem !important; }
-    .grupo-nombre { font-size: 0.85rem !important; }
-    .grupo-pax { font-size: 0.85rem !important; padding: 1px 4px !important; }
-    .grupo-body { padding: 0.2rem !important; gap: 0.2rem !important; }
-    .grupo-logo { width: 35px !important; height: 35px !important; }
-    .editable-field { font-size: 0.8rem !important; }
+    .tree-split {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        gap: 10px !important;
+    }
+    
+    .tree-column {
+        width: 100% !important;
+        min-width: 0 !important;
+        gap: 8px !important;
+    }
+
+    .tree-column-title {
+        font-size: 0.9rem !important;
+        padding: 3px 0 !important;
+        margin-bottom: 4px !important;
+    }
+    
+    /* Shrink and touch-optimize squad elements (minimalista) */
+    .grupo-card {
+        border-radius: 4px !important;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4) !important;
+    }
+    .grupo-header { 
+        padding: 0.3rem 0.5rem !important; 
+    }
+    .grupo-nombre { 
+        font-size: 0.9rem !important; 
+    }
+    .grupo-pax { 
+        font-size: 0.85rem !important; 
+        padding: 2px 5px !important; 
+    }
+    .grupo-body { 
+        padding: 0.3rem 0.45rem !important; 
+        gap: 0.45rem !important; 
+    }
+    .grupo-logo { 
+        width: 36px !important; 
+        height: 36px !important; 
+        font-size: 1.2rem !important;
+        flex-shrink: 0 !important;
+    }
+    .editable-field { 
+        font-size: 0.8rem !important; 
+    }
+    .editable-field label { 
+        width: 32px !important; 
+        font-size: 0.72rem !important; 
+    }
     .editable-field input, .editable-field select {
         font-size: 16px !important; /* Min 16px to prevent iOS Safari auto-zoom */
-        padding: 0.15rem 0.3rem !important;
+        padding: 0.2rem 0.35rem !important;
         height: auto !important;
     }
-    .equipo-card { padding: 0.25rem 0.5rem !important; font-size: 0.75rem !important; margin-bottom: 0.2rem !important; }
-    .droppable-area { padding: 0.2rem !important; min-height: 25px !important; }
+    .equipo-card { 
+        padding: 0.35rem 0.5rem !important; 
+        font-size: 0.78rem !important; 
+        margin-bottom: 0.2rem !important; 
+        min-height: 38px !important;
+    }
+    .droppable-area { 
+        padding: 0.3rem !important; 
+        min-height: 40px !important; 
+        border-radius: 4px !important;
+    }
+
+    /* 7. Tablas de Gestión (.data-table) - Formato tabla compacto con scroll horizontal */
+    .table-container {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+        margin-bottom: 1rem !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 4px !important;
+        background: rgba(0, 0, 0, 0.25) !important;
+    }
+
+    .panel-header {
+        padding: 0.8rem !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 8px !important;
+    }
+    .panel-header > div {
+        width: 100% !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+    .panel-header button {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+
+    .data-table {
+        display: table !important;
+        width: 100% !important;
+        min-width: 540px !important;
+        border-collapse: collapse !important;
+        border-spacing: 0 !important;
+    }
+
+    .data-table thead {
+        display: table-header-group !important;
+    }
+
+    .data-table thead tr {
+        display: table-row !important;
+        position: static !important;
+    }
+
+    .data-table thead th {
+        display: table-cell !important;
+        padding: 6px 10px !important;
+        font-size: 0.8rem !important;
+        color: var(--theme-color) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+        white-space: nowrap !important;
+        border-bottom: 2px solid var(--theme-color) !important;
+        position: sticky !important;
+        top: 0 !important;
+        background: #141820 !important;
+        z-index: 2 !important;
+    }
+
+    .data-table tbody {
+        display: table-row-group !important;
+    }
+
+    .data-table tbody tr {
+        display: table-row !important;
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .data-table tbody tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.04) !important;
+    }
+
+    .data-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.07) !important;
+    }
+
+    .data-table td {
+        display: table-cell !important;
+        padding: 6px 10px !important;
+        font-size: 0.85rem !important;
+        vertical-align: middle !important;
+        white-space: nowrap !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    }
+
+    .data-table td::before {
+        display: none !important;
+    }
+
+    .data-table td:first-child {
+        font-size: 0.92rem !important;
+        font-weight: 600 !important;
+        color: #fff !important;
+        border-left: 3px solid var(--theme-color) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        padding: 6px 10px !important;
+        margin: 0 !important;
+    }
+
+    .data-table td:last-child {
+        border-top: none !important;
+        padding: 6px 10px !important;
+        margin: 0 !important;
+        white-space: nowrap !important;
+    }
+
+    .data-table td:last-child .btn {
+        display: inline-block !important;
+        padding: 3px 8px !important;
+        font-size: 0.78rem !important;
+        min-height: 28px !important;
+        line-height: 20px !important;
+        margin: 0 4px 0 0 !important;
+    }
+
+    /* 8. Formularios y Jugadores en Modales de Gestión (modal-equipo, etc.) */
+    #modal-equipo .modal-content {
+        width: 96vw !important;
+        max-width: 96vw !important;
+        max-height: 90dvh !important;
+        padding: 12px !important;
+    }
+
+    #form-equipo > div {
+        flex-direction: column !important;
+        gap: 1rem !important;
+    }
+
+    #form-equipo .form-group {
+        min-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* Recuperar Formato Tabla Nativo y Fluido en el Dashboard de Jugadores */
+    #modal-equipo table {
+        display: table !important;
+        width: 100% !important;
+        min-width: 820px !important;
+        border-collapse: collapse !important;
+    }
+
+    #modal-equipo thead {
+        display: table-header-group !important;
+    }
+
+    #modal-equipo thead tr {
+        display: table-row !important;
+        position: static !important;
+        background: #12161c !important;
+    }
+
+    #modal-equipo thead th {
+        display: table-cell !important;
+        padding: 6px 8px !important;
+        font-size: 0.78rem !important;
+        color: var(--theme-color) !important;
+        text-transform: uppercase !important;
+        white-space: nowrap !important;
+        border-bottom: 2px solid var(--theme-color) !important;
+        position: sticky !important;
+        top: 0 !important;
+        background: #141820 !important;
+        z-index: 2 !important;
+    }
+
+    #modal-equipo tbody {
+        display: table-row-group !important;
+    }
+
+    #modal-equipo tr.miembro-row {
+        display: table-row !important;
+        background: transparent !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    #modal-equipo tr.miembro-row:nth-child(even) {
+        background: rgba(255, 255, 255, 0.02) !important;
+    }
+
+    #modal-equipo tr.miembro-row:hover {
+        background: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    #modal-equipo td {
+        display: table-cell !important;
+        padding: 4px 6px !important;
+        vertical-align: middle !important;
+        white-space: nowrap !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    }
+
+    #modal-equipo td::before {
+        display: none !important;
+    }
+
+    #modal-equipo td input,
+    #modal-equipo td select {
+        font-size: 0.85rem !important;
+        padding: 3px 6px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        line-height: 1.2 !important;
+        border-radius: 3px !important;
+        background: rgba(0, 0, 0, 0.45) !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        color: #fff !important;
+        box-sizing: border-box !important;
+    }
+
+    #modal-equipo td input:focus,
+    #modal-equipo td select:focus {
+        border-color: var(--theme-color) !important;
+        outline: none !important;
+        background: rgba(0, 0, 0, 0.7) !important;
+    }
+
+    #modal-equipo .miembro-activo {
+        transform: scale(1.2) !important;
+        margin: 0 auto !important;
+        display: block !important;
+        cursor: pointer !important;
+    }
+
+    #modal-equipo td .btn {
+        padding: 2px 6px !important;
+        font-size: 0.8rem !important;
+        min-height: 28px !important;
+        line-height: 22px !important;
+        margin: 0 2px !important;
+    }
+
+    .modal-actions {
+        position: sticky !important;
+        bottom: -12px !important;
+        background: rgba(18, 22, 28, 0.98) !important;
+        padding: 10px 0 !important;
+        border-top: 1px solid var(--border-color) !important;
+        z-index: 10 !important;
+        width: 100% !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+    }
+    .modal-actions button {
+        flex: 1 !important;
+    }
 }
 
 /* ==========================================================

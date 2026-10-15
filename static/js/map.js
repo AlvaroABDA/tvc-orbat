@@ -139,6 +139,17 @@ window.eliminarMarcador = async function(id) {
     }
 };
 
+function toggleMapMobilePanel() {
+    const panel = document.getElementById('map-sidebar-panel');
+    const arrow = document.getElementById('map-drawer-arrow');
+    if (!panel) return;
+    panel.classList.toggle('panel-open');
+    if (arrow) {
+        arrow.textContent = panel.classList.contains('panel-open') ? 'keyboard_arrow_down' : 'keyboard_arrow_up';
+    }
+}
+window.toggleMapMobilePanel = toggleMapMobilePanel;
+
 // Initialize map only when the tab is shown to prevent rendering issues
 function initMap() {
     if (map) return; // Already initialized
@@ -250,6 +261,14 @@ function setMode(mode) {
     if (btnPoiMap) btnPoiMap.classList.remove('active');
     if (mode === 'add_poi_map' && btnPoiMap) btnPoiMap.classList.add('active');
 
+    // En móvil, al activar una herramienta cerrar el panel inferior para despejar el mapa
+    if (window.innerWidth <= 768 && mode !== 'pan') {
+        const panel = document.getElementById('map-sidebar-panel');
+        if (panel && panel.classList.contains('panel-open')) {
+            toggleMapMobilePanel();
+        }
+    }
+
     const mapEl = document.getElementById('tactical-map') || document.getElementById('mortero-leaflet-map');
     if (mapEl) {
         if (mode === 'pan') {
@@ -292,6 +311,10 @@ async function loadMapData() {
     // Render the groups sidebar
     const unplacedGroups = todosGrupos.filter(g => g.faccion_nombre === currentFaction && (g.pos_x == null || g.pos_y == null));
     const container = document.getElementById('map-units-container');
+    const fichasBadge = document.getElementById('map-fichas-count');
+    if (fichasBadge) {
+        fichasBadge.innerText = unplacedGroups.length;
+    }
     if (container) {
         container.innerHTML = '';
         
@@ -304,6 +327,12 @@ async function loadMapData() {
             btn.onclick = () => {
                 const center = map.getCenter();
                 placeGroupOnMap(g, center.lat, center.lng);
+                if (window.innerWidth <= 768) {
+                    const panel = document.getElementById('map-sidebar-panel');
+                    if (panel && panel.classList.contains('panel-open')) {
+                        toggleMapMobilePanel();
+                    }
+                }
             };
             container.appendChild(btn);
         });

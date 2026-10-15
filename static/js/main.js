@@ -126,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     initNavigation();
     initTabs();
+    initOrbatMobileFilters();
     await loadFacciones();
     await loadEquipos();
     if(window.userRole === "admin") await loadPOIs();
@@ -199,6 +200,48 @@ function initNavigation() {
             
             btn.classList.add('active');
             document.getElementById(btn.dataset.target).classList.add('active');
+
+            // En móvil, al pulsar una pestaña abrir el drawer si estaba cerrado
+            const drawer = document.getElementById('orbat-sidebar-panel');
+            if (drawer && window.innerWidth <= 768 && !drawer.classList.contains('drawer-open')) {
+                drawer.classList.add('drawer-open');
+                const arrow = document.getElementById('mobile-drawer-arrow');
+                if (arrow) arrow.textContent = 'keyboard_arrow_down';
+            }
+        });
+    });
+}
+
+function toggleMobileOrbatDrawer() {
+    const drawer = document.getElementById('orbat-sidebar-panel');
+    const backdrop = document.getElementById('orbat-drawer-backdrop');
+    const arrow = document.getElementById('mobile-drawer-arrow');
+    const trayBtn = document.getElementById('btn-toggle-tray');
+    if (!drawer) return;
+    const isOpen = drawer.classList.toggle('drawer-open');
+    if (backdrop) {
+        backdrop.classList.toggle('active', isOpen);
+    }
+    if (arrow) {
+        arrow.textContent = isOpen ? 'keyboard_arrow_down' : 'keyboard_arrow_up';
+    }
+    if (trayBtn) {
+        trayBtn.classList.toggle('active', isOpen);
+    }
+}
+window.toggleMobileOrbatDrawer = toggleMobileOrbatDrawer;
+
+function initOrbatMobileFilters() {
+    const filterBtns = document.querySelectorAll('.orbat-filter-btn');
+    const container = document.getElementById('orbat-tree-container');
+    if (!filterBtns.length || !container) return;
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const filter = btn.dataset.filter;
+            filterBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            container.classList.remove('filter-all', 'filter-mando', 'filter-goe', 'filter-gad');
+            container.classList.add(`filter-${filter}`);
         });
     });
 }
@@ -378,12 +421,20 @@ function renderTree() {
     const goeGroups = grupos.filter(g => g.tipo === 'GOE' && !g.es_mando);
     const gadGroups = grupos.filter(g => g.tipo === 'GAD' && !g.es_mando);
 
+    // Actualizar conteos en selector táctico móvil
+    const btnMando = document.getElementById('filter-btn-mando');
+    const btnGoe = document.getElementById('filter-btn-goe');
+    const btnGad = document.getElementById('filter-btn-gad');
+    if (btnMando) btnMando.textContent = `🛡️ MANDO (${mandoGroup ? 1 : 0})`;
+    if (btnGoe) btnGoe.textContent = `🎯 GOE (${goeGroups.length})`;
+    if (btnGad) btnGad.textContent = `⚔️ GAD (${gadGroups.length})`;
+
     let html = '';
 
     // 1. MANDO
     if(mandoGroup) {
         html += `
-            <div class="mando-section">
+            <div class="mando-section section-mando">
                 ${renderCard(mandoGroup, true, totalFactionPax)}
             </div>
         `;
@@ -392,11 +443,11 @@ function renderTree() {
     // 2. SPLIT GOE/GAD
     html += `
         <div class="tree-split">
-            <div class="tree-column">
+            <div class="tree-column column-goe">
                 <div class="tree-column-title">GOE</div>
                 ${goeGroups.map(g => renderCard(g, false)).join('')}
             </div>
-            <div class="tree-column">
+            <div class="tree-column column-gad">
                 <div class="tree-column-title">GAD</div>
                 ${gadGroups.map(g => renderCard(g, false)).join('')}
             </div>
@@ -440,7 +491,7 @@ function renderCard(g, isMando, totalFactionPax = 0) {
         logoHtml = `<div class="grupo-logo" style="background-image: url('${imgSrc}'); background-color: transparent; border: none;"></div>`;
     } else {
         let logoSymbol = isMando ? '🛡️' : (g.tipo === 'GOE' ? '🎯' : '⚔️');
-        logoHtml = `<div class="grupo-logo" style="display:flex; justify-content:center; align-items:center; font-size:2.5rem; background:rgba(0,0,0,0.2); border-radius:8px;">${logoSymbol}</div>`;
+        logoHtml = `<div class="grupo-logo" style="display:flex; justify-content:center; align-items:center; font-size:1.3rem; background:rgba(0,0,0,0.2); border-radius:6px;">${logoSymbol}</div>`;
     }
     
     const phoneLabel = isMando ? 'Línea Baja' : 'Contacto Mando';
@@ -471,7 +522,7 @@ function renderCard(g, isMando, totalFactionPax = 0) {
                 <label>Cmdt</label>
                 <input type="text" class="input-inline update-grupo" data-id="${g.id}" data-field="nombre_jefe" value="${g.nombre_jefe || ''}" placeholder="Nombre del mando">
             </div>
-            <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <div class="mando-opord-actions">
                 ${opordButtons}
             </div>
         `;
@@ -559,25 +610,23 @@ function renderCard(g, isMando, totalFactionPax = 0) {
     if (isMandoCard) {
         let bigLogoHtml = '';
         if (imgSrc) {
-            bigLogoHtml = `<div class="mando-logo-large" style="background-image: url('${imgSrc}'); width: 120px; height: 120px; background-size: contain; background-repeat: no-repeat; background-position: center; border: none; background-color: transparent;"></div>`;
+            bigLogoHtml = `<div class="mando-logo-img" style="background-image: url('${imgSrc}');"></div>`;
         } else {
-            bigLogoHtml = `<div class="mando-logo-large" style="display:flex; justify-content:center; align-items:center; font-size:4rem; width:120px; height:120px; background:rgba(0,0,0,0.2); border-radius:8px;">🛡️</div>`;
+            bigLogoHtml = `<div class="mando-logo-symbol">🛡️</div>`;
         }
 
         return `
-            <div class="grupo-card mando-card" style="display: flex; flex-direction: row; padding: 1rem; align-items: center; gap: 1.5rem;">
-                <div class="mando-logo-container">
-                    ${bigLogoHtml}
-                </div>
-                <div class="mando-content" style="flex: 1; display: flex; flex-direction: column; gap: 0.5rem; border-left: 1px solid var(--border-color); padding-left: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;">
-                        <div class="mando-title" style="font-size: 1.4rem; font-family: var(--font-mono); font-weight: bold; background: rgba(0,0,0,0.4); color: #fff; padding: 0.25rem 0.75rem; border-radius: 4px; display: inline-block; margin-bottom: 0.5rem;">
-                            ${g.nombre}
-                        </div>
-                        <div style="font-family: var(--font-mono); font-size: 1.2rem; color: var(--theme-color); font-weight: bold; background: rgba(0,0,0,0.5); padding: 0.25rem 0.75rem; border: 1px solid var(--theme-color);">
-                            TOTAL EFECTIVOS: <span id="orbat-total-pax-value">${totalFactionPax}</span>
-                        </div>
+            <div class="grupo-card mando-card">
+                <div class="mando-header-row">
+                    <div class="mando-logo-container">
+                        ${bigLogoHtml}
                     </div>
+                    <div class="mando-title-pax">
+                        <span class="mando-title">${g.nombre}</span>
+                        <span class="mando-pax-badge"><span class="material-symbols-outlined" style="font-size:0.95rem; vertical-align:middle;">groups</span> <span id="orbat-total-pax-value">${totalFactionPax}</span> PAX</span>
+                    </div>
+                </div>
+                <div class="mando-content">
                     <div class="grupo-info">
                         <div class="editable-field">
                             <label>CH</label>
@@ -638,6 +687,16 @@ function renderUnassigned() {
     const assignedIds = todasAsignaciones.map(a => a.equipo_id);
     // Only show unassigned teams from the CURRENT faction for cleaner UI
     const unassigned = todosEquipos.filter(eq => !assignedIds.includes(eq.id) && eq.faccion_nombre === currentFaction);
+
+    // Actualizar indicador de contador en cabecera del cajón móvil
+    const drawerTitle = document.getElementById('mobile-drawer-title');
+    if (drawerTitle) {
+        drawerTitle.textContent = `BANDEJA SIN ASIGNAR (${unassigned.length})`;
+    }
+    const trayBtnCount = document.getElementById('tray-btn-count');
+    if (trayBtnCount) {
+        trayBtnCount.textContent = unassigned.length;
+    }
 
     unassigned.forEach(eq => {
         unassignedContainer.innerHTML += `
@@ -1022,11 +1081,11 @@ function renderEquiposTable(equipos) {
         const logoHtml = eq.logo_url ? `<img src="${eq.logo_url}" style="width:30px; height:30px; object-fit:contain; vertical-align:middle; margin-right:10px;">` : '';
         tbody.innerHTML += `
             <tr>
-                <td style="display: flex; align-items: center;">${logoHtml}${eq.nombre}</td>
-                <td class="color-${eq.faccion_nombre}">${eq.faccion_nombre}</td>
-                <td>${eq.jugadores}</td>
-                <td>${eq.tipo}</td>
-                <td>
+                <td data-label="Unidad"><div style="display: flex; align-items: center;">${logoHtml}<span>${eq.nombre}</span></div></td>
+                <td data-label="Facción" class="color-${eq.faccion_nombre}">${eq.faccion_nombre}</td>
+                <td data-label="Jugadores">${eq.jugadores}</td>
+                <td data-label="Perfil">${eq.tipo}</td>
+                <td data-label="Acciones">
                     <button class="btn secondary btn-edit" data-id="${eq.id}">Editar</button>
                     <button class="btn danger btn-del" data-id="${eq.id}">Borrar</button>
                 </td>
@@ -1523,13 +1582,13 @@ function renderMisionesTable(misiones) {
     misiones.forEach(mis => {
         tbody.innerHTML += `
             <tr>
-                <td>${mis.nombre}</td>
-                <td>${mis.tipo}</td>
-                <td>${mis.etiquetas || ''}</td>
-                <td>${mis.oficial_responsable || ''}</td>
-                <td>${mis.persistente ? '🔄 SÍ' : 'NO'}</td>
-                <td>${mis.revelada ? '👁️ SÍ' : 'NO'}</td>
-                <td>
+                <td data-label="Misión">${mis.nombre}</td>
+                <td data-label="Tipo">${mis.tipo}</td>
+                <td data-label="Etiquetas">${mis.etiquetas || '-'}</td>
+                <td data-label="Oficial Resp.">${mis.oficial_responsable || '-'}</td>
+                <td data-label="Persistente">${mis.persistente ? '🔄 SÍ' : 'NO'}</td>
+                <td data-label="Revelada">${mis.revelada ? '👁️ SÍ' : 'NO'}</td>
+                <td data-label="Acciones">
                     <button class="btn secondary btn-edit-mision" data-id="${mis.id}" data-obj='${JSON.stringify(mis)}'>Editar</button>
                     <button class="btn secondary btn-dup-mision" data-id="${mis.id}">Duplicar</button>
                     <button class="btn danger btn-del-mision" data-id="${mis.id}">Borrar</button>
@@ -1791,16 +1850,16 @@ function renderPOIsTable() {
 
         tbody.innerHTML += `
             <tr>
-                <td>${poi.nombre}</td>
-                <td><strong>${poi.tipo}</strong></td>
-                <td>${poi.tolerancia_metros}m</td>
-                <td>${faccionName}</td>
-                <td style="font-family: monospace; letter-spacing: 2px;">
+                <td data-label="Sector">${poi.nombre}</td>
+                <td data-label="Tipo"><strong>${poi.tipo}</strong></td>
+                <td data-label="Radio">${poi.tolerancia_metros}m</td>
+                <td data-label="Facción">${faccionName}</td>
+                <td data-label="QR" style="font-family: monospace; letter-spacing: 2px;">
                     ${poi.token_qr} 
                     <button class="btn outline btn-view-qr" style="padding: 2px 5px; font-size: 0.7rem; margin-left: 5px;" data-token="${poi.token_qr}">Ver QR</button>
                     <a href="/scan/${poi.token_qr}" target="_blank" class="btn outline" style="padding: 2px 5px; font-size: 0.7rem; margin-left: 5px; text-decoration: none;">Probar Scanner</a>
                 </td>
-                <td>
+                <td data-label="Acciones">
                     <button class="btn secondary btn-edit-poi" data-id="${poi.id}" data-obj='${JSON.stringify(poi)}'>Editar</button>
                     <button class="btn danger btn-del-poi" data-id="${poi.id}">Borrar</button>
                 </td>
@@ -2178,17 +2237,17 @@ async function loadSeguridad() {
             
             tbody.innerHTML += `
                 <tr>
-                    <td style="font-weight: bold; color: #fff;">
+                    <td data-label="Unidad" style="font-weight: bold; color: #fff;">
                         ${eq.nombre}
                         <div style="font-size: 0.75rem; color: #aaa; font-weight: normal; margin-top: 3px;">
                             User: <span style="color:#ffcc00">${eq.codigo || 'Sin código'}</span>
                         </div>
                     </td>
-                    <td style="color: ${facColor};">${eq.faccion_nombre}</td>
-                    <td>
+                    <td data-label="Facción" style="color: ${facColor};">${eq.faccion_nombre}</td>
+                    <td data-label="PIN Acceso">
                         <input type="text" id="pwd-${eq.id}" value="" placeholder="*** (Nuevo PIN)" style="background: rgba(0,0,0,0.3); border: 1px solid #444; color: #fff; padding: 5px 10px; width: 100%; border-radius: 3px; font-family: var(--font-mono);">
                     </td>
-                    <td style="text-align: center;">
+                    <td data-label="Acciones" style="text-align: center;">
                         <button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="updateEquipoPwd(${eq.id})">GUARDAR</button>
                     </td>
                 </tr>

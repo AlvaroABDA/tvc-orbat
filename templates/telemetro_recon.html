@@ -232,9 +232,55 @@
             box-shadow: 0 0 10px var(--accent-cyan);
         }
 
+        .compass-cardinal {
+            position: absolute;
+            font-family: 'Share Tech Mono', monospace;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: rgba(0, 240, 255, 0.65);
+            pointer-events: none;
+            user-select: none;
+        }
+        .cardinal-n { top: 6px; left: 50%; transform: translateX(-50%); color: var(--accent-cyan); font-weight: 900; font-size: 0.95rem; text-shadow: 0 0 8px var(--accent-cyan); }
+        .cardinal-e { right: 8px; top: 50%; transform: translateY(-50%); }
+        .cardinal-s { bottom: 6px; left: 50%; transform: translateX(-50%); }
+        .cardinal-w { left: 8px; top: 50%; transform: translateY(-50%); }
+
+        .telemetry-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .telemetry-pill {
+            flex: 1;
+            min-width: 135px;
+            background: rgba(0, 0, 0, 0.55);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .telemetry-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            margin-bottom: 2px;
+            text-transform: uppercase;
+        }
+
         .distance-display {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3rem;
+            font-size: 2.2rem;
             color: #fff;
             letter-spacing: 2px;
             text-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
@@ -244,18 +290,87 @@
         }
 
         .distance-unit {
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: var(--accent-cyan);
+            font-weight: bold;
         }
 
         .status-pill {
             font-family: 'Share Tech Mono', monospace;
-            padding: 8px 16px;
+            padding: 10px 16px;
             border-radius: 20px;
             font-size: 0.85rem;
             text-align: center;
             letter-spacing: 1px;
             border: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.4);
+            transition: all 0.25s ease;
+        }
+
+        /* Botón Táctico de Actualización Forzada de Posición y Azimut */
+        .btn-refresh-gps {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.15) 0%, rgba(0, 150, 220, 0.25) 100%);
+            color: var(--accent-cyan);
+            border: 1.5px solid var(--accent-cyan);
+            padding: 14px 18px;
+            border-radius: 4px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.88rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            width: 100%;
+            max-width: 440px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 18px rgba(0, 240, 255, 0.2), inset 0 0 12px rgba(0, 240, 255, 0.1);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            touch-action: manipulation;
+        }
+
+        .btn-refresh-gps:hover {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(0, 180, 255, 0.35) 100%);
+            box-shadow: 0 6px 25px rgba(0, 240, 255, 0.35), inset 0 0 16px rgba(0, 240, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .btn-refresh-gps:active {
+            transform: scale(0.97);
+            filter: brightness(1.2);
+        }
+
+        .btn-refresh-gps.loading {
+            border-color: var(--accent-gold);
+            color: var(--accent-gold);
+            background: rgba(218, 165, 32, 0.15);
+            box-shadow: 0 0 18px rgba(218, 165, 32, 0.3);
+            pointer-events: none;
+        }
+
+        .btn-refresh-gps.loading .refresh-icon {
+            animation: spin-refresh 0.9s linear infinite;
+        }
+
+        .btn-refresh-gps.success {
+            border-color: var(--accent-green);
+            color: #ffffff;
+            background: rgba(46, 204, 113, 0.25);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.45);
+        }
+
+        .btn-refresh-gps.error {
+            border-color: var(--accent-red);
+            color: #ffcccc;
+            background: rgba(255, 51, 68, 0.22);
+            box-shadow: 0 0 18px rgba(255, 51, 68, 0.35);
+        }
+
+        @keyframes spin-refresh {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         /* Camera HUD View - Inmersión Táctica Militar */
@@ -718,26 +833,50 @@
                 </div>
 
                 <div class="tracker-display">
-                    <!-- Compass Rose -->
+                    <!-- Compass Rose con Marcas Cardinales -->
                     <div class="compass-dial">
+                        <span class="compass-cardinal cardinal-n">N</span>
+                        <span class="compass-cardinal cardinal-e">E</span>
+                        <span class="compass-cardinal cardinal-s">S</span>
+                        <span class="compass-cardinal cardinal-w">O</span>
                         <div class="compass-arrow-wrap" id="tracker-arrow">
                             <div class="compass-pointer"></div>
                         </div>
                         <div class="compass-center-dot"></div>
                     </div>
 
-                    <!-- Distance Counter -->
-                    <div class="distance-display">
-                        <span id="tracker-dist-val">--</span>
-                        <span class="distance-unit">METROS</span>
+                    <!-- Métricas de Navegación: Distancia y Azimut al OP -->
+                    <div class="telemetry-row">
+                        <div class="telemetry-pill">
+                            <span class="telemetry-label">DISTANCIA AL OP</span>
+                            <div class="distance-display">
+                                <span id="tracker-dist-val">--</span>
+                                <span class="distance-unit">M</span>
+                            </div>
+                        </div>
+                        <div class="telemetry-pill">
+                            <span class="telemetry-label">AZIMUT / RUMBO AL OP</span>
+                            <div class="distance-display" style="color: var(--accent-cyan);">
+                                <span id="tracker-bearing-val">--°</span>
+                                <span class="distance-unit" id="tracker-cardinal-val" style="font-size: 0.95rem; color: #aaa;">--</span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div id="tracker-status-pill" class="status-pill" style="color: var(--accent-cyan); border-color: var(--accent-cyan);">
+                    <div id="tracker-status-pill" class="status-pill" style="color: var(--accent-cyan); border-color: var(--accent-cyan); width: 100%; max-width: 440px;">
                         INICIANDO NAVEGACIÓN GPS...
                     </div>
-                    <div id="tracker-gps-acc" style="font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; color: #777;">
-                        PRECISIÓN GPS: BUSCANDO...
+
+                    <div style="display: flex; justify-content: space-between; width: 100%; max-width: 440px; font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; color: #888;">
+                        <span id="tracker-gps-acc">PRECISIÓN GPS: BUSCANDO...</span>
+                        <span id="tracker-last-sync">ACTUALIZADO: --:--:--</span>
                     </div>
+
+                    <!-- Botón para forzar actualización de posición GPS y azimut -->
+                    <button id="btn-force-gps" class="btn-refresh-gps" onclick="forceGPSAzimuthUpdate()" title="Forzar lectura GPS de satélites y recalcular rumbo al OP">
+                        <span class="material-symbols-outlined refresh-icon" id="btn-force-icon" style="font-size: 20px;">my_location</span>
+                        <span id="btn-force-text">ACTUALIZAR POSICIÓN Y AZIMUT</span>
+                    </button>
                 </div>
 
                 <!-- Botón de entrar a cámara (aparece cuando <= 10m) -->
@@ -802,6 +941,9 @@
                         </button>
                         <button type="button" id="btn-calib-heading" class="btn-header" onclick="toggleInvertHeading()" style="padding: 4px 8px; font-size: 0.72rem; color: #00ffcc;" title="Invertir rumbo 180° si la brújula apunta en dirección opuesta">
                             ⚙️ INVERTIR 180°
+                        </button>
+                        <button type="button" class="btn-header" onclick="refreshOrientationAndGPS()" style="padding: 4px 8px; font-size: 0.72rem; color: #00f0ff;" title="Recalibrar sensor de azimut y posición">
+                            🔄 RECALIBRAR
                         </button>
                         <button type="button" class="btn-header" onclick="closeCameraView()" style="padding: 4px 10px; font-size: 0.75rem;">
                             SALIR
@@ -997,6 +1139,14 @@
             document.getElementById('view-selector').classList.add('active');
         }
 
+        // Dirección cardinal a partir de grados
+        function getCardinalDirection(deg) {
+            if (deg === null || isNaN(deg)) return "--";
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SO', 'O', 'NO'];
+            const index = Math.round(((deg % 360) / 45)) % 8;
+            return directions[index];
+        }
+
         // 3. Seguimiento GPS
         function startGPSTracking() {
             if (!navigator.geolocation) {
@@ -1004,11 +1154,15 @@
                 return;
             }
 
+            // Iniciar escucha continua
             watchPositionId = navigator.geolocation.watchPosition(
                 handlePositionUpdate,
                 handlePositionError,
-                { enableHighAccuracy: true, maximumAge: 1000, timeout: 8000 }
+                { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
             );
+
+            // También disparar una lectura forzada inicial sin esperar al watchPosition
+            forceGPSAzimuthUpdate(true);
         }
 
         function stopGPSTracking() {
@@ -1024,7 +1178,11 @@
             const acc = pos.coords.accuracy;
             lastPlayerCoords = { lat, lng };
 
-            document.getElementById('tracker-gps-acc').textContent = `PRECISIÓN GPS: ±${Math.round(acc)}M`;
+            const accEl = document.getElementById('tracker-gps-acc');
+            if (accEl) accEl.textContent = `PRECISIÓN GPS: ±${Math.round(acc)}M`;
+
+            const syncEl = document.getElementById('tracker-last-sync');
+            if (syncEl) syncEl.textContent = `ACTUALIZADO: ${new Date().toLocaleTimeString()}`;
 
             if (!currentSession) return;
 
@@ -1033,8 +1191,11 @@
         }
 
         function handlePositionError(err) {
-            document.getElementById('tracker-status-pill').textContent = "ERROR GPS — BUSCANDO SEÑAL...";
-            document.getElementById('tracker-status-pill').style.color = "var(--accent-red)";
+            const pill = document.getElementById('tracker-status-pill');
+            if (pill) {
+                pill.textContent = "GPS INESTABLE — USE 'ACTUALIZAR' PARA FORZAR";
+                pill.style.color = "var(--accent-gold)";
+            }
         }
 
         async function syncPositionWithServer(lat, lng) {
@@ -1062,8 +1223,22 @@
             const bearing = data.rumbo_hacia_op;
             const inRange = data.en_radio;
 
-            document.getElementById('tracker-dist-val').textContent = Math.round(dist);
-            document.getElementById('tracker-arrow').style.transform = `rotate(${bearing}deg)`;
+            const distEl = document.getElementById('tracker-dist-val');
+            if (distEl) distEl.textContent = Math.round(dist);
+
+            const arrowEl = document.getElementById('tracker-arrow');
+            if (arrowEl) arrowEl.style.transform = `rotate(${bearing}deg)`;
+
+            const bearingEl = document.getElementById('tracker-bearing-val');
+            if (bearingEl) bearingEl.textContent = `${String(Math.round(bearing)).padStart(3, '0')}°`;
+
+            const cardEl = document.getElementById('tracker-cardinal-val');
+            if (cardEl) cardEl.textContent = getCardinalDirection(bearing);
+
+            const syncEl = document.getElementById('tracker-last-sync');
+            if (syncEl && !syncEl.textContent.includes(':')) {
+                syncEl.textContent = `ACTUALIZADO: ${new Date().toLocaleTimeString()}`;
+            }
 
             const pill = document.getElementById('tracker-status-pill');
             const btnCam = document.getElementById('btn-enter-camera');
@@ -1078,6 +1253,150 @@
                 pill.style.color = "var(--accent-cyan)";
                 pill.style.borderColor = "var(--accent-cyan)";
                 btnCam.style.display = "none";
+            }
+        }
+
+        // ==================== ACTUALIZACIÓN MANUAL FORZADA DE POSICIÓN Y AZIMUT ====================
+        let isForceUpdating = false;
+
+        async function forceGPSAzimuthUpdate(silentInit = false) {
+            if (isForceUpdating) return;
+            isForceUpdating = true;
+
+            const btn = document.getElementById('btn-force-gps');
+            const btnText = document.getElementById('btn-force-text');
+            const btnIcon = document.getElementById('btn-force-icon');
+            const pill = document.getElementById('tracker-status-pill');
+
+            if (btn && !silentInit) {
+                btn.className = 'btn-refresh-gps loading';
+                if (btnIcon) btnIcon.textContent = 'sync';
+                if (btnText) btnText.textContent = 'OBTENIENDO GPS DE ALTA PRECISIÓN...';
+            }
+
+            if (pill && !silentInit) {
+                pill.textContent = 'CONECTANDO CON SATÉLITES GPS Y RECALCULANDO AZIMUT...';
+                pill.style.color = 'var(--accent-gold)';
+                pill.style.borderColor = 'var(--accent-gold)';
+            }
+
+            // Reactivar listener de brújula / orientación
+            if (typeof startCompass === 'function') {
+                startCompass();
+            }
+
+            if (!navigator.geolocation) {
+                if (!silentInit) alert("Geolocalización no soportada en este dispositivo.");
+                resetForceBtn();
+                return;
+            }
+
+            // Opciones estrictas para saltarse caché y forzar hardware GPS
+            const gpsOptions = {
+                enableHighAccuracy: true,
+                timeout: 12000,
+                maximumAge: 0
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                async (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const acc = pos.coords.accuracy;
+                    lastPlayerCoords = { lat, lng };
+
+                    const accEl = document.getElementById('tracker-gps-acc');
+                    if (accEl) accEl.textContent = `PRECISIÓN GPS: ±${Math.round(acc)}M`;
+
+                    const syncEl = document.getElementById('tracker-last-sync');
+                    if (syncEl) syncEl.textContent = `ACTUALIZADO: ${new Date().toLocaleTimeString()}`;
+
+                    if (currentSession) {
+                        try {
+                            const res = await fetch('/api/op-dinamico/posicion', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    token_sesion: currentSession.tokenSesion,
+                                    lat: lat,
+                                    lng: lng
+                                })
+                            });
+                            const data = await res.json();
+                            if (data.status === 'success') {
+                                updateTrackerUI(data);
+                            }
+                        } catch (e) {
+                            console.error("Error en sync tras actualización forzada:", e);
+                        }
+                    }
+
+                    // Reiniciar watchPosition para asegurar que el listener del SO se despierte
+                    if (watchPositionId !== null) {
+                        navigator.geolocation.clearWatch(watchPositionId);
+                        watchPositionId = navigator.geolocation.watchPosition(
+                            handlePositionUpdate,
+                            handlePositionError,
+                            { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+                        );
+                    }
+
+                    if (btn && !silentInit) {
+                        btn.className = 'btn-refresh-gps success';
+                        if (btnIcon) btnIcon.textContent = 'check_circle';
+                        if (btnText) btnText.textContent = '✓ POSICIÓN Y AZIMUT ACTUALIZADOS';
+                        playTacticalBeep(1100, 0.08, 'sine');
+                    }
+
+                    setTimeout(() => {
+                        resetForceBtn();
+                    }, 2000);
+                },
+                (err) => {
+                    console.warn("Fallo en lectura forzada de GPS:", err);
+                    if (btn && !silentInit) {
+                        btn.className = 'btn-refresh-gps error';
+                        if (btnIcon) btnIcon.textContent = 'error';
+                        if (btnText) btnText.textContent = '⚠️ ERROR GPS (PULSAR REINTENTAR)';
+                    }
+                    if (pill && !silentInit) {
+                        pill.textContent = 'ERROR GPS — VERIFIQUE PERMISOS O SALGA A CIELO DESPEJADO';
+                        pill.style.color = 'var(--accent-red)';
+                        pill.style.borderColor = 'var(--accent-red)';
+                    }
+                    setTimeout(() => {
+                        resetForceBtn();
+                    }, 2500);
+                },
+                gpsOptions
+            );
+        }
+
+        function resetForceBtn() {
+            isForceUpdating = false;
+            const btn = document.getElementById('btn-force-gps');
+            const btnText = document.getElementById('btn-force-text');
+            const btnIcon = document.getElementById('btn-force-icon');
+            if (btn) btn.className = 'btn-refresh-gps';
+            if (btnIcon) btnIcon.textContent = 'my_location';
+            if (btnText) btnText.textContent = 'ACTUALIZAR POSICIÓN Y AZIMUT';
+        }
+
+        // Recalibración rápida para el visor de cámara (Screen 3)
+        function refreshOrientationAndGPS() {
+            startCompass();
+            if (navigator.geolocation && currentSession) {
+                navigator.geolocation.getCurrentPosition(
+                    async (pos) => {
+                        const lat = pos.coords.latitude;
+                        const lng = pos.coords.longitude;
+                        lastPlayerCoords = { lat, lng };
+                        await syncPositionWithServer(lat, lng);
+                        playTacticalBeep(1200, 0.06, 'sine');
+                    },
+                    (err) => console.warn("GPS sync en cámara:", err),
+                    { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                );
             }
         }
 
