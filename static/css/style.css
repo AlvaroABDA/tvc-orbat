@@ -1167,14 +1167,14 @@ select option { color: #000; background: #fff; }
     }
     
     /* 4. Fix ORBAT Layout on Mobile */
-    #view-orbat {
-        flex-direction: column !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
-        padding: 6px !important;
-        padding-bottom: 75px !important; /* Espacio para que la barra inferior no tape squads */
+    #view-orbat.active {
         position: relative !important;
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        padding: 0 !important;
+        -webkit-overflow-scrolling: touch !important;
     }
     
     .orbat-content-wrapper {
@@ -1268,7 +1268,7 @@ select option { color: #000; background: #fff; }
     }
 
     /* Bandeja anclada abajo del todo en móvil, justo encima de la barra de navegación */
-    #view-orbat {
+    #view-orbat.active {
         position: relative !important;
         display: flex !important;
         flex-direction: column !important;
