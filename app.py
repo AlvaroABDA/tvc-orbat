@@ -2845,7 +2845,8 @@ def api_admin_medicos_refill_all():
 patch_db()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5020))
+    app.run(debug=True, port=port)
 
 
 
