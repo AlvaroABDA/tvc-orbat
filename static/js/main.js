@@ -236,10 +236,11 @@ function initOrbatMobileFilters() {
     const container = document.getElementById('orbat-tree-container');
     if (!filterBtns.length || !container) return;
     filterBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const filter = btn.dataset.filter;
+        btn.addEventListener('click', (e) => {
+            const targetBtn = e.currentTarget;
+            const filter = targetBtn.dataset.filter;
             filterBtns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            targetBtn.classList.add('active');
             container.classList.remove('filter-all', 'filter-mando', 'filter-goe', 'filter-gad');
             container.classList.add(`filter-${filter}`);
         });
@@ -422,12 +423,12 @@ function renderTree() {
     const gadGroups = grupos.filter(g => g.tipo === 'GAD' && !g.es_mando);
 
     // Actualizar conteos en selector táctico móvil
-    const btnMando = document.getElementById('filter-btn-mando');
-    const btnGoe = document.getElementById('filter-btn-goe');
-    const btnGad = document.getElementById('filter-btn-gad');
-    if (btnMando) btnMando.textContent = `🛡️ MANDO (${mandoGroup ? 1 : 0})`;
-    if (btnGoe) btnGoe.textContent = `🎯 GOE (${goeGroups.length})`;
-    if (btnGad) btnGad.textContent = `⚔️ GAD (${gadGroups.length})`;
+    const countMando = document.getElementById('count-filter-mando');
+    const countGoe = document.getElementById('count-filter-goe');
+    const countGad = document.getElementById('count-filter-gad');
+    if (countMando) countMando.textContent = `(${mandoGroup ? 1 : 0})`;
+    if (countGoe) countGoe.textContent = `(${goeGroups.length})`;
+    if (countGad) countGad.textContent = `(${gadGroups.length})`;
 
     let html = '';
 
@@ -490,8 +491,8 @@ function renderCard(g, isMando, totalFactionPax = 0) {
     if (imgSrc) {
         logoHtml = `<div class="grupo-logo" style="background-image: url('${imgSrc}'); background-color: transparent; border: none;"></div>`;
     } else {
-        let logoSymbol = isMando ? '🛡️' : (g.tipo === 'GOE' ? '🎯' : '⚔️');
-        logoHtml = `<div class="grupo-logo" style="display:flex; justify-content:center; align-items:center; font-size:1.3rem; background:rgba(0,0,0,0.2); border-radius:6px;">${logoSymbol}</div>`;
+        let logoIcon = isMando ? 'shield' : (g.tipo === 'GOE' ? 'crisis_alert' : 'swords');
+        logoHtml = `<div class="grupo-logo" style="display:flex; justify-content:center; align-items:center; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:6px;"><span class="material-symbols-outlined" style="font-size:1.4rem; color:var(--theme-color);">${logoIcon}</span></div>`;
     }
     
     const phoneLabel = isMando ? 'Línea Baja' : 'Contacto Mando';
@@ -585,7 +586,7 @@ function renderCard(g, isMando, totalFactionPax = 0) {
                                     <div>
                                         <strong>${t.equipo_nombre}</strong>
                                         <div class="equipo-details">Rol Preferido: ${todosEquipos.find(e => e.id === t.equipo_id)?.tipo || 'N/A'}</div>
-                                        ${ (t.apoyos > 0 || t.snipers > 0) ? `<div style="font-size: 0.7em; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">${t.apoyos > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🛡️ ${t.apoyos} Apoyo</span>` : ''}${t.snipers > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🎯 ${t.snipers} Sniper</span>` : ''}</div>` : '' }
+                                        ${ (t.apoyos > 0 || t.snipers > 0) ? `<div style="font-size: 0.7em; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">${t.apoyos > 0 ? `<span style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 0.85rem; color: var(--theme-color);">shield</span> ${t.apoyos} Apoyo</span>` : ''}${t.snipers > 0 ? `<span style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 0.85rem; color: var(--theme-color);">crisis_alert</span> ${t.snipers} Sniper</span>` : ''}</div>` : '' }
                                     </div>
                                     <span>${t.jugadores} px</span>
                                 </div>
@@ -612,7 +613,7 @@ function renderCard(g, isMando, totalFactionPax = 0) {
         if (imgSrc) {
             bigLogoHtml = `<div class="mando-logo-img" style="background-image: url('${imgSrc}');"></div>`;
         } else {
-            bigLogoHtml = `<div class="mando-logo-symbol">🛡️</div>`;
+            bigLogoHtml = `<div class="mando-logo-symbol" style="display:flex; justify-content:center; align-items:center;"><span class="material-symbols-outlined" style="font-size:2.4rem; color:var(--theme-color);">shield</span></div>`;
         }
 
         return `
@@ -704,7 +705,7 @@ function renderUnassigned() {
                 <div>
                     <strong>${eq.nombre}</strong>
                     <div class="equipo-details">Perfil: ${eq.tipo}</div>
-                    ${ (eq.apoyos > 0 || eq.snipers > 0) ? `<div style="font-size: 0.7em; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">${eq.apoyos > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🛡️ ${eq.apoyos} Apoyo</span>` : ''}${eq.snipers > 0 ? `<span style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); padding: 2px 5px; border-radius: 3px;">🎯 ${eq.snipers} Sniper</span>` : ''}</div>` : '' }
+                    ${ (eq.apoyos > 0 || eq.snipers > 0) ? `<div style="font-size: 0.7em; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">${eq.apoyos > 0 ? `<span style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 0.85rem; color: var(--theme-color);">shield</span> ${eq.apoyos} Apoyo</span>` : ''}${eq.snipers > 0 ? `<span style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 0.85rem; color: var(--theme-color);">crisis_alert</span> ${eq.snipers} Sniper</span>` : ''}</div>` : '' }
                 </div>
                 <span>${eq.jugadores} px</span>
             </div>
