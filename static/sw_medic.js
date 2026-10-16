@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tvc-medic-v10';
+const CACHE_NAME = 'tvc-medic-v11';
 const ASSETS_TO_CACHE = [
   '/medic',
   '/api/medic/roster',

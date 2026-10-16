@@ -324,7 +324,7 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertEqual(sw_res.status_code, 200)
         sw_text = sw_res.data.decode('utf-8')
         self.assertIn('/api/medic/roster', sw_text)
-        self.assertIn('tvc-medic-v10', sw_text)
+        self.assertIn('tvc-medic-v11', sw_text)
 
 if __name__ == '__main__':
     unittest.main()
