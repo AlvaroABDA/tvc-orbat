@@ -2656,7 +2656,30 @@ def api_medico_sync():
     result, status_code = medic_engine.sync_episodio_medico(conn, payload)
     return jsonify(result), status_code
 
+@app.route('/api/medic/roster', methods=['GET'])
+def api_medic_roster():
+    """
+    Snapshot de miembros y sanitarios para que la PWA médica funcione
+    100% offline con validación presencial de carnets.
+    """
+    conn = get_db_connection()
+    roster_data = medic_engine.get_medic_roster_snapshot(conn)
+    return jsonify(roster_data)
+
 # ==================== ADMIN MÉDICOS DASHBOARD ====================
+@app.route('/api/admin/medicos/audit', methods=['GET'])
+def api_admin_medicos_audit():
+    """
+    Bitácora táctica de atenciones médicas y control de discrepancias para el panel de seguridad.
+    """
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    conn = get_db_connection()
+    limit = int(request.args.get('limit', 150))
+    audit_data = medic_engine.get_medic_audit_log(conn, limit=limit)
+    audit_data['status'] = 'success'
+    return jsonify(audit_data)
+
 @app.route('/api/admin/medicos', methods=['GET'])
 def api_admin_medicos():
     if session.get('role') != 'admin':

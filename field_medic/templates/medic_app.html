@@ -370,14 +370,6 @@
             </div>
             {% endif %}
 
-            <!-- Entrada de contingencia manual por si la cámara física falla -->
-            <div style="border-top: 1px solid var(--glass-panel-border); padding-top: 15px; margin-top: 10px;">
-                <label style="font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">INGRESO MANUAL DE UID / TOKEN</label>
-                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                    <input type="text" id="manual-uid-input" placeholder="Ej: SYL-042 o UID" style="flex: 1; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid var(--glass-panel-border); color: #fff; font-family: 'Share Tech Mono', monospace; border-radius: 4px; outline: none; backdrop-filter: blur(8px);">
-                    <button class="btn-header" onclick="submitManualPatient()" style="padding: 10px 16px;">CARGAR</button>
-                </div>
-            </div>
         </section>
 
         <!-- ==================== PANTALLA 1-A: HEMORRAGIA COMPRESIÓN (RIEL) ==================== -->
@@ -738,39 +730,72 @@
                 <i>Nota doctrinal:</i> El cumplimiento de la estabilización no habilita al operador de forma automática para el combate. Respete las normas de evacuación o respawn establecidas por la organización.
             </p>
 
-            <div style="display: flex; gap: 8px; margin-top: 15px;">
-                <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="flex: 1; justify-content: center; padding: 12px; border-color: #555; color: #aaa;">
-                    CANCELAR
+            <!-- Bloque de Sellado y Firma con Carnet de Sanitario -->
+            <div id="medic-seal-prompt-card" style="background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.4); padding: 16px; margin-top: 15px; text-align: center;">
+                <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #2ecc71; margin-bottom: 6px;">
+                    PASO FINAL: AUTORIZACIÓN Y SELLO MÉDICO
+                </div>
+                <p style="font-size: 0.82rem; color: #ccc; margin: 0 0 14px 0; line-height: 1.4;">
+                    Para formalizar el alta del operador herido y descontar el botiquín reglamentario, el <b>médico tratante debe escanear su carnet QR</b>.
+                </p>
+                <button type="button" class="btn-action-large" onclick="openQRScannerForMedicSeal()" style="background: #2ecc71; color: #000; font-weight: 800; border: none; margin: 0 0 10px 0; box-shadow: 0 0 15px rgba(46,204,113,0.3);">
+                    📷 ESCANEAR CARNET DE SANITARIO
                 </button>
-                <button type="button" class="btn-action-large btn-cyan" onclick="confirmEpisodeClose()" style="flex: 2; margin-top: 0;">
-                    CONFIRMAR Y CERRAR
-                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="width: 100%; justify-content: center; padding: 9px; border-color: #555; color: #aaa; font-size: 0.75rem;">
+                        CANCELAR ASISTENCIA
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pantalla de Éxito / Confirmación de Sello -->
+            <div id="medic-seal-success-card" style="display: none; background: rgba(0, 240, 255, 0.1); border: 2px solid #00f0ff; padding: 18px; margin-top: 15px; text-align: center;">
+                <div style="color: #00f0ff; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin-bottom: 8px;">
+                    ✓ PARTE MÉDICO VALIDADO
+                </div>
+                <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #fff; line-height: 1.7;">
+                    <div>SANITARIO: <b id="seal-medic-name" style="color: #2ecc71;">--</b></div>
+                    <div>PACIENTE: <span id="seal-patient-name">--</span></div>
+                    <div style="margin-top: 6px; color: #aaa;">REANIMACIONES RESTANTES: <b id="seal-medic-remaining" style="color: #e2b938;">--</b></div>
+                    <div style="margin-top: 8px; color: #00f0ff; font-size: 0.8rem; font-weight: bold;">OPERADOR REINCORPORADO AL COMBATE</div>
+                </div>
             </div>
         </section>
 
     </div>
 
     <!-- Scanner Modal Fullscreen -->
-    <div id="scanner-modal">
+    <div id="scanner-modal" style="display: none;">
         <video id="scanner-video" playsinline autoplay muted></video>
         <div class="scanner-reticle"></div>
-        <button class="btn-header" onclick="closeQRScanner()" style="position: absolute; bottom: 30px; font-size: 1rem; padding: 12px 24px;">
-            CANCELAR ESCANEO
-        </button>
+        <div id="scanner-mode-banner" style="position: absolute; top: 20px; left: 16px; right: 16px; background: rgba(0,0,0,0.8); border: 1px solid var(--accent-cyan); padding: 10px 14px; text-align: center; font-family: 'Orbitron', sans-serif; font-size: 0.85rem; color: #fff; backdrop-filter: blur(8px); pointer-events: none;">
+            ESCANEAR CARNET DEL PACIENTE
+        </div>
+        <div style="position: absolute; bottom: 25px; left: 16px; right: 16px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+            <button type="button" class="btn-header" onclick="toggleScannerCamera()" style="font-size: 0.8rem; padding: 10px 14px; border-color: #00f0ff; color: #00f0ff; background: rgba(0,0,0,0.6);">
+                🔄 GIRAR CÁMARA
+            </button>
+            <button type="button" id="btn-scanner-torch" class="btn-header" onclick="toggleScannerTorch()" style="font-size: 0.8rem; padding: 10px 14px; border-color: #e2b938; color: #e2b938; background: rgba(0,0,0,0.6);">
+                💡 LUZ
+            </button>
+            <button type="button" class="btn-header" onclick="closeQRScanner()" style="font-size: 0.8rem; padding: 10px 16px; border-color: #ff3344; color: #ff9999; background: rgba(0,0,0,0.6);">
+                CANCELAR
+            </button>
+        </div>
     </div>
 
     <!-- Carga de Scripts Modulares Field Medic -->
-    <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/tourniquet_game.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/suture_game.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/pneumothorax_game.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/vitals_hold_game.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/dual_vitals_game.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/memory_sequence_game.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/line_correction_game.js') }}?v=7"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=7"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/tourniquet_game.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/suture_game.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/pneumothorax_game.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/vitals_hold_game.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/dual_vitals_game.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/memory_sequence_game.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/line_correction_game.js') }}?v=9"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=9"></script>
 
     <script>
         const sanitarioId = "{{ sanitario_id }}";
@@ -833,6 +858,7 @@
 
             updateReanimUI();
             updateHeaderNav();
+            storage.fetchAndCacheRoster();
             storage.flushSyncQueue();
 
             if (!isStandalone) {
@@ -984,14 +1010,36 @@
             }
         }
 
-        // ==================== ESCÁNER QR ====================
-        function openQRScanner() {
+        let scannerTargetMode = 'PATIENT'; // 'PATIENT' o 'MEDIC_SEAL'
+
+        // ==================== ESCÁNER QR DE CAMPO ====================
+        function openQRScanner(mode = 'PATIENT') {
+            scannerTargetMode = mode;
             const modal = document.getElementById('scanner-modal');
+            const banner = document.getElementById('scanner-mode-banner');
+            
+            if (banner) {
+                if (mode === 'MEDIC_SEAL') {
+                    banner.textContent = "2. ESCANEE SU CARNET DE SANITARIO PARA FIRMAR";
+                    banner.style.borderColor = "var(--accent-green)";
+                    banner.style.color = "#2ecc71";
+                } else {
+                    banner.textContent = "1. ESCANEE EL CARNET DEL HERIDO (PACIENTE)";
+                    banner.style.borderColor = "var(--accent-cyan)";
+                    banner.style.color = "#00f0ff";
+                }
+            }
+            
             modal.style.display = 'flex';
             const vid = document.getElementById('scanner-video');
+            
             qrScanner = new MedicQRScanner(vid, (token) => {
                 modal.style.display = 'none';
-                startNewEpisodeWithToken(token);
+                if (scannerTargetMode === 'MEDIC_SEAL') {
+                    completeEpisodeWithMedicToken(token);
+                } else {
+                    startNewEpisodeWithToken(token);
+                }
             }, (err) => {
                 alert(err);
                 modal.style.display = 'none';
@@ -999,18 +1047,31 @@
             qrScanner.start();
         }
 
+        function openQRScannerForMedicSeal() {
+            openQRScanner('MEDIC_SEAL');
+        }
+
         function closeQRScanner() {
             if (qrScanner) qrScanner.stop();
             document.getElementById('scanner-modal').style.display = 'none';
         }
 
-        function submitManualPatient() {
-            const val = document.getElementById('manual-uid-input').value.trim();
-            if (!val) {
-                alert("Introduzca un UID o indicativo de operador.");
-                return;
+        async function toggleScannerCamera() {
+            if (qrScanner) {
+                const newMode = await qrScanner.toggleCamera();
+                console.log("[Scanner] Cámara conmutada a:", newMode);
             }
-            startNewEpisodeWithToken(val);
+        }
+
+        async function toggleScannerTorch() {
+            if (qrScanner) {
+                const active = await qrScanner.toggleTorch();
+                const btn = document.getElementById('btn-scanner-torch');
+                if (btn) {
+                    btn.style.color = active ? '#fff' : '#e2b938';
+                    btn.style.background = active ? 'rgba(226,185,56,0.4)' : 'rgba(0,0,0,0.6)';
+                }
+            }
         }
 
         // ==================== LIMPIEZA DE MOTORES Y VISTAS ====================
@@ -1065,19 +1126,10 @@
                 return;
             }
 
-            const reanims = storage.getLocalReanimations();
-            if (reanims <= 0) {
-                if (userRole === 'admin') {
-                    if (confirm("Cupo de reanimaciones agotado.\n\nComo ADMINISTRADOR, ¿deseas autorecargar +10 usos inmediatamente para continuar con la prueba?")) {
-                        adminAddReanims(10);
-                    } else {
-                        return;
-                    }
-                } else {
-                    alert("ATENCIÓN: Ha agotado su cupo de reanimaciones asignadas para este despliegue.");
-                    return;
-                }
-            }
+            // Información del herido desde el roster offline precargado
+            const member = storage.lookupMember(cleanToken);
+            const pacienteNombre = member ? member.nombre : ("OPERADOR " + cleanToken);
+            const pacienteFaccion = member ? member.faccion : "";
 
             // Selección de variantes
             let fase1Var = selectedFase1Variant;
@@ -1093,9 +1145,16 @@
 
             activeEpisode = {
                 episode_id: "EP-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7).toUpperCase(),
-                sanitario_id: sanitarioId,
-                operador_uid: token,
-                operador_nombre: "OPERADOR " + token,
+                paciente_uid: cleanToken,
+                paciente_nombre: pacienteNombre,
+                paciente_faccion: pacienteFaccion,
+                operador_uid: cleanToken,         // compatibilidad legacy
+                operador_nombre: pacienteNombre,   // compatibilidad legacy
+                faccion_nombre: pacienteFaccion,   // compatibilidad legacy
+                medico_uid: null,
+                medico_nombre: null,
+                medico_faccion: null,
+                sanitario_id: sanitarioId,        // fallback provisional hasta sello final
                 escenario_id: fase1Var,
                 fase1_variante: fase1Var,
                 fase2_variante: fase2Var,
@@ -1104,6 +1163,7 @@
                 estabilizacion_completada: false,
                 phase1_progress: 0,
                 stabilization_progress: 0,
+                hora_inicio: new Date().toISOString(),
                 start_time: Date.now(),
                 duration_total_segundos: 0
             };
@@ -1341,32 +1401,94 @@
             const f2Name = f2Labels[activeEpisode.fase2_variante] || 'ESTABILIZACIÓN VITAL';
             const sumInjuryEl = document.getElementById('sum-injury-name');
             if (sumInjuryEl) sumInjuryEl.textContent = `${f1Name} + ${f2Name}`;
+
+            // Resetear tarjetas de sellado
+            const promptCard = document.getElementById('medic-seal-prompt-card');
+            const successCard = document.getElementById('medic-seal-success-card');
+            if (promptCard) promptCard.style.display = 'block';
+            if (successCard) successCard.style.display = 'none';
         }
 
-        function confirmEpisodeClose() {
-            stopAllEngines();
-            storage.decrementReanimation();
+        // ==================== FASE 3: SELLO Y FIRMA DEL MÉDICO ====================
+        function completeEpisodeWithMedicToken(token) {
+            if (!activeEpisode) return;
+            const cleanToken = (token || '').trim();
+            const upperToken = cleanToken.toUpperCase();
+            
+            // 1. Anti-trampas: Prohibir auto-curación (mismo carnet de paciente y médico)
+            const pacUid = (activeEpisode.paciente_uid || '').trim().toUpperCase();
+            if (upperToken === pacUid && pacUid !== '') {
+                alert("🚫 ERROR DE SEGURIDAD // AUTO-ATENCIÓN DENEGADA\n\nUn operador caído no puede ser su propio médico tratante.\nPresente el carnet de otro sanitario acreditado de su unidad.");
+                return;
+            }
+            
+            // 2. Comprobar acreditación médica en el roster offline
+            const isMed = storage.isMedic(cleanToken) || (upperToken === 'ADMIN');
+            if (!isMed) {
+                alert(`🚫 ACCESO DENEGADO // CREDENCIAL NO AUTORIZADA\n\nEl carnet escaneado [${cleanToken}] no posee rol de Sanitario Militar acreditado en el ORBAT.`);
+                return;
+            }
+            
+            // 3. Comprobar cupo de reanimaciones del médico
+            const reanims = storage.getMedicReanimations(cleanToken);
+            if (reanims <= 0 && upperToken !== 'ADMIN') {
+                alert(`⚠️ CUPO AGOTADO // SIN MATERIAL DISPONIBLE\n\nEl sanitario ${cleanToken} ha consumido todos sus botiquines de reanimación asignados.\nDebe reaprovisionarse en un punto de RESPAWN.`);
+                return;
+            }
+            
+            // 4. Obtener datos del médico desde el roster
+            const medMember = storage.lookupMember(cleanToken);
+            const medicoNombre = medMember ? medMember.nombre : cleanToken;
+            const medicoFaccion = medMember ? medMember.faccion : (upperToken === 'ADMIN' ? 'Global' : '');
+            
+            // 5. Descontar 1 reanimación al médico tratante
+            const remaining = storage.decrementMedicReanimation(cleanToken);
             updateReanimUI();
-
+            
+            // 6. Sellar episodio completo
+            activeEpisode.medico_uid = cleanToken;
+            activeEpisode.medico_nombre = medicoNombre;
+            activeEpisode.medico_faccion = medicoFaccion;
+            activeEpisode.sanitario_id = cleanToken; // compatibilidad legacy
+            activeEpisode.hora_cierre = new Date().toISOString();
+            activeEpisode.resultado_final = "EXITO";
+            
+            // 7. Encolar en almacenamiento local offline
             storage.enqueueForSync(activeEpisode);
             storage.clearCurrentEpisode();
+            
+            // 8. Actualizar tarjeta de sello
+            const promptCard = document.getElementById('medic-seal-prompt-card');
+            const successCard = document.getElementById('medic-seal-success-card');
+            if (promptCard) promptCard.style.display = 'none';
+            if (successCard) {
+                document.getElementById('seal-medic-name').textContent = `${medicoNombre} [${cleanToken}]`;
+                document.getElementById('seal-patient-name').textContent = `${activeEpisode.paciente_nombre} [${activeEpisode.paciente_uid}]`;
+                document.getElementById('seal-medic-remaining').textContent = remaining;
+                successCard.style.display = 'block';
+            }
+            
+            // 9. Intentar sincronización si hay cobertura
             storage.flushSyncQueue();
-
-            activeEpisode = null;
-            hideAllViews();
-            document.getElementById('view-scan-patient').style.display = 'block';
-            document.getElementById('manual-uid-input').value = '';
-            updateHeaderNav();
+            
+            // Regresar a la pantalla de espera tras 2.8 segundos de confirmación
+            setTimeout(() => {
+                activeEpisode = null;
+                hideAllViews();
+                document.getElementById('view-scan-patient').style.display = 'block';
+                updateHeaderNav();
+                if (promptCard) promptCard.style.display = 'block';
+                if (successCard) successCard.style.display = 'none';
+            }, 2800);
         }
 
-        // Cancelar / abortar intervención y regresar a la pantalla de escaneo / admin
+        // Cancelar / abortar intervención y regresar a la pantalla de escaneo
         function abortEpisodeToScan() {
             stopAllEngines();
             storage.clearCurrentEpisode();
             activeEpisode = null;
             hideAllViews();
             document.getElementById('view-scan-patient').style.display = 'block';
-            document.getElementById('manual-uid-input').value = '';
             updateHeaderNav();
         }
 

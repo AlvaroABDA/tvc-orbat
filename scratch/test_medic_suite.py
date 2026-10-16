@@ -226,6 +226,105 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertEqual(config["fase2_correccion_linea"]["segundos_en_rango_requeridos"], 8.0)
         self.assertEqual(config["fase2_correccion_linea"]["margen_tolerancia_pct"], 16.0)
 
+    def test_12_roster_snapshot_endpoint(self):
+        res = self.client.get('/api/medic/roster')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIn("roster", data)
+        self.assertIn("medicos", data)
+        self.assertIn("ADMIN", data["medicos"])
+        self.assertIn("ADMIN", data["roster"])
+        self.assertTrue(data["roster"]["ADMIN"]["is_medic"])
+
+    def test_13_dual_qr_sync_and_discrepancy_detection(self):
+        # 1. Successful normal attention (duration >= 25s, same faction, different UIDs)
+        ep1 = "EP-NORM-" + str(uuid.uuid4())
+        payload_normal = {
+            "episode_id": ep1,
+            "medico_uid": "MED-SYL-01",
+            "medico_nombre": "Dr. House",
+            "medico_faccion": "Syldavia",
+            "paciente_uid": "SYL-SOLDIER-01",
+            "paciente_nombre": "Private Ryan",
+            "paciente_faccion": "Syldavia",
+            "hora_inicio": "2026-10-16T10:00:00Z",
+            "hora_cierre": "2026-10-16T10:00:35Z",
+            "escenario_id": "HEMORRAGIA_ACTIVA",
+            "fase_actual": "completed",
+            "hemorragia_controlada": True,
+            "estabilizacion_completada": True,
+            "resultado_final": "EXITO",
+            "duracion_total_segundos": 35.0
+        }
+        res1, s1 = medic_engine.sync_episodio_medico(self.conn, payload_normal)
+        self.assertEqual(s1, 200)
+        self.assertEqual(res1["status"], "success")
+        self.assertEqual(len(res1["discrepancias"]), 0)
+
+        # 2. Flag: FAST_DURATION (< 25s)
+        ep2 = "EP-FAST-" + str(uuid.uuid4())
+        payload_fast = dict(payload_normal, episode_id=ep2, duracion_total_segundos=12.0)
+        res2, s2 = medic_engine.sync_episodio_medico(self.conn, payload_fast)
+        self.assertEqual(s2, 200)
+        self.assertIn("FAST_DURATION", res2["discrepancias"])
+
+        # 3. Flag: SELF_HEAL (paciente_uid == medico_uid)
+        ep3 = "EP-SELF-" + str(uuid.uuid4())
+        payload_self = dict(payload_normal, episode_id=ep3, paciente_uid="MED-SYL-01")
+        res3, s3 = medic_engine.sync_episodio_medico(self.conn, payload_self)
+        self.assertEqual(s3, 200)
+        self.assertIn("SELF_HEAL", res3["discrepancias"])
+
+        # 4. Flag: CROSS_FACTION (Syldavia treating Volkovia)
+        ep4 = "EP-CROSS-" + str(uuid.uuid4())
+        payload_cross = dict(payload_normal, episode_id=ep4, paciente_faccion="Volkovia")
+        res4, s4 = medic_engine.sync_episodio_medico(self.conn, payload_cross)
+        self.assertEqual(s4, 200)
+        self.assertIn("CROSS_FACTION", res4["discrepancias"])
+
+    def test_14_admin_audit_log_endpoint(self):
+        # Without admin session -> 403
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'player'
+        res_fail = self.client.get('/api/admin/medicos/audit')
+        self.assertEqual(res_fail.status_code, 403)
+
+        # With admin session -> 200 and KPI stats
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'admin'
+        res_ok = self.client.get('/api/admin/medicos/audit')
+        self.assertEqual(res_ok.status_code, 200)
+        data = res_ok.get_json()
+        self.assertEqual(data["status"], "success")
+        self.assertIn("episodes", data)
+        self.assertIn("stats", data)
+        self.assertIn("total_intervenciones", data["stats"])
+        self.assertIn("alertas_discrepancias_count", data["stats"])
+
+    def test_15_offline_pwa_and_no_manual_input_in_template(self):
+        # 1. medic_app.html has no manual input elements
+        res = self.client.get('/medic')
+        self.assertEqual(res.status_code, 200)
+        html = res.data.decode('utf-8')
+        self.assertNotIn('input-patient-token', html)
+        self.assertNotIn('type="text" id="manual', html)
+        self.assertNotIn('manual-token', html)
+
+        # 2. Camera flip and flashlight controls are present
+        self.assertIn('toggleCamera()', html)
+        self.assertIn('toggleTorch()', html)
+
+        # 3. Medic seal prompt card exists
+        self.assertIn('medic-seal-prompt-card', html)
+        self.assertIn('openQRScannerForMedicSeal()', html)
+
+        # 4. Service Worker caches offline roster
+        sw_res = self.client.get('/static/sw_medic.js')
+        self.assertEqual(sw_res.status_code, 200)
+        sw_text = sw_res.data.decode('utf-8')
+        self.assertIn('/api/medic/roster', sw_text)
+        self.assertIn('tvc-medic-v9', sw_text)
+
 if __name__ == '__main__':
     unittest.main()
 

@@ -634,6 +634,85 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- PANEL DE AUDITORÍA MÉDICA Y DETECCIÓN DE DISCREPANCIAS -->
+                    <div class="panel management-panel" style="margin-top: 1.5rem; border-top: 2px solid #2ecc71;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
+                            <div>
+                                <h3 style="color: #00f0ff; margin: 0; display: flex; align-items: center; gap: 8px;">
+                                    <span class="material-symbols-outlined" style="color: #00f0ff;">clinical_notes</span>
+                                    AUDITORÍA MÉDICA DE CAMPO // CONTROL DE DISCREPANCIAS
+                                </h3>
+                                <p style="color: #aaa; margin: 5px 0 0 0; font-size: 0.85rem;">
+                                    Registro en tiempo real de intervenciones sanitarias. Audita quién atendió a quién, tiempos de resolución y detección automática de anomalías tácticas.
+                                </p>
+                            </div>
+                            <button id="btn-refresh-audit" class="btn outline btn-sm" onclick="cargarAuditoriaMedica()" style="font-size: 0.8rem; border-color: #00f0ff; color: #00f0ff;">
+                                🔄 Actualizar Auditoría
+                            </button>
+                        </div>
+
+                        <!-- TARJETAS KPIS DE TELEMETRÍA MÉDICA -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.2rem;">
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid #444; padding: 10px; text-align: center;">
+                                <div style="font-size: 0.72rem; color: #888; font-family: var(--font-mono);">ATENCIONES TOTALES</div>
+                                <div id="audit-kpi-total" style="font-size: 1.4rem; font-weight: bold; color: #fff; margin-top: 4px;">--</div>
+                            </div>
+                            <div style="background: rgba(46,204,113,0.08); border: 1px solid rgba(46,204,113,0.4); padding: 10px; text-align: center;">
+                                <div style="font-size: 0.72rem; color: #2ecc71; font-family: var(--font-mono);">REINCORPORADOS (ÉXITOS)</div>
+                                <div id="audit-kpi-exitos" style="font-size: 1.4rem; font-weight: bold; color: #2ecc71; margin-top: 4px;">--</div>
+                            </div>
+                            <div style="background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.4); padding: 10px; text-align: center;">
+                                <div style="font-size: 0.72rem; color: #00f0ff; font-family: var(--font-mono);">TIEMPO MEDIO CURA</div>
+                                <div id="audit-kpi-tiempo" style="font-size: 1.4rem; font-weight: bold; color: #00f0ff; margin-top: 4px;">-- s</div>
+                            </div>
+                            <div style="background: rgba(255,51,68,0.08); border: 1px solid rgba(255,51,68,0.4); padding: 10px; text-align: center;">
+                                <div style="font-size: 0.72rem; color: #ff5566; font-family: var(--font-mono);">ALERTAS / DISCREPANCIAS</div>
+                                <div id="audit-kpi-alertas" style="font-size: 1.4rem; font-weight: bold; color: #ff5566; margin-top: 4px;">--</div>
+                            </div>
+                        </div>
+
+                        <!-- FILTROS TÁCTICOS -->
+                        <div style="display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.3); padding: 10px; border: 1px solid #333;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <label style="font-size: 0.75rem; color: #aaa; margin: 0;">Buscar:</label>
+                                <input type="text" id="audit-filter-search" oninput="filtrarAuditoriaMedica()" placeholder="Médico, Paciente o UID..." style="background: #111; border: 1px solid #555; color: #fff; padding: 5px 8px; font-size: 0.8rem; width: 170px;">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <label style="font-size: 0.75rem; color: #aaa; margin: 0;">Bando:</label>
+                                <select id="audit-filter-faccion" onchange="filtrarAuditoriaMedica()" style="background: #111; border: 1px solid #555; color: #fff; padding: 5px 8px; font-size: 0.8rem;">
+                                    <option value="">Todos los bandos</option>
+                                    <option value="Syldavia">Syldavia</option>
+                                    <option value="Volkovia">Volkovia</option>
+                                </select>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <label style="font-size: 0.75rem; color: #ff5566; cursor: pointer; display: flex; align-items: center; gap: 4px; margin: 0;">
+                                    <input type="checkbox" id="audit-filter-only-discrepancies" onchange="filtrarAuditoriaMedica()">
+                                    Solo con Discrepancias / Alertas ⚠️
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- TABLA DE LOG / HISTORIAL AUDITABLE -->
+                        <div style="overflow-x: auto;">
+                            <table class="table-tactical" style="table-layout: fixed; width: 100%;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align: left; width: 12%;">HORA</th>
+                                        <th style="text-align: left; width: 22%;">SANITARIO TRATANTE</th>
+                                        <th style="text-align: left; width: 22%;">PACIENTE ATENDIDO</th>
+                                        <th style="text-align: left; width: 18%;">LESIÓN / FASES</th>
+                                        <th style="text-align: center; width: 10%;">TIEMPO</th>
+                                        <th style="text-align: center; width: 16%;">ESTADO / ALERTA</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-audit-tbody">
+                                    <!-- Inyectado dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="tab-zafarrancho" class="admin-tab-content" style="display: none;">
@@ -659,6 +738,7 @@
 
                         if (targetId === 'tab-medicos') {
                             cargarAdminMedicos();
+                            cargarAuditoriaMedica();
                         }
                     });
                 });
@@ -757,6 +837,186 @@
                         alert(data.message || "Recarga masiva completada.");
                         cargarAdminMedicos();
                     } catch(e) { alert("Error en la recarga masiva."); }
+                }
+
+                // ==========================================
+                // AUDITORÍA Y CONTROL DE SEGURIDAD MÉDICA
+                // ==========================================
+                let allAuditEpisodes = [];
+
+                async function cargarAuditoriaMedica() {
+                    const tbody = document.getElementById('admin-audit-tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#888;">Consultando bitácora médica de campo...</td></tr>';
+                    
+                    try {
+                        const res = await fetch('/api/admin/medicos/audit');
+                        const data = await res.json();
+                        if (data.status !== 'success') {
+                            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#ff4444;">Error en servidor al consultar auditoría.</td></tr>';
+                            return;
+                        }
+
+                        // Actualizar KPIs
+                        const stats = data.stats || {};
+                        const totalEl = document.getElementById('audit-kpi-total');
+                        const exitosEl = document.getElementById('audit-kpi-exitos');
+                        const tiempoEl = document.getElementById('audit-kpi-tiempo');
+                        const alertasEl = document.getElementById('audit-kpi-alertas');
+
+                        if (totalEl) totalEl.textContent = stats.total_intervenciones || 0;
+                        if (exitosEl) {
+                            const pct = stats.total_intervenciones ? Math.round((stats.exitos / stats.total_intervenciones) * 100) : 0;
+                            exitosEl.textContent = `${stats.exitos || 0} (${pct}%)`;
+                        }
+                        if (tiempoEl) tiempoEl.textContent = `${stats.duracion_media_segundos || 0} s`;
+                        if (alertasEl) {
+                            alertasEl.textContent = stats.alertas_discrepancias_count || 0;
+                            alertasEl.style.color = (stats.alertas_discrepancias_count > 0) ? '#ff3344' : '#888';
+                        }
+
+                        allAuditEpisodes = data.episodes || [];
+                        filtrarAuditoriaMedica();
+                    } catch(e) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:15px; color:#ff4444;">Fallo de conexión al cargar la bitácora médica.</td></tr>';
+                    }
+                }
+
+                function filtrarAuditoriaMedica() {
+                    const queryEl = document.getElementById('audit-filter-search');
+                    const faccionEl = document.getElementById('audit-filter-faccion');
+                    const onlyAlertsEl = document.getElementById('audit-filter-only-discrepancies');
+
+                    const query = queryEl ? queryEl.value.toLowerCase().trim() : '';
+                    const faccion = faccionEl ? faccionEl.value : '';
+                    const onlyAlerts = onlyAlertsEl ? onlyAlertsEl.checked : false;
+
+                    const filtered = allAuditEpisodes.filter(ep => {
+                        if (onlyAlerts && (!ep.flags || ep.flags.length === 0)) {
+                            return false;
+                        }
+                        if (faccion) {
+                            const mf = (ep.medico_faccion || '').toLowerCase();
+                            const pf = (ep.paciente_faccion || '').toLowerCase();
+                            const target = faccion.toLowerCase();
+                            if (!mf.includes(target) && !pf.includes(target)) {
+                                return false;
+                            }
+                        }
+                        if (query) {
+                            const matchMed = (ep.medico_nombre || '').toLowerCase().includes(query) || (ep.medico_uid || '').toLowerCase().includes(query);
+                            const matchPac = (ep.paciente_nombre || '').toLowerCase().includes(query) || (ep.paciente_uid || '').toLowerCase().includes(query);
+                            const matchEsc = (ep.escenario_id || '').toLowerCase().includes(query);
+                            const matchId = (ep.id || '').toLowerCase().includes(query);
+                            if (!matchMed && !matchPac && !matchEsc && !matchId) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    });
+
+                    renderAuditoriaMedica(filtered);
+                }
+
+                function renderAuditoriaMedica(episodes) {
+                    const tbody = document.getElementById('admin-audit-tbody');
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+
+                    if (!episodes || episodes.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px; color:#888;">No hay intervenciones médicas que coincidan con los filtros.</td></tr>';
+                        return;
+                    }
+
+                    episodes.forEach(ep => {
+                        const tr = document.createElement('tr');
+                        const hasAlert = ep.flags && ep.flags.length > 0;
+                        if (hasAlert) {
+                            tr.style.background = 'rgba(255, 51, 68, 0.08)';
+                            tr.style.borderLeft = '3px solid #ff3344';
+                        }
+
+                        // Hora legible
+                        let horaStr = '--:--';
+                        try {
+                            const rawDate = ep.sincronizado_en || ep.hora_cierre || ep.hora_inicio;
+                            if (rawDate) {
+                                const d = new Date(rawDate);
+                                horaStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                            }
+                        } catch(e) {}
+
+                        // Médico
+                        const medNom = ep.medico_nombre || ep.sanitario_id || 'Desconocido';
+                        const medUid = ep.medico_uid || ep.sanitario_id || 'N/A';
+                        const medFac = ep.medico_faccion || '';
+                        const medFacColor = medFac.toLowerCase().includes('syl') ? '#3498db' : (medFac.toLowerCase().includes('vol') ? '#e74c3c' : '#aaa');
+
+                        // Paciente
+                        const pacNom = ep.paciente_nombre || ep.operador_nombre || 'Desconocido';
+                        const pacUid = ep.paciente_uid || ep.operador_uid || 'N/A';
+                        const pacFac = ep.paciente_faccion || ep.faccion_nombre || '';
+                        const pacFacColor = pacFac.toLowerCase().includes('syl') ? '#3498db' : (pacFac.toLowerCase().includes('vol') ? '#e74c3c' : '#aaa');
+
+                        // Fases / Escenario
+                        const escName = (ep.escenario_id || 'ESTÁNDAR').replace(/_/g, ' ');
+                        const hemTag = ep.hemorragia_controlada 
+                            ? '<span style="color:#2ecc71; font-size:0.75rem;">✔ HEM</span>' 
+                            : '<span style="color:#e74c3c; font-size:0.75rem;">✖ HEM</span>';
+                        const estTag = ep.estabilizacion_completada 
+                            ? '<span style="color:#2ecc71; font-size:0.75rem;">✔ ESTAB</span>' 
+                            : '<span style="color:#e74c3c; font-size:0.75rem;">✖ ESTAB</span>';
+
+                        // Duración
+                        const dur = ep.duracion_total_segundos ? `${Math.round(ep.duracion_total_segundos)}s` : '--';
+
+                        // Banderas de alerta
+                        let flagsHtml = '';
+                        if (hasAlert) {
+                            flagsHtml = '<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; justify-content:center;">';
+                            ep.flags.forEach(f => {
+                                if (f === 'FAST_DURATION') {
+                                    flagsHtml += '<span title="Tiempo anormalmente corto (<25s). Posible bypass" style="background:#ff3344; color:#fff; font-size:0.65rem; padding:1px 5px; font-weight:bold; font-family:var(--font-mono);">⚡ TIEMPO ANORMAL</span>';
+                                } else if (f === 'SELF_HEAL') {
+                                    flagsHtml += '<span title="El médico y el paciente comparten el mismo carnet" style="background:#9b59b6; color:#fff; font-size:0.65rem; padding:1px 5px; font-weight:bold; font-family:var(--font-mono);">👤 AUTO-CURACIÓN</span>';
+                                } else if (f === 'CROSS_FACTION') {
+                                    flagsHtml += '<span title="Atención sanitaria entre bandos rivales" style="background:#e67e22; color:#fff; font-size:0.65rem; padding:1px 5px; font-weight:bold; font-family:var(--font-mono);">⚔ BANDO CRUZADO</span>';
+                                } else if (f === 'RECENT_ATTENTION') {
+                                    flagsHtml += '<span title="Atención repetida inmediata sobre el mismo operador" style="background:#f1c40f; color:#000; font-size:0.65rem; padding:1px 5px; font-weight:bold; font-family:var(--font-mono);">⏳ REINCIDENCIA</span>';
+                                } else {
+                                    flagsHtml += `<span style="background:#777; color:#fff; font-size:0.65rem; padding:1px 5px; font-family:var(--font-mono);">${f}</span>`;
+                                }
+                            });
+                            flagsHtml += '</div>';
+                        }
+
+                        // Estado principal
+                        const estadoBadge = (ep.resultado_final === 'EXITO')
+                            ? '<span style="color:#2ecc71; font-weight:bold; font-size:0.8rem; background:rgba(46,204,113,0.15); border:1px solid #2ecc71; padding:2px 6px; font-family:var(--font-mono);">EXITOSO</span>'
+                            : '<span style="color:#e74c3c; font-weight:bold; font-size:0.8rem; background:rgba(231,76,60,0.15); border:1px solid #e74c3c; padding:2px 6px; font-family:var(--font-mono);">FALLIDO</span>';
+
+                        tr.innerHTML = `
+                            <td style="font-family:var(--font-mono); font-size:0.85rem; color:#fff;">${horaStr}</td>
+                            <td>
+                                <div style="font-weight:bold; color:#00f0ff; font-size:0.9rem;">🩺 ${medNom}</div>
+                                <div style="font-size:0.75rem; color:#888; font-family:var(--font-mono);">UID: ${medUid} | <span style="color:${medFacColor}; font-weight:bold;">${medFac || 'Sin bando'}</span></div>
+                            </td>
+                            <td>
+                                <div style="font-weight:bold; color:#fff; font-size:0.9rem;">🎯 ${pacNom}</div>
+                                <div style="font-size:0.75rem; color:#888; font-family:var(--font-mono);">UID: ${pacUid} | <span style="color:${pacFacColor}; font-weight:bold;">${pacFac || 'Sin bando'}</span></div>
+                            </td>
+                            <td>
+                                <div style="font-size:0.8rem; font-weight:bold; color:#aaa; font-family:var(--font-mono);">${escName}</div>
+                                <div style="display:flex; gap:6px; margin-top:2px;">${hemTag} ${estTag}</div>
+                            </td>
+                            <td style="text-align:center; font-family:var(--font-mono); font-size:0.9rem; color:#00f0ff; font-weight:bold;">${dur}</td>
+                            <td style="text-align:center;">
+                                ${estadoBadge}
+                                ${flagsHtml}
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
                 }
             </script>
         </section>
