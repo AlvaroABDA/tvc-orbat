@@ -11,7 +11,8 @@ class MemorySequenceGame {
         const raw = config || {};
         this.config = {
             rondas_totales: Number(raw.rondas_totales) || 5,
-            longitud_inicial: Number(raw.longitud_inicial) || 3,
+            longitud_inicial: Number(raw.longitud_inicial) || 2,
+            longitud_maxima: Number(raw.longitud_maxima) || 4,
             penalizacion_por_error_pct: Number(raw.penalizacion_por_error_pct) || 16.0,
             tiempo_limite_segundos: Number(raw.tiempo_limite_segundos) || 65
         };
@@ -116,14 +117,16 @@ class MemorySequenceGame {
 
     startRound(roundNum) {
         this.currentRound = roundNum;
-        const seqLen = this.config.longitud_inicial + (roundNum - 1);
+        const maxLen = this.config.longitud_maxima || 4;
+        const targetLen = this.config.longitud_inicial + (roundNum - 1);
+        const seqLen = Math.max(1, Math.min(maxLen, targetLen));
         this.sequence = this.generateSequence(seqLen);
         this.playerInputIndex = 0;
         this.mode = 'SHOWING';
         this.showStepIndex = -1;
         this.activeLitNode = -1;
         this.showTimer = 0.6; // Breve pausa antes de empezar a mostrar
-        this.showFeedback(`RONDA [${this.currentRound}/${this.config.rondas_totales}]: MEMORIZA LA SECUENCIA`, "#00f0ff");
+        this.showFeedback(`RONDA [${this.currentRound}/${this.config.rondas_totales}]: MEMORIZA (${seqLen} PULSOS)`, "#00f0ff");
     }
 
     handleNodeTap(touchX, touchY) {

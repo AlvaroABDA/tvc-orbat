@@ -222,6 +222,7 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertEqual(config["fase2_constantes_rango"]["aciertos_consecutivos_requeridos"], 7)
         self.assertEqual(config["fase2_doble_indicador"]["aciertos_requeridos_por_barra"], 6)
         self.assertEqual(config["fase2_secuencia_visual"]["rondas_totales"], 5)
+        self.assertLessEqual(config["fase2_secuencia_visual"]["longitud_maxima"], 4)
         # Línea de vida: 8 segundos y 16% de tolerancia
         self.assertEqual(config["fase2_correccion_linea"]["segundos_en_rango_requeridos"], 8.0)
         self.assertEqual(config["fase2_correccion_linea"]["margen_tolerancia_pct"], 16.0)
@@ -323,7 +324,7 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertEqual(sw_res.status_code, 200)
         sw_text = sw_res.data.decode('utf-8')
         self.assertIn('/api/medic/roster', sw_text)
-        self.assertIn('tvc-medic-v9', sw_text)
+        self.assertIn('tvc-medic-v10', sw_text)
 
 if __name__ == '__main__':
     unittest.main()

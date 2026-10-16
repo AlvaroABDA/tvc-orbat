@@ -81,7 +81,8 @@ def load_medic_config():
         },
         "fase2_secuencia_visual": {
             "rondas_totales": 5,
-            "longitud_inicial": 3,
+            "longitud_inicial": 2,
+            "longitud_maxima": 4,
             "penalizacion_por_error_pct": 16.0,
             "tiempo_limite_segundos": 65
         },
