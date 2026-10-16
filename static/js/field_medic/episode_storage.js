@@ -97,14 +97,25 @@ class EpisodeStorage {
         
         // Consultar si viene precargado en el roster offline
         const mem = this.lookupMember(medicoUid);
-        if (mem && mem.reanimaciones_disponibles !== undefined) {
-            this.setMedicReanimations(medicoUid, mem.reanimaciones_disponibles);
-            return mem.reanimaciones_disponibles;
+        if (mem && (mem.reanimaciones_disponibles !== undefined || mem.cupo_nominal !== undefined)) {
+            const val = (mem.reanimaciones_disponibles !== undefined) ? mem.reanimaciones_disponibles : mem.cupo_nominal;
+            this.setMedicReanimations(medicoUid, val);
+            return val;
         }
 
         const initVal = (medicoUid.toUpperCase().includes('ADMIN')) ? 99 : defaultVal;
         this.setMedicReanimations(medicoUid, initVal);
         return initVal;
+    }
+
+    getMedicNominalQuota(medicoUid, defaultVal = 3) {
+        if (!medicoUid) return defaultVal;
+        if (medicoUid.toUpperCase().includes('ADMIN')) return 99;
+        const mem = this.lookupMember(medicoUid);
+        if (mem && mem.cupo_nominal !== undefined) {
+            return mem.cupo_nominal;
+        }
+        return defaultVal;
     }
 
     setMedicReanimations(medicoUid, val) {

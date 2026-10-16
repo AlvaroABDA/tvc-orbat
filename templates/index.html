@@ -260,8 +260,8 @@
                 </div>
                 <div style="display: flex; gap: 1rem;">
                     {% if user_role != 'admin' %}
-                    <button class="btn warning" id="btn-mi-expediente" style="padding: 0 1rem;">
-                        <span class="material-symbols-outlined" style="font-size: 1.2rem; margin-right: 5px; vertical-align: middle;">badge</span> Mi Expediente
+                    <button class="btn warning" id="btn-mi-expediente" style="padding: 0 1rem;" title="Gestionar miembros y datos de tu unidad">
+                        <span class="material-symbols-outlined" style="font-size: 1.2rem; margin-right: 5px; vertical-align: middle;">groups</span> Gestionar unidad
                     </button>
                     {% endif %}
                     <a href="/logout" class="btn-power" title="Cerrar Sesión"><span class="material-symbols-outlined">power_settings_new</span></a>
@@ -829,33 +829,44 @@
                             </button>
                         </div>
 
-                        <div style="background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.12); padding: 1rem 1.2rem; border-radius: 6px; margin-bottom: 1.4rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                            <div>
-                                <div style="color: var(--accent-gold, #e2b938); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
-                                    <span class="material-symbols-outlined" style="font-size: 18px;">bolt</span> ACCIONES RÁPIDAS DE MANDO (ADMIN)
+                        <!-- DOCTRINA TVC DE ASIGNACIÓN MÉDICA -->
+                        <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-left: 4px solid #00f0ff; padding: 1rem 1.2rem; border-radius: 6px; margin-bottom: 1.2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                                <div>
+                                    <div style="color: #00f0ff; font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
+                                        <span class="material-symbols-outlined" style="font-size: 20px; color: #00f0ff;">verified_user</span>
+                                        METODOLOGÍA DOCTRINAL TVC // ASIGNACIÓN Y CURAS
+                                    </div>
+                                    <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 5px; line-height: 1.5;">
+                                        • <b>Límites de Médicos por Escuadra:</b> Hasta 8 miembros: <b>1 médico</b> | De 9 a 16 miembros: <b>máx 2 médicos</b> | De 17 o más: <b>máx 3 médicos</b>.<br>
+                                        • <b>Fórmula de Curas por Defecto:</b> <code>Efectivos de Escuadra // Médicos Asignados</code> (redondeo a la baja).<br>
+                                        • <b>Seguridad de Terminales:</b> Desvinculación de dispositivos restringida en exclusiva a Dirección (PIN <code>4747</code>).
+                                    </div>
                                 </div>
-                                <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 3px;">Asigna cupos ilimitados al perfil de mando o recarga proporcionalmente a todos los sanitarios desplegados.</div>
-                            </div>
-                            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                                <button class="btn btn-sm" onclick="asignarAdminRapido(10)" style="font-size: 0.8rem; border-color: #e2b938; color: #e2b938; background: rgba(226,185,56,0.1); font-weight: 600; padding: 6px 12px;">+10 a Admin</button>
-                                <button class="btn btn-sm" onclick="asignarAdminRapido(99)" style="font-size: 0.8rem; border-color: #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.1); font-weight: 600; padding: 6px 12px;">Admin 99 (INF)</button>
-                                <button class="btn btn-sm outline" onclick="recargarTodosSanitarios()" style="font-size: 0.8rem; border-color: #2ecc71; color: #2ecc71; background: rgba(46,204,113,0.1); font-weight: 600; padding: 6px 12px;">+AUTO a Todos</button>
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <button class="btn btn-sm" onclick="asignarAdminRapido(10)" style="font-size: 0.78rem; border-color: #e2b938; color: #e2b938; background: rgba(226,185,56,0.1); font-weight: 600; padding: 6px 10px;">+10 Admin</button>
+                                    <button class="btn btn-sm" onclick="asignarAdminRapido(99)" style="font-size: 0.78rem; border-color: #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.1); font-weight: 600; padding: 6px 10px;">Admin 99 INF</button>
+                                    <button class="btn btn-sm outline" onclick="recargarTodosSanitarios()" style="font-size: 0.8rem; border-color: #2ecc71; color: #2ecc71; background: rgba(46,204,113,0.15); font-weight: 700; padding: 6px 12px; box-shadow: 0 0 10px rgba(46,204,113,0.2);">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">autorenew</span> RECARGAR SEGÚN DOCTRINA
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         <div class="table-scroll-hint" style="display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #94a3b8; margin-bottom: 8px;">
                             <span class="material-symbols-outlined" style="font-size: 1.1rem; color: var(--accent-gold, #e2b938);">swipe</span>
-                            <span>Desplaza horizontalmente para visualizar todos los sanitarios y controles de cupo</span>
+                            <span>Desplaza horizontalmente para visualizar todos los sanitarios, doctrina de unidad y controles de cupo</span>
                         </div>
                         <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 1.2rem;">
-                            <table class="table-tactical" style="width: 100%; min-width: 820px;">
+                            <table class="table-tactical" style="width: 100%; min-width: 860px;">
                                 <thead>
                                     <tr>
-                                        <th style="text-align: left; width: 260px;">SANITARIO // CREDENCIALES</th>
-                                        <th style="text-align: left; width: 200px;">UNIDAD // FACCIÓN</th>
-                                        <th style="text-align: center; width: 110px;">EFECTIVOS</th>
-                                        <th style="text-align: center; width: 140px;">BOTIQUINES</th>
-                                        <th style="text-align: center; width: 210px;">AJUSTAR CUPO</th>
+                                        <th style="text-align: left; width: 230px;">SANITARIO // CREDENCIALES</th>
+                                        <th style="text-align: left; width: 180px;">UNIDAD // FACCIÓN</th>
+                                        <th style="text-align: center; width: 140px;">DOCTRINA ESCUADRA</th>
+                                        <th style="text-align: center; width: 110px;">CURAS DOCTRINA</th>
+                                        <th style="text-align: center; width: 120px;">BOTIQUINES</th>
+                                        <th style="text-align: center; width: 200px;">AJUSTAR CUPO</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-medicos-tbody">
@@ -1028,13 +1039,13 @@
                 async function cargarAdminMedicos() {
                     const tbody = document.getElementById('admin-medicos-tbody');
                     if (!tbody) return;
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#888;">Cargando sanitarios y unidades...</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:#888;">Cargando sanitarios y unidades...</td></tr>';
                     try {
                         const res = await fetch('/api/admin/medicos');
                         const data = await res.json();
                         tbody.innerHTML = '';
                         if (!data || data.length === 0) {
-                            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#888;">No hay unidades ni sanitarios dados de alta.</td></tr>';
+                            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:#888;">No hay unidades ni sanitarios dados de alta.</td></tr>';
                             return;
                         }
                         data.forEach(m => {
@@ -1053,9 +1064,32 @@
                                        ${m.uid ? `<span class="med-uid-tag" style="color: #00f0ff; border-color: rgba(0,240,255,0.3);">QR: ${m.uid}</span>` : ''}
                                    </div>`;
                             
+                            const curasDoc = m.curas_doctrina !== undefined ? m.curas_doctrina : 3;
                             const btnExtra = m.is_admin 
                                 ? `<button class="btn btn-sm" onclick="asignarAdminRapido(99)" title="Modo Test / Ilimitado" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; color: #00f0ff; border-color: #00f0ff; font-weight: 700; background: rgba(0,240,255,0.1);">99 INF</button>`
-                                : `<button class="btn btn-sm outline" onclick="recargarFullMedico('${m.sanitario_id}', ${m.miembros_count})" title="Recargar cupo según efectivos" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; border-color: #2ecc71; color: #2ecc71; font-weight: 700; background: rgba(46,204,113,0.1);">+AUTO</button>`;
+                                : `<button class="btn btn-sm outline" onclick="recargarFullMedico('${m.sanitario_id}', ${curasDoc})" title="Recargar cupo doctrinal (${curasDoc} curas)" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; border-color: #2ecc71; color: #2ecc71; font-weight: 700; background: rgba(46,204,113,0.1);">+AUTO</button>`;
+
+                            let doctrinaHtml = '';
+                            if (m.is_admin) {
+                                doctrinaHtml = `<span style="color: #e2b938; font-family: 'Share Tech Mono', monospace; font-size: 0.82rem; font-weight: bold;">MANDO HQ</span>`;
+                            } else {
+                                const excessWarning = m.excede_limite 
+                                    ? `<div style="margin-top: 4px;"><span style="background: rgba(255,51,68,0.2); color: #ff5566; border: 1px solid rgba(255,51,68,0.5); font-size: 0.7rem; font-weight: bold; padding: 2px 6px; border-radius: 3px; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 12px;">warning</span> EXCESO</span></div>` 
+                                    : '';
+                                doctrinaHtml = `
+                                    <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.88rem; color: #cbd5e1; font-weight: bold;">
+                                        ${m.miembros_count} pax
+                                    </div>
+                                    <div style="font-size: 0.76rem; color: ${m.excede_limite ? '#ff5566' : '#94a3b8'}; margin-top: 2px;">
+                                        ${m.medicos_count} / máx ${m.max_medicos_permitidos} med
+                                    </div>
+                                    ${excessWarning}
+                                `;
+                            }
+
+                            const curasColHtml = m.is_admin
+                                ? `<span style="color: #e2b938; font-family: 'Share Tech Mono', monospace; font-weight: bold;">99</span>`
+                                : `<div style="display: flex; align-items: baseline; justify-content: center; gap: 4px;"><span style="font-family: 'Share Tech Mono', monospace; font-size: 1.15rem; color: #00f0ff; font-weight: bold;">${curasDoc}</span><span style="font-size: 0.74rem; color: #94a3b8;">curas</span></div>`;
 
                             tr.innerHTML = `
                                 <td style="border-left-color: ${borderAccent} !important;">${nombreMed}</td>
@@ -1064,7 +1098,10 @@
                                     <div style="margin-top: 4px;"><span class="med-badge-faction ${facBadgeClass}">${m.faccion}</span></div>
                                 </td>
                                 <td style="text-align: center;">
-                                    <span style="font-family: 'Share Tech Mono', monospace; font-size: 0.88rem; background: rgba(255,255,255,0.06); padding: 4px 10px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; font-weight: bold;">${m.miembros_count} pax</span>
+                                    ${doctrinaHtml}
+                                </td>
+                                <td style="text-align: center;">
+                                    ${curasColHtml}
                                 </td>
                                 <td style="text-align: center;">
                                     <div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
@@ -1087,7 +1124,7 @@
                             tbody.appendChild(tr);
                         });
                     } catch (e) {
-                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#ff4444;">Error cargando recursos médicos.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:#ff4444;">Error cargando recursos médicos.</td></tr>';
                     }
                 }
 
@@ -1108,8 +1145,8 @@
                     } catch (e) { alert("Error de conexión."); }
                 }
 
-                async function recargarFullMedico(sanitarioId, miembrosCount) {
-                    const defaultVal = Math.max(3, Math.ceil(miembrosCount / 2));
+                async function recargarFullMedico(sanitarioId, curasDoctrina) {
+                    const defaultVal = curasDoctrina !== undefined ? curasDoctrina : 3;
                     document.getElementById(`input-quota-${sanitarioId}`).value = defaultVal;
                     guardarCupoMedico(sanitarioId);
                 }
@@ -1417,7 +1454,7 @@
     <div id="modal-equipo" class="modal">
         <div class="modal-content panel" style="max-width: 1300px; width: 95%; display: flex; flex-direction: column; gap: 1rem; max-height: 90vh; overflow-y: auto; background: rgba(30, 30, 30, 0.98); border: 1px solid var(--border-color); border-top: 3px solid var(--theme-color); border-radius: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.9); color: var(--text-main); font-family: 'Rajdhani', sans-serif;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
-                <h2 id="modal-title" style="margin: 0; color: var(--theme-color); font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">EXPEDIENTE DE EQUIPO</h2>
+                <h2 id="modal-title" style="margin: 0; color: var(--theme-color); font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">GESTIÓN DE UNIDAD</h2>
                 <div id="badge-medalla" style="display: none; padding: 0.5rem 1.5rem; border-radius: 0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; border: 1px solid transparent;"></div>
             </div>
             
@@ -1599,7 +1636,7 @@
 
                 <div class="modal-actions" style="justify-content: flex-end; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
                     <button type="button" class="btn secondary" id="btn-cancel-modal">Cancelar</button>
-                    <button type="submit" class="btn primary" style="font-size: 1.1rem; padding: 0.5rem 2rem;">Guardar Expediente</button>
+                    <button type="submit" class="btn primary" style="font-size: 1.1rem; padding: 0.5rem 2rem;">Guardar Unidad</button>
                 </div>
             </form>
         </div>

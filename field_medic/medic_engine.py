@@ -6,6 +6,36 @@ from datetime import datetime, timezone
 
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config.json')
 
+def get_max_medicos_permitidos(miembros_count: int) -> int:
+    """
+    Doctrina táctica de unidades:
+    - Hasta 8 miembros: máximo 1 médico
+    - De 9 a 16 miembros: máximo 2 médicos
+    - De 17 o más miembros: máximo 3 médicos
+    """
+    miembros = max(0, int(miembros_count or 0))
+    if miembros <= 8:
+        return 1
+    elif miembros <= 16:
+        return 2
+    else:
+        return 3
+
+def calcular_curas_por_medico(miembros_count: int, medicos_count: int) -> int:
+    """
+    Metodología TVC para la cantidad de curas por médico:
+    número de miembros de la escuadra // número de médicos asignados (redondeado a la baja).
+    Ejemplos:
+    - Escuadra de 14 miembros con 2 médicos -> 7 curas cada uno (14 // 2)
+    - Escuadra de 14 miembros con 1 médico -> 14 curas (14 // 1)
+    - Escuadra de 8 miembros con 1 médico -> 8 curas (8 // 1)
+    """
+    miembros = max(0, int(miembros_count or 0))
+    medicos = max(0, int(medicos_count or 0))
+    if medicos <= 0:
+        return 0
+    return max(1, miembros // medicos)
+
 def load_medic_config():
     if os.path.exists(CONFIG_PATH):
         try:
@@ -212,13 +242,14 @@ def resolve_sanitario_id_and_aliases(conn, sanitario_id):
     
     return ident, [ident, ident.upper(), ident.lower()]
 
-def get_or_create_sanitario_recursos(conn, sanitario_id):
+def get_or_create_sanitario_recursos(conn, sanitario_id, default_reanim=None):
     """
     Obtiene los recursos restantes del sanitario o los inicializa si es su primera atención,
     sincronizando todos los alias vinculados (carnet QR, nombre táctico, ID de equipo).
     """
-    config = load_medic_config()
-    default_reanim = config.get("reanimaciones_iniciales_medico", 3)
+    if default_reanim is None:
+        config = load_medic_config()
+        default_reanim = config.get("reanimaciones_iniciales_medico", 3)
     
     canonical, aliases = resolve_sanitario_id_and_aliases(conn, sanitario_id)
     cursor = conn.cursor()
@@ -400,11 +431,37 @@ def get_medic_roster_snapshot(conn):
     """
     Genera un diccionario ultraligero con todos los carnets/operadores y sanitarios
     de la partida para que la PWA opere 100% desconectada de la red.
-    Incluye los cupos de reanimaciones disponibles sincronizados con el servidor.
+    Incluye los cupos de reanimaciones disponibles sincronizados con el servidor y la doctrina TVC.
     """
     config = load_medic_config()
     default_reanim = config.get("reanimaciones_iniciales_medico", 3)
     cursor = conn.cursor()
+
+    # Precomputar estadísticas por escuadra según metodología TVC
+    squad_stats = {}
+    try:
+        eq_rows = cursor.execute('SELECT id, nombre FROM Equipo').fetchall()
+        for eq in eq_rows:
+            eq_id = eq['id']
+            tot_row = cursor.execute('SELECT COUNT(*) FROM Miembro WHERE equipo_id = ?', (eq_id,)).fetchone()
+            total_m = tot_row[0] if tot_row else 0
+            med_row = cursor.execute("SELECT COUNT(*) FROM Miembro WHERE equipo_id = ? AND (LOWER(rol) LIKE '%medico%' OR LOWER(rol) LIKE '%sanitario%')", (eq_id,)).fetchone()
+            meds_m = med_row[0] if med_row else 0
+            max_meds = get_max_medicos_permitidos(total_m)
+            curas = calcular_curas_por_medico(total_m, meds_m)
+            stat_item = {
+                'equipo_id': eq_id,
+                'equipo_nombre': eq['nombre'],
+                'miembros_count': total_m,
+                'medicos_count': meds_m,
+                'max_medicos_permitidos': max_meds,
+                'excede_limite': meds_m > max_meds,
+                'curas_por_medico': curas
+            }
+            squad_stats[str(eq_id)] = stat_item
+    except Exception as e:
+        print("[Medic Engine] Info squad_stats roster:", e)
+
     members = cursor.execute('''
         SELECT m.uid, m.nombre_jugador, m.rol, e.id as equipo_id, e.nombre as equipo_nombre, f.nombre as faccion_nombre
         FROM Miembro m
@@ -421,14 +478,17 @@ def get_medic_roster_snapshot(conn):
         rol = (row['rol'] or '').strip()
         faccion = (row['faccion_nombre'] or 'Sin facción').strip()
         equipo = (row['equipo_nombre'] or '').strip()
+        eq_id = row['equipo_id']
+        st = squad_stats.get(str(eq_id), {})
+        cupo_nominal = st.get('curas_por_medico', default_reanim)
         
         is_medic = ('medico' in rol.lower() or 'sanitario' in rol.lower())
         
         reanim_disp = default_reanim
         reanim_usad = 0
         if is_medic:
-            rec = get_or_create_sanitario_recursos(conn, uid or nombre)
-            reanim_disp = rec.get('reanimaciones_disponibles', default_reanim)
+            rec = get_or_create_sanitario_recursos(conn, uid or nombre, default_reanim=cupo_nominal)
+            reanim_disp = rec.get('reanimaciones_disponibles', cupo_nominal)
             reanim_usad = rec.get('reanimaciones_usadas', 0)
         
         info = {
@@ -437,7 +497,13 @@ def get_medic_roster_snapshot(conn):
             "rol": rol,
             "faccion": faccion,
             "equipo": equipo,
+            "equipo_id": eq_id,
             "is_medic": is_medic,
+            "cupo_nominal": cupo_nominal,
+            "miembros_escuadra": st.get('miembros_count', 0),
+            "medicos_escuadra": st.get('medicos_count', 0),
+            "max_medicos_permitidos": st.get('max_medicos_permitidos', 1),
+            "excede_limite_medicos": st.get('excede_limite', False),
             "reanimaciones_disponibles": reanim_disp,
             "reanimaciones_usadas": reanim_usad
         }
@@ -465,7 +531,12 @@ def get_medic_roster_snapshot(conn):
                 "rol": "Sanitario de Unidad",
                 "faccion": faccion,
                 "equipo": equipo,
+                "equipo_id": eq_id,
                 "is_medic": True,
+                "cupo_nominal": cupo_nominal,
+                "miembros_escuadra": st.get('miembros_count', 0),
+                "medicos_escuadra": st.get('medicos_count', 0),
+                "max_medicos_permitidos": st.get('max_medicos_permitidos', 1),
                 "reanimaciones_disponibles": reanim_disp,
                 "reanimaciones_usadas": reanim_usad
             }
@@ -480,6 +551,7 @@ def get_medic_roster_snapshot(conn):
         "faccion": "Global",
         "equipo": "Control Central",
         "is_medic": True,
+        "cupo_nominal": 99,
         "reanimaciones_disponibles": rec_admin.get('reanimaciones_disponibles', 99),
         "reanimaciones_usadas": rec_admin.get('reanimaciones_usadas', 0)
     }
@@ -488,6 +560,11 @@ def get_medic_roster_snapshot(conn):
         "roster": roster,
         "medicos": list(medicos_set),
         "total_jugadores": len(members),
+        "squad_stats": squad_stats,
+        "doctrina": {
+            "reglas": "Hasta 8 miembros: 1 médico | 9 a 16 miembros: 2 médicos | 17+ miembros: 3 médicos",
+            "formula": "miembros // medicos (redondeado a la baja)"
+        },
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 

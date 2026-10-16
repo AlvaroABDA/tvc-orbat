@@ -450,6 +450,18 @@ def manage_equipos():
         data = request.json
         cursor = conn.cursor()
         
+        is_admin = session.get('role') == 'admin'
+        alerta_doctrina_medicos = None
+        if 'miembros' in data and isinstance(data['miembros'], list):
+            tot_m = len(data['miembros'])
+            med_count = sum(1 for m in data['miembros'] if 'medico' in str(m.get('rol', '')).lower() or 'sanitario' in str(m.get('rol', '')).lower())
+            max_permitidos = medic_engine.get_max_medicos_permitidos(tot_m)
+            if med_count > max_permitidos:
+                if not is_admin:
+                    conn.close()
+                    return jsonify({'error': f'Doctrina TVC: Una escuadra de {tot_m} efectivos solo puede tener como máximo {max_permitidos} médico(s). Has asignado {med_count}.'}), 400
+                alerta_doctrina_medicos = f"Doctrina TVC: La escuadra tiene {tot_m} efectivos y {med_count} médicos. El máximo reglamentario para el jefe de unidad es de {max_permitidos} médico(s)."
+
         raw_password = data.get('password', '').strip()
         if not raw_password:
             raw_password = '1234'
@@ -476,10 +488,10 @@ def manage_equipos():
                     'INSERT INTO Historial_Equipo (equipo_id, operacion, mision_id, grupo_rol, valoracion, faccion_id) VALUES (?, ?, ?, ?, ?, ?)',
                     (new_id, h.get('operacion', ''), h.get('mision_id', None), h.get('grupo_rol', ''), h.get('valoracion', ''), h.get('faccion_id', None))
                 )
-                
+
         conn.commit()
         conn.close()
-        return jsonify({'id': new_id, 'status': 'success'}), 201
+        return jsonify({'id': new_id, 'status': 'success', 'alerta_medicos': alerta_doctrina_medicos}), 201
 
 @app.route('/api/equipos/<int:id>/logo', methods=['POST'])
 def upload_equipo_logo(id):
@@ -588,6 +600,17 @@ def update_delete_equipo(id):
             return jsonify({'error': 'Unauthorized'}), 403
 
         data = request.json
+        alerta_doctrina_medicos = None
+        if 'miembros' in data and isinstance(data['miembros'], list):
+            tot_m = len(data['miembros'])
+            med_count = sum(1 for m in data['miembros'] if 'medico' in str(m.get('rol', '')).lower() or 'sanitario' in str(m.get('rol', '')).lower())
+            max_permitidos = medic_engine.get_max_medicos_permitidos(tot_m)
+            if med_count > max_permitidos:
+                if not is_admin:
+                    conn.close()
+                    return jsonify({'error': f'Doctrina TVC: Una escuadra de {tot_m} efectivos solo puede tener como máximo {max_permitidos} médico(s). Has asignado {med_count}.'}), 400
+                alerta_doctrina_medicos = f"Doctrina TVC: La escuadra tiene {tot_m} efectivos y {med_count} médicos. El máximo reglamentario para el jefe de unidad es de {max_permitidos} médico(s)."
+
         if is_admin:
             cursor.execute(
                 'UPDATE Equipo SET nombre = ?, jugadores = ?, jugadores_manual = ?, faccion_id = ?, tipo = ?, valoracion = ?, codigo = ?, misiones_preferidas = ?, tags_comportamiento = ?, estado_medalla = ?, estado_sancion = ? WHERE id = ?',
@@ -647,10 +670,10 @@ def update_delete_equipo(id):
                     'INSERT INTO Historial_Equipo (equipo_id, operacion, mision_id, grupo_rol, valoracion, faccion_id) VALUES (?, ?, ?, ?, ?, ?)',
                     (id, h.get('operacion', ''), h.get('mision_id', None), h.get('grupo_rol', ''), h.get('valoracion', ''), h.get('faccion_id', None))
                 )
-                
+
         conn.commit()
         conn.close()
-        return jsonify({'status': 'success'})
+        return jsonify({'status': 'success', 'alerta_medicos': alerta_doctrina_medicos})
     
     elif request.method == 'DELETE':
         if not is_admin:
@@ -2624,8 +2647,22 @@ def view_medic():
     user_role = session.get('role', 'player')
     user_faction = session.get('faction', 'Syldavia')
     equipo_id = session.get('equipo_id')
+    equipo_nombre = session.get('equipo_nombre') or session.get('user') or ''
     
-    # Identificador del sanitario (usar UID de sesión, equipo o sanitario asignado)
+    # Lista de sanitarios de la escuadra actual si la sesión pertenece a un equipo
+    squad_medics = []
+    if equipo_id:
+        try:
+            m_rows = conn.execute('''
+                SELECT uid, nombre_jugador, rol 
+                FROM Miembro 
+                WHERE equipo_id = ? AND (LOWER(rol) LIKE '%medico%' OR LOWER(rol) LIKE '%sanitario%')
+            ''', (equipo_id,)).fetchall()
+            squad_medics = [dict(r) for r in m_rows]
+        except Exception:
+            squad_medics = []
+            
+    # Identificador del sanitario por defecto
     if user_role == 'admin':
         sanitario_id = 'ADMIN'
         recursos = medic_engine.get_or_create_sanitario_recursos(conn, 'ADMIN')
@@ -2653,7 +2690,10 @@ def view_medic():
         config=config,
         preloaded_token=preloaded_token,
         user_role=user_role,
-        user_faction=user_faction
+        user_faction=user_faction,
+        session_equipo_id=equipo_id,
+        session_equipo_nombre=equipo_nombre,
+        squad_medics=squad_medics
     )
 
 @app.route('/api/medico/recursos', methods=['GET'])
@@ -2677,11 +2717,36 @@ def api_medico_sync():
 def api_medic_roster():
     """
     Snapshot de miembros y sanitarios para que la PWA médica funcione
-    100% offline con validación presencial de carnets.
+    100% offline con validación presencial de carnets y doctrina de cupos.
     """
     conn = get_db_connection()
     roster_data = medic_engine.get_medic_roster_snapshot(conn)
     return jsonify(roster_data)
+
+@app.route('/api/medic/admin_unlock', methods=['POST'])
+def api_medic_admin_unlock():
+    """
+    Endpoint de autorización exclusiva de Dirección para desvincular un terminal de médico.
+    Requiere sesión activa de Administrador o el PIN maestro de Dirección (4747).
+    """
+    data = request.json or {}
+    pin = str(data.get('pin', '')).strip()
+    is_admin = session.get('role') == 'admin'
+    
+    if is_admin or pin == '4747':
+        return jsonify({
+            'status': 'success',
+            'authorized': True,
+            'success': True,
+            'message': 'Desvinculación del terminal autorizada por Dirección.'
+        })
+        
+    return jsonify({
+        'status': 'error',
+        'authorized': False,
+        'success': False,
+        'message': 'PIN de Dirección incorrecto o credencial denegada.'
+    }), 403
 
 # ==================== ADMIN MÉDICOS DASHBOARD ====================
 @app.route('/api/admin/medicos/audit', methods=['GET'])
@@ -2717,6 +2782,10 @@ def api_admin_medicos():
         'equipo_nombre': 'Control Central / HQ',
         'faccion': 'Global',
         'miembros_count': 99,
+        'medicos_count': 1,
+        'max_medicos_permitidos': 99,
+        'excede_limite': False,
+        'curas_doctrina': 99,
         'reanimaciones_disponibles': rec_admin['reanimaciones_disponibles'],
         'reanimaciones_usadas': rec_admin['reanimaciones_usadas'],
         'is_admin': True
@@ -2726,7 +2795,8 @@ def api_admin_medicos():
     medicos_db = conn.execute('''
         SELECT m.id as miembro_id, m.nombre_jugador, m.rol, m.uid,
                e.id as equipo_id, e.nombre as equipo_nombre, f.nombre as faccion,
-               (SELECT COUNT(*) FROM Miembro m2 WHERE m2.equipo_id = e.id) as miembros_count
+               (SELECT COUNT(*) FROM Miembro m2 WHERE m2.equipo_id = e.id) as miembros_count,
+               (SELECT COUNT(*) FROM Miembro m3 WHERE m3.equipo_id = e.id AND (LOWER(m3.rol) LIKE '%medico%' OR LOWER(m3.rol) LIKE '%sanitario%')) as medicos_count
         FROM Miembro m
         JOIN Equipo e ON m.equipo_id = e.id
         LEFT JOIN Faccion f ON e.faccion_id = f.id
@@ -2737,7 +2807,11 @@ def api_admin_medicos():
     if medicos_db:
         for med in medicos_db:
             canonical_lookup = med['uid'] or med['nombre_jugador']
-            rec = medic_engine.get_or_create_sanitario_recursos(conn, canonical_lookup)
+            pax = med['miembros_count'] or 0
+            meds_count = med['medicos_count'] or 1
+            max_permitidos = medic_engine.get_max_medicos_permitidos(pax)
+            curas_doctrina = medic_engine.calcular_curas_por_medico(pax, meds_count)
+            rec = medic_engine.get_or_create_sanitario_recursos(conn, canonical_lookup, default_reanim=curas_doctrina)
             sanitario_id = f"MED-{med['nombre_jugador'].upper()}" if med['nombre_jugador'] else f"MED-{med['equipo_id']}"
 
             lista.append({
@@ -2748,7 +2822,11 @@ def api_admin_medicos():
                 'equipo_id': med['equipo_id'],
                 'equipo_nombre': med['equipo_nombre'],
                 'faccion': med['faccion'] or 'Sin facción',
-                'miembros_count': med['miembros_count'] or 0,
+                'miembros_count': pax,
+                'medicos_count': meds_count,
+                'max_medicos_permitidos': max_permitidos,
+                'excede_limite': meds_count > max_permitidos,
+                'curas_doctrina': curas_doctrina,
                 'reanimaciones_disponibles': rec['reanimaciones_disponibles'],
                 'reanimaciones_usadas': rec['reanimaciones_usadas'],
                 'is_admin': False
@@ -2764,7 +2842,10 @@ def api_admin_medicos():
         ''').fetchall()
         for eq in equipos:
             sanitario_id = f"MED-{eq['id']}"
-            rec = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id)
+            pax = eq['miembros_count'] or 0
+            max_permitidos = medic_engine.get_max_medicos_permitidos(pax)
+            curas_doctrina = medic_engine.calcular_curas_por_medico(pax, 1)
+            rec = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id, default_reanim=curas_doctrina)
             lista.append({
                 'sanitario_id': sanitario_id,
                 'nombre_medico': 'Sanitario de Unidad',
@@ -2772,7 +2853,11 @@ def api_admin_medicos():
                 'equipo_id': eq['id'],
                 'equipo_nombre': eq['equipo_nombre'],
                 'faccion': eq['faccion'] or 'Sin facción',
-                'miembros_count': eq['miembros_count'] or 0,
+                'miembros_count': pax,
+                'medicos_count': 1,
+                'max_medicos_permitidos': max_permitidos,
+                'excede_limite': False,
+                'curas_doctrina': curas_doctrina,
                 'reanimaciones_disponibles': rec['reanimaciones_disponibles'],
                 'reanimaciones_usadas': rec['reanimaciones_usadas'],
                 'is_admin': False
@@ -2804,7 +2889,8 @@ def api_admin_medicos_refill_all():
     
     medicos_db = conn.execute('''
         SELECT m.nombre_jugador, m.uid, e.id as equipo_id,
-               (SELECT COUNT(*) FROM Miembro m2 WHERE m2.equipo_id = e.id) as miembros_count
+               (SELECT COUNT(*) FROM Miembro m2 WHERE m2.equipo_id = e.id) as miembros_count,
+               (SELECT COUNT(*) FROM Miembro m3 WHERE m3.equipo_id = e.id AND (LOWER(m3.rol) LIKE '%medico%' OR LOWER(m3.rol) LIKE '%sanitario%')) as medicos_count
         FROM Miembro m
         JOIN Equipo e ON m.equipo_id = e.id
         WHERE LOWER(m.rol) LIKE '%medico%' OR LOWER(m.rol) LIKE '%sanitario%'
@@ -2814,18 +2900,26 @@ def api_admin_medicos_refill_all():
     if medicos_db:
         for med in medicos_db:
             pax = med['miembros_count'] or 0
-            val = max(default_reanim, (pax + 1) // 2)
+            meds_count = med['medicos_count'] or 1
+            # Metodología TVC: miembros de escuadra // medicos asignados (a la baja)
+            val = medic_engine.calcular_curas_por_medico(pax, meds_count)
             medic_engine.update_sanitario_recursos(conn, med['uid'] or med['nombre_jugador'], val)
             count += 1
     else:
-        equipos = conn.execute('SELECT id FROM Equipo').fetchall()
+        equipos = conn.execute('''
+            SELECT e.id,
+                   (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = e.id) as miembros_count
+            FROM Equipo e
+        ''').fetchall()
         for eq in equipos:
+            pax = eq['miembros_count'] or 0
+            val = medic_engine.calcular_curas_por_medico(pax, 1)
             sanitario_id = f"MED-{eq['id']}"
-            medic_engine.update_sanitario_recursos(conn, sanitario_id, default_reanim)
+            medic_engine.update_sanitario_recursos(conn, sanitario_id, val)
             count += 1
             
     medic_engine.update_sanitario_recursos(conn, 'ADMIN', 99)
-    return jsonify({'status': 'success', 'message': f'Recargados {count} sanitarios según efectivos de unidad.', 'total_actualizados': count})
+    return jsonify({'status': 'success', 'message': f'Recargados {count} sanitarios según doctrina TVC (miembros // médicos).', 'total_actualizados': count})
 
 patch_db()
 

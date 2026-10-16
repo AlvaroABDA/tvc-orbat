@@ -465,6 +465,11 @@
         </div>
 
         <div style="display: flex; align-items: center; gap: 6px;">
+            <!-- Badge de terminal militar vinculado (Bloqueado por Dirección) -->
+            <button id="header-bound-badge" type="button" onclick="requestAdminUnlock()" class="btn-header" style="display: none; padding: 6px 9px; border-color: rgba(46,204,113,0.4); background: rgba(46,204,113,0.08); color: #2ecc71;" title="Terminal vinculado. Clic para desvincular (Requiere autorización de Dirección)">
+                <span class="material-symbols-outlined" style="font-size: 15px; color: #2ecc71;">lock</span>
+                <span id="header-bound-name" style="font-size: 0.72rem; font-weight: bold; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">VINCULADO</span>
+            </button>
             <button id="header-guide-btn" type="button" onclick="openMedicGuideModal()" class="btn-header" style="padding: 6px 9px; border-color: rgba(255,255,255,0.2);" title="Guía táctica médica">
                 <span class="material-symbols-outlined" style="font-size: 16px;">help_outline</span>
                 <span style="font-size: 0.72rem;">GUÍA</span>
@@ -513,6 +518,80 @@
             <button class="btn-header" onclick="skipInstallAndOpen()" style="width: 100%; justify-content: center; background: transparent; border: 1px dashed var(--panel-border); color: #888; font-size: 0.75rem; padding: 8px;">
                 JUGAR EN EL NAVEGADOR (MODO DIRECTO)
             </button>
+        </section>
+
+        <!-- ==================== PANTALLA CHECK-IN: VINCULACIÓN OBLIGATORIA DE TERMINAL ==================== -->
+        <section id="view-terminal-binding" class="tactical-card" style="display: none; border-color: #e2b938; background: rgba(16, 20, 26, 0.98);">
+            <div style="text-align: center; margin-bottom: 16px;">
+                <div style="display: inline-flex; align-items: center; justify-content: center; width: 62px; height: 62px; background: rgba(226,185,56,0.12); border: 2px solid #e2b938; margin-bottom: 12px; box-shadow: 0 0 25px rgba(226,185,56,0.25);">
+                    <span class="material-symbols-outlined" style="font-size: 34px; color: #e2b938;">badge</span>
+                </div>
+                <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.15rem; margin: 0 0 6px 0; color: #fff; letter-spacing: 1px;">
+                    CHECK-IN TÁCTICO // VINCULACIÓN DE TERMINAL
+                </h2>
+                <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.76rem; color: #e2b938; letter-spacing: 1px;">
+                    ESTADO: TERMINAL NO ASIGNADO
+                </div>
+            </div>
+
+            <!-- Caja doctrinal: sin posibilidad de cambio salvo Dirección -->
+            <div style="background: rgba(255, 51, 68, 0.08); border-left: 4px solid #ff3344; padding: 12px 14px; margin-bottom: 16px; font-size: 0.8rem; color: #fecaca; line-height: 1.45;">
+                <div style="display: flex; align-items: center; gap: 6px; font-weight: bold; margin-bottom: 4px; color: #fff; font-family: 'Orbitron', sans-serif; font-size: 0.82rem;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #ff3344;">gavel</span>
+                    <span>BLOQUEO DE SEGURIDAD OPERACIONAL</span>
+                </div>
+                Para operar en combate, este dispositivo debe quedar asignado de forma unívoca a un <b>Sanitario Militar acreditado</b>.
+                <div style="margin-top: 6px; color: #ff9999; font-weight: 500;">
+                    🔒 <b>Restricción Doctrinal:</b> Una vez vinculado, la tripulación <b>no puede cambiar de médico</b> libremente. La desvinculación o reasignación de terminal <b>debe ser autorizada por Dirección</b>.
+                </div>
+            </div>
+
+            <!-- Resumen de doctrina de unidades y curas -->
+            <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); padding: 12px 14px; margin-bottom: 18px; font-family: 'Share Tech Mono', monospace; font-size: 0.78rem; color: #e2e8f0; line-height: 1.55;">
+                <div style="color: #00f0ff; font-weight: bold; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">verified_user</span>
+                    <span>DOCTRINA TVC - METODOLOGÍA DE UNIDAD Y CURAS</span>
+                </div>
+                <div>• Hasta 8 efectivos: <b>1 médico</b></div>
+                <div>• De 9 a 16 efectivos: <b>máx 2 médicos</b></div>
+                <div>• De 17 o más efectivos: <b>máx 3 médicos</b></div>
+                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.15); color: #e2b938;">
+                    Fórmula reglamentaria: <b>Efectivos escuadra // Médicos asignados</b> (a la baja).
+                </div>
+            </div>
+
+            <!-- Botón principal: Escanear carnet de sanitario -->
+            <button class="btn-action-large btn-cyan" onclick="openQRScanner('BINDING')" style="margin-bottom: 12px; box-shadow: 0 0 20px rgba(0,240,255,0.25);">
+                📷 ESCANEAR MI CARNET DE SANITARIO (QR)
+            </button>
+
+            <!-- Opciones si la sesión pertenece a una escuadra o admin -->
+            {% if squad_medics and squad_medics|length > 0 %}
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; margin-bottom: 14px;">
+                <label style="font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: #aaa; display: block; margin-bottom: 8px;">
+                    SANITARIOS ACREDITADOS DE TU ESCUADRA ({{ session_equipo_nombre }}):
+                </label>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    {% for sm in squad_medics %}
+                    <button type="button" class="btn-header" onclick="bindTerminalWithData('{{ sm.uid }}', '{{ sm.nombre_jugador }}', '{{ session_equipo_nombre }}', '{{ user_faction }}')" style="width: 100%; justify-content: space-between; padding: 10px 14px; border-color: rgba(46,204,113,0.4); color: #fff; background: rgba(46,204,113,0.08);">
+                        <span style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                            <span class="material-symbols-outlined" style="font-size: 18px; color: #2ecc71;">medical_services</span>
+                            {{ sm.nombre_jugador }}
+                        </span>
+                        <span style="color: var(--accent-gold); font-size: 0.75rem;">VINCULAR ➔</span>
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if user_role == 'admin' %}
+            <div style="margin-top: 6px;">
+                <button type="button" class="btn-header" onclick="bindTerminalWithData('ADMIN', 'ADMINISTRADOR (HQ)', 'Control Central / HQ', 'Global')" style="width: 100%; justify-content: center; padding: 10px; border-color: #e2b938; color: #e2b938; background: rgba(226,185,56,0.1); font-weight: bold;">
+                    ⚡ VINCULAR COMO OFICIAL MÉDICO (HQ / ADMIN)
+                </button>
+            </div>
+            {% endif %}
         </section>
 
         <!-- ==================== PANTALLA 0: SELECCIÓN / ESCANEO DE PACIENTE ==================== -->
@@ -1052,14 +1131,20 @@
                 <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #2ecc71; margin-bottom: 6px;">
                     PASO FINAL: AUTORIZACIÓN Y SELLO MÉDICO
                 </div>
+                <div id="seal-bound-medic-info" style="font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 12px; background: rgba(0,0,0,0.4); padding: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                    SANITARIO ASIGNADO: <b id="seal-bound-medic-name" style="color: #00f0ff;">--</b>
+                </div>
                 <p style="font-size: 0.82rem; color: #ccc; margin: 0 0 14px 0; line-height: 1.4;">
-                    Para formalizar el alta del operador herido y descontar el botiquín reglamentario, el <b>médico tratante debe escanear su carnet QR</b>.
+                    El terminal está vinculado a tu credencial de combate. Pulsa para certificar el alta médica del herido o escanea otra credencial si asistes como apoyo.
                 </p>
-                <button type="button" class="btn-action-large" onclick="openQRScannerForMedicSeal()" style="background: #2ecc71; color: #000; font-weight: 800; border: none; margin: 0 0 10px 0; box-shadow: 0 0 15px rgba(46,204,113,0.3);">
-                    📷 ESCANEAR CARNET DE SANITARIO
+                <button type="button" class="btn-action-large" onclick="completeEpisodeWithBoundMedic()" style="background: #2ecc71; color: #000; font-weight: 800; border: none; margin: 0 0 10px 0; box-shadow: 0 0 15px rgba(46,204,113,0.3);">
+                    ✅ FIRMAR ALTA Y SELLAR ATENCIÓN (1 TAP)
                 </button>
                 <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="width: 100%; justify-content: center; padding: 9px; border-color: #555; color: #aaa; font-size: 0.75rem;">
+                    <button type="button" class="btn-header" onclick="openQRScannerForMedicSeal()" style="flex: 1; justify-content: center; padding: 9px; border-color: #00f0ff; color: #00f0ff; font-size: 0.75rem;">
+                        📷 ESCANEAR OTRO SANITARIO
+                    </button>
+                    <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="flex: 1; justify-content: center; padding: 9px; border-color: #555; color: #aaa; font-size: 0.75rem;">
                         CANCELAR ASISTENCIA
                     </button>
                 </div>
@@ -1167,9 +1252,164 @@
             }
         });
 
+        // ==================== GESTIÓN DE VINCULACIÓN DE TERMINAL A MÉDICO ====================
+        function checkTerminalBinding() {
+            const boundUid = localStorage.getItem('tvc_medic_bound_uid');
+            const bindingView = document.getElementById('view-terminal-binding');
+            const boundBadge = document.getElementById('header-bound-badge');
+            const boundNameEl = document.getElementById('header-bound-name');
+            const sealBoundNameEl = document.getElementById('seal-bound-medic-name');
+            const sanitarioTag = document.getElementById('header-sanitario-tag');
+            
+            if (!boundUid) {
+                hideAllViews();
+                if (bindingView) bindingView.style.display = 'block';
+                if (boundBadge) boundBadge.style.display = 'none';
+                if (sanitarioTag) sanitarioTag.textContent = "TERMINAL NO ASIGNADO";
+                return false;
+            } else {
+                const boundName = localStorage.getItem('tvc_medic_bound_name') || boundUid;
+                const boundSquad = localStorage.getItem('tvc_medic_bound_squad') || '';
+                if (boundBadge) {
+                    boundBadge.style.display = 'inline-flex';
+                    if (boundNameEl) boundNameEl.textContent = boundName;
+                }
+                if (sanitarioTag) {
+                    sanitarioTag.textContent = `SANITARIO: ${boundName}${boundSquad ? ' [' + boundSquad + ']' : ''}`;
+                }
+                if (sealBoundNameEl) {
+                    sealBoundNameEl.textContent = `${boundName} [${boundUid}]`;
+                }
+                storage.currentSessionId = boundUid;
+                return true;
+            }
+        }
+
+        function bindTerminalWithData(uid, name, squad, faction) {
+            if (!uid) return;
+            const cleanUid = uid.trim().toUpperCase();
+            
+            // Consultar datos de doctrina en roster offline
+            const mem = storage.lookupMember(cleanUid) || storage.lookupMember(name);
+            const defaultReanims = medicConfig.reanimaciones_iniciales_medico || 3;
+            let nominal = (cleanUid === 'ADMIN') ? 99 : (mem && mem.cupo_nominal !== undefined ? mem.cupo_nominal : defaultReanims);
+            
+            localStorage.setItem('tvc_medic_bound_uid', cleanUid);
+            localStorage.setItem('tvc_medic_bound_name', name || cleanUid);
+            localStorage.setItem('tvc_medic_bound_squad', squad || '');
+            localStorage.setItem('tvc_medic_bound_faction', faction || '');
+            localStorage.setItem('tvc_medic_nominal_quota', nominal.toString());
+            localStorage.setItem('tvc_medic_active_sanitario_id', cleanUid);
+            storage.currentSessionId = cleanUid;
+            
+            // Asignar cupo de reanimaciones si no tiene registrado
+            const reanimKey = `tvc_medic_reanim_${cleanUid}`;
+            if (localStorage.getItem(reanimKey) === null) {
+                storage.setMedicReanimations(cleanUid, nominal);
+            }
+            
+            updateReanimUI();
+            hideAllViews();
+            document.getElementById('view-scan-patient').style.display = 'block';
+            checkTerminalBinding();
+            
+            alert(`✅ CHECK-IN TÁCTICO COMPLETADO\n\nSanitario: ${name || cleanUid}\nEscuadra: ${squad || 'Asignada'}\nCupo de curas reglamentario: ${nominal} botiquines.\n\n🔒 Terminal vinculado. La desvinculación requiere autorización expresa de Dirección.`);
+        }
+
+        function handleScannedBindingToken(token) {
+            const clean = (token || '').trim();
+            const upper = clean.toUpperCase();
+            const isMed = storage.isMedic(clean) || (upper === 'ADMIN');
+            if (!isMed) {
+                alert(`🚫 CREDENCIAL NO AUTORIZADA // ACCESO DENEGADO\n\nEl carnet escaneado [${clean}] no figura con rol de Sanitario Militar en el ORBAT de ninguna escuadra.`);
+                return;
+            }
+            const mem = storage.lookupMember(clean);
+            const nom = mem ? mem.nombre : clean;
+            const eq = mem ? mem.equipo : '';
+            const fac = mem ? mem.faccion : '';
+            bindTerminalWithData(clean, nom, eq, fac);
+        }
+
+        function handleScannedAdminUnlockToken(token) {
+            const clean = (token || '').trim().toUpperCase();
+            const mem = storage.lookupMember(clean);
+            const isAdmin = clean === 'ADMIN' || (mem && (mem.is_admin || (mem.rol && mem.rol.toLowerCase().includes('mando'))));
+            if (isAdmin || "{{ user_role }}" === 'admin') {
+                performTerminalUnbind();
+            } else {
+                alert(`🚫 ACCESO DENEGADO: El carnet escaneado [${token}] no posee rango de Dirección.`);
+            }
+        }
+
+        function requestAdminUnlock() {
+            const errEl = document.getElementById('admin-unlock-error');
+            if (errEl) errEl.style.display = 'none';
+            const pinInp = document.getElementById('input-admin-unlock-pin');
+            if (pinInp) pinInp.value = '';
+            document.getElementById('modal-admin-unlock').style.display = 'flex';
+        }
+
+        function closeAdminUnlockModal() {
+            document.getElementById('modal-admin-unlock').style.display = 'none';
+        }
+
+        async function submitAdminUnlock() {
+            const pinInp = document.getElementById('input-admin-unlock-pin');
+            const pin = pinInp ? (pinInp.value || '').trim() : '';
+            const errEl = document.getElementById('admin-unlock-error');
+            
+            let authorized = (pin === '4747' || "{{ user_role }}" === 'admin');
+            
+            if (!authorized && pin) {
+                try {
+                    const res = await fetch('/api/medic/admin_unlock', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ pin: pin })
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.authorized) authorized = true;
+                    }
+                } catch (e) {}
+            }
+            
+            if (authorized) {
+                closeAdminUnlockModal();
+                performTerminalUnbind();
+            } else {
+                if (errEl) {
+                    errEl.textContent = "PIN DE DIRECCIÓN INCORRECTO. ACCESO DENEGADO.";
+                    errEl.style.display = 'block';
+                } else {
+                    alert("🚫 ACCESO DENEGADO: PIN DE DIRECCIÓN INCORRECTO");
+                }
+            }
+        }
+
+        function performTerminalUnbind() {
+            localStorage.removeItem('tvc_medic_bound_uid');
+            localStorage.removeItem('tvc_medic_bound_name');
+            localStorage.removeItem('tvc_medic_bound_squad');
+            localStorage.removeItem('tvc_medic_bound_faction');
+            localStorage.removeItem('tvc_medic_nominal_quota');
+            localStorage.removeItem('tvc_medic_active_sanitario_id');
+            stopAllEngines();
+            storage.clearCurrentEpisode();
+            activeEpisode = null;
+            checkTerminalBinding();
+            alert("🔓 TERMINAL DESVINCULADO POR DIRECCIÓN\n\nEl terminal ha sido liberado. Realice el Check-in con el nuevo Sanitario Militar.");
+        }
+
+        function completeEpisodeWithBoundMedic() {
+            const boundUid = localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId;
+            completeEpisodeWithMedicToken(boundUid);
+        }
+
         // Inicialización al cargar la página
         window.addEventListener('DOMContentLoaded', () => {
-            const lastSanitario = localStorage.getItem('tvc_medic_active_sanitario_id');
+            const lastSanitario = localStorage.getItem('tvc_medic_bound_uid') || localStorage.getItem('tvc_medic_active_sanitario_id');
             if (lastSanitario) {
                 storage.currentSessionId = lastSanitario;
             }
@@ -1179,9 +1419,14 @@
                 storage.setLocalReanimations(serverReanims);
             }
 
+            storage.fetchAndCacheRoster().then(() => {
+                checkTerminalBinding();
+                updateReanimUI();
+            });
+
+            const isBound = checkTerminalBinding();
             updateReanimUI();
             updateHeaderNav();
-            storage.fetchAndCacheRoster();
             storage.flushSyncQueue();
 
             if (!isStandalone) {
@@ -1193,6 +1438,12 @@
             const alreadyDismissed = localStorage.getItem('tvc_medic_install_dismissed');
             const preloadedToken = "{{ preloaded_token | default('', true) }}";
             const saved = storage.getCurrentEpisode();
+
+            if (!isBound) {
+                hideAllViews();
+                document.getElementById('view-terminal-binding').style.display = 'block';
+                return;
+            }
 
             if (!isStandalone && isIOS && !alreadyDismissed && (!preloadedToken || preloadedToken.trim() === '') && (!saved || saved.fase_actual === 'completed')) {
                 document.getElementById('view-pwa-install').style.display = 'block';
@@ -1287,8 +1538,9 @@
         }
 
         function updateReanimUI() {
-            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
-            const val = storage.getMedicReanimations(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
+            const activeSanitario = localStorage.getItem('tvc_medic_bound_uid') || localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            const nominal = parseInt(localStorage.getItem('tvc_medic_nominal_quota') || '0', 10) || storage.getMedicNominalQuota(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
+            const val = storage.getMedicReanimations(activeSanitario, nominal);
             
             // 1. Cabecera (Header Badge)
             const countEl = document.getElementById('reanim-count-val');
@@ -1322,10 +1574,10 @@
                 statusBadge.classList.remove('status-ok', 'status-warn', 'status-danger');
                 if (val > 1) {
                     statusBadge.classList.add('status-ok');
-                    statusBadge.textContent = `${val} KITS LISTOS`;
+                    statusBadge.textContent = `${val} / ${nominal} KITS`;
                 } else if (val === 1) {
                     statusBadge.classList.add('status-warn');
-                    statusBadge.textContent = 'ÚLTIMO KIT';
+                    statusBadge.textContent = `ÚLTIMO KIT (${val}/${nominal})`;
                 } else {
                     statusBadge.classList.add('status-danger');
                     statusBadge.textContent = '0 KITS (AGOTADO)';
@@ -1335,13 +1587,25 @@
             // Renderizar slots de botiquines visuales
             if (slotsContainer) {
                 slotsContainer.innerHTML = '';
-                const maxSlots = Math.max(3, Math.min(8, val > 0 ? val : 3));
+                const maxSlots = Math.max(3, Math.min(16, Math.max(val, nominal)));
                 for (let i = 0; i < maxSlots; i++) {
                     const slot = document.createElement('div');
                     slot.className = 'medic-slot-item ' + (i < val ? 'filled' : 'empty');
                     slot.innerHTML = (i < val) ? '✚' : '•';
                     slot.title = (i < val) ? `Botiquín #${i + 1} operativo` : `Botiquín no disponible`;
                     slotsContainer.appendChild(slot);
+                }
+            }
+
+            // Mensaje doctrinal de inventario con datos de escuadra
+            const invMsg = document.getElementById('medic-inventory-msg');
+            if (invMsg) {
+                const boundName = localStorage.getItem('tvc_medic_bound_name');
+                const boundSquad = localStorage.getItem('tvc_medic_bound_squad');
+                if (boundName) {
+                    invMsg.innerHTML = `🔒 <b>Sanitario:</b> ${boundName} ${boundSquad ? '[' + boundSquad + ']' : ''} | <b>Dotación Reglamentaria:</b> ${nominal} curas por doctrina.`;
+                } else {
+                    invMsg.textContent = `Cada reanimación exitosa descuenta 1 botiquín. Recarga escaneando la baliza QR de tu RESPAWN.`;
                 }
             }
 
@@ -1456,11 +1720,11 @@
             }
         }
 
-        let scannerTargetMode = 'PATIENT'; // 'PATIENT', 'RESPAWN', o 'MEDIC_SEAL'
+        let scannerTargetMode = 'PATIENT'; // 'PATIENT', 'RESPAWN', 'MEDIC_SEAL', 'BINDING', 'ADMIN_UNLOCK'
 
         // ==================== ESCÁNER QR DE CAMPO ====================
         function openQRScanner(mode = 'PATIENT') {
-            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            const activeSanitario = localStorage.getItem('tvc_medic_bound_uid') || localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
             const currentKits = storage.getMedicReanimations(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
             const userRole = "{{ user_role }}";
 
@@ -1479,6 +1743,14 @@
                     banner.textContent = "2. ESCANEE SU CARNET DE SANITARIO PARA FIRMAR";
                     banner.style.borderColor = "var(--accent-green)";
                     banner.style.color = "#2ecc71";
+                } else if (mode === 'BINDING') {
+                    banner.textContent = "ESCANEE SU CARNET DE SANITARIO (VINCULAR)";
+                    banner.style.borderColor = "#e2b938";
+                    banner.style.color = "#e2b938";
+                } else if (mode === 'ADMIN_UNLOCK') {
+                    banner.textContent = "ESCANEE CREDENCIAL DE MANDO / DIRECCIÓN";
+                    banner.style.borderColor = "#ff3344";
+                    banner.style.color = "#ff3344";
                 } else if (mode === 'RESPAWN') {
                     banner.textContent = "📦 ESCANEE LA BALIZA QR DE RESPAWN / RECARGA";
                     banner.style.borderColor = "var(--accent-gold)";
@@ -1497,6 +1769,10 @@
                 modal.style.display = 'none';
                 if (scannerTargetMode === 'MEDIC_SEAL') {
                     completeEpisodeWithMedicToken(token);
+                } else if (scannerTargetMode === 'BINDING') {
+                    handleScannedBindingToken(token);
+                } else if (scannerTargetMode === 'ADMIN_UNLOCK') {
+                    handleScannedAdminUnlockToken(token);
                 } else {
                     startNewEpisodeWithToken(token);
                 }
@@ -1537,7 +1813,7 @@
         // ==================== LIMPIEZA DE MOTORES Y VISTAS ====================
         function hideAllViews() {
             const ids = [
-                'view-pwa-install', 'view-scan-patient', 'view-hemorrhage', 'view-tourniquet',
+                'view-terminal-binding', 'view-pwa-install', 'view-scan-patient', 'view-hemorrhage', 'view-tourniquet',
                 'view-suture', 'view-pneumothorax', 'view-stabilization', 'view-vitals-hold',
                 'view-dual-vitals', 'view-memory-sequence', 'view-line-correction', 'view-summary'
             ];
@@ -1571,26 +1847,34 @@
             const cleanToken = (token || '').trim();
             const upperToken = cleanToken.toUpperCase();
             const userRole = "{{ user_role }}";
+            const boundUid = (localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId || '').trim().toUpperCase();
 
             // RECARGA MEDIANTE PUNTO DE RESPAWN / CÓDIGO QR DE SUMINISTRO
             if (upperToken.includes('RESPAWN') || upperToken.includes('RECARGA') || upperToken.includes('SUPPLY') || upperToken.includes('BASE')) {
-                const addQty = userRole === 'admin' ? 10 : 3;
-                const newTotal = storage.getLocalReanimations() + addQty;
-                storage.setLocalReanimations(newTotal);
+                const targetMedic = boundUid || 'MED-ALFA';
+                const nominal = parseInt(localStorage.getItem('tvc_medic_nominal_quota') || '0', 10) || storage.getMedicNominalQuota(targetMedic, 3);
+                const newTotal = nominal; // Reposición reglamentaria al llegar a base/respawn: cupo normal por defecto (miembros // médicos)
+                storage.setMedicReanimations(targetMedic, newTotal);
                 updateReanimUI();
                 fetch('/api/admin/medicos/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sanitario_id: sanitarioId, reanimaciones: newTotal })
+                    body: JSON.stringify({ sanitario_id: targetMedic, reanimaciones: newTotal })
                 }).catch(() => {});
                 sessionStorage.removeItem('tvc_medic_last_consumption');
                 dismissConsumptionNotice();
-                alert(`📦 ¡PUNTO DE REAPROVISIONAMIENTO ESCANEADO!\n\nBotiquines y material de reanimación recargados (+${addQty}).\nTotal disponible: ${newTotal}`);
+                alert(`📦 ¡PUNTO DE REAPROVISIONAMIENTO ESCANEADO!\n\nBotiquines recargados a cupo de escuadra (${newTotal} curas disponibles).\nSanitario: ${targetMedic}`);
+                return;
+            }
+
+            // ANTI-TRAMPAS INMEDIATO: Prohibir auto-curación (mismo carnet de paciente y médico)
+            if (boundUid && upperToken === boundUid) {
+                alert("🚫 ERROR DE SEGURIDAD // AUTO-ATENCIÓN DENEGADA\n\nUn operador caído no puede ser su propio médico tratante en combate.\nDebes ser asistido por otro sanitario militar de tu unidad.");
                 return;
             }
 
             // NOTIFICACIÓN AL INICIO DEL TRATAMIENTO: Comprobar cupo al escanear al paciente
-            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            const activeSanitario = boundUid || localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
             const currentKits = storage.getMedicReanimations(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
             if (currentKits <= 0 && userRole !== 'admin') {
                 const member = storage.lookupMember(cleanToken);
@@ -2191,6 +2475,41 @@
                 </button>
                 <button type="button" class="btn-header" onclick="closeNoKitsModal()" style="width: 100%; justify-content: center; font-size: 0.78rem; padding: 9px; border-color: #555; color: #aaa;">
                     ENTENDIDO // CERRAR
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Autorización de Dirección / Desvinculación de Terminal -->
+    <div id="modal-admin-unlock" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); backdrop-filter: blur(8px); z-index: 100000; justify-content: center; align-items: center; padding: 16px;" onclick="if(event.target === this) closeAdminUnlockModal()">
+        <div style="background: #14171d; border: 2px solid #ff3344; max-width: 440px; width: 100%; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.9); animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px; border-bottom: 1px solid rgba(255,51,68,0.3); padding-bottom: 10px;">
+                <span class="material-symbols-outlined" style="color: #ff3344; font-size: 28px;">security</span>
+                <div>
+                    <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #fff; font-weight: bold;">AUTORIZACIÓN DE DIRECCIÓN</div>
+                    <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: #ff5566;">DESVINCULACIÓN RESTRINGIDA</div>
+                </div>
+            </div>
+
+            <p style="font-size: 0.82rem; color: #ccc; line-height: 1.5; margin: 0 0 16px 0;">
+                Por normativa doctrinal TVC, los combatientes <b>no pueden desvincular o cambiar de médico</b> por su cuenta. Ingrese el PIN de Dirección o escanee la credencial de un Oficial de Mando para autorizar la liberación de este terminal.
+            </p>
+
+            <div style="margin-bottom: 16px;">
+                <label style="font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; color: #e2b938; display: block; margin-bottom: 6px;">PIN DE MANDO / DIRECCIÓN (4 DÍGITOS):</label>
+                <input type="password" id="input-admin-unlock-pin" maxlength="6" placeholder="••••" style="width: 100%; padding: 12px; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.3rem; font-family: 'Share Tech Mono', monospace; text-align: center; letter-spacing: 6px;">
+                <div id="admin-unlock-error" style="display: none; color: #ff3344; font-size: 0.76rem; font-family: 'Share Tech Mono', monospace; margin-top: 6px;"></div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button type="button" class="btn-action-large btn-red" onclick="submitAdminUnlock()" style="padding: 12px; font-size: 0.85rem; font-weight: bold; width: 100%;">
+                    🔓 AUTORIZAR Y DESVINCULAR
+                </button>
+                <button type="button" class="btn-header" onclick="closeAdminUnlockModal(); openQRScanner('ADMIN_UNLOCK');" style="width: 100%; justify-content: center; padding: 10px; border-color: rgba(226,185,56,0.4); color: #e2b938; background: rgba(226,185,56,0.08); font-size: 0.78rem;">
+                    📷 ESCANEAR CREDENCIAL DE MANDO (QR)
+                </button>
+                <button type="button" class="btn-header" onclick="closeAdminUnlockModal()" style="width: 100%; justify-content: center; padding: 10px; border-color: #444; color: #888; font-size: 0.75rem;">
+                    CANCELAR
                 </button>
             </div>
         </div>

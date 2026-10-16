@@ -1236,6 +1236,18 @@ function initModal() {
             });
         }
 
+        if (window.userRole !== 'admin') {
+            const medCount = payload.miembros.filter(m => (m.rol || '').toLowerCase().includes('medico') || (m.rol || '').toLowerCase().includes('sanitario')).length;
+            const totM = payload.miembros.length;
+            let maxM = 1;
+            if (totM >= 17) maxM = 3;
+            else if (totM >= 9) maxM = 2;
+            if (medCount > maxM) {
+                alert(`Doctrina TVC: Una escuadra de ${totM} efectivos solo puede tener como máximo ${maxM} médico(s). Has asignado ${medCount}. Por favor ajusta los roles antes de guardar.`);
+                return;
+            }
+        }
+
         const url = id ? `/api/equipos/${id}` : '/api/equipos';
         const method = id ? 'PUT' : 'POST';
 
@@ -1249,6 +1261,10 @@ function initModal() {
         if (!res.ok) {
             alert('Error al guardar el expediente: ' + (resJson.error || 'Error del servidor'));
             return;
+        }
+
+        if (resJson.alerta_medicos) {
+            alert('⚠️ ' + resJson.alerta_medicos);
         }
 
         const finalId = id ? id : resJson.id;
@@ -1287,9 +1303,9 @@ function initModal() {
         }
 
         if (uploadErrors.length > 0) {
-            alert('Expediente guardado, pero ocurrieron errores con las imágenes:\n- ' + uploadErrors.join('\n- '));
+            alert('Unidad guardada, pero ocurrieron errores con las imágenes:\n- ' + uploadErrors.join('\n- '));
         } else {
-            alert('Expediente guardado correctamente.');
+            alert('Unidad guardada correctamente.');
         }
 
         closeModal();
@@ -1302,7 +1318,7 @@ function initModal() {
 
 function openModal(equipo = null) {
     const modal = document.getElementById('modal-equipo');
-    document.getElementById('modal-title').innerText = equipo ? 'Editar Expediente de Equipo' : 'Registrar Equipo';
+    document.getElementById('modal-title').innerText = equipo ? 'Gestionar Unidad' : 'Registrar Unidad';
     
     document.getElementById('eq-id').value = equipo ? equipo.id : '';
     document.getElementById('eq-nombre').value = equipo ? equipo.nombre : '';
@@ -1422,16 +1438,90 @@ function updateJugadoresState() {
 
 function updateJugadoresCount() {
     const isManual = document.getElementById('eq-jugadores-manual').checked;
-    if (isManual) return;
     const container = document.getElementById('miembros-container');
     const validRows = Array.from(container.querySelectorAll('.miembro-row')).filter(r => r.querySelector('.miembro-nombre').value.trim() !== '');
     const total = validRows.length;
     const activos = validRows.filter(r => r.querySelector('.miembro-activo').checked).length;
-    document.getElementById('eq-jugadores').value = `${activos} / ${total}`;
+    if (!isManual) {
+        document.getElementById('eq-jugadores').value = `${activos} / ${total}`;
+    }
+    updateDoctrinaMedicosFeedback(total, validRows);
 }
 document.getElementById('eq-jugadores-manual')?.addEventListener('change', updateJugadoresState);
 
+function updateDoctrinaMedicosFeedback(total, validRows) {
+    let banner = document.getElementById('doctrina-medicos-banner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'doctrina-medicos-banner';
+        banner.style.padding = '8px 12px';
+        banner.style.marginTop = '10px';
+        banner.style.marginBottom = '10px';
+        banner.style.borderRadius = '3px';
+        banner.style.fontSize = '0.84rem';
+        banner.style.fontFamily = "'Share Tech Mono', monospace";
+        const btnAdd = document.getElementById('btn-add-miembro');
+        if (btnAdd && btnAdd.parentNode) {
+            btnAdd.parentNode.insertBefore(banner, btnAdd.nextSibling);
+        }
+    }
+    
+    if (total === 0) {
+        banner.style.display = 'none';
+        return;
+    }
+    banner.style.display = 'block';
+    
+    const medCount = validRows.filter(r => {
+        const rol = (r.querySelector('.miembro-rol')?.value || '').toLowerCase();
+        return rol.includes('medico') || rol.includes('sanitario');
+    }).length;
+    
+    let maxPermitidos = 1;
+    if (total >= 17) maxPermitidos = 3;
+    else if (total >= 9) maxPermitidos = 2;
+    
+    const curasDefecto = Math.floor(total / (medCount || 1));
+    
+    if (medCount > maxPermitidos) {
+        banner.style.background = 'rgba(255, 51, 68, 0.15)';
+        banner.style.border = '1px solid #ff3344';
+        banner.style.color = '#ff9999';
+        banner.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle; color:#ff3344;">warning</span> <b>LÍMITE DOCTRINAL EXCEDIDO:</b> Con ${total} efectivos, el jefe de escuadra solo puede asignar máx <b>${maxPermitidos} médico(s)</b> (asignados: ${medCount}).`;
+    } else {
+        const cupoLlenoAviso = (medCount >= maxPermitidos) ? ' • <span style="color:#e2b938;">[Cupo completo]</span>' : '';
+        banner.style.background = 'rgba(0, 240, 255, 0.08)';
+        banner.style.border = '1px solid rgba(0, 240, 255, 0.3)';
+        banner.style.color = '#c0f7ff';
+        banner.innerHTML = `<span class="material-symbols-outlined" style="font-size:16px; vertical-align:middle; color:#00f0ff;">verified_user</span> <b>Doctrina Médica:</b> ${medCount} de máx ${maxPermitidos} médicos permitidos${cupoLlenoAviso}. Curas normales al respawn: <b>${curasDefecto}</b> por médico.`;
+    }
 
+    syncMedicosRolesOptions(total, medCount, maxPermitidos);
+}
+
+function syncMedicosRolesOptions(total, medCount, maxPermitidos) {
+    const container = document.getElementById('miembros-container');
+    if (!container) return;
+    const isFull = medCount >= maxPermitidos;
+    const rows = container.querySelectorAll('.miembro-row');
+    rows.forEach(r => {
+        const sel = r.querySelector('.miembro-rol');
+        if (!sel) return;
+        const currentIsMed = (sel.value || '').toLowerCase().includes('medico') || (sel.value || '').toLowerCase().includes('sanitario');
+        const optMed = Array.from(sel.options).find(o => o.value === 'Medico');
+        if (optMed) {
+            if (isFull && !currentIsMed) {
+                optMed.style.color = '#888888';
+                optMed.style.backgroundColor = '#181818';
+                optMed.textContent = 'Médico (Reasignar cupo)';
+            } else {
+                optMed.style.color = '';
+                optMed.style.backgroundColor = '';
+                optMed.textContent = 'Médico';
+            }
+        }
+    });
+}
 
 function addMiembroRow(m = null) {
     const container = document.getElementById('miembros-container');
@@ -1485,6 +1575,67 @@ function addMiembroRow(m = null) {
     
     const cbActivo = tr.querySelector('.miembro-activo');
     if (cbActivo) cbActivo.addEventListener('change', updateJugadoresCount);
+
+    const selRol = tr.querySelector('.miembro-rol');
+    if (selRol) {
+        selRol.dataset.prevVal = rol;
+        selRol.addEventListener('focus', function() {
+            this.dataset.prevVal = this.value;
+        });
+
+        selRol.addEventListener('change', function() {
+            const newVal = this.value;
+            const oldVal = this.dataset.prevVal || 'Operador';
+            
+            if (newVal === 'Medico' && window.userRole !== 'admin') {
+                const container = document.getElementById('miembros-container');
+                const rows = Array.from(container.querySelectorAll('.miembro-row'));
+                const validRows = rows.filter(r => (r.querySelector('.miembro-nombre')?.value || '').trim() !== '');
+                const total = validRows.length;
+                let maxPermitidos = 1;
+                if (total >= 17) maxPermitidos = 3;
+                else if (total >= 9) maxPermitidos = 2;
+                
+                // Buscar otros miembros que actualmente tengan rol de médico
+                const otherMedicRows = rows.filter(r => {
+                    if (r === tr) return false;
+                    const v = (r.querySelector('.miembro-rol')?.value || '').toLowerCase();
+                    return v.includes('medico') || v.includes('sanitario');
+                });
+                
+                if (otherMedicRows.length >= maxPermitidos) {
+                    const prevMedicRow = otherMedicRows[0];
+                    const prevName = prevMedicRow.querySelector('.miembro-nombre')?.value.trim() || 'otro combatiente';
+                    const currentName = tr.querySelector('.miembro-nombre')?.value.trim() || 'este miembro';
+                    
+                    const wantsReassign = confirm(
+                        `LÍMITE DOCTRINAL DE ESCUADRA ALCANZADO (Máximo ${maxPermitidos} médico/s):\n\n` +
+                        `Actualmente asignado a: ${prevName}.\n\n` +
+                        `¿Deseas REASIGNAR el rol de Médico a "${currentName}" y pasar a "${prevName}" a Operador?`
+                    );
+                    
+                    if (wantsReassign) {
+                        const prevSel = prevMedicRow.querySelector('.miembro-rol');
+                        if (prevSel) {
+                            prevSel.value = 'Operador';
+                            prevSel.dataset.prevVal = 'Operador';
+                        }
+                        this.dataset.prevVal = 'Medico';
+                    } else {
+                        // Revertir y no permitir asignar
+                        this.value = oldVal;
+                        updateJugadoresCount();
+                        return;
+                    }
+                } else {
+                    this.dataset.prevVal = newVal;
+                }
+            } else {
+                this.dataset.prevVal = newVal;
+            }
+            updateJugadoresCount();
+        });
+    }
     
     tr.querySelector('.btn-del-miembro').addEventListener('click', () => {
         tr.remove();

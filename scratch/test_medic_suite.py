@@ -23,6 +23,8 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.conn = sqlite3.connect(':memory:')
         self.conn.row_factory = sqlite3.Row
         medic_engine.init_medic_db(self.conn)
+        with self.client.session_transaction() as sess:
+            sess.clear()
 
     def tearDown(self):
         self.conn.close()
@@ -481,7 +483,148 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertIn('sim-menu-consumption-alert', sim_html)
         self.assertIn('BOTIQUINES RESTANTES', sim_html)
 
+    def test_19_tvc_doctrine_units_curas_methodology(self):
+        # 1. Reglas doctrinales de médicos permitidos:
+        # Hasta 8 miembros -> 1 médico
+        self.assertEqual(medic_engine.get_max_medicos_permitidos(1), 1)
+        self.assertEqual(medic_engine.get_max_medicos_permitidos(5), 1)
+        self.assertEqual(medic_engine.get_max_medicos_permitidos(8), 1)
+        # De 9 a 16 miembros -> 2 médicos
+        self.assertEqual(medic_engine.get_max_medicos_permitidos(9), 2)
+        self.assertEqual(medic_engine.get_max_medicos_permitidos(12), 2)
+        self.assertEqual(medic_engine.get_max_medicos_permitidos(16), 2)
+        # De 17 o más miembros -> 3 médicos
+        self.assertEqual(medic_engine.get_max_medicos_permitidos(17), 3)
+        self.assertEqual(medic_engine.get_max_medicos_permitidos(24), 3)
+        self.assertEqual(medic_engine.get_max_medicos_permitidos(50), 3)
+
+        # 2. Fórmula de curas por médico: miembros // medicos (a la baja)
+        # Escuadra de 14 con 2 médicos -> 7 curas cada uno
+        self.assertEqual(medic_engine.calcular_curas_por_medico(14, 2), 7)
+        # Escuadra de 14 con 1 médico -> 14 curas
+        self.assertEqual(medic_engine.calcular_curas_por_medico(14, 1), 14)
+        # Escuadra de 8 con 1 médico -> 8 curas
+        self.assertEqual(medic_engine.calcular_curas_por_medico(8, 1), 8)
+        # Escuadra de 9 con 2 médicos -> 4 curas (división a la baja: 9 // 2 = 4)
+        self.assertEqual(medic_engine.calcular_curas_por_medico(9, 2), 4)
+        # Escuadra de 17 con 3 médicos -> 5 curas (17 // 3 = 5)
+        self.assertEqual(medic_engine.calcular_curas_por_medico(17, 3), 5)
+
+        # 3. Snapshot de Roster calcula squad_stats y cupo_nominal
+        self.conn.execute("CREATE TABLE IF NOT EXISTS Faccion (id INTEGER PRIMARY KEY, nombre TEXT)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS Equipo (id INTEGER PRIMARY KEY, nombre TEXT, faccion_id INTEGER)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS Miembro (id INTEGER PRIMARY KEY, uid TEXT, nombre_jugador TEXT, rol TEXT, equipo_id INTEGER)")
+        
+        self.conn.execute("INSERT OR REPLACE INTO Faccion (id, nombre) VALUES (1, 'Syldavia')")
+        self.conn.execute("INSERT OR REPLACE INTO Equipo (id, nombre, faccion_id) VALUES (10, 'Delta 14', 1)")
+        # 14 miembros: 2 médicos y 12 fusileros
+        for i in range(1, 13):
+            self.conn.execute("INSERT OR REPLACE INTO Miembro (id, uid, nombre_jugador, rol, equipo_id) VALUES (?, ?, ?, ?, ?)",
+                              (100 + i, f"SYL-FUS-{i}", f"Fusilero {i}", "Fusilero", 10))
+        self.conn.execute("INSERT OR REPLACE INTO Miembro (id, uid, nombre_jugador, rol, equipo_id) VALUES (201, 'MED-SYL-A', 'Doc Uno', 'Medico de Combate', 10)")
+        self.conn.execute("INSERT OR REPLACE INTO Miembro (id, uid, nombre_jugador, rol, equipo_id) VALUES (202, 'MED-SYL-B', 'Doc Dos', 'Sanitario', 10)")
+        self.conn.commit()
+
+        snapshot = medic_engine.get_medic_roster_snapshot(self.conn)
+        self.assertIn("squad_stats", snapshot)
+        self.assertIn("doctrina", snapshot)
+        self.assertIn("10", snapshot["squad_stats"])
+        s_stat = snapshot["squad_stats"]["10"]
+        self.assertEqual(s_stat["miembros_count"], 14)
+        self.assertEqual(s_stat["medicos_count"], 2)
+        self.assertEqual(s_stat["max_medicos_permitidos"], 2)
+        self.assertEqual(s_stat["excede_limite"], False)
+        self.assertEqual(s_stat["curas_por_medico"], 7)
+
+        # Verificar cupo nominal asignado a cada médico de la escuadra
+        med_a = snapshot["roster"]["MED-SYL-A"]
+        self.assertEqual(med_a["cupo_nominal"], 7)
+
+        # 4. Bloqueo al jefe de unidad al intentar exceder el límite doctrinal de médicos
+        # Escuadra de 6 miembros con 2 médicos (el límite para <= 8 miembros es 1 médico)
+        payload_abuso = {
+            'nombre': 'Escuadra Abuso Medicos',
+            'jugadores': '6 / 6',
+            'faccion_id': 1,
+            'miembros': [
+                {'nombre_jugador': 'Líder', 'rol': 'Jefe de equipo'},
+                {'nombre_jugador': 'Fusilero 1', 'rol': 'Fusilero'},
+                {'nombre_jugador': 'Fusilero 2', 'rol': 'Fusilero'},
+                {'nombre_jugador': 'Fusilero 3', 'rol': 'Fusilero'},
+                {'nombre_jugador': 'Médico 1', 'rol': 'Medico'},
+                {'nombre_jugador': 'Médico 2', 'rol': 'Medico'}
+            ]
+        }
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'equipo'
+            sess['equipo_id'] = 9999
+        res_bloqueo = self.client.post('/api/equipos',
+                                       data=json.dumps(payload_abuso),
+                                       content_type='application/json')
+        self.assertEqual(res_bloqueo.status_code, 400)
+        self.assertIn("Doctrina TVC", res_bloqueo.get_json()['error'])
+
+        # 5. Dirección (admin) puede asignar cualquier cantidad de curas libremente
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'admin'
+        res_admin_update = self.client.post('/api/admin/medicos/update',
+                                            data=json.dumps({'sanitario_id': 'MED-SYL-A', 'reanimaciones': 25}),
+                                            content_type='application/json')
+        self.assertEqual(res_admin_update.status_code, 200)
+        self.assertEqual(res_admin_update.get_json()['reanimaciones'], 25)
+
+    def test_20_terminal_binding_and_strict_direction_authorization(self):
+        # 1. Endpoint /api/medic/admin_unlock
+        # PIN incorrecto -> 403
+        bad_unlock = self.client.post('/api/medic/admin_unlock', 
+                                      data=json.dumps({'pin': '1234'}),
+                                      content_type='application/json')
+        self.assertEqual(bad_unlock.status_code, 403)
+        self.assertEqual(bad_unlock.get_json()['status'], 'error')
+
+        # PIN correcto de Dirección (4747) -> 200
+        ok_unlock = self.client.post('/api/medic/admin_unlock', 
+                                     data=json.dumps({'pin': '4747'}),
+                                     content_type='application/json')
+        self.assertEqual(ok_unlock.status_code, 200)
+        self.assertTrue(ok_unlock.get_json()['success'])
+
+        # Sesión de rol admin activa sin PIN -> 200
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'admin'
+        admin_unlock = self.client.post('/api/medic/admin_unlock',
+                                        data=json.dumps({}),
+                                        content_type='application/json')
+        self.assertEqual(admin_unlock.status_code, 200)
+        self.assertTrue(admin_unlock.get_json()['success'])
+
+        # 2. Verificaciones en la plantilla medic_app.html
+        res = self.client.get('/medic')
+        self.assertEqual(res.status_code, 200)
+        html = res.data.decode('utf-8')
+
+        # Pantalla de vinculación inicial obligatoria
+        self.assertIn('view-terminal-binding', html)
+        self.assertIn('CHECK-IN TÁCTICO', html)
+        self.assertIn('VINCULACIÓN DE TERMINAL', html)
+        self.assertIn('AUTORIZACIÓN DE DIRECCIÓN', html)
+        self.assertIn('header-bound-badge', html)
+
+        # Modal de desbloqueo exclusivo de Dirección
+        self.assertIn('modal-admin-unlock', html)
+        self.assertIn('DESVINCULACIÓN RESTRINGIDA', html)
+        self.assertIn('input-admin-unlock-pin', html)
+        self.assertIn('submitAdminUnlock()', html)
+
+        # Validación 1-tap de sellado mediante médico vinculado
+        self.assertIn('completeEpisodeWithBoundMedic()', html)
+
+        # Bloqueo estricto de auto-cura en inicio de episodio
+        self.assertIn('upperToken === boundUid', html)
+        self.assertIn('AUTO-ATENCIÓN DENEGADA', html)
+
 if __name__ == '__main__':
     unittest.main()
+
 
 
