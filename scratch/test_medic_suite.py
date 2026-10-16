@@ -389,6 +389,53 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertEqual(rec_after['reanimaciones_disponibles'], 10)
         self.assertEqual(rec_after['reanimaciones_usadas'], 1)
 
+    def test_17_simulacion_menu_cards_and_instructions(self):
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'player'
+            sess['faction'] = 'Syldavia'
+            sess['unlocked_minigames'] = ['telemetro_recon']
+
+        res = self.client.get('/simulacion')
+        self.assertEqual(res.status_code, 200)
+        html = res.data.decode('utf-8')
+
+        # 1. Verification of the 3 cards
+        self.assertIn('Telémetro Recon', html)
+        self.assertIn('Artillería / Mortero', html)
+        self.assertIn('Field Medic PWA', html)
+
+        # 2. Verification of inline instruction drawers on the cards (seen from outside)
+        self.assertIn('card-instructions-panel', html)
+        self.assertIn('card-drawer-recon', html)
+        self.assertIn('card-drawer-mortero', html)
+        self.assertIn('card-drawer-medic', html)
+        self.assertIn('toggleCardInstructions', html)
+        self.assertIn('MANUAL TÁCTICO DE RECON', html)
+        self.assertIn('MANUAL DE TIRO DE ARTILLERÍA', html)
+        self.assertIn('MANUAL DE PROTOCOLOS SANITARIOS', html)
+
+        # 3. Verification of Field Medic PWA guide and assets
+        self.assertIn('GUÍA DE INSTALACIÓN EN TU TELÉFONO (PWA)', html)
+        self.assertIn('ANDROID (Chrome / Edge)', html)
+        self.assertIn('IPHONE / iOS (Safari)', html)
+        self.assertIn('100% OFFLINE TOTAL', html)
+        self.assertIn('medic_icon.png', html)
+
+        # 4. Verify index.html does NOT have any medic link in navbar
+        index_res = self.client.get('/')
+        # Even if redirected to login if unauthed, let's test with admin session
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'admin'
+            sess['faction'] = 'Syldavia'
+            sess['user'] = 'admin'
+        index_res = self.client.get('/')
+        self.assertEqual(index_res.status_code, 200)
+        index_html = index_res.data.decode('utf-8')
+        # Navbar should have /simulacion but NOT /medic in sidebar
+        self.assertIn('/simulacion', index_html)
+        self.assertNotIn('href="/medic"', index_html)
+        self.assertNotIn("onclick=\"window.location.href='/medic'\"", index_html)
+
 if __name__ == '__main__':
     unittest.main()
 

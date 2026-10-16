@@ -287,6 +287,111 @@
             transform: translateY(1px);
         }
 
+        /* Instrucciones Directas en Cards y Badges */
+        .card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin: 4px 0 6px 0;
+        }
+
+        .card-tag {
+            font-size: 0.72rem;
+            font-weight: 600;
+            font-family: 'Share Tech Mono', monospace;
+            padding: 3px 8px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #cbd5e1;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .card-instructions-panel {
+            background: #11141c;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 6px;
+            margin: 6px 0 2px 0;
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .card-instructions-header {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.04);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s;
+        }
+
+        .card-instructions-header:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .card-instructions-header.active {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(0, 240, 255, 0.08);
+        }
+
+        .card-instructions-drawer {
+            display: none;
+            padding: 14px;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 0.82rem;
+            line-height: 1.45;
+            color: #d1d5db;
+        }
+
+        .card-instructions-drawer.open {
+            display: flex;
+        }
+
+        .card-step-item {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            border-left: 3px solid var(--accent-cyan);
+            border-radius: 4px;
+            padding: 8px 12px;
+        }
+
+        .card-step-title {
+            font-weight: 700;
+            font-size: 0.82rem;
+            color: #fff;
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .card-step-desc {
+            font-size: 0.78rem;
+            color: #94a3b8;
+            line-height: 1.4;
+        }
+
+        .card-inst-box {
+            background: rgba(0, 240, 255, 0.06);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            border-radius: 4px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+        }
+
+        .card-pwa-guide {
+            background: rgba(255, 51, 68, 0.06);
+            border: 1px solid rgba(255, 51, 68, 0.3);
+            border-radius: 5px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+        }
+
         /* Modal Instrucciones Tácticas */
         .modal-instructions-box {
             background: #12151b;
@@ -558,9 +663,9 @@
 
         <!-- Card: Telémetro Recon -->
         {% set recon_unlocked = (user_role == 'admin') or ('telemetro_recon' in unlocked_minigames) %}
-        <div class="card-menu" onclick="handleCardClick('telemetro_recon', {{ 'true' if recon_unlocked else 'false' }}, '/telemetro_recon')">
+        <div class="card-menu">
             
-            <div class="card-header-row">
+            <div class="card-header-row" onclick="handleCardClick('telemetro_recon', {{ 'true' if recon_unlocked else 'false' }}, '/telemetro_recon')">
                 <div class="card-icon-title">
                     <div class="card-icon icon-recon">
                         <span class="material-symbols-outlined">radar</span>
@@ -579,29 +684,69 @@
                 </div>
             </div>
 
+            <div class="card-tags">
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">location_searching</span> GPS & SENSORES</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">photo_camera</span> CÁMARA IMINT</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">explore</span> AZIMUT Y DISTANCIA</span>
+            </div>
+
             <p class="card-desc">
-                Despliegue de Puntos de Observación (OP) secundarios temporales mediante navegación GPS, exploración de azimut con cámara móvil y adquisición de objetivos IMINT.
+                Despliegue de Puntos de Observación (OP) secundarios temporales mediante navegación GPS, exploración de azimut con cámara móvil y adquisición de objetivos IMINT para fuego indirecto.
             </p>
+
+            <!-- INSTRUCCIONES EN LA TARJETA (DESDE FUERA) -->
+            <div class="card-instructions-panel" onclick="event.stopPropagation()">
+                <div class="card-instructions-header" id="card-inst-header-recon" onclick="toggleCardInstructions('recon')">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> MANUAL TÁCTICO DE RECON
+                    </div>
+                    <span class="card-tag" id="card-arrow-recon" style="border-color: rgba(0,240,255,0.3); color: #00f0ff;">▼ VER INSTRUCCIONES</span>
+                </div>
+                <div class="card-instructions-drawer" id="card-drawer-recon">
+                    <div class="card-inst-box">
+                        <b style="color: #00f0ff;">OBJETIVO:</b> Adquirir objetivos en el terreno, triangular coordenadas y transferir azimut y distancia a la artillería amiga.
+                    </div>
+                    <div class="card-step-item">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">1.</span> Emplazamiento de OP</div>
+                        <div class="card-step-desc">Introduce la cuadrícula del punto de observación o activa la fijación GPS para establecer el punto A de referencia.</div>
+                    </div>
+                    <div class="card-step-item">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">2.</span> Calibración de Brújula y Cámara</div>
+                        <div class="card-step-desc">Permite el acceso a la cámara y gira el smartphone suavemente para calibrar el rumbo magnético de la retícula.</div>
+                    </div>
+                    <div class="card-step-item">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">3.</span> Telemetría de Objetivo</div>
+                        <div class="card-step-desc">Apunta la cruz filar hacia la posición enemiga. El telémetro calculará automáticamente el rumbo (azimut 0°-360°) y la distancia en metros.</div>
+                    </div>
+                    <div class="card-step-item">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">4.</span> Transmisión a Morteros</div>
+                        <div class="card-step-desc">Copia las coordenadas y rumbos obtenidos o comunícalos por radio de escuadra a los artilleros para batir la posición.</div>
+                    </div>
+                    <div style="font-size: 0.74rem; color: #94a3b8; font-style: italic;">
+                        💡 Consejo: Aléjate de estructuras metálicas o vehículos blindados para evitar desviación magnética en la brújula.
+                    </div>
+                </div>
+            </div>
 
             <div class="card-footer">
                 <span>ESTADO: {{ 'AUTORIZADO' if recon_unlocked else 'ENCRIPTADO' }}</span>
                 <div class="card-footer-btns">
-                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); openInstructionsModal('recon')" title="Manual e instrucciones tácticas">
+                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('recon')" title="Desplegar instrucciones tácticas">
                         <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
                         INSTRUCCIONES
                     </button>
-                    <span class="btn-action">
+                    <button type="button" class="btn-action" onclick="handleCardClick('telemetro_recon', {{ 'true' if recon_unlocked else 'false' }}, '/telemetro_recon')">
                         {{ 'ACCEDER' if recon_unlocked else 'DESBLOQUEAR' }} ➔
-                    </span>
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Card: Mortero / Artillería -->
         {% set mortero_unlocked = (user_role == 'admin') or ('mortero' in unlocked_minigames) %}
-        <div class="card-menu" onclick="handleCardClick('mortero', {{ 'true' if mortero_unlocked else 'false' }}, '/mortero_app')">
+        <div class="card-menu">
             
-            <div class="card-header-row">
+            <div class="card-header-row" onclick="handleCardClick('mortero', {{ 'true' if mortero_unlocked else 'false' }}, '/mortero_app')">
                 <div class="card-icon-title">
                     <div class="card-icon icon-mortero">
                         <span class="material-symbols-outlined">rocket_launch</span>
@@ -620,56 +765,166 @@
                 </div>
             </div>
 
+            <div class="card-tags">
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">adjust</span> FUEGO INDIRECTO</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">architecture</span> 45° - 85° ELEVACIÓN</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">map</span> TRIANGULACIÓN OP</span>
+            </div>
+
             <p class="card-desc">
                 Calculadora balística de mortero. Ejecuta misiones de fuego triangulando las coordenadas y azimuts facilitados por las unidades de reconocimiento.
             </p>
 
+            <!-- INSTRUCCIONES EN LA TARJETA (DESDE FUERA) -->
+            <div class="card-instructions-panel" onclick="event.stopPropagation()">
+                <div class="card-instructions-header" id="card-inst-header-mortero" onclick="toggleCardInstructions('mortero')">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> MANUAL DE TIRO DE ARTILLERÍA
+                    </div>
+                    <span class="card-tag" id="card-arrow-mortero" style="border-color: rgba(255,51,68,0.3); color: #ff5566;">▼ VER INSTRUCCIONES</span>
+                </div>
+                <div class="card-instructions-drawer" id="card-drawer-mortero">
+                    <div class="card-inst-box" style="border-left-color: var(--accent-red); background: rgba(255,51,68,0.06);">
+                        <b style="color: var(--accent-red);">OBJETIVO:</b> Calcular la trayectoria parabólica calibrando azimut y ángulo de tubo para batir posiciones enemigas a cubierto.
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
+                        <div class="card-step-title"><span style="color: var(--accent-red);">1.</span> Emplazamiento de Tubo</div>
+                        <div class="card-step-desc">Introduce la cuadrícula de mapa donde has desplegado tu mortero (ej. AP 45 C) y pulsa DESPLEGAR.</div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
+                        <div class="card-step-title"><span style="color: var(--accent-red);">2.</span> Medición de Objetivo</div>
+                        <div class="card-step-desc">Usa la herramienta Regla: marca tu posición (Punto A) y el blanco (Punto B) para obtener rumbo y metros exactos.</div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
+                        <div class="card-step-title"><span style="color: var(--accent-red);">3.</span> Calibración Balística</div>
+                        <div class="card-step-desc">Orienta el Azimut (0° a 360°) y calibra la Elevación (45° para alcance máximo, 85° para tiro empinado cercano).</div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
+                        <div class="card-step-title"><span style="color: var(--accent-red);">4.</span> Confirmación y Disparo</div>
+                        <div class="card-step-desc">Espera a que la barra de carga de batería esté al 100% y presiona FUEGO para iniciar la trayectoria balística.</div>
+                    </div>
+                    <div style="font-size: 0.74rem; color: #94a3b8; font-style: italic;">
+                        💡 Consejo: A mayor ángulo de elevación (80°-85°), menor distancia de impacto pero mayor tiempo de vuelo.
+                    </div>
+                </div>
+            </div>
+
             <div class="card-footer">
                 <span>ESTADO: {{ 'AUTORIZADO' if mortero_unlocked else 'ENCRIPTADO' }}</span>
                 <div class="card-footer-btns">
-                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); openInstructionsModal('mortero')" title="Manual e instrucciones de artillería">
+                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('mortero')" title="Desplegar manual de artillería">
                         <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
                         INSTRUCCIONES
                     </button>
-                    <span class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.1);">
+                    <button type="button" class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.1);" onclick="handleCardClick('mortero', {{ 'true' if mortero_unlocked else 'false' }}, '/mortero_app')">
                         {{ 'ACCEDER' if mortero_unlocked else 'DESBLOQUEAR' }} ➔
-                    </span>
+                    </button>
                 </div>
             </div>
         </div>
 
         <!-- Card: Field Medic (Descarga e Instalación PWA) -->
-        <div class="card-menu" onclick="handleCardClick('medic', true, '/medic')">
+        <div class="card-menu">
             
-            <div class="card-header-row">
+            <div class="card-header-row" onclick="handleCardClick('medic', true, '/medic')">
                 <div class="card-icon-title">
                     <div class="card-icon" style="padding: 2px; background: rgba(255, 51, 68, 0.12); border-color: rgba(255, 51, 68, 0.4); overflow: hidden; border-radius: 6px;">
                         <img src="/static/imgs/medic_icon.png" alt="Field Medic" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;">
                     </div>
                     <div>
-                        <h2 class="card-title">Field Medic</h2>
-                        <div style="font-size: 0.75rem; color: #ff5566; font-family: 'Share Tech Mono', monospace;">APP SANITARIA PWA OFFLINE</div>
+                        <h2 class="card-title">Field Medic PWA</h2>
+                        <div style="font-size: 0.75rem; color: #ff5566; font-family: 'Share Tech Mono', monospace;">SUITE SANITARIA // OFFLINE TOTAL // COMBATE</div>
                     </div>
                 </div>
                 <div>
-                    <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">INSTALABLE</span>
+                    <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">📱 INSTALABLE</span>
                 </div>
             </div>
 
+            <div class="card-tags">
+                <span class="card-tag" style="color:#ff5566; border-color:rgba(255,51,68,0.3); background:rgba(255,51,68,0.1);"><span class="material-symbols-outlined" style="font-size:13px;">offline_pin</span> 100% OFFLINE TOTAL</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:#ff5566;">install_mobile</span> INSTALADOR PWA</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:#ff5566;">qr_code_scanner</span> ESCÁNER DE CARNETS</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:#ff5566;">vital_signs</span> 5 PROCEDIMIENTOS CLÍNICOS</span>
+            </div>
+
             <p class="card-desc">
-                Suite médica táctica offline-first para sanitarios. Instálala en tu móvil (PWA) para escanear carnets QR, aplicar torniquetes/descompresión y reanimar heridos 100% sin cobertura ni conexión.
+                Suite médica táctica offline-first para sanitarios militares. Instálala en tu smartphone como app independiente para escanear carnets QR de heridos, aplicar torniquetes/compresión/neumotórax/sutura y reanimar combatientes 100% sin cobertura ni red móvil.
             </p>
 
+            <!-- GUÍA DESTACADA DE INSTALACIÓN PWA -->
+            <div class="card-pwa-guide" onclick="event.stopPropagation()">
+                <div style="font-weight: 700; color: #ff5566; font-size: 0.84rem; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">install_mobile</span> GUÍA DE INSTALACIÓN EN TU TELÉFONO (PWA)
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.45;">
+                    <div style="background: rgba(0,0,0,0.4); padding: 8px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
+                        <b style="color: #00f0ff;">🤖 ANDROID (Chrome / Edge):</b><br>
+                        Pulsa <b>INSTALAR / ABRIR</b> ➔ Abre el menú de 3 puntos de Chrome ➔ Pulsa <b>"Instalar aplicación"</b> o <b>"Añadir a pantalla de inicio"</b>.
+                    </div>
+                    <div style="background: rgba(0,0,0,0.4); padding: 8px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
+                        <b style="color: #e2b938;">🍏 IPHONE / iOS (Safari):</b><br>
+                        Pulsa <b>INSTALAR / ABRIR</b> en Safari ➔ Toca el botón <b>Compartir</b> (icono cuadrado con flecha arriba) ➔ Elige <b>"Añadir a pantalla de inicio"</b>.
+                    </div>
+                </div>
+                <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 15px; color: #2ecc71;">check_circle</span>
+                    <span>Queda instalada en memoria con icono propio y funciona a pantalla completa en el monte sin cobertura.</span>
+                </div>
+            </div>
+
+            <!-- INSTRUCCIONES EN LA TARJETA (DESDE FUERA) -->
+            <div class="card-instructions-panel" onclick="event.stopPropagation()">
+                <div class="card-instructions-header" id="card-inst-header-medic" onclick="toggleCardInstructions('medic')">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: #ff5566; font-family: 'Share Tech Mono', monospace;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">medical_information</span> MANUAL DE PROTOCOLOS SANITARIOS
+                    </div>
+                    <span class="card-tag" id="card-arrow-medic" style="border-color: rgba(255,51,68,0.3); color: #ff5566;">▼ VER INSTRUCCIONES</span>
+                </div>
+                <div class="card-instructions-drawer" id="card-drawer-medic">
+                    <div class="card-inst-box" style="border-left-color: #ff5566; background: rgba(255,51,68,0.06);">
+                        <b style="color: #ff5566;">OBJETIVO:</b> Prestar asistencia médica de emergencia bajo fuego, estabilizar heridos críticos y gestionar el cupo de botiquines sin requerir cobertura ni conexión a internet.
+                    </div>
+                    <div class="card-step-item" style="border-left-color: #ff5566;">
+                        <div class="card-step-title"><span style="color: #ff5566;">1.</span> Triage y Escaneo de Paciente</div>
+                        <div class="card-step-desc">Al alcanzar a un operador derribado, pulsa "Escanear QR de Paciente" y enfoca con la cámara el código QR físico del carnet militar táctico del jugador herido.</div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: #ff5566;">
+                        <div class="card-step-title"><span style="color: #ff5566;">2.</span> Fase 1 - Control de Hemorragia / Trauma</div>
+                        <div class="card-step-desc">
+                            Detén la pérdida de sangre antes de que la línea de vida caiga al 0% según la herida:
+                            <ul style="margin: 4px 0 0 16px; padding: 0;">
+                                <li>🩸 <b>Torniquete Táctico:</b> Gira el molinete y ajusta la varilla de fijación.</li>
+                                <li>🩹 <b>Compresión Hemostática:</b> Mantén la presión táctil dentro de la banda verde.</li>
+                                <li>🫁 <b>Punción Neumotórax:</b> Pulsa en el 2º espacio intercostal para descompresión torácica con aguja.</li>
+                                <li>🪡 <b>Sutura y Cierre:</b> Alinea y sutura los bordes de la herida lacerada.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: #ff5566;">
+                        <div class="card-step-title"><span style="color: #ff5566;">3.</span> Fase 2 - Soporte y Estabilización Vital</div>
+                        <div class="card-step-desc">Ejecuta la maniobra de sincronización de constantes (ritmo cardíaco ECG, ajuste de constantes o secuencia de estimulación) hasta reanimar completamente al combatiente.</div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: #ff5566;">
+                        <div class="card-step-title"><span style="color: #ff5566;">4.</span> Consumo de Botiquines y Sincronización</div>
+                        <div class="card-step-desc">Cada reanimación exitosa descuenta 1 botiquín de tu cupo de sanitario. El historial clínico se almacena en el teléfono y se sincronizará automáticamente con el ORBAT central al recuperar conexión o en Respawn.</div>
+                    </div>
+                    <div style="font-size: 0.74rem; color: #94a3b8; font-style: italic;">
+                        💡 Consejo: Si te quedas sin botiquines en combate, acude al punto de RESPAWN autorizado de tu facción para reaprovisionar material médico.
+                    </div>
+                </div>
+            </div>
+
             <div class="card-footer">
-                <span>ESTADO: DISPONIBLE PARA MÓVIL</span>
+                <span>ESTADO: 📱 LISTA PARA INSTALACIÓN Y USO OFFLINE</span>
                 <div class="card-footer-btns">
-                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); openInstructionsModal('medic')" title="Manual e instrucciones sanitarias">
+                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('medic')" title="Desplegar manual sanitario">
                         <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
                         INSTRUCCIONES
                     </button>
-                    <span class="btn-action" style="border-color: #ff5566; color: #ff5566; background: rgba(255,51,68,0.1);">
-                        INSTALAR / ABRIR (PWA) ➔
-                    </span>
+                    <button type="button" class="btn-action" style="border-color: #ff5566; color: #ff5566; background: rgba(255,51,68,0.12);" onclick="handleCardClick('medic', true, '/medic')">
+                        <span class="material-symbols-outlined" style="font-size:16px;">install_mobile</span> INSTALAR / ABRIR (PWA) ➔
+                    </button>
                 </div>
             </div>
         </div>
@@ -858,6 +1113,23 @@
                 ]
             }
         };
+
+        function toggleCardInstructions(key) {
+            const drawer = document.getElementById('card-drawer-' + key);
+            const header = document.getElementById('card-inst-header-' + key);
+            const arrow = document.getElementById('card-arrow-' + key);
+            if (!drawer) return;
+            const isOpen = drawer.classList.contains('open');
+            if (isOpen) {
+                drawer.classList.remove('open');
+                if (header) header.classList.remove('active');
+                if (arrow) arrow.textContent = '▼ VER INSTRUCCIONES';
+            } else {
+                drawer.classList.add('open');
+                if (header) header.classList.add('active');
+                if (arrow) arrow.textContent = '▲ OCULTAR';
+            }
+        }
 
         function openInstructionsModal(gameKey) {
             const data = INSTRUCTIONS_DATA[gameKey];
