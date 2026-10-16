@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tvc-medic-v14';
+const CACHE_NAME = 'tvc-medic-v15';
 const ASSETS_TO_CACHE = [
   '/medic',
   '/medico',
@@ -7,6 +7,7 @@ const ASSETS_TO_CACHE = [
   '/static/manifest_medic.json',
   '/api/medic/roster',
   '/static/imgs/medic_icon.png',
+  '/static/imgs/medic_icon_192.png',
   '/static/js/field_medic/episode_storage.js',
   '/static/js/field_medic/tactical_lifeline.js',
   '/static/js/field_medic/hemorrhage_game.js',

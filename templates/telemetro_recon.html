@@ -761,9 +761,15 @@
             <h1>TELÉMETRO RECON</h1>
             <span>FACCIÓN: {{ user_faction | upper }}</span>
         </div>
-        <button class="btn-header" onclick="goToQRDirect()" title="Alternativa de contingencia">
-            QR CONTINGENCIA
-        </button>
+        <div style="display: flex; gap: 6px;">
+            <button class="btn-header" onclick="document.getElementById('modal-instrucciones-recon').style.display='flex'" title="Instrucciones del Telémetro">
+                <span class="material-symbols-outlined" style="font-size: 16px;">help_outline</span>
+                GUÍA
+            </button>
+            <button class="btn-header" onclick="goToQRDirect()" title="Alternativa de contingencia">
+                QR CONTINGENCIA
+            </button>
+        </div>
     </header>
 
     <div class="content-area">
@@ -1866,5 +1872,56 @@
         document.addEventListener('touchstart', autoEnterFullscreen, { once: true, passive: true });
         document.addEventListener('click', autoEnterFullscreen, { once: true });
     </script>
+
+    <!-- Modal Instrucciones Telémetro Recon -->
+    <div id="modal-instrucciones-recon" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); z-index:9999; justify-content:center; align-items:center; padding:16px;" onclick="if(event.target === this) this.style.display='none'">
+        <div style="background:#14171d; border:1px solid #00f0ff; max-width:500px; width:100%; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.9);">
+            <div style="padding:14px 18px; background:#0e1116; border-bottom:1px solid #333; display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="width:34px; height:34px; border-radius:6px; background:rgba(0,240,255,0.15); border:1px solid #00f0ff; display:flex; align-items:center; justify-content:center;">
+                        <span class="material-symbols-outlined" style="color:#00f0ff; font-size:22px;">radar</span>
+                    </div>
+                    <div>
+                        <div style="font-family:'Orbitron',sans-serif; font-size:0.95rem; color:#fff; letter-spacing:1px;">TELÉMETRO RECON & IMINT</div>
+                        <div style="font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:#00f0ff;">MANUAL DE OPERACIÓN TÁCTICA</div>
+                    </div>
+                </div>
+                <button type="button" onclick="document.getElementById('modal-instrucciones-recon').style.display='none'" style="background:none; border:none; color:#888; font-size:24px; cursor:pointer; padding:0 6px;">&times;</button>
+            </div>
+            
+            <div style="padding:16px 18px; overflow-y:auto; font-size:0.84rem; line-height:1.5; color:#ccc; display:flex; flex-direction:column; gap:12px;">
+                <div style="background:rgba(0,240,255,0.06); border-left:3px solid #00f0ff; padding:8px 12px; color:#e0f7fa;">
+                    <b>OBJETIVO:</b> Navegar hasta el Punto de Observación (PO), adquirir visualmente al blanco enemigo, calcular su azimut y distancia, y transmitir la misión de fuego.
+                </div>
+
+                <div>
+                    <div style="font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:#e2b938; margin-bottom:6px; letter-spacing:1px;">[ PASO A PASO OPERATIVO ]</div>
+                    
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
+                        <b style="color:#fff;">1. Navegación GPS:</b> Selecciona un PO libre. Sigue la brújula y la distancia en metros hasta llegar a menos de 25m del punto.
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
+                        <b style="color:#fff;">2. Reconocimiento Óptico:</b> Desbloquea la cámara móvil para apuntar el retículo milimétrico al sector enemigo.
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
+                        <b style="color:#fff;">3. Inteligencia IMINT:</b> Examina las fotos aéreas. Verifica los detalles y descarta posibles civiles o aliados antes de autorizar.
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px;">
+                        <b style="color:#fff;">4. Transmisión Táctica:</b> Comunica el Azimut y la Distancia calculada por radio a la batería de morteros.
+                    </div>
+                </div>
+
+                <div style="background:rgba(226,185,56,0.06); border:1px dashed rgba(226,185,56,0.3); padding:8px 10px; font-size:0.78rem; color:#fff8e1;">
+                    ⚡ <b>CONTINGENCIA:</b> Si fallan los sensores GPS o la brújula, escanea el código QR físico ubicado en la baliza del PO para forzar el acceso.
+                </div>
+            </div>
+
+            <div style="padding:12px 18px; background:#0e1116; border-top:1px solid #333; display:flex; justify-content:flex-end;">
+                <button type="button" onclick="document.getElementById('modal-instrucciones-recon').style.display='none'" class="btn-header" style="background:#00f0ff; border-color:#00f0ff; color:#000; font-weight:bold; font-family:'Orbitron',sans-serif; font-size:0.78rem; padding:8px 18px;">
+                    ENTENDIDO
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

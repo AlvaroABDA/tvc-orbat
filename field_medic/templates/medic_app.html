@@ -305,12 +305,19 @@
             <span id="header-back-text">SALIR</span>
         </button>
 
-        <div style="text-align: center;">
-            <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #fff; letter-spacing: 1.5px;">FIELD MEDIC</div>
-            <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.7rem; color: var(--text-muted);" id="header-sanitario-tag">SANITARIO: {{ sanitario_id }}</div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <img src="/static/imgs/medic_icon_192.png" alt="Field Medic" style="width: 26px; height: 26px; border-radius: 5px; box-shadow: 0 0 8px rgba(255,51,68,0.4);">
+            <div style="text-align: left;">
+                <div style="font-family: 'Orbitron', sans-serif; font-size: 0.92rem; color: #fff; letter-spacing: 1.2px; line-height: 1.1;">FIELD MEDIC</div>
+                <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.68rem; color: var(--text-muted);" id="header-sanitario-tag">SANITARIO: {{ sanitario_id }}</div>
+            </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 8px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <button id="header-guide-btn" type="button" onclick="openMedicGuideModal()" class="btn-header" style="padding: 6px 9px; border-color: rgba(255,255,255,0.2);" title="Guía táctica médica">
+                <span class="material-symbols-outlined" style="font-size: 16px;">help_outline</span>
+                <span style="font-size: 0.72rem;">GUÍA</span>
+            </button>
             <button id="header-install-btn" onclick="openInstallView()" class="btn-header" style="display: none; padding: 6px 10px; border-color: var(--accent-cyan); color: var(--accent-cyan); font-weight: bold;" title="Instalar App en el dispositivo">
                 <span class="material-symbols-outlined" style="font-size: 16px;">install_mobile</span>
                 <span style="font-size: 0.72rem;">INSTALAR</span>
@@ -328,11 +335,11 @@
     <div class="content-area">
 
         <!-- ==================== PANTALLA INSTALADOR PWA (SI NO ESTÁ INSTALADA) ==================== -->
-        <section id="view-pwa-install" class="tactical-card" style="display: none; border-color: rgba(0, 240, 255, 0.4);">
+        <section id="view-pwa-install" class="tactical-card" style="display: none; border-color: rgba(255, 51, 68, 0.4);">
             <div style="text-align: center; margin-bottom: 12px;">
-                <span class="material-symbols-outlined" style="font-size: 42px; color: var(--accent-cyan);">install_mobile</span>
+                <img src="/static/imgs/medic_icon.png" alt="Field Medic" style="width: 72px; height: 72px; border-radius: 14px; margin-bottom: 10px; box-shadow: 0 0 20px rgba(255, 51, 68, 0.45); display: inline-block;">
                 <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.15rem; margin: 6px 0; color: #fff;">INSTALAR SUITE FIELD MEDIC</h2>
-                <div style="font-size: 0.75rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">100% OFFLINE-FIRST • SIN DESCARGA DE ARCHIVOS</div>
+                <div style="font-size: 0.75rem; color: #ff5566; font-family: 'Share Tech Mono', monospace;">100% OFFLINE-FIRST • SIN DESCARGA DE ARCHIVOS</div>
             </div>
 
             <p style="color: #ccc; font-size: 0.85rem; line-height: 1.4; margin-bottom: 14px;">
@@ -1715,6 +1722,73 @@
         }
         document.addEventListener('touchstart', autoEnterFullscreen, { once: true, passive: true });
         document.addEventListener('click', autoEnterFullscreen, { once: true });
+
+        function openMedicGuideModal() {
+            document.getElementById('modal-medic-guide').style.display = 'flex';
+        }
+
+        function closeMedicGuideModal() {
+            document.getElementById('modal-medic-guide').style.display = 'none';
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeMedicGuideModal();
+        });
     </script>
+
+    <!-- Modal Guía Táctica Sanitaria -->
+    <div id="modal-medic-guide" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); backdrop-filter:blur(6px); z-index:9999; justify-content:center; align-items:center; padding:16px;" onclick="if(event.target === this) closeMedicGuideModal()">
+        <div style="background:#14171d; border:1px solid #ff3344; max-width:500px; width:100%; max-height:88vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 10px 40px rgba(0,0,0,0.9);">
+            <div style="padding:14px 18px; background:#0e1116; border-bottom:1px solid #333; display:flex; align-items:center; justify-content:space-between;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <img src="/static/imgs/medic_icon_192.png" alt="Field Medic" style="width:34px; height:34px; border-radius:6px; box-shadow:0 0 10px rgba(255,51,68,0.4);">
+                    <div>
+                        <div style="font-family:'Orbitron',sans-serif; font-size:0.95rem; color:#fff; letter-spacing:1px;">MANUAL SANITARIO DE COMBATE</div>
+                        <div style="font-family:'Share Tech Mono',monospace; font-size:0.7rem; color:#ff5566;">PROTOCOLO FIELD MEDIC PWA</div>
+                    </div>
+                </div>
+                <button type="button" onclick="closeMedicGuideModal()" style="background:none; border:none; color:#888; font-size:24px; cursor:pointer; padding:0 6px;">&times;</button>
+            </div>
+            
+            <div style="padding:16px 18px; overflow-y:auto; font-size:0.84rem; line-height:1.5; color:#ccc; display:flex; flex-direction:column; gap:12px;">
+                <div style="background:rgba(255,51,68,0.06); border-left:3px solid #ff3344; padding:8px 12px; color:#ffebee;">
+                    <b>OBJETIVO:</b> Asistir y reanimar a operadores heridos bajo fuego deteniendo hemorragias y estabilizando sus signos vitales antes del colapso clínico.
+                </div>
+
+                <div>
+                    <div style="font-family:'Share Tech Mono',monospace; font-size:0.75rem; color:#ffeb3b; margin-bottom:6px; letter-spacing:1px;">[ PASO A PASO OPERATIVO ]</div>
+                    
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
+                        <b style="color:#fff;">1. Escanear Herido:</b> Pulsa <i>Escanear QR de Paciente</i> y enfoca el código QR del carnet militar táctico del operador caído.
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
+                        <b style="color:#fff;">2. Fase 1 - Hemostasia / Trauma:</b>
+                        <ul style="margin:4px 0 0 0; padding-left:18px; font-size:0.8rem; color:#aaa;">
+                            <li><b>Torniquete:</b> Gira el molinete de forma continua hasta cortar el flujo.</li>
+                            <li><b>Compresión:</b> Pulsa con ritmo en la banda verde del riel.</li>
+                            <li><b>Neumotórax:</b> Punza el espacio intercostal para drenar tensión.</li>
+                            <li><b>Sutura:</b> Toca las marcas quirúrgicas en secuencia rápida.</li>
+                        </ul>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
+                        <b style="color:#fff;">3. Fase 2 - Estabilización:</b> Monitoriza el pulso y sincroniza el ritmo cardíaco o secuencia de constantes hasta completar el 100%.
+                    </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px;">
+                        <b style="color:#fff;">4. Cupo de Botiquines:</b> Cada rescate consume 1 botiquín. Al agotarse, acude a un punto de RESPAWN para reaprovisionar tu equipo médico.
+                    </div>
+                </div>
+
+                <div style="background:rgba(0,240,255,0.06); border:1px dashed rgba(0,240,255,0.3); padding:8px 10px; font-size:0.78rem; color:#b2ebf2;">
+                    💡 <b>100% OFFLINE:</b> Toda la intervención se guarda en tu teléfono sin necesidad de datos móviles. Al recuperar conexión o volver a base, los informes clínicos se envían automáticamente al ORBAT central.
+                </div>
+            </div>
+
+            <div style="padding:12px 18px; background:#0e1116; border-top:1px solid #333; display:flex; justify-content:flex-end;">
+                <button type="button" onclick="closeMedicGuideModal()" class="btn-header" style="background:#ff3344; border-color:#ff3344; color:#000; font-weight:bold; font-family:'Orbitron',sans-serif; font-size:0.78rem; padding:8px 18px;">
+                    ENTENDIDO
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

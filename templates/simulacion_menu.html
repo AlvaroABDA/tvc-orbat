@@ -250,6 +250,192 @@
             transform: translateY(1px);
         }
 
+        .card-footer-btns {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn-instruction-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            color: #d0d7de;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.74rem;
+            letter-spacing: 0.8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+
+        .btn-instruction-card:hover {
+            background: rgba(255, 255, 255, 0.16);
+            border-color: #fff;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .btn-instruction-card:active {
+            transform: translateY(1px);
+        }
+
+        /* Modal Instrucciones Tácticas */
+        .modal-instructions-box {
+            background: #12151b;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: 100%;
+            max-width: 540px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.9);
+            position: relative;
+            overflow: hidden;
+            animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .instructions-header {
+            padding: 16px 20px;
+            background: #0d1015;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .instructions-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .instructions-icon-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(0, 0, 0, 0.4);
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .instructions-icon-badge img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .instructions-body {
+            padding: 18px 20px;
+            overflow-y: auto;
+            color: #ccc;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .instructions-objective-box {
+            background: rgba(0, 240, 255, 0.05);
+            border-left: 3px solid var(--accent-cyan);
+            padding: 10px 14px;
+            border-radius: 0 4px 4px 0;
+            font-size: 0.84rem;
+            color: #e0f7fa;
+            line-height: 1.45;
+        }
+
+        .instructions-section-tag {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--accent-gold);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .instructions-step-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 6px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+        }
+
+        .instructions-step-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .instructions-step-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: #fff;
+            margin-bottom: 4px;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .instructions-step-desc {
+            font-size: 0.82rem;
+            color: #aaa;
+            line-height: 1.4;
+        }
+
+        .instructions-tips-box {
+            background: rgba(226, 185, 56, 0.06);
+            border: 1px dashed rgba(226, 185, 56, 0.3);
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            color: #ddd;
+        }
+
+        .instructions-footer {
+            padding: 12px 20px;
+            background: #0d1015;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .btn-close-x {
+            background: transparent;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.15s;
+        }
+        .btn-close-x:hover {
+            color: #fff;
+        }
+
         .info-contingencia {
             background: rgba(0, 0, 0, 0.35);
             border: 1px dashed rgba(255, 255, 255, 0.15);
@@ -399,9 +585,15 @@
 
             <div class="card-footer">
                 <span>ESTADO: {{ 'AUTORIZADO' if recon_unlocked else 'ENCRIPTADO' }}</span>
-                <span class="btn-action">
-                    {{ 'ACCEDER' if recon_unlocked else 'DESBLOQUEAR' }} ➔
-                </span>
+                <div class="card-footer-btns">
+                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); openInstructionsModal('recon')" title="Manual e instrucciones tácticas">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
+                        INSTRUCCIONES
+                    </button>
+                    <span class="btn-action">
+                        {{ 'ACCEDER' if recon_unlocked else 'DESBLOQUEAR' }} ➔
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -434,9 +626,15 @@
 
             <div class="card-footer">
                 <span>ESTADO: {{ 'AUTORIZADO' if mortero_unlocked else 'ENCRIPTADO' }}</span>
-                <span class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.1);">
-                    {{ 'ACCEDER' if mortero_unlocked else 'DESBLOQUEAR' }} ➔
-                </span>
+                <div class="card-footer-btns">
+                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); openInstructionsModal('mortero')" title="Manual e instrucciones de artillería">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
+                        INSTRUCCIONES
+                    </button>
+                    <span class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.1);">
+                        {{ 'ACCEDER' if mortero_unlocked else 'DESBLOQUEAR' }} ➔
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -445,16 +643,16 @@
             
             <div class="card-header-row">
                 <div class="card-icon-title">
-                    <div class="card-icon" style="background: rgba(46, 204, 113, 0.15); color: var(--accent-green); border-color: rgba(46, 204, 113, 0.3);">
-                        <span class="material-symbols-outlined">medical_services</span>
+                    <div class="card-icon" style="padding: 2px; background: rgba(255, 51, 68, 0.12); border-color: rgba(255, 51, 68, 0.4); overflow: hidden; border-radius: 6px;">
+                        <img src="/static/imgs/medic_icon.png" alt="Field Medic" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;">
                     </div>
                     <div>
                         <h2 class="card-title">Field Medic</h2>
-                        <div style="font-size: 0.75rem; color: var(--accent-green); font-family: 'Share Tech Mono', monospace;">APP SANITARIA PWA OFFLINE</div>
+                        <div style="font-size: 0.75rem; color: #ff5566; font-family: 'Share Tech Mono', monospace;">APP SANITARIA PWA OFFLINE</div>
                     </div>
                 </div>
                 <div>
-                    <span class="card-badge badge-ready">INSTALABLE</span>
+                    <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">INSTALABLE</span>
                 </div>
             </div>
 
@@ -464,9 +662,15 @@
 
             <div class="card-footer">
                 <span>ESTADO: DISPONIBLE PARA MÓVIL</span>
-                <span class="btn-action" style="border-color: var(--accent-green); color: var(--accent-green); background: rgba(46,204,113,0.1);">
-                    INSTALAR / ABRIR (PWA) ➔
-                </span>
+                <div class="card-footer-btns">
+                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); openInstructionsModal('medic')" title="Manual e instrucciones sanitarias">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
+                        INSTRUCCIONES
+                    </button>
+                    <span class="btn-action" style="border-color: #ff5566; color: #ff5566; background: rgba(255,51,68,0.1);">
+                        INSTALAR / ABRIR (PWA) ➔
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -475,6 +679,54 @@
             <span class="material-symbols-outlined">info</span>
             <div>
                 <b>PROTOCOLO DE CONTINGENCIA:</b> Si los sensores de geolocalización, cámara o brújula fallan en el campo, los códigos QR físicos situados en los OP permanentes continúan plenamente operativos como método de acceso alternativo.
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Instrucciones de Juego -->
+    <div id="modal-instrucciones" class="modal-overlay" onclick="if(event.target === this) closeInstructionsModal()">
+        <div class="modal-instructions-box">
+            <div class="instructions-header">
+                <div class="instructions-header-left">
+                    <div id="inst-icon-badge" class="instructions-icon-badge"></div>
+                    <div>
+                        <h3 class="modal-title" id="inst-title" style="margin: 0; font-size: 1.05rem;">INSTRUCCIONES</h3>
+                        <div id="inst-subtitle" style="font-size: 0.72rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">MANUAL OPERATIVO</div>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-x" onclick="closeInstructionsModal()" title="Cerrar">&times;</button>
+            </div>
+
+            <div class="instructions-body">
+                <div>
+                    <div class="instructions-section-tag">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">flag</span>
+                        OBJETIVO TÁCTICO
+                    </div>
+                    <div id="inst-objective" class="instructions-objective-box"></div>
+                </div>
+
+                <div>
+                    <div class="instructions-section-tag">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">format_list_numbered</span>
+                        PROCEDIMIENTO PASO A PASO
+                    </div>
+                    <div id="inst-steps" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                </div>
+
+                <div id="inst-tips-container" style="display: none;">
+                    <div class="instructions-section-tag" style="color: var(--accent-gold);">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">lightbulb</span>
+                        REGLAS Y CONSEJOS TÁCTICOS
+                    </div>
+                    <div id="inst-tips" class="instructions-tips-box"></div>
+                </div>
+            </div>
+
+            <div class="instructions-footer">
+                <button type="button" class="btn-confirm" onclick="closeInstructionsModal()" style="padding: 9px 24px; font-size: 0.82rem; width: auto;">
+                    ENTENDIDO // CERRAR
+                </button>
             </div>
         </div>
     </div>
@@ -498,6 +750,167 @@
     <script>
         let currentMinigame = null;
         let currentRedirectUrl = null;
+
+        const INSTRUCTIONS_DATA = {
+            recon: {
+                title: "TELÉMETRO RECON & IMINT",
+                subtitle: "RECONOCIMIENTO AVANZADO Y DESIGNACIÓN DE OBJETIVOS",
+                iconType: "icon",
+                iconValue: "radar",
+                iconColor: "var(--accent-cyan)",
+                iconBg: "rgba(0, 240, 255, 0.15)",
+                objective: "Infiltrarse hasta los Puntos de Observación (PO) asignados, identificar objetivos de alto valor y transmitir datos de tiro inmediatos (azimut y distancia) a la artillería/mortero.",
+                steps: [
+                    {
+                        title: "1. Despliegue y Navegación GPS",
+                        desc: "Selecciona el Punto de Observación activo asignado a tu facción. Sigue la brújula táctica y la telemetría de distancia en metros en tiempo real hasta ingresar en el radio de activación del PO."
+                    },
+                    {
+                        title: "2. Adquisición Óptica y Telémetro",
+                        desc: "Al llegar a la posición, activa el visor milimétrico con cámara móvil. Orienta el dispositivo hacia el sector de interés para alinear el retículo óptico con el blanco sospechoso."
+                    },
+                    {
+                        title: "3. Inteligencia Visual IMINT",
+                        desc: "Compara el sector observado con el dossier fotográfico de inteligencia aérea. Identifica al objetivo válido y confirma que no se trate de elementos civiles ni aliados antes de autorizar el blanco."
+                    },
+                    {
+                        title: "4. Medición y Transmisión de Fuego",
+                        desc: "Captura el azimut magnético exacto (grados) y calcula la distancia estimada. Comunica las coordenadas de impacto calculadas al equipo de morteros por canal táctico."
+                    },
+                    {
+                        title: "5. Contingencia Electrónica / QR",
+                        desc: "Si hay inhibición de satélites GPS o fallo de cámara en el móvil, puedes desbloquear el visor escaneando el código QR físico emplazado en la baliza del PO."
+                    }
+                ],
+                tips: [
+                    "No permanezcas mucho tiempo estático en un PO descubierto: rota de posición tras transmitir la misión de fuego.",
+                    "Una identificación errónea abortará temporalmente la misión e invalidará el PO momentáneamente."
+                ]
+            },
+            mortero: {
+                title: "ARTILLERÍA // MORTERO",
+                subtitle: "CALCULADORA BALÍSTICA Y FUEGO INDIRECTO",
+                iconType: "icon",
+                iconValue: "rocket_launch",
+                iconColor: "var(--accent-red)",
+                iconBg: "rgba(255, 51, 68, 0.15)",
+                objective: "Batir y neutralizar posiciones enemigas a larga distancia ejecutando misiones de fuego indirecto calculadas a partir de telemetría transmitida por observadores avanzados.",
+                steps: [
+                    {
+                        title: "1. Emplazamiento de Batería",
+                        desc: "Introduce la cuadrícula de mapa donde has desplegado tu tubo de mortero (ej. AP 45 C) y pulsa DESPLEGAR para inicializar los sistemas de puntería."
+                    },
+                    {
+                        title: "2. Medición y Marcaje de Objetivo",
+                        desc: "Usa la herramienta Regla: pulsa en tu mortero (Punto A) y traza la línea hasta el objetivo (Punto B) para obtener el azimut y distancia exactos. También puedes mover la cruceta D-PAD sobre el mapa táctico."
+                    },
+                    {
+                        title: "3. Ajuste de Azimut y Elevación",
+                        desc: "Orienta el Azimut (dirección de 0° a 360°) y calibra la Elevación en cuadrante (entre 45° para alcance máximo balístico y 85° para tiro de ángulo empinado y corto)."
+                    },
+                    {
+                        title: "4. Confirmación de Disparo",
+                        desc: "Espera a que el indicador de carga y preparación de batería esté al 100%. Pulsa el disparador FUEGO para iniciar la trayectoria balística."
+                    },
+                    {
+                        title: "5. Regulación por Observador",
+                        desc: "Mantén comunicación por radio con los observadores Recon: si reportan correcciones ('alargar 50m', 'corregir 10 milésimas'), ajusta la elevación y vuelve a disparar."
+                    }
+                ],
+                tips: [
+                    "A mayor elevación (80°-85°), menor distancia de impacto pero mayor tiempo de vuelo.",
+                    "Usa los botones de zoom (+ / -) para centrar la cuadrícula enemiga con precisión milimétrica."
+                ]
+            },
+            medic: {
+                title: "FIELD MEDIC PWA",
+                subtitle: "SUITE SANITARIA TÁCTICA OFFLINE DE COMBATE",
+                iconType: "image",
+                iconValue: "/static/imgs/medic_icon.png",
+                iconColor: "#ff5566",
+                iconBg: "rgba(255, 51, 68, 0.15)",
+                objective: "Prestar asistencia médica de emergencia bajo fuego, estabilizar heridos críticos y gestionar el cupo de botiquines sin requerir cobertura ni conexión a internet.",
+                steps: [
+                    {
+                        title: "1. Instalación PWA en tu Dispositivo",
+                        desc: "Pulsa INSTALAR / ABRIR y añade la app a la pantalla de inicio de tu smartphone. Field Medic se guardará en la memoria local y funcionará 100% offline durante toda la operación."
+                    },
+                    {
+                        title: "2. Triage y Escaneo de Paciente",
+                        desc: "Al alcanzar a un operador derribado, pulsa 'Escanear QR de Paciente' y enfoca con la cámara el código QR físico del carnet militar táctico del jugador herido."
+                    },
+                    {
+                        title: "3. Fase 1: Control de Hemorragia / Trauma",
+                        desc: "Detén la pérdida de sangre antes de que la línea de vida caiga al 0%: gira el molinete del Torniquete táctico, mantén la compresión en la banda verde del riel, punza el neumotórax o sutura la herida."
+                    },
+                    {
+                        title: "4. Fase 2: Soporte y Estabilización Vital",
+                        desc: "Ejecuta la maniobra de sincronización de constantes (ritmo cardíaco ECG, ajuste de constantes o secuencia de estimulación) hasta reanimar completamente al combatiente."
+                    },
+                    {
+                        title: "5. Consumo de Botiquines y Sincronización",
+                        desc: "Cada reanimación exitosa descuenta 1 botiquín de tu cupo de sanitario. El historial clínico se almacena en el teléfono y se sincronizará automáticamente con el ORBAT central al recuperar conexión o en Respawn."
+                    }
+                ],
+                tips: [
+                    "Si te quedas sin botiquines en combate, debes acudir a un punto de RESPAWN autorizado para reaprovisionar material médico.",
+                    "En Android o iOS, ejecuta la app a pantalla completa desde el icono instalado para una respuesta táctica más rápida."
+                ]
+            }
+        };
+
+        function openInstructionsModal(gameKey) {
+            const data = INSTRUCTIONS_DATA[gameKey];
+            if (!data) return;
+
+            const iconBadge = document.getElementById('inst-icon-badge');
+            if (data.iconType === 'image') {
+                iconBadge.innerHTML = `<img src="${data.iconValue}" alt="${data.title}" style="width:100%; height:100%; object-fit:contain; border-radius:4px;">`;
+                iconBadge.style.background = data.iconBg;
+                iconBadge.style.borderColor = data.iconColor;
+            } else {
+                iconBadge.innerHTML = `<span class="material-symbols-outlined" style="color: ${data.iconColor}; font-size: 26px;">${data.iconValue}</span>`;
+                iconBadge.style.background = data.iconBg;
+                iconBadge.style.borderColor = data.iconColor;
+            }
+
+            document.getElementById('inst-title').textContent = data.title;
+            document.getElementById('inst-subtitle').textContent = data.subtitle;
+            document.getElementById('inst-subtitle').style.color = data.iconColor;
+
+            document.getElementById('inst-objective').textContent = data.objective;
+            document.getElementById('inst-objective').style.borderLeftColor = data.iconColor;
+
+            const stepsContainer = document.getElementById('inst-steps');
+            stepsContainer.innerHTML = '';
+            data.steps.forEach(step => {
+                const card = document.createElement('div');
+                card.className = 'instructions-step-card';
+                card.innerHTML = `
+                    <div class="instructions-step-title">
+                        <span style="color: ${data.iconColor};">▶</span>
+                        ${step.title}
+                    </div>
+                    <div class="instructions-step-desc">${step.desc}</div>
+                `;
+                stepsContainer.appendChild(card);
+            });
+
+            const tipsContainer = document.getElementById('inst-tips-container');
+            const tipsEl = document.getElementById('inst-tips');
+            if (data.tips && data.tips.length > 0) {
+                tipsEl.innerHTML = data.tips.map(t => `<div style="margin-bottom: 4px; display: flex; gap: 6px;"><span style="color: var(--accent-gold);">•</span><span>${t}</span></div>`).join('');
+                tipsContainer.style.display = 'block';
+            } else {
+                tipsContainer.style.display = 'none';
+            }
+
+            document.getElementById('modal-instrucciones').style.display = 'flex';
+        }
+
+        function closeInstructionsModal() {
+            document.getElementById('modal-instrucciones').style.display = 'none';
+        }
 
         function handleCardClick(minigame, isUnlocked, redirectUrl) {
             // Intentar activar pantalla completa en el gesto de pulsación
@@ -565,6 +978,13 @@
 
         document.getElementById('input-pin-value').addEventListener('keydown', function(e) {
             if (e.key === 'Enter') submitPin();
+        });
+
+        window.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeInstructionsModal();
+                closePinModal();
+            }
         });
     </script>
 </body>
