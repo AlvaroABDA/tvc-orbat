@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, g
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, g, send_from_directory, make_response
 import sqlite3
 import os
 import glob
@@ -2591,7 +2591,21 @@ def delete_doc(id):
     return jsonify({'status': 'success'})
 
 # ==================== FIELD MEDIC ROUTES ====================
+@app.route('/sw_medic.js', methods=['GET'])
+def serve_medic_sw():
+    response = make_response(send_from_directory(os.path.join(app.root_path, 'static'), 'sw_medic.js'))
+    response.headers['Content-Type'] = 'application/javascript'
+    response.headers['Service-Worker-Allowed'] = '/'
+    return response
+
+@app.route('/manifest_medic.json', methods=['GET'])
+def serve_medic_manifest():
+    response = make_response(send_from_directory(os.path.join(app.root_path, 'static'), 'manifest_medic.json'))
+    response.headers['Content-Type'] = 'application/manifest+json'
+    return response
+
 @app.route('/medic', methods=['GET'])
+@app.route('/medico', methods=['GET'])
 def view_medic():
     """
     Ruta PWA principal del módulo médico.

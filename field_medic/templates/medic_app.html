@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ORBAT - Field Medic</title>
-    <link rel="manifest" href="/static/manifest_medic.json">
+    <link rel="manifest" href="/manifest_medic.json">
     <meta name="theme-color" content="#111418">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -916,7 +916,7 @@
 
         // Registrar Service Worker para soporte Offline completo
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/sw_medic.js')
+            navigator.serviceWorker.register('/sw_medic.js', { scope: '/' })
                 .then(() => console.log("Field Medic Service Worker registrado."))
                 .catch(err => console.warn("SW error:", err));
         }

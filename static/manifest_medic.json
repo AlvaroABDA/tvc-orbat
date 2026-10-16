@@ -1,7 +1,9 @@
 {
   "name": "TVC Field Medic",
   "short_name": "FieldMedic",
+  "id": "/medic",
   "start_url": "/medic",
+  "scope": "/medic",
   "display": "standalone",
   "background_color": "#0a0c0e",
   "theme_color": "#111418",
@@ -11,12 +13,14 @@
     {
       "src": "/static/imgs/medic_icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/static/imgs/medic_icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }

@@ -332,7 +332,14 @@ class TestFieldMedicSuite(unittest.TestCase):
         sw_text = sw_res.data.decode('utf-8')
         self.assertIn('/api/medic/roster', sw_text)
         self.assertIn('/static/js/field_medic/tactical_lifeline.js', sw_text)
-        self.assertIn('tvc-medic-v13', sw_text)
+        self.assertIn('tvc-medic-v', sw_text)
+
+        # 5. Root PWA endpoints
+        sw_root = self.client.get('/sw_medic.js')
+        self.assertEqual(sw_root.status_code, 200)
+        self.assertEqual(sw_root.headers.get('Service-Worker-Allowed'), '/')
+        manifest_root = self.client.get('/manifest_medic.json')
+        self.assertEqual(manifest_root.status_code, 200)
 
     def test_16_unified_sanitario_alias_and_quota_sync(self):
         # Crear tablas para la base de datos aislada en memoria
