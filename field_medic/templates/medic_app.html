@@ -86,22 +86,173 @@
         }
 
         .reanim-counter-badge {
-            background: #111;
-            border: 1px solid #ff3344;
-            padding: 6px 12px;
+            background: #0d1218;
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            padding: 5px 10px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             color: #fff;
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.88rem;
             font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.2s ease;
+        }
+        .reanim-counter-badge.state-ok {
+            border-color: #2ecc71;
+            background: rgba(46, 204, 113, 0.12);
+        }
+        .reanim-counter-badge.state-warn {
+            border-color: #e2b938;
+            background: rgba(226, 185, 56, 0.12);
+        }
+        .reanim-counter-badge.state-danger {
+            border-color: #ff3344;
+            background: rgba(255, 51, 68, 0.18);
+            animation: pulse-danger-border 1s infinite alternate;
+        }
+        @keyframes pulse-danger-border {
+            0% { box-shadow: 0 0 4px rgba(255,51,68,0.3); }
+            100% { box-shadow: 0 0 12px rgba(255,51,68,0.8); }
         }
 
         .reanim-cross {
             color: var(--accent-red);
             font-size: 1.15rem;
             font-weight: 900;
+        }
+
+        /* Notificación de consumo de botiquín en el menú */
+        .consumption-notice-card {
+            background: rgba(14, 26, 36, 0.95);
+            border: 1px solid #00f0ff;
+            border-left: 5px solid #2ecc71;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            animation: fadeInDown 0.3s ease-out;
+            position: relative;
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Panel Principal de Inventario de Botiquines en el Menú */
+        .medic-inventory-card {
+            background: #10151d;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 14px 16px;
+            margin-bottom: 18px;
+            position: relative;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+            transition: all 0.25s ease;
+        }
+        .medic-inventory-card.state-ok {
+            border-top: 3px solid #2ecc71;
+        }
+        .medic-inventory-card.state-warn {
+            border-top: 3px solid #e2b938;
+        }
+        .medic-inventory-card.state-danger {
+            border-top: 3px solid #ff3344;
+            background: #181013;
+        }
+
+        .medic-inventory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .medic-status-badge {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.72rem;
+            font-weight: bold;
+            padding: 3px 8px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .medic-status-badge.status-ok {
+            background: rgba(46, 204, 113, 0.15);
+            border: 1px solid #2ecc71;
+            color: #2ecc71;
+        }
+        .medic-status-badge.status-warn {
+            background: rgba(226, 185, 56, 0.15);
+            border: 1px solid #e2b938;
+            color: #e2b938;
+        }
+        .medic-status-badge.status-danger {
+            background: rgba(255, 51, 68, 0.2);
+            border: 1px solid #ff3344;
+            color: #ff6677;
+            animation: pulse-danger-border 0.8s infinite alternate;
+        }
+
+        .medic-inventory-body {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            margin-bottom: 10px;
+        }
+
+        .medic-count-big {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+        }
+
+        .medic-slots-container {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .medic-slot-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.95rem;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+        .medic-slot-item.filled {
+            background: rgba(46, 204, 113, 0.2);
+            border-color: #2ecc71;
+            color: #2ecc71;
+            box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
+        }
+        .medic-slot-item.empty {
+            background: rgba(255, 255, 255, 0.02);
+            border-color: rgba(255, 255, 255, 0.1);
+            color: #555;
+        }
+
+        /* Banner de Alerta cuando Kits = 0 */
+        .alert-no-kits-banner {
+            background: rgba(255, 51, 68, 0.12);
+            border: 1px solid #ff3344;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+            display: none;
+            flex-direction: column;
+            gap: 6px;
         }
 
         /* Contenedor Principal */
@@ -322,11 +473,12 @@
                 <span class="material-symbols-outlined" style="font-size: 16px;">install_mobile</span>
                 <span style="font-size: 0.72rem;">INSTALAR</span>
             </button>
-            <div class="reanim-counter-badge" title="Reanimaciones restantes disponibles para este evento" {% if user_role == 'admin' %}onclick="openAdminRefillPrompt()" style="cursor: pointer;"{% endif %}>
+            <div id="header-reanim-badge" class="reanim-counter-badge state-ok" title="Botiquines y reanimaciones restantes disponibles para este evento" {% if user_role == 'admin' %}onclick="openAdminRefillPrompt()" style="cursor: pointer;"{% endif %}>
                 <span class="reanim-cross">✚</span>
-                <span id="reanim-count-val">3</span>
+                <span style="font-size: 0.72rem; color: #94a3b8; font-weight: normal; margin-right: 2px;">KITS:</span>
+                <span id="reanim-count-val" style="font-family: 'Orbitron', monospace; font-size: 1rem;">3</span>
                 {% if user_role == 'admin' %}
-                <span style="font-size: 0.65rem; color: #ffeb3b; border: 1px solid #ffeb3b; padding: 0 4px; line-height: 1.2; margin-left: 4px;" title="Clic para recargar rápido">+ADMIN</span>
+                <span style="font-size: 0.65rem; color: #ffeb3b; border: 1px solid #ffeb3b; padding: 0 4px; line-height: 1.2; margin-left: 2px;" title="Clic para recargar rápido">+ADMIN</span>
                 {% endif %}
             </div>
         </div>
@@ -365,13 +517,80 @@
 
         <!-- ==================== PANTALLA 0: SELECCIÓN / ESCANEO DE PACIENTE ==================== -->
         <section id="view-scan-patient" class="tactical-card" style="display: block;">
-            <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.1rem; margin: 0 0 8px 0; color: #fff;">ATENCIÓN MÉDICA TÁCTICA</h2>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 20px; line-height: 1.4;">
+            
+            <!-- NOTIFICACIÓN DE CONSUMO RECIENTE DE BOTIQUÍN EN EL MENÚ -->
+            <div id="menu-consumption-notice" class="consumption-notice-card" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; color: #2ecc71; font-family: 'Orbitron', sans-serif; font-size: 0.88rem; font-weight: bold;">
+                        <span class="material-symbols-outlined" style="font-size: 20px; color: #2ecc71;">check_circle</span>
+                        <span>CONSUMO DE BOTIQUÍN REGISTRADO</span>
+                    </div>
+                    <button type="button" onclick="dismissConsumptionNotice()" class="btn-header" style="background: none; border: none; color: #888; font-size: 18px; padding: 0 4px; cursor: pointer;" title="Cerrar aviso">&times;</button>
+                </div>
+                <div style="margin-top: 8px; font-size: 0.82rem; color: #e2e8f0; line-height: 1.5; font-family: 'Share Tech Mono', monospace;">
+                    <div>PACIENTE REINCORPORADO: <b id="notice-patient-name" style="color: #00f0ff;">--</b></div>
+                    <div>MATERIAL EMPLEADO: <b style="color: #ff5566;">-1 BOTIQUÍN TÁCTICO DE CAMPO</b></div>
+                    <div style="margin-top: 4px; padding-top: 4px; border-top: 1px dashed rgba(255,255,255,0.15); display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: #aaa;">NUEVO BALANCE:</span>
+                        <b id="notice-remaining-count" style="color: #e2b938; font-size: 0.95rem;">--</b>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PANEL DESTACADO: INVENTARIO DE BOTIQUINES TÁCTICOS -->
+            <div class="medic-inventory-card state-ok" id="medic-inventory-panel">
+                <div class="medic-inventory-header">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="color: #ff5566; font-size: 18px;">medical_services</span>
+                        <span style="font-family: 'Orbitron', sans-serif; font-size: 0.82rem; letter-spacing: 1px; color: #fff;">INVENTARIO DE BOTIQUINES</span>
+                    </div>
+                    <div id="medic-status-badge" class="medic-status-badge status-ok">OPERATIVO</div>
+                </div>
+                
+                <div class="medic-inventory-body">
+                    <div class="medic-count-big">
+                        <span id="menu-reanim-val" style="color: #fff;">3</span>
+                        <span style="font-size: 0.72rem; color: #94a3b8; font-family: 'Share Tech Mono', monospace; font-weight: normal;">RESTANTES</span>
+                    </div>
+                    <div class="medic-slots-container" id="medic-slots-container">
+                        <!-- Generado dinámicamente por updateReanimUI() -->
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 6px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 8px;">
+                    <span class="material-symbols-outlined" style="font-size: 14px; color: var(--accent-gold);">info</span>
+                    <span id="medic-inventory-msg" style="color: #aaa; font-size: 0.75rem;">Cada reanimación exitosa descuenta 1 botiquín. Recarga escaneando la baliza QR de tu RESPAWN.</span>
+                </div>
+            </div>
+
+            <!-- ALERTA BLOQUEANTE CUANDO KITS == 0 -->
+            <div id="alert-no-kits-banner" class="alert-no-kits-banner">
+                <div style="display: flex; align-items: center; gap: 8px; color: #ff5566; font-family: 'Orbitron', sans-serif; font-size: 0.88rem; font-weight: bold;">
+                    <span class="material-symbols-outlined" style="font-size: 20px; color: #ff3344;">warning</span>
+                    <span>SIN BOTIQUINES DISPONIBLES (0 RESTANTES)</span>
+                </div>
+                <div style="font-size: 0.8rem; color: #fecaca; line-height: 1.45;">
+                    Has agotado todos tus kits de primeros auxilios. <b>No puedes iniciar la atención médica de ningún operador</b> hasta reaprovisionarte en una baliza autorizada.
+                </div>
+                <div style="margin-top: 4px;">
+                    <button type="button" class="btn-action-large btn-green" onclick="openQRScanner('RESPAWN')" style="padding: 10px 12px; font-size: 0.8rem; width: 100%;">
+                        📦 ESCANEAR BALIZA QR DE RESPAWN (+3)
+                    </button>
+                </div>
+            </div>
+
+            <h2 style="font-family: 'Orbitron', sans-serif; font-size: 1.05rem; margin: 0 0 6px 0; color: #fff;">ATENCIÓN MÉDICA TÁCTICA</h2>
+            <p style="color: var(--text-muted); font-size: 0.82rem; margin-bottom: 16px; line-height: 1.4;">
                 Escanee el código QR del carnet del operador herido para iniciar el protocolo de triaje y tratamiento.
             </p>
 
-            <button class="btn-action-large btn-cyan" onclick="openQRScanner()" style="margin-bottom: 15px;">
-                📷 ESCANEAR CARNET (QR)
+            <button class="btn-action-large btn-cyan" id="btn-scan-patient-main" onclick="openQRScanner('PATIENT')" style="margin-bottom: 10px;">
+                📷 ESCANEAR CARNET DE PACIENTE (QR)
+            </button>
+
+            <button type="button" class="btn-header" onclick="openQRScanner('RESPAWN')" style="width: 100%; justify-content: center; font-size: 0.78rem; padding: 9px; margin-bottom: 16px; border-color: rgba(226,185,56,0.4); color: var(--accent-gold); background: rgba(226,185,56,0.06);">
+                <span class="material-symbols-outlined" style="font-size: 16px;">local_shipping</span>
+                ESCANEAR BALIZA QR DE RESPAWN / RECARGA
             </button>
 
             {% if user_role == 'admin' %}
@@ -1070,10 +1289,126 @@
         function updateReanimUI() {
             const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
             const val = storage.getMedicReanimations(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
+            
+            // 1. Cabecera (Header Badge)
             const countEl = document.getElementById('reanim-count-val');
+            const headerBadge = document.getElementById('header-reanim-badge');
             if (countEl) countEl.textContent = val;
+            if (headerBadge) {
+                headerBadge.classList.remove('state-ok', 'state-warn', 'state-danger');
+                if (val > 1) headerBadge.classList.add('state-ok');
+                else if (val === 1) headerBadge.classList.add('state-warn');
+                else headerBadge.classList.add('state-danger');
+            }
+
+            // 2. Panel de Inventario en el Menú Principal
+            const menuValEl = document.getElementById('menu-reanim-val');
+            const invPanel = document.getElementById('medic-inventory-panel');
+            const statusBadge = document.getElementById('medic-status-badge');
+            const slotsContainer = document.getElementById('medic-slots-container');
+            const alertNoKits = document.getElementById('alert-no-kits-banner');
+            const scanBtn = document.getElementById('btn-scan-patient-main');
+
+            if (menuValEl) menuValEl.textContent = val;
+
+            if (invPanel) {
+                invPanel.classList.remove('state-ok', 'state-warn', 'state-danger');
+                if (val > 1) invPanel.classList.add('state-ok');
+                else if (val === 1) invPanel.classList.add('state-warn');
+                else invPanel.classList.add('state-danger');
+            }
+
+            if (statusBadge) {
+                statusBadge.classList.remove('status-ok', 'status-warn', 'status-danger');
+                if (val > 1) {
+                    statusBadge.classList.add('status-ok');
+                    statusBadge.textContent = `${val} KITS LISTOS`;
+                } else if (val === 1) {
+                    statusBadge.classList.add('status-warn');
+                    statusBadge.textContent = 'ÚLTIMO KIT';
+                } else {
+                    statusBadge.classList.add('status-danger');
+                    statusBadge.textContent = '0 KITS (AGOTADO)';
+                }
+            }
+
+            // Renderizar slots de botiquines visuales
+            if (slotsContainer) {
+                slotsContainer.innerHTML = '';
+                const maxSlots = Math.max(3, Math.min(8, val > 0 ? val : 3));
+                for (let i = 0; i < maxSlots; i++) {
+                    const slot = document.createElement('div');
+                    slot.className = 'medic-slot-item ' + (i < val ? 'filled' : 'empty');
+                    slot.innerHTML = (i < val) ? '✚' : '•';
+                    slot.title = (i < val) ? `Botiquín #${i + 1} operativo` : `Botiquín no disponible`;
+                    slotsContainer.appendChild(slot);
+                }
+            }
+
+            // Alerta y bloqueo de botón si no hay kits
+            const userRole = "{{ user_role }}";
+            if (val <= 0 && userRole !== 'admin') {
+                if (alertNoKits) alertNoKits.style.display = 'flex';
+                if (scanBtn) {
+                    scanBtn.classList.remove('btn-cyan');
+                    scanBtn.classList.add('btn-red');
+                    scanBtn.innerHTML = '🚫 SIN BOTIQUINES (BLOQUEADO)';
+                }
+            } else {
+                if (alertNoKits) alertNoKits.style.display = 'none';
+                if (scanBtn) {
+                    scanBtn.classList.remove('btn-red');
+                    scanBtn.classList.add('btn-cyan');
+                    scanBtn.innerHTML = '📷 ESCANEAR CARNET DE PACIENTE (QR)';
+                }
+            }
+
+            // 3. Revisar y mostrar notificación de consumo si existe
+            checkAndRenderConsumptionNotice();
         }
         window.updateReanimUI = updateReanimUI;
+
+        // Gestión de la notificación de consumo en el menú
+        function checkAndRenderConsumptionNotice() {
+            const rawNotice = sessionStorage.getItem('tvc_medic_last_consumption');
+            const noticeEl = document.getElementById('menu-consumption-notice');
+            if (!rawNotice || !noticeEl) {
+                if (noticeEl) noticeEl.style.display = 'none';
+                return;
+            }
+            try {
+                const notice = JSON.parse(rawNotice);
+                const pacEl = document.getElementById('notice-patient-name');
+                const remEl = document.getElementById('notice-remaining-count');
+                if (pacEl) pacEl.textContent = notice.pacienteNombre || '--';
+                if (remEl) remEl.textContent = `${notice.restantes} BOTIQUÍN${notice.restantes !== 1 ? 'ES' : ''} DISPONIBLE${notice.restantes !== 1 ? 'S' : ''}`;
+                noticeEl.style.display = 'block';
+            } catch(e) {
+                noticeEl.style.display = 'none';
+            }
+        }
+
+        function dismissConsumptionNotice() {
+            sessionStorage.removeItem('tvc_medic_last_consumption');
+            const noticeEl = document.getElementById('menu-consumption-notice');
+            if (noticeEl) noticeEl.style.display = 'none';
+        }
+
+        function showNoKitsModal(customMsg) {
+            const modal = document.getElementById('modal-no-kits');
+            const msgEl = document.getElementById('modal-no-kits-msg');
+            if (msgEl && customMsg) {
+                msgEl.innerText = customMsg;
+            } else if (msgEl) {
+                msgEl.innerText = "Has consumido todo tu cupo médico de reanimación asignado. El protocolo doctrinal prohíbe iniciar el tratamiento de un herido sin material sanitario reglamentario.";
+            }
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeNoKitsModal() {
+            const modal = document.getElementById('modal-no-kits');
+            if (modal) modal.style.display = 'none';
+        }
 
         // ==================== ASIGNACIÓN DE RECURSOS ADMIN ====================
         function adminAddReanims(count) {
@@ -1121,10 +1456,20 @@
             }
         }
 
-        let scannerTargetMode = 'PATIENT'; // 'PATIENT' o 'MEDIC_SEAL'
+        let scannerTargetMode = 'PATIENT'; // 'PATIENT', 'RESPAWN', o 'MEDIC_SEAL'
 
         // ==================== ESCÁNER QR DE CAMPO ====================
         function openQRScanner(mode = 'PATIENT') {
+            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            const currentKits = storage.getMedicReanimations(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
+            const userRole = "{{ user_role }}";
+
+            // NOTIFICACIÓN AL INICIO: Si no tiene kits y quiere escanear un paciente, bloquear de inmediato
+            if (mode === 'PATIENT' && currentKits <= 0 && userRole !== 'admin') {
+                showNoKitsModal("Has consumido todos tus botiquines de reanimación (0 restantes).\n\nNo puedes iniciar el tratamiento de ningún operador herido hasta reaprovisionarte en un punto de RESPAWN.");
+                return;
+            }
+
             scannerTargetMode = mode;
             const modal = document.getElementById('scanner-modal');
             const banner = document.getElementById('scanner-mode-banner');
@@ -1134,6 +1479,10 @@
                     banner.textContent = "2. ESCANEE SU CARNET DE SANITARIO PARA FIRMAR";
                     banner.style.borderColor = "var(--accent-green)";
                     banner.style.color = "#2ecc71";
+                } else if (mode === 'RESPAWN') {
+                    banner.textContent = "📦 ESCANEE LA BALIZA QR DE RESPAWN / RECARGA";
+                    banner.style.borderColor = "var(--accent-gold)";
+                    banner.style.color = "var(--accent-gold)";
                 } else {
                     banner.textContent = "1. ESCANEE EL CARNET DEL HERIDO (PACIENTE)";
                     banner.style.borderColor = "var(--accent-cyan)";
@@ -1234,7 +1583,19 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sanitario_id: sanitarioId, reanimaciones: newTotal })
                 }).catch(() => {});
+                sessionStorage.removeItem('tvc_medic_last_consumption');
+                dismissConsumptionNotice();
                 alert(`📦 ¡PUNTO DE REAPROVISIONAMIENTO ESCANEADO!\n\nBotiquines y material de reanimación recargados (+${addQty}).\nTotal disponible: ${newTotal}`);
+                return;
+            }
+
+            // NOTIFICACIÓN AL INICIO DEL TRATAMIENTO: Comprobar cupo al escanear al paciente
+            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            const currentKits = storage.getMedicReanimations(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
+            if (currentKits <= 0 && userRole !== 'admin') {
+                const member = storage.lookupMember(cleanToken);
+                const pacNom = member ? member.nombre : ("OPERADOR " + cleanToken);
+                showNoKitsModal(`Operador detectado: ${pacNom} [${cleanToken}].\n\nNo puedes iniciar el tratamiento porque has consumido todos tus botiquines (0 disponibles).\n\nAcude al punto de RESPAWN de tu facción para reaprovisionarte.`);
                 return;
             }
 
@@ -1586,6 +1947,17 @@
             const remaining = storage.decrementMedicReanimation(cleanToken);
             storage.currentSessionId = cleanToken;
             localStorage.setItem('tvc_medic_active_sanitario_id', cleanToken);
+            
+            // Guardar aviso de consumo para que sea visible en el menú principal
+            const noticeData = {
+                pacienteNombre: activeEpisode.paciente_nombre || activeEpisode.operador_nombre,
+                pacienteUid: activeEpisode.paciente_uid || activeEpisode.operador_uid,
+                medicoNombre: medicoNombre,
+                consumidos: 1,
+                restantes: remaining,
+                timestamp: Date.now()
+            };
+            sessionStorage.setItem('tvc_medic_last_consumption', JSON.stringify(noticeData));
             updateReanimUI();
             
             // 6. Sellar episodio completo
@@ -1609,22 +1981,23 @@
             if (successCard) {
                 document.getElementById('seal-medic-name').textContent = `${medicoNombre} [${cleanToken}]`;
                 document.getElementById('seal-patient-name').textContent = `${activeEpisode.paciente_nombre} [${activeEpisode.paciente_uid}]`;
-                document.getElementById('seal-medic-remaining').textContent = remaining;
+                document.getElementById('seal-medic-remaining').textContent = `${remaining} BOTIQUINES RESTANTES`;
                 successCard.style.display = 'block';
             }
             
             // 9. Intentar sincronización si hay cobertura
             storage.flushSyncQueue();
             
-            // Regresar a la pantalla de espera tras 2.8 segundos de confirmación
+            // Regresar a la pantalla de espera tras 2.5 segundos de confirmación
             setTimeout(() => {
                 activeEpisode = null;
                 hideAllViews();
                 document.getElementById('view-scan-patient').style.display = 'block';
                 updateHeaderNav();
+                updateReanimUI();
                 if (promptCard) promptCard.style.display = 'block';
                 if (successCard) successCard.style.display = 'none';
-            }, 2800);
+            }, 2500);
         }
 
         // Cancelar / abortar intervención y regresar a la pantalla de escaneo
@@ -1635,6 +2008,7 @@
             hideAllViews();
             document.getElementById('view-scan-patient').style.display = 'block';
             updateHeaderNav();
+            updateReanimUI();
         }
 
         // Auto-completar fase actual (exclusivo admin para pruebas rápidas de flujo)
@@ -1786,6 +2160,37 @@
             <div style="padding:12px 18px; background:#0e1116; border-top:1px solid #333; display:flex; justify-content:flex-end;">
                 <button type="button" onclick="closeMedicGuideModal()" class="btn-header" style="background:#ff3344; border-color:#ff3344; color:#000; font-weight:bold; font-family:'Orbitron',sans-serif; font-size:0.78rem; padding:8px 18px;">
                     ENTENDIDO
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Alerta Sin Botiquines (Bloqueo al inicio) -->
+    <div id="modal-no-kits" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); backdrop-filter: blur(8px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;" onclick="if(event.target === this) closeNoKitsModal()">
+        <div style="background: #14171d; border: 2px solid #ff3344; max-width: 440px; width: 100%; padding: 22px; box-shadow: 0 10px 40px rgba(0,0,0,0.9); animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,51,68,0.3); padding-bottom: 10px;">
+                <span class="material-symbols-outlined" style="color: #ff3344; font-size: 28px;">warning</span>
+                <div>
+                    <h3 style="margin: 0; font-family: 'Orbitron', sans-serif; font-size: 1rem; color: #ff3344; letter-spacing: 1px;">ATENCIÓN MÉDICA DENEGADA</h3>
+                    <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.72rem; color: #aaa;">SIN BOTIQUINES DISPONIBLES (0 RESTANTES)</div>
+                </div>
+            </div>
+            
+            <p id="modal-no-kits-msg" style="font-size: 0.85rem; color: #e2e8f0; line-height: 1.5; margin-bottom: 16px;">
+                Has consumido todo tu cupo médico de reanimación asignado. El protocolo doctrinal prohíbe iniciar el tratamiento de un herido sin material sanitario reglamentario.
+            </p>
+            
+            <div style="background: rgba(226,185,56,0.08); border-left: 3px solid #e2b938; padding: 10px 12px; margin-bottom: 16px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.4;">
+                <b style="color: #e2b938;">PROCEDIMIENTO DE RECARGA:</b><br>
+                Acude a la base o punto de <b>RESPAWN</b> autorizado de tu facción y escanea la baliza QR física para recargar tu dotación de botiquines.
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button type="button" class="btn-action-large btn-green" onclick="closeNoKitsModal(); openQRScanner('RESPAWN');" style="font-size: 0.82rem; padding: 11px;">
+                    📦 ESCANEAR QR DE RESPAWN / RECARGA
+                </button>
+                <button type="button" class="btn-header" onclick="closeNoKitsModal()" style="width: 100%; justify-content: center; font-size: 0.78rem; padding: 9px; border-color: #555; color: #aaa;">
+                    ENTENDIDO // CERRAR
                 </button>
             </div>
         </div>

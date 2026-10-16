@@ -843,9 +843,26 @@
 
             <div class="card-tags">
                 <span class="card-tag" style="color:#ff5566; border-color:rgba(255,51,68,0.3); background:rgba(255,51,68,0.1);"><span class="material-symbols-outlined" style="font-size:13px;">offline_pin</span> 100% OFFLINE TOTAL</span>
+                <span class="card-tag" id="sim-menu-kits-tag" style="color: {{ '#2ecc71' if (reanimaciones_disponibles | default(3)) > 0 else '#ff3344' }}; border-color: {{ 'rgba(46,204,113,0.4)' if (reanimaciones_disponibles | default(3)) > 0 else 'rgba(255,51,68,0.5)' }}; background: {{ 'rgba(46,204,113,0.12)' if (reanimaciones_disponibles | default(3)) > 0 else 'rgba(255,51,68,0.18)' }}; font-weight: bold;">
+                    <span class="material-symbols-outlined" style="font-size:13px;">medical_services</span>
+                    <span id="sim-menu-kits-text">{{ reanimaciones_disponibles | default(3) }} BOTIQUINES RESTANTES</span>
+                </span>
                 <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:#ff5566;">install_mobile</span> INSTALADOR PWA</span>
-                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:#ff5566;">qr_code_scanner</span> ESCÁNER DE CARNETS</span>
                 <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:#ff5566;">vital_signs</span> 5 PROCEDIMIENTOS CLÍNICOS</span>
+            </div>
+
+            <!-- AVISO DE CONSUMO DE BOTIQUÍN EN MENÚ DE SIMULACIÓN -->
+            <div id="sim-menu-consumption-alert" style="display: none; background: rgba(14, 26, 36, 0.95); border: 1px solid #00f0ff; border-left: 4px solid #2ecc71; padding: 10px 14px; margin-bottom: 12px; font-size: 0.82rem; font-family: 'Share Tech Mono', monospace; line-height: 1.45;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="color: #2ecc71; font-weight: bold; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
+                        <span>ÚLTIMA ASISTENCIA: -1 BOTIQUÍN CONSUMIDO</span>
+                    </div>
+                    <button type="button" onclick="event.stopPropagation(); sessionStorage.removeItem('tvc_medic_last_consumption'); document.getElementById('sim-menu-consumption-alert').style.display='none';" style="background:none; border:none; color:#aaa; cursor:pointer; font-size:18px; line-height:1;">&times;</button>
+                </div>
+                <div style="margin-top: 4px; color: #cbd5e1; font-size: 0.78rem;">
+                    Paciente: <b id="sim-notice-patient" style="color: #00f0ff;">--</b> • Balance: <b id="sim-notice-remaining" style="color: #e2b938;">--</b>
+                </div>
             </div>
 
             <p class="card-desc">
@@ -1252,10 +1269,41 @@
             if (e.key === 'Enter') submitPin();
         });
 
-        window.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeInstructionsModal();
-                closePinModal();
+        window.addEventListener('DOMContentLoaded', () => {
+            // Sincronizar aviso de consumo reciente si existe
+            const rawNotice = sessionStorage.getItem('tvc_medic_last_consumption');
+            const alertEl = document.getElementById('sim-menu-consumption-alert');
+            if (rawNotice && alertEl) {
+                try {
+                    const notice = JSON.parse(rawNotice);
+                    const pacEl = document.getElementById('sim-notice-patient');
+                    const remEl = document.getElementById('sim-notice-remaining');
+                    if (pacEl) pacEl.textContent = notice.pacienteNombre || '--';
+                    if (remEl) remEl.textContent = `${notice.restantes} BOTIQUINES`;
+                    alertEl.style.display = 'block';
+                } catch(e) {}
+            }
+
+            // Sincronizar cupo local si el usuario ya jugó en este navegador
+            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || '{{ sanitario_id | default("ADMIN") }}';
+            const localReanim = localStorage.getItem(`tvc_medic_reanim_${activeSanitario.trim().toUpperCase()}`);
+            if (localReanim !== null) {
+                const count = parseInt(localReanim, 10);
+                const textEl = document.getElementById('sim-menu-kits-text');
+                const tagEl = document.getElementById('sim-menu-kits-tag');
+                if (textEl && tagEl && !isNaN(count)) {
+                    if (count > 0) {
+                        textEl.textContent = `${count} BOTIQUINES RESTANTES`;
+                        tagEl.style.color = '#2ecc71';
+                        tagEl.style.borderColor = 'rgba(46,204,113,0.4)';
+                        tagEl.style.background = 'rgba(46,204,113,0.12)';
+                    } else {
+                        textEl.textContent = '0 BOTIQUINES (AGOTADO)';
+                        tagEl.style.color = '#ff3344';
+                        tagEl.style.borderColor = 'rgba(255,51,68,0.5)';
+                        tagEl.style.background = 'rgba(255,51,68,0.18)';
+                    }
+                }
             }
         });
     </script>

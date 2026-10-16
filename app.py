@@ -310,10 +310,19 @@ def mortero_app():
 def simulacion_menu():
     if 'role' not in session:
         return redirect(url_for('login'))
+    conn = get_db_connection()
+    user_role = session.get('role', 'player')
+    user_faction = session.get('faction')
+    equipo_id = session.get('equipo_id')
+    sanitario_id = 'ADMIN' if user_role == 'admin' else (session.get('sanitario_id') or session.get('user') or (f"MED-{equipo_id}" if equipo_id else "MED-ALFA"))
+    recursos = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id)
+    reanim_disp = recursos.get('reanimaciones_disponibles', 3)
     return render_template('simulacion_menu.html',
-                           user_role=session.get('role', 'player'),
-                           user_faction=session.get('faction'),
-                           unlocked_minigames=session.get('unlocked_minigames', []))
+                           user_role=user_role,
+                           user_faction=user_faction,
+                           unlocked_minigames=session.get('unlocked_minigames', []),
+                           reanimaciones_disponibles=reanim_disp,
+                           sanitario_id=sanitario_id)
 
 @app.route('/telemetro_recon')
 def telemetro_recon():

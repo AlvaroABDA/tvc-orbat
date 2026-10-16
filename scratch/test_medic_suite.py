@@ -436,6 +436,51 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertNotIn('href="/medic"', index_html)
         self.assertNotIn("onclick=\"window.location.href='/medic'\"", index_html)
 
+    def test_18_early_notification_no_kits_and_menu_inventory_display(self):
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'player'
+            sess['faction'] = 'Syldavia'
+            sess['user'] = 'MEDIC_01'
+            sess['sanitario_id'] = 'MEDIC_01'
+
+        # 1. Test Field Medic app interface
+        medic_res = self.client.get('/medic')
+        self.assertEqual(medic_res.status_code, 200)
+        medic_html = medic_res.data.decode('utf-8')
+
+        # Panel de inventario en el menú
+        self.assertIn('medic-inventory-panel', medic_html)
+        self.assertIn('menu-reanim-val', medic_html)
+        self.assertIn('medic-slots-container', medic_html)
+        self.assertIn('INVENTARIO DE BOTIQUINES', medic_html)
+
+        # Notificación de consumo en el menú
+        self.assertIn('menu-consumption-notice', medic_html)
+        self.assertIn('CONSUMO DE BOTIQUÍN REGISTRADO', medic_html)
+        self.assertIn('checkAndRenderConsumptionNotice', medic_html)
+        self.assertIn('dismissConsumptionNotice', medic_html)
+
+        # Alerta y bloqueo temprano de inicio de tratamiento si no hay kits
+        self.assertIn('modal-no-kits', medic_html)
+        self.assertIn('alert-no-kits-banner', medic_html)
+        self.assertIn('showNoKitsModal', medic_html)
+        self.assertIn('ATENCIÓN MÉDICA DENEGADA', medic_html)
+        self.assertIn('SIN BOTIQUINES DISPONIBLES', medic_html)
+
+        # Verificación en openQRScanner y startNewEpisodeWithToken de bloqueo temprano
+        self.assertIn('currentKits <= 0', medic_html)
+        self.assertIn("openQRScanner('PATIENT')", medic_html)
+        self.assertIn("openQRScanner('RESPAWN')", medic_html)
+
+        # 2. Test Simulación Menu con tag de botiquines y aviso de consumo
+        sim_res = self.client.get('/simulacion')
+        self.assertEqual(sim_res.status_code, 200)
+        sim_html = sim_res.data.decode('utf-8')
+        self.assertIn('sim-menu-kits-tag', sim_html)
+        self.assertIn('sim-menu-kits-text', sim_html)
+        self.assertIn('sim-menu-consumption-alert', sim_html)
+        self.assertIn('BOTIQUINES RESTANTES', sim_html)
+
 if __name__ == '__main__':
     unittest.main()
 
