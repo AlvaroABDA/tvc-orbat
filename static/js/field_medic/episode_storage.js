@@ -16,7 +16,21 @@ class EpisodeStorage {
             if (res.ok) {
                 const data = await res.json();
                 localStorage.setItem(this.STORAGE_KEY_ROSTER, JSON.stringify(data));
+                
+                // Actualizar cupos locales de reanimaciones para cada sanitario
+                if (data.roster) {
+                    for (const [key, item] of Object.entries(data.roster)) {
+                        if (item.is_medic && item.reanimaciones_disponibles !== undefined) {
+                            const reanimKey = `tvc_medic_reanim_${key.toUpperCase()}`;
+                            const localVal = localStorage.getItem(reanimKey);
+                            if (localVal === null) {
+                                localStorage.setItem(reanimKey, item.reanimaciones_disponibles.toString());
+                            }
+                        }
+                    }
+                }
                 console.log("[Storage] Roster offline actualizado:", data.total_jugadores, "miembros.");
+                if (window.updateReanimUI) window.updateReanimUI();
                 return data;
             }
         } catch (e) {
@@ -74,20 +88,44 @@ class EpisodeStorage {
 
     // ==================== RECURSOS DE REANIMACIÓN POR MÉDICO ====================
     getMedicReanimations(medicoUid, defaultVal = 3) {
-        const key = `tvc_medic_reanim_${(medicoUid || 'GENERIC').toUpperCase()}`;
+        if (!medicoUid) return defaultVal;
+        const key = `tvc_medic_reanim_${medicoUid.trim().toUpperCase()}`;
         const stored = localStorage.getItem(key);
         if (stored !== null) {
             return parseInt(stored, 10);
         }
-        // Admin tiene cupo ilimitado o muy alto
-        const initVal = (medicoUid && medicoUid.toUpperCase().includes('ADMIN')) ? 99 : defaultVal;
+        
+        // Consultar si viene precargado en el roster offline
+        const mem = this.lookupMember(medicoUid);
+        if (mem && mem.reanimaciones_disponibles !== undefined) {
+            this.setMedicReanimations(medicoUid, mem.reanimaciones_disponibles);
+            return mem.reanimaciones_disponibles;
+        }
+
+        const initVal = (medicoUid.toUpperCase().includes('ADMIN')) ? 99 : defaultVal;
         this.setMedicReanimations(medicoUid, initVal);
         return initVal;
     }
 
     setMedicReanimations(medicoUid, val) {
-        const key = `tvc_medic_reanim_${(medicoUid || 'GENERIC').toUpperCase()}`;
+        if (!medicoUid) return;
+        const key = `tvc_medic_reanim_${medicoUid.trim().toUpperCase()}`;
         localStorage.setItem(key, val.toString());
+        
+        // Sincronizar alias si existen
+        const mem = this.lookupMember(medicoUid);
+        if (mem) {
+            if (mem.uid) localStorage.setItem(`tvc_medic_reanim_${mem.uid.trim().toUpperCase()}`, val.toString());
+            if (mem.nombre) {
+                localStorage.setItem(`tvc_medic_reanim_${mem.nombre.trim().toUpperCase()}`, val.toString());
+                localStorage.setItem(`tvc_medic_reanim_MED-${mem.nombre.trim().toUpperCase()}`, val.toString());
+            }
+        }
+        if (medicoUid.toUpperCase() === 'ADMIN' || medicoUid.toUpperCase() === 'MED-ADMIN') {
+            localStorage.setItem(`tvc_medic_reanim_ADMIN`, val.toString());
+            localStorage.setItem(`tvc_medic_reanim_MED-ADMIN`, val.toString());
+            localStorage.setItem(`tvc_medic_reanim_admin`, val.toString());
+        }
     }
 
     decrementMedicReanimation(medicoUid) {
@@ -171,6 +209,9 @@ class EpisodeStorage {
                         this.setMedicReanimations(item.medico_uid, data.reanimaciones_disponibles);
                     }
                     this.removeFromQueue(item.episode_id);
+                    if (window.updateReanimUI) {
+                        window.updateReanimUI();
+                    }
                 }
             } catch (err) {
                 console.warn("[Storage] Sin cobertura para sincronizar episodio:", item.episode_id);

@@ -876,18 +876,18 @@
     </div>
 
     <!-- Carga de Scripts Modulares Field Medic -->
-    <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/tactical_lifeline.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/tourniquet_game.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/suture_game.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/pneumothorax_game.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/vitals_hold_game.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/dual_vitals_game.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/memory_sequence_game.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/line_correction_game.js') }}?v=12"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/tactical_lifeline.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/tourniquet_game.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/suture_game.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/pneumothorax_game.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/vitals_hold_game.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/dual_vitals_game.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/memory_sequence_game.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/line_correction_game.js') }}?v=13"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=13"></script>
 
     <script>
         const sanitarioId = "{{ sanitario_id }}";
@@ -943,9 +943,13 @@
 
         // Inicialización al cargar la página
         window.addEventListener('DOMContentLoaded', () => {
+            const lastSanitario = localStorage.getItem('tvc_medic_active_sanitario_id');
+            if (lastSanitario) {
+                storage.currentSessionId = lastSanitario;
+            }
             const serverReanims = {{ recursos.reanimaciones_disponibles | default(3) }};
-            const currentLocal = storage.getLocalReanimations(serverReanims);
-            if (serverReanims > currentLocal) {
+            const activeKey = `tvc_medic_reanim_${(storage.currentSessionId || sanitarioId).toUpperCase()}`;
+            if (localStorage.getItem(activeKey) === null) {
                 storage.setLocalReanimations(serverReanims);
             }
 
@@ -1057,13 +1061,17 @@
         }
 
         function updateReanimUI() {
-            const val = storage.getLocalReanimations(medicConfig.reanimaciones_iniciales_medico || 3);
-            document.getElementById('reanim-count-val').textContent = val;
+            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            const val = storage.getMedicReanimations(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
+            const countEl = document.getElementById('reanim-count-val');
+            if (countEl) countEl.textContent = val;
         }
+        window.updateReanimUI = updateReanimUI;
 
         // ==================== ASIGNACIÓN DE RECURSOS ADMIN ====================
         function adminAddReanims(count) {
-            const current = storage.getLocalReanimations();
+            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            const current = storage.getMedicReanimations(activeSanitario);
             adminSetReanims(current + count);
         }
 
@@ -1078,23 +1086,26 @@
         }
 
         async function adminSetReanims(val) {
+            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            storage.setMedicReanimations(activeSanitario, val);
             storage.setLocalReanimations(val);
             updateReanimUI();
             try {
                 await fetch('/api/admin/medicos/update', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sanitario_id: sanitarioId, reanimaciones: val })
+                    body: JSON.stringify({ sanitario_id: activeSanitario, reanimaciones: val })
                 });
             } catch(e) {
                 console.warn("Offline admin sync:", e);
             }
-            alert(`Cupo actualizado a ${val} reanimaciones.`);
+            alert(`Cupo actualizado a ${val} reanimaciones para ${activeSanitario}.`);
         }
 
         function openAdminRefillPrompt() {
-            const current = storage.getLocalReanimations();
-            const ans = prompt(`[ADMIN] Asignar recursos médicos a ${sanitarioId}:\nIntroduce nueva cantidad de reanimaciones disponibles:`, current + 10);
+            const activeSanitario = localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            const current = storage.getMedicReanimations(activeSanitario);
+            const ans = prompt(`[ADMIN] Asignar recursos médicos a ${activeSanitario}:\nIntroduce nueva cantidad de reanimaciones disponibles:`, current + 10);
             if (ans !== null && ans.trim() !== '') {
                 const num = parseInt(ans.trim(), 10);
                 if (!isNaN(num) && num >= 0) {
@@ -1566,6 +1577,8 @@
             
             // 5. Descontar 1 reanimación al médico tratante
             const remaining = storage.decrementMedicReanimation(cleanToken);
+            storage.currentSessionId = cleanToken;
+            localStorage.setItem('tvc_medic_active_sanitario_id', cleanToken);
             updateReanimUI();
             
             // 6. Sellar episodio completo
@@ -1575,6 +1588,8 @@
             activeEpisode.sanitario_id = cleanToken; // compatibilidad legacy
             activeEpisode.hora_cierre = new Date().toISOString();
             activeEpisode.resultado_final = "EXITO";
+            activeEpisode.duracion_total_segundos = activeEpisode.duration_total_segundos || Math.round((Date.now() - activeEpisode.start_time) / 1000);
+            activeEpisode.duration_total_segundos = activeEpisode.duracion_total_segundos;
             
             // 7. Encolar en almacenamiento local offline
             storage.enqueueForSync(activeEpisode);

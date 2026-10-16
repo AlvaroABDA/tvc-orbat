@@ -162,27 +162,127 @@ def init_medic_db(conn):
         
     conn.commit()
 
+def resolve_sanitario_id_and_aliases(conn, sanitario_id):
+    """
+    Resuelve el identificador canónico y la lista completa de alias (UID carnet, nombre, MED-nombre, equipo)
+    para un sanitario dado, garantizando que el carnet QR de la PWA y el panel de administración
+    accedan y descuenten exactamente el mismo recurso en MedicoRecursos.
+    """
+    ident = str(sanitario_id or '').strip()
+    if not ident:
+        return 'MED-GENERIC', ['MED-GENERIC']
+    
+    u = ident.upper()
+    if u in ('ADMIN', 'MED-ADMIN'):
+        return 'ADMIN', ['ADMIN', 'admin', 'MED-ADMIN', 'med-admin']
+    
+    cursor = conn.cursor()
+    clean_name = ident[4:] if ident.upper().startswith('MED-') else ident
+    m = None
+    try:
+        m = cursor.execute('''
+            SELECT m.uid, m.nombre_jugador, e.id as equipo_id
+            FROM Miembro m
+            JOIN Equipo e ON m.equipo_id = e.id
+            WHERE UPPER(m.uid) = ? 
+               OR UPPER(m.nombre_jugador) = ? 
+               OR UPPER('MED-' || m.nombre_jugador) = ?
+               OR UPPER(m.nombre_jugador) = ?
+               OR UPPER('MED-' || e.id) = ?
+        ''', (u, u, u, clean_name.upper(), u)).fetchone()
+    except sqlite3.OperationalError:
+        # La tabla Miembro / Equipo puede no existir en bases de datos aisladas de test
+        m = None
+    
+    if m:
+        canonical = (m['uid'] or '').strip().upper() or f"MED-{m['nombre_jugador'].upper()}"
+        aliases = set([canonical, ident, ident.upper()])
+        if m['uid']:
+            aliases.add(m['uid'].strip().upper())
+            aliases.add(m['uid'].strip())
+        if m['nombre_jugador']:
+            nom = m['nombre_jugador'].strip()
+            aliases.add(nom)
+            aliases.add(nom.upper())
+            aliases.add(f"MED-{nom.upper()}")
+            aliases.add(f"MED-{nom}")
+        if m['equipo_id']:
+            aliases.add(f"MED-{m['equipo_id']}")
+        return canonical, list(aliases)
+    
+    return ident, [ident, ident.upper(), ident.lower()]
+
 def get_or_create_sanitario_recursos(conn, sanitario_id):
     """
-    Obtiene los recursos restantes del sanitario o los inicializa si es su primera atención.
+    Obtiene los recursos restantes del sanitario o los inicializa si es su primera atención,
+    sincronizando todos los alias vinculados (carnet QR, nombre táctico, ID de equipo).
     """
     config = load_medic_config()
     default_reanim = config.get("reanimaciones_iniciales_medico", 3)
     
+    canonical, aliases = resolve_sanitario_id_and_aliases(conn, sanitario_id)
     cursor = conn.cursor()
-    row = cursor.execute('SELECT * FROM MedicoRecursos WHERE sanitario_id = ?', (sanitario_id,)).fetchone()
-    if not row:
+    
+    # Buscar si existe ya algún registro para cualquiera de los alias
+    placeholders = ', '.join(['?'] * len(aliases))
+    row = cursor.execute(f'''
+        SELECT sanitario_id, reanimaciones_disponibles, reanimaciones_usadas
+        FROM MedicoRecursos
+        WHERE UPPER(sanitario_id) IN ({placeholders})
+        ORDER BY reanimaciones_usadas DESC, reanimaciones_disponibles DESC
+        LIMIT 1
+    ''', [a.upper() for a in aliases]).fetchone()
+    
+    if row:
+        disponibles = row['reanimaciones_disponibles']
+        usadas = row['reanimaciones_usadas']
+    else:
+        disponibles = 99 if canonical == 'ADMIN' else default_reanim
+        usadas = 0
+        
+    # Sincronizar canonical y todos sus alias en MedicoRecursos para coherencia absoluta
+    for a in aliases:
         cursor.execute('''
-            INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, reanimaciones_usadas)
-            VALUES (?, ?, 0)
-        ''', (sanitario_id, default_reanim))
-        conn.commit()
-        return {
-            "sanitario_id": sanitario_id,
-            "reanimaciones_disponibles": default_reanim,
-            "reanimaciones_usadas": 0
-        }
-    return dict(row)
+            INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, reanimaciones_usadas, actualizado_en)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(sanitario_id) DO UPDATE SET
+                reanimaciones_disponibles = excluded.reanimaciones_disponibles,
+                reanimaciones_usadas = excluded.reanimaciones_usadas,
+                actualizado_en = CURRENT_TIMESTAMP
+        ''', (a, disponibles, usadas))
+    conn.commit()
+    
+    return {
+        "sanitario_id": canonical,
+        "reanimaciones_disponibles": disponibles,
+        "reanimaciones_usadas": usadas
+    }
+
+def update_sanitario_recursos(conn, sanitario_id, disponibles, usadas=None):
+    """
+    Actualiza el cupo de reanimaciones disponibles y usadas para un sanitario y todos sus alias vinculados.
+    """
+    canonical, aliases = resolve_sanitario_id_and_aliases(conn, sanitario_id)
+    cursor = conn.cursor()
+    if usadas is None:
+        rec = get_or_create_sanitario_recursos(conn, canonical)
+        usadas = rec.get('reanimaciones_usadas', 0)
+        
+    for a in aliases:
+        cursor.execute('''
+            INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, reanimaciones_usadas, actualizado_en)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(sanitario_id) DO UPDATE SET
+                reanimaciones_disponibles = excluded.reanimaciones_disponibles,
+                reanimaciones_usadas = excluded.reanimaciones_usadas,
+                actualizado_en = CURRENT_TIMESTAMP
+        ''', (a, int(disponibles), int(usadas)))
+    conn.commit()
+    return {
+        "sanitario_id": canonical,
+        "reanimaciones_disponibles": int(disponibles),
+        "reanimaciones_usadas": int(usadas)
+    }
 
 def sync_episodio_medico(conn, payload):
     """
@@ -211,7 +311,7 @@ def sync_episodio_medico(conn, payload):
     hemorragia_controlada = bool(payload.get('hemorragia_controlada', False))
     estabilizacion_completada = bool(payload.get('estabilizacion_completada', False))
     resultado_final = payload.get('resultado_final', 'EXITO')
-    duracion = float(payload.get('duracion_total_segundos', 0.0))
+    duracion = float(payload.get('duracion_total_segundos') or payload.get('duration_total_segundos') or 0.0)
     detalles_json = json.dumps(payload.get('detalles', {}))
     
     cursor = conn.cursor()
@@ -224,6 +324,7 @@ def sync_episodio_medico(conn, payload):
             "status": "success",
             "message": "Episodio ya sincronizado previamente (idempotente).",
             "reanimaciones_disponibles": recursos["reanimaciones_disponibles"],
+            "reanimaciones_usadas": recursos.get("reanimaciones_usadas", 0),
             "already_synced": True
         }, 200
         
@@ -252,7 +353,6 @@ def sync_episodio_medico(conn, payload):
             ORDER BY sincronizado_en DESC LIMIT 1
         ''', (paciente_uid, paciente_uid)).fetchone()
         if repeat_check:
-            # Si hay atención previa registrada hoy
             flags.append('RECENT_ATTENTION')
     except Exception:
         pass
@@ -283,13 +383,7 @@ def sync_episodio_medico(conn, payload):
     if resultado_final == 'EXITO' and hemorragia_controlada and estabilizacion_completada:
         nuevas_disponibles = max(0, recursos['reanimaciones_disponibles'] - 1)
         nuevas_usadas = recursos['reanimaciones_usadas'] + 1
-        cursor.execute('''
-            UPDATE MedicoRecursos
-            SET reanimaciones_disponibles = ?, reanimaciones_usadas = ?, actualizado_en = CURRENT_TIMESTAMP
-            WHERE sanitario_id = ?
-        ''', (nuevas_disponibles, nuevas_usadas, medico_uid))
-        recursos['reanimaciones_disponibles'] = nuevas_disponibles
-        recursos['reanimaciones_usadas'] = nuevas_usadas
+        recursos = update_sanitario_recursos(conn, medico_uid, nuevas_disponibles, nuevas_usadas)
         
     conn.commit()
     
@@ -297,6 +391,7 @@ def sync_episodio_medico(conn, payload):
         "status": "success",
         "message": "Episodio registrado correctamente.",
         "reanimaciones_disponibles": recursos["reanimaciones_disponibles"],
+        "reanimaciones_usadas": recursos["reanimaciones_usadas"],
         "discrepancias": flags,
         "already_synced": False
     }, 200
@@ -305,7 +400,10 @@ def get_medic_roster_snapshot(conn):
     """
     Genera un diccionario ultraligero con todos los carnets/operadores y sanitarios
     de la partida para que la PWA opere 100% desconectada de la red.
+    Incluye los cupos de reanimaciones disponibles sincronizados con el servidor.
     """
+    config = load_medic_config()
+    default_reanim = config.get("reanimaciones_iniciales_medico", 3)
     cursor = conn.cursor()
     members = cursor.execute('''
         SELECT m.uid, m.nombre_jugador, m.rol, e.id as equipo_id, e.nombre as equipo_nombre, f.nombre as faccion_nombre
@@ -326,13 +424,22 @@ def get_medic_roster_snapshot(conn):
         
         is_medic = ('medico' in rol.lower() or 'sanitario' in rol.lower())
         
+        reanim_disp = default_reanim
+        reanim_usad = 0
+        if is_medic:
+            rec = get_or_create_sanitario_recursos(conn, uid or nombre)
+            reanim_disp = rec.get('reanimaciones_disponibles', default_reanim)
+            reanim_usad = rec.get('reanimaciones_usadas', 0)
+        
         info = {
             "uid": uid,
             "nombre": nombre,
             "rol": rol,
             "faccion": faccion,
             "equipo": equipo,
-            "is_medic": is_medic
+            "is_medic": is_medic,
+            "reanimaciones_disponibles": reanim_disp,
+            "reanimaciones_usadas": reanim_usad
         }
         
         if uid:
@@ -358,18 +465,23 @@ def get_medic_roster_snapshot(conn):
                 "rol": "Sanitario de Unidad",
                 "faccion": faccion,
                 "equipo": equipo,
-                "is_medic": True
+                "is_medic": True,
+                "reanimaciones_disponibles": reanim_disp,
+                "reanimaciones_usadas": reanim_usad
             }
             medicos_set.add(med_eq)
             
     # Entrada HQ
+    rec_admin = get_or_create_sanitario_recursos(conn, 'ADMIN')
     roster["ADMIN"] = {
         "uid": "ADMIN",
         "nombre": "ADMINISTRADOR (HQ)",
         "rol": "Oficial Médico / Mando",
         "faccion": "Global",
         "equipo": "Control Central",
-        "is_medic": True
+        "is_medic": True,
+        "reanimaciones_disponibles": rec_admin.get('reanimaciones_disponibles', 99),
+        "reanimaciones_usadas": rec_admin.get('reanimaciones_usadas', 0)
     }
     
     return {

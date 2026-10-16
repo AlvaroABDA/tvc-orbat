@@ -242,6 +242,7 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertIn("ADMIN", data["medicos"])
         self.assertIn("ADMIN", data["roster"])
         self.assertTrue(data["roster"]["ADMIN"]["is_medic"])
+        self.assertIn("reanimaciones_disponibles", data["roster"]["ADMIN"])
 
     def test_13_dual_qr_sync_and_discrepancy_detection(self):
         # 1. Successful normal attention (duration >= 25s, same faction, different UIDs)
@@ -331,7 +332,55 @@ class TestFieldMedicSuite(unittest.TestCase):
         sw_text = sw_res.data.decode('utf-8')
         self.assertIn('/api/medic/roster', sw_text)
         self.assertIn('/static/js/field_medic/tactical_lifeline.js', sw_text)
-        self.assertIn('tvc-medic-v12', sw_text)
+        self.assertIn('tvc-medic-v13', sw_text)
+
+    def test_16_unified_sanitario_alias_and_quota_sync(self):
+        # Crear tablas para la base de datos aislada en memoria
+        self.conn.execute("CREATE TABLE IF NOT EXISTS Faccion (id INTEGER PRIMARY KEY, nombre TEXT)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS Equipo (id INTEGER PRIMARY KEY, nombre TEXT, faccion_id INTEGER)")
+        self.conn.execute("CREATE TABLE IF NOT EXISTS Miembro (id INTEGER PRIMARY KEY, uid TEXT, nombre_jugador TEXT, rol TEXT, equipo_id INTEGER)")
+        self.conn.execute("INSERT OR IGNORE INTO Faccion (id, nombre) VALUES (99, 'TestFaction')")
+        self.conn.execute("INSERT OR IGNORE INTO Equipo (id, nombre, faccion_id) VALUES (99, 'Alfa Squad', 99)")
+        self.conn.execute("INSERT OR REPLACE INTO Miembro (id, uid, nombre_jugador, rol, equipo_id) VALUES (999, 'MEDIC-QR-999', 'Gregory', 'Medico de Combate', 99)")
+        self.conn.commit()
+
+        # 1. Verificar resolución canónica
+        canonical, aliases = medic_engine.resolve_sanitario_id_and_aliases(self.conn, 'MEDIC-QR-999')
+        self.assertEqual(canonical, 'MEDIC-QR-999')
+        self.assertIn('MED-GREGORY', aliases)
+
+        # 2. Obtener recursos usando UID físico
+        rec = medic_engine.get_or_create_sanitario_recursos(self.conn, 'MEDIC-QR-999')
+        self.assertEqual(rec['reanimaciones_disponibles'], 3)
+        self.assertEqual(rec['reanimaciones_usadas'], 0)
+
+        # 3. Sincronizar un episodio usando el UID del carnet escaneado
+        ep_id = "EP-SYNC-" + str(uuid.uuid4())
+        payload = {
+            "episode_id": ep_id,
+            "medico_uid": "MEDIC-QR-999",
+            "paciente_uid": "PATIENT-001",
+            "fase_actual": "completed",
+            "hemorragia_controlada": True,
+            "estabilizacion_completada": True,
+            "resultado_final": "EXITO",
+            "duracion_total_segundos": 30.0
+        }
+        res, status = medic_engine.sync_episodio_medico(self.conn, payload)
+        self.assertEqual(status, 200)
+        self.assertEqual(res["reanimaciones_disponibles"], 2)
+        self.assertEqual(res["reanimaciones_usadas"], 1)
+
+        # 4. Verificar que consultando por nombre 'MED-GREGORY' o carnet 'MEDIC-QR-999' refleja disponibles=2, usadas=1
+        rec_named = medic_engine.get_or_create_sanitario_recursos(self.conn, 'MED-GREGORY')
+        self.assertEqual(rec_named['reanimaciones_disponibles'], 2)
+        self.assertEqual(rec_named['reanimaciones_usadas'], 1)
+
+        # 5. Actualizar por nombre táctico 'MED-GREGORY' a 10 y verificar que el QR físico refleja 10
+        medic_engine.update_sanitario_recursos(self.conn, 'MED-GREGORY', 10)
+        rec_after = medic_engine.get_or_create_sanitario_recursos(self.conn, 'MEDIC-QR-999')
+        self.assertEqual(rec_after['reanimaciones_disponibles'], 10)
+        self.assertEqual(rec_after['reanimaciones_usadas'], 1)
 
 if __name__ == '__main__':
     unittest.main()

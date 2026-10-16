@@ -762,7 +762,7 @@
                             }
                             const nombreMed = m.is_admin 
                                 ? `<div style="color: #e2b938; font-size: 0.95rem; font-weight: bold;">⭐ ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #aaa;">ID: ${m.sanitario_id}</div>`
-                                : (m.nombre_medico ? `<div style="color: #2ecc71; font-size: 0.95rem; font-weight: bold;">✚ ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #888;">ID: ${m.sanitario_id}</div>` : `<b style="color: #fff;">${m.sanitario_id}</b>`);
+                                : (m.nombre_medico ? `<div style="color: #2ecc71; font-size: 0.95rem; font-weight: bold;">✚ ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #888;">ID: ${m.sanitario_id} ${m.uid ? `• QR: <b style="color:#00f0ff;">${m.uid}</b>` : ''}</div>` : `<b style="color: #fff;">${m.sanitario_id}</b>`);
                             
                             const btnExtra = m.is_admin 
                                 ? `<button class="btn btn-sm" onclick="asignarAdminRapido(99)" title="Modo Test / Ilimitado" style="padding: 4px 6px; font-size: 0.75rem; border-radius: 0; color: #00f0ff; border-color: #00f0ff;">99 INF</button>`
@@ -772,7 +772,12 @@
                                 <td>${nombreMed}</td>
                                 <td><b>${m.equipo_nombre}</b> <br><span style="font-size:0.75rem; color:#aaa;">(${m.faccion})</span></td>
                                 <td style="text-align: center;">${m.miembros_count} pax</td>
-                                <td style="text-align: center;"><b style="color: ${m.is_admin ? '#e2b938' : '#2ecc71'}; font-size: 1.1rem;" id="reanim-val-${m.sanitario_id}">${m.reanimaciones_disponibles}</b></td>
+                                <td style="text-align: center;">
+                                    <b style="color: ${m.is_admin ? '#e2b938' : '#2ecc71'}; font-size: 1.15rem;" id="reanim-val-${m.sanitario_id}">${m.reanimaciones_disponibles}</b>
+                                    <div style="font-size: 0.72rem; color: #aaa; margin-top: 2px;">
+                                        <span style="color: #00f0ff; font-weight: bold;">${m.reanimaciones_usadas || 0}</span> usadas
+                                    </div>
+                                </td>
                                 <td style="text-align: center;">
                                     <div style="display: inline-flex; gap: 5px; align-items: center;">
                                         <input type="number" id="input-quota-${m.sanitario_id}" value="${m.reanimaciones_disponibles}" min="0" max="99" style="width: 55px; padding: 4px; text-align: center; background: #000; border: 1px solid #555; color: #fff; font-weight: bold; border-radius: 0;">
