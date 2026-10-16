@@ -216,6 +216,61 @@
             transition: width 0.15s ease-out;
         }
 
+        /* Monitor de Línea de Vida Táctica (Fase 1) */
+        .tactical-lifeline-wrap {
+            background: #080c10;
+            border: 1px solid var(--panel-border);
+            margin: 10px 0 14px 0;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.85);
+        }
+        .lifeline-telemetry-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: #0e141b;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.76rem;
+        }
+        .lifeline-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            transition: color 0.25s ease;
+        }
+        .lifeline-heart-icon {
+            font-size: 0.85rem;
+            animation: pulse-heart 0.8s infinite alternate;
+        }
+        @keyframes pulse-heart {
+            0% { transform: scale(1); opacity: 0.7; }
+            100% { transform: scale(1.25); opacity: 1; }
+        }
+        .lifeline-pct-badge {
+            font-family: var(--font-mono);
+            font-weight: 800;
+            font-size: 0.82rem;
+            padding: 2px 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            transition: color 0.25s ease, border-color 0.25s ease;
+        }
+        .lifeline-screen {
+            position: relative;
+            width: 100%;
+            height: 48px;
+            background: #05080c;
+        }
+        .tactical-lifeline-canvas {
+            display: block;
+            width: 100%;
+            height: 48px;
+        }
+
         /* Scanner Modal */
         #scanner-modal {
             position: fixed;
@@ -386,12 +441,21 @@
                 «El operador presenta una hemorragia activa. Aplique presión directa sobre el riel cuando la aguja cruce la zona verde».
             </p>
 
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
-                <span>CONTROL HEMORRAGIA</span>
-                <span id="hemorrhage-pct-val">0%</span>
-            </div>
-            <div class="progress-bar-wrap">
-                <div class="progress-bar-fill" id="hemorrhage-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
+            <!-- MONITOR DE LÍNEA DE VIDA TÁCTICA -->
+            <div class="tactical-lifeline-wrap" id="lifeline-wrap-hemorrhage">
+                <div class="lifeline-telemetry-bar">
+                    <div class="lifeline-status" id="lifeline-status-hemorrhage">
+                        <span class="lifeline-heart-icon" style="color: #ff3344;">♥</span>
+                        <span id="lifeline-label-hemorrhage" style="color: #ff3344;">168 BPM • SHOCK CRÍTICO</span>
+                    </div>
+                    <div class="lifeline-pct-badge" id="hemorrhage-pct-val" style="color: #ff3344; border-color: #ff3344;">0%</div>
+                </div>
+                <div class="lifeline-screen">
+                    <canvas id="lifeline-canvas-hemorrhage" class="tactical-lifeline-canvas"></canvas>
+                </div>
+                <div class="progress-bar-wrap" style="height: 3px; margin: 0; border: none; background: #000;">
+                    <div class="progress-bar-fill" id="hemorrhage-bar" style="height: 100%; width: 0%; background: #ff3344; transition: width 0.15s ease-out;"></div>
+                </div>
             </div>
 
             <canvas id="hemorrhage-canvas" style="width: 100%; height: 190px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
@@ -423,12 +487,21 @@
                 «Ajuste el torniquete táctico pulsando el sensor en el momento exacto en que se active el sector objetivo».
             </p>
 
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
-                <span>PRESIÓN DE TORNIQUETE</span>
-                <span id="tourniquet-pct-val">0%</span>
-            </div>
-            <div class="progress-bar-wrap">
-                <div class="progress-bar-fill" id="tourniquet-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
+            <!-- MONITOR DE LÍNEA DE VIDA TÁCTICA -->
+            <div class="tactical-lifeline-wrap" id="lifeline-wrap-tourniquet">
+                <div class="lifeline-telemetry-bar">
+                    <div class="lifeline-status" id="lifeline-status-tourniquet">
+                        <span class="lifeline-heart-icon" style="color: #ff3344;">♥</span>
+                        <span id="lifeline-label-tourniquet" style="color: #ff3344;">168 BPM • SHOCK CRÍTICO</span>
+                    </div>
+                    <div class="lifeline-pct-badge" id="tourniquet-pct-val" style="color: #ff3344; border-color: #ff3344;">0%</div>
+                </div>
+                <div class="lifeline-screen">
+                    <canvas id="lifeline-canvas-tourniquet" class="tactical-lifeline-canvas"></canvas>
+                </div>
+                <div class="progress-bar-wrap" style="height: 3px; margin: 0; border: none; background: #000;">
+                    <div class="progress-bar-fill" id="tourniquet-bar" style="height: 100%; width: 0%; background: #ff3344; transition: width 0.15s ease-out;"></div>
+                </div>
             </div>
 
             <canvas id="tourniquet-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
@@ -460,12 +533,21 @@
                 «Suture la herida uniendo los puntos en orden numérico: arrastre el hilo quirúrgico o toque de un punto al siguiente para aproximar los bordes».
             </p>
 
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
-                <span>CIERRE DE HERIDA</span>
-                <span id="suture-pct-val">0%</span>
-            </div>
-            <div class="progress-bar-wrap">
-                <div class="progress-bar-fill" id="suture-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
+            <!-- MONITOR DE LÍNEA DE VIDA TÁCTICA -->
+            <div class="tactical-lifeline-wrap" id="lifeline-wrap-suture">
+                <div class="lifeline-telemetry-bar">
+                    <div class="lifeline-status" id="lifeline-status-suture">
+                        <span class="lifeline-heart-icon" style="color: #ff3344;">♥</span>
+                        <span id="lifeline-label-suture" style="color: #ff3344;">168 BPM • SHOCK CRÍTICO</span>
+                    </div>
+                    <div class="lifeline-pct-badge" id="suture-pct-val" style="color: #ff3344; border-color: #ff3344;">0%</div>
+                </div>
+                <div class="lifeline-screen">
+                    <canvas id="lifeline-canvas-suture" class="tactical-lifeline-canvas"></canvas>
+                </div>
+                <div class="progress-bar-wrap" style="height: 3px; margin: 0; border: none; background: #000;">
+                    <div class="progress-bar-fill" id="suture-bar" style="height: 100%; width: 0%; background: #ff3344; transition: width 0.15s ease-out;"></div>
+                </div>
             </div>
 
             <canvas id="suture-canvas" style="width: 100%; height: 210px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
@@ -497,12 +579,21 @@
                 «El operador presenta un neumotórax a tensión. Descomprima la cavidad torácica mediante la válvula del parche oclusivo en la ventana óptima de presión».
             </p>
 
-            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #aaa; font-family: 'Share Tech Mono', monospace;">
-                <span>DESCOMPRESIÓN TORÁCICA</span>
-                <span id="pneumothorax-pct-val">0%</span>
-            </div>
-            <div class="progress-bar-wrap">
-                <div class="progress-bar-fill" id="pneumothorax-bar" style="background: linear-gradient(90deg, #ff3344, #2ecc71);"></div>
+            <!-- MONITOR DE LÍNEA DE VIDA TÁCTICA -->
+            <div class="tactical-lifeline-wrap" id="lifeline-wrap-pneumothorax">
+                <div class="lifeline-telemetry-bar">
+                    <div class="lifeline-status" id="lifeline-status-pneumothorax">
+                        <span class="lifeline-heart-icon" style="color: #ff3344;">♥</span>
+                        <span id="lifeline-label-pneumothorax" style="color: #ff3344;">168 BPM • SHOCK CRÍTICO</span>
+                    </div>
+                    <div class="lifeline-pct-badge" id="pneumothorax-pct-val" style="color: #ff3344; border-color: #ff3344;">0%</div>
+                </div>
+                <div class="lifeline-screen">
+                    <canvas id="lifeline-canvas-pneumothorax" class="tactical-lifeline-canvas"></canvas>
+                </div>
+                <div class="progress-bar-wrap" style="height: 3px; margin: 0; border: none; background: #000;">
+                    <div class="progress-bar-fill" id="pneumothorax-bar" style="height: 100%; width: 0%; background: #ff3344; transition: width 0.15s ease-out;"></div>
+                </div>
             </div>
 
             <canvas id="pneumothorax-canvas" style="width: 100%; height: 220px; margin: 10px 0; background: #060a0e; border: 1px solid var(--panel-border); touch-action: none; display: block; cursor: pointer;"></canvas>
@@ -785,17 +876,18 @@
     </div>
 
     <!-- Carga de Scripts Modulares Field Medic -->
-    <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/tourniquet_game.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/suture_game.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/pneumothorax_game.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/vitals_hold_game.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/dual_vitals_game.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/memory_sequence_game.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/line_correction_game.js') }}?v=11"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=11"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/episode_storage.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/tactical_lifeline.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/hemorrhage_game.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/tourniquet_game.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/suture_game.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/pneumothorax_game.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/stabilization_game.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/vitals_hold_game.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/dual_vitals_game.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/memory_sequence_game.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/line_correction_game.js') }}?v=12"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=12"></script>
 
     <script>
         const sanitarioId = "{{ sanitario_id }}";
@@ -806,6 +898,7 @@
         let qrScanner = null;
 
         // Motores de minijuegos activos
+        let activeLifeline = null;
         let hemorrhageEngine = null;
         let tourniquetEngine = null;
         let sutureEngine = null;
@@ -1088,6 +1181,7 @@
         }
 
         function stopAllEngines() {
+            if (activeLifeline) { activeLifeline.stop(); activeLifeline = null; }
             if (hemorrhageEngine) { hemorrhageEngine.stop(); hemorrhageEngine = null; }
             if (tourniquetEngine) { tourniquetEngine.stop(); tourniquetEngine = null; }
             if (sutureEngine) { sutureEngine.stop(); sutureEngine = null; }
@@ -1193,6 +1287,7 @@
             updateHeaderNav();
 
             const onFase1Success = () => {
+                if (activeLifeline) activeLifeline.setProgress(100);
                 activeEpisode.hemorragia_controlada = true;
                 activeEpisode.fase_actual = "patient_stabilization";
                 storage.saveCurrentEpisode(activeEpisode);
@@ -1203,13 +1298,20 @@
 
             if (variant === 'TORNIQUETE_CIRCULAR') {
                 document.getElementById('view-tourniquet').style.display = 'block';
+                activeLifeline = new TacticalLifeline(
+                    document.getElementById('lifeline-canvas-tourniquet'),
+                    document.getElementById('lifeline-label-tourniquet'),
+                    document.getElementById('tourniquet-pct-val'),
+                    document.getElementById('tourniquet-bar')
+                );
+                activeLifeline.start(initialProgress);
+
                 const canvas = document.getElementById('tourniquet-canvas');
                 tourniquetEngine = new TourniquetGame(
                     canvas,
                     medicConfig.fase1_torniquete,
                     (pct) => {
-                        document.getElementById('tourniquet-pct-val').textContent = Math.round(pct) + "%";
-                        document.getElementById('tourniquet-bar').style.width = pct + "%";
+                        if (activeLifeline) activeLifeline.setProgress(pct);
                         activeEpisode.phase1_progress = pct;
                         storage.saveCurrentEpisode(activeEpisode);
                     },
@@ -1219,13 +1321,20 @@
                 tourniquetEngine.start(initialProgress);
             } else if (variant === 'SUTURA_OBJETIVOS') {
                 document.getElementById('view-suture').style.display = 'block';
+                activeLifeline = new TacticalLifeline(
+                    document.getElementById('lifeline-canvas-suture'),
+                    document.getElementById('lifeline-label-suture'),
+                    document.getElementById('suture-pct-val'),
+                    document.getElementById('suture-bar')
+                );
+                activeLifeline.start(initialProgress);
+
                 const canvas = document.getElementById('suture-canvas');
                 sutureEngine = new SutureGame(
                     canvas,
                     medicConfig.fase1_sutura,
                     (pct) => {
-                        document.getElementById('suture-pct-val').textContent = Math.round(pct) + "%";
-                        document.getElementById('suture-bar').style.width = pct + "%";
+                        if (activeLifeline) activeLifeline.setProgress(pct);
                         activeEpisode.phase1_progress = pct;
                         storage.saveCurrentEpisode(activeEpisode);
                     },
@@ -1235,13 +1344,20 @@
                 sutureEngine.start(initialProgress);
             } else if (variant === 'NEUMOTORAX_PUNCION' || variant === 'NEUMOTORAX_TENSION') {
                 document.getElementById('view-pneumothorax').style.display = 'block';
+                activeLifeline = new TacticalLifeline(
+                    document.getElementById('lifeline-canvas-pneumothorax'),
+                    document.getElementById('lifeline-label-pneumothorax'),
+                    document.getElementById('pneumothorax-pct-val'),
+                    document.getElementById('pneumothorax-bar')
+                );
+                activeLifeline.start(initialProgress);
+
                 const canvas = document.getElementById('pneumothorax-canvas');
                 pneumothoraxEngine = new PneumothoraxGame(
                     canvas,
                     medicConfig.fase1_neumotorax,
                     (pct) => {
-                        document.getElementById('pneumothorax-pct-val').textContent = Math.round(pct) + "%";
-                        document.getElementById('pneumothorax-bar').style.width = pct + "%";
+                        if (activeLifeline) activeLifeline.setProgress(pct);
                         activeEpisode.phase1_progress = pct;
                         storage.saveCurrentEpisode(activeEpisode);
                     },
@@ -1252,13 +1368,20 @@
             } else {
                 // COMPRESION_RIEL / HEMORRAGIA_ACTIVA
                 document.getElementById('view-hemorrhage').style.display = 'block';
+                activeLifeline = new TacticalLifeline(
+                    document.getElementById('lifeline-canvas-hemorrhage'),
+                    document.getElementById('lifeline-label-hemorrhage'),
+                    document.getElementById('hemorrhage-pct-val'),
+                    document.getElementById('hemorrhage-bar')
+                );
+                activeLifeline.start(initialProgress);
+
                 const canvas = document.getElementById('hemorrhage-canvas');
                 hemorrhageEngine = new HemorrhageGame(
                     canvas,
                     medicConfig.fase1_hemorragia,
                     (pct) => {
-                        document.getElementById('hemorrhage-pct-val').textContent = Math.round(pct) + "%";
-                        document.getElementById('hemorrhage-bar').style.width = pct + "%";
+                        if (activeLifeline) activeLifeline.setProgress(pct);
                         activeEpisode.phase1_progress = pct;
                         storage.saveCurrentEpisode(activeEpisode);
                     },

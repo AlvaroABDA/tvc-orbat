@@ -161,13 +161,18 @@ class TestFieldMedicSuite(unittest.TestCase):
             'vitals-hold-canvas',
             'dual-vitals-canvas',
             'memory-sequence-canvas',
-            'line-correction-canvas'
+            'line-correction-canvas',
+            'lifeline-canvas-hemorrhage',
+            'lifeline-canvas-tourniquet',
+            'lifeline-canvas-suture',
+            'lifeline-canvas-pneumothorax'
         ]
         for canvas_id in canvases:
             self.assertIn(canvas_id, html, f"Canvas ID {canvas_id} not found in /medic template")
 
         # Verify scripts
         scripts = [
+            'tactical_lifeline.js',
             'tourniquet_game.js',
             'suture_game.js',
             'vitals_hold_game.js',
@@ -180,6 +185,7 @@ class TestFieldMedicSuite(unittest.TestCase):
 
     def test_09_static_assets_for_new_minigames_exist(self):
         scripts = [
+            '/static/js/field_medic/tactical_lifeline.js',
             '/static/js/field_medic/tourniquet_game.js',
             '/static/js/field_medic/suture_game.js',
             '/static/js/field_medic/vitals_hold_game.js',
@@ -319,12 +325,13 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertIn('medic-seal-prompt-card', html)
         self.assertIn('openQRScannerForMedicSeal()', html)
 
-        # 4. Service Worker caches offline roster
+        # 4. Service Worker caches offline roster and tactical lifeline
         sw_res = self.client.get('/static/sw_medic.js')
         self.assertEqual(sw_res.status_code, 200)
         sw_text = sw_res.data.decode('utf-8')
         self.assertIn('/api/medic/roster', sw_text)
-        self.assertIn('tvc-medic-v11', sw_text)
+        self.assertIn('/static/js/field_medic/tactical_lifeline.js', sw_text)
+        self.assertIn('tvc-medic-v12', sw_text)
 
 if __name__ == '__main__':
     unittest.main()
