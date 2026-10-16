@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ORBAT Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=9">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=10">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -586,14 +586,14 @@
                         </div>
 
                         <h4 style="color: #ccc; margin-bottom: 0.5rem;">Credenciales de Equipos</h4>
-                        <div style="overflow-x: auto;">
-                            <table class="table-tactical" style="table-layout: fixed; width: 100%;">
+                        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+                            <table class="table-tactical" style="width: 100%; min-width: 620px; border-collapse: separate; border-spacing: 0 6px;">
                                 <thead>
                                     <tr>
-                                        <th style="text-align: left; width: 25%;">UNIDAD</th>
-                                        <th style="text-align: left; width: 15%;">FACCIÓN</th>
-                                        <th style="text-align: left; width: 45%;">NUEVA CONTRASEÑA</th>
-                                        <th style="text-align: center; width: 15%;">ACCIÓN</th>
+                                        <th style="text-align: left; width: 180px;">UNIDAD</th>
+                                        <th style="text-align: left; width: 120px;">FACCIÓN</th>
+                                        <th style="text-align: left; width: 220px;">NUEVA CONTRASEÑA</th>
+                                        <th style="text-align: center; width: 100px;">ACCIÓN</th>
                                     </tr>
                                 </thead>
                                 <tbody id="seguridad-equipos-tbody">
@@ -629,15 +629,19 @@
                             </div>
                         </div>
 
-                        <div style="overflow-x: auto;">
-                            <table class="table-tactical" style="table-layout: fixed; width: 100%;">
+                        <div class="table-scroll-hint" style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; color: var(--accent-gold, #e2b938);">swipe</span>
+                            <span>Desplaza la tabla horizontalmente para ver todos los sanitarios y ajustes</span>
+                        </div>
+                        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 1.2rem;">
+                            <table class="table-tactical" style="width: 100%; min-width: 780px; border-collapse: separate; border-spacing: 0 6px;">
                                 <thead>
-                                    <tr>
-                                        <th style="text-align: left; width: 25%;">SANITARIO / ID</th>
-                                        <th style="text-align: left; width: 25%;">UNIDAD</th>
-                                        <th style="text-align: center; width: 15%;">MIEMBROS</th>
-                                        <th style="text-align: center; width: 15%;">USOS DISPONIBLES</th>
-                                        <th style="text-align: center; width: 20%;">AJUSTAR / RECARGAR</th>
+                                    <tr style="background: rgba(0,0,0,0.5);">
+                                        <th style="text-align: left; width: 240px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">SANITARIO / ID</th>
+                                        <th style="text-align: left; width: 180px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">UNIDAD</th>
+                                        <th style="text-align: center; width: 90px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">MIEMBROS</th>
+                                        <th style="text-align: center; width: 130px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">USOS DISPONIBLES</th>
+                                        <th style="text-align: center; width: 180px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">AJUSTAR / RECARGAR</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-medicos-tbody">
@@ -659,8 +663,8 @@
                                     Registro en tiempo real de intervenciones sanitarias. Audita quién atendió a quién, tiempos de resolución y detección automática de anomalías tácticas.
                                 </p>
                             </div>
-                            <button id="btn-refresh-audit" class="btn outline btn-sm" onclick="cargarAuditoriaMedica()" style="font-size: 0.8rem; border-color: #00f0ff; color: #00f0ff;">
-                                🔄 Actualizar Auditoría
+                            <button id="btn-refresh-audit" class="btn outline btn-sm" onclick="cargarAuditoriaMedica()" style="font-size: 0.8rem; border-color: #00f0ff; color: #00f0ff; display: inline-flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="font-size: 1.1rem;">sync</span> Actualizar Auditoría
                             </button>
                         </div>
 
@@ -701,22 +705,26 @@
                             <div style="display: flex; align-items: center; gap: 6px;">
                                 <label style="font-size: 0.75rem; color: #ff5566; cursor: pointer; display: flex; align-items: center; gap: 4px; margin: 0;">
                                     <input type="checkbox" id="audit-filter-only-discrepancies" onchange="filtrarAuditoriaMedica()">
-                                    Solo con Discrepancias / Alertas ⚠️
+                                    <span class="material-symbols-outlined" style="font-size: 1rem; vertical-align: middle;">warning</span> Solo con Discrepancias / Alertas
                                 </label>
                             </div>
                         </div>
 
                         <!-- TABLA DE LOG / HISTORIAL AUDITABLE -->
-                        <div style="overflow-x: auto;">
-                            <table class="table-tactical" style="table-layout: fixed; width: 100%;">
+                        <div class="table-scroll-hint" style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 1rem; color: #00f0ff;">swipe</span>
+                            <span>Desplaza la tabla horizontalmente para ver todo el registro y auditoría</span>
+                        </div>
+                        <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); border-radius: 4px; margin-bottom: 1.2rem;">
+                            <table class="table-tactical" style="width: 100%; min-width: 960px; border-collapse: separate; border-spacing: 0 6px;">
                                 <thead>
-                                    <tr>
-                                        <th style="text-align: left; width: 12%;">HORA</th>
-                                        <th style="text-align: left; width: 22%;">SANITARIO TRATANTE</th>
-                                        <th style="text-align: left; width: 22%;">PACIENTE ATENDIDO</th>
-                                        <th style="text-align: left; width: 18%;">LESIÓN / FASES</th>
-                                        <th style="text-align: center; width: 10%;">TIEMPO</th>
-                                        <th style="text-align: center; width: 16%;">ESTADO / ALERTA</th>
+                                    <tr style="background: rgba(0,0,0,0.5);">
+                                        <th style="text-align: left; width: 100px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">HORA</th>
+                                        <th style="text-align: left; width: 230px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">SANITARIO TRATANTE</th>
+                                        <th style="text-align: left; width: 230px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">PACIENTE ATENDIDO</th>
+                                        <th style="text-align: left; width: 180px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">LESIÓN / FASES</th>
+                                        <th style="text-align: center; width: 80px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">TIEMPO</th>
+                                        <th style="text-align: center; width: 180px; padding: 10px 12px; color: var(--theme-color); font-family: var(--font-mono); font-size: 0.8rem;">ESTADO / ALERTA</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-audit-tbody">
@@ -773,8 +781,8 @@
                                 tr.style.borderLeft = '3px solid #e2b938';
                             }
                             const nombreMed = m.is_admin 
-                                ? `<div style="color: #e2b938; font-size: 0.95rem; font-weight: bold;">⭐ ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #aaa;">ID: ${m.sanitario_id}</div>`
-                                : (m.nombre_medico ? `<div style="color: #2ecc71; font-size: 0.95rem; font-weight: bold;">✚ ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #888;">ID: ${m.sanitario_id} ${m.uid ? `• QR: <b style="color:#00f0ff;">${m.uid}</b>` : ''}</div>` : `<b style="color: #fff;">${m.sanitario_id}</b>`);
+                                ? `<div style="color: #e2b938; font-size: 0.95rem; font-weight: bold; display: flex; align-items: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 1.1rem;">star</span> ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #aaa;">ID: ${m.sanitario_id}</div>`
+                                : (m.nombre_medico ? `<div style="color: #2ecc71; font-size: 0.95rem; font-weight: bold; display: flex; align-items: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 1.1rem;">medical_services</span> ${m.nombre_medico}</div><div style="font-size: 0.75rem; color: #888;">ID: ${m.sanitario_id} ${m.uid ? `• QR: <b style="color:#00f0ff;">${m.uid}</b>` : ''}</div>` : `<b style="color: #fff;">${m.sanitario_id}</b>`);
                             
                             const btnExtra = m.is_admin 
                                 ? `<button class="btn btn-sm" onclick="asignarAdminRapido(99)" title="Modo Test / Ilimitado" style="padding: 4px 6px; font-size: 0.75rem; border-radius: 0; color: #00f0ff; border-color: #00f0ff;">99 INF</button>`
@@ -993,15 +1001,15 @@
                             flagsHtml = '<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px; justify-content:center;">';
                             ep.flags.forEach(f => {
                                 if (f === 'FAST_DURATION') {
-                                    flagsHtml += '<span title="Tiempo anormalmente corto (<25s). Posible bypass" style="background:#ff3344; color:#fff; font-size:0.65rem; padding:1px 5px; font-weight:bold; font-family:var(--font-mono);">⚡ TIEMPO ANORMAL</span>';
+                                    flagsHtml += '<span title="Tiempo anormalmente corto (<25s). Posible bypass" style="background:#ff3344; color:#fff; font-size:0.65rem; padding:2px 6px; font-weight:bold; font-family:var(--font-mono); display:inline-flex; align-items:center; gap:2px;"><span class="material-symbols-outlined" style="font-size:0.85rem;">bolt</span> TIEMPO ANORMAL</span>';
                                 } else if (f === 'SELF_HEAL') {
-                                    flagsHtml += '<span title="El médico y el paciente comparten el mismo carnet" style="background:#9b59b6; color:#fff; font-size:0.65rem; padding:1px 5px; font-weight:bold; font-family:var(--font-mono);">👤 AUTO-CURACIÓN</span>';
+                                    flagsHtml += '<span title="El médico y el paciente comparten el mismo carnet" style="background:#9b59b6; color:#fff; font-size:0.65rem; padding:2px 6px; font-weight:bold; font-family:var(--font-mono); display:inline-flex; align-items:center; gap:2px;"><span class="material-symbols-outlined" style="font-size:0.85rem;">person</span> AUTO-CURACIÓN</span>';
                                 } else if (f === 'CROSS_FACTION') {
-                                    flagsHtml += '<span title="Atención sanitaria entre bandos rivales" style="background:#e67e22; color:#fff; font-size:0.65rem; padding:1px 5px; font-weight:bold; font-family:var(--font-mono);">⚔ BANDO CRUZADO</span>';
+                                    flagsHtml += '<span title="Atención sanitaria entre bandos rivales" style="background:#e67e22; color:#fff; font-size:0.65rem; padding:2px 6px; font-weight:bold; font-family:var(--font-mono); display:inline-flex; align-items:center; gap:2px;"><span class="material-symbols-outlined" style="font-size:0.85rem;">swords</span> BANDO CRUZADO</span>';
                                 } else if (f === 'RECENT_ATTENTION') {
-                                    flagsHtml += '<span title="Atención repetida inmediata sobre el mismo operador" style="background:#f1c40f; color:#000; font-size:0.65rem; padding:1px 5px; font-weight:bold; font-family:var(--font-mono);">⏳ REINCIDENCIA</span>';
+                                    flagsHtml += '<span title="Atención repetida inmediata sobre el mismo operador" style="background:#f1c40f; color:#000; font-size:0.65rem; padding:2px 6px; font-weight:bold; font-family:var(--font-mono); display:inline-flex; align-items:center; gap:2px;"><span class="material-symbols-outlined" style="font-size:0.85rem;">history</span> REINCIDENCIA</span>';
                                 } else {
-                                    flagsHtml += `<span style="background:#777; color:#fff; font-size:0.65rem; padding:1px 5px; font-family:var(--font-mono);">${f}</span>`;
+                                    flagsHtml += `<span style="background:#777; color:#fff; font-size:0.65rem; padding:2px 6px; font-family:var(--font-mono);">${f}</span>`;
                                 }
                             });
                             flagsHtml += '</div>';
@@ -1009,25 +1017,25 @@
 
                         // Estado principal
                         const estadoBadge = (ep.resultado_final === 'EXITO')
-                            ? '<span style="color:#2ecc71; font-weight:bold; font-size:0.8rem; background:rgba(46,204,113,0.15); border:1px solid #2ecc71; padding:2px 6px; font-family:var(--font-mono);">EXITOSO</span>'
-                            : '<span style="color:#e74c3c; font-weight:bold; font-size:0.8rem; background:rgba(231,76,60,0.15); border:1px solid #e74c3c; padding:2px 6px; font-family:var(--font-mono);">FALLIDO</span>';
+                            ? '<span style="color:#2ecc71; font-weight:bold; font-size:0.8rem; background:rgba(46,204,113,0.15); border:1px solid #2ecc71; padding:2px 8px; font-family:var(--font-mono); display:inline-block;">EXITOSO</span>'
+                            : '<span style="color:#e74c3c; font-weight:bold; font-size:0.8rem; background:rgba(231,76,60,0.15); border:1px solid #e74c3c; padding:2px 8px; font-family:var(--font-mono); display:inline-block;">FALLIDO</span>';
 
                         tr.innerHTML = `
-                            <td style="font-family:var(--font-mono); font-size:0.85rem; color:#fff;">${horaStr}</td>
-                            <td>
-                                <div style="font-weight:bold; color:#00f0ff; font-size:0.9rem;">🩺 ${medNom}</div>
-                                <div style="font-size:0.75rem; color:#888; font-family:var(--font-mono);">UID: ${medUid} | <span style="color:${medFacColor}; font-weight:bold;">${medFac || 'Sin bando'}</span></div>
+                            <td style="font-family:var(--font-mono); font-size:0.85rem; color:#fff; white-space:nowrap; vertical-align:middle;">${horaStr}</td>
+                            <td style="vertical-align:middle;">
+                                <div style="font-weight:bold; color:#00f0ff; font-size:0.9rem; display:flex; align-items:center; gap:5px;"><span class="material-symbols-outlined" style="font-size:1.1rem; color:#00f0ff;">medical_services</span> ${medNom}</div>
+                                <div style="font-size:0.75rem; color:#888; font-family:var(--font-mono); margin-top:2px;">UID: <span style="word-break:break-all;">${medUid}</span> | <span style="color:${medFacColor}; font-weight:bold;">${medFac || 'Sin bando'}</span></div>
                             </td>
-                            <td>
-                                <div style="font-weight:bold; color:#fff; font-size:0.9rem;">🎯 ${pacNom}</div>
-                                <div style="font-size:0.75rem; color:#888; font-family:var(--font-mono);">UID: ${pacUid} | <span style="color:${pacFacColor}; font-weight:bold;">${pacFac || 'Sin bando'}</span></div>
+                            <td style="vertical-align:middle;">
+                                <div style="font-weight:bold; color:#fff; font-size:0.9rem; display:flex; align-items:center; gap:5px;"><span class="material-symbols-outlined" style="font-size:1.1rem; color:#e2b938;">person</span> ${pacNom}</div>
+                                <div style="font-size:0.75rem; color:#888; font-family:var(--font-mono); margin-top:2px;">UID: <span style="word-break:break-all;">${pacUid}</span> | <span style="color:${pacFacColor}; font-weight:bold;">${pacFac || 'Sin bando'}</span></div>
                             </td>
-                            <td>
-                                <div style="font-size:0.8rem; font-weight:bold; color:#aaa; font-family:var(--font-mono);">${escName}</div>
-                                <div style="display:flex; gap:6px; margin-top:2px;">${hemTag} ${estTag}</div>
+                            <td style="vertical-align:middle;">
+                                <div style="font-size:0.82rem; font-weight:bold; color:#cbd5e1; font-family:var(--font-mono);">${escName}</div>
+                                <div style="display:flex; gap:6px; margin-top:4px;">${hemTag} ${estTag}</div>
                             </td>
-                            <td style="text-align:center; font-family:var(--font-mono); font-size:0.9rem; color:#00f0ff; font-weight:bold;">${dur}</td>
-                            <td style="text-align:center;">
+                            <td style="text-align:center; font-family:var(--font-mono); font-size:0.9rem; color:#00f0ff; font-weight:bold; white-space:nowrap; vertical-align:middle;">${dur}</td>
+                            <td style="text-align:center; vertical-align:middle;">
                                 ${estadoBadge}
                                 ${flagsHtml}
                             </td>
