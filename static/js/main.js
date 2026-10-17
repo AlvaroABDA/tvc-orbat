@@ -1541,6 +1541,7 @@ function addMiembroRow(m = null) {
     const hasFoto = m && m.foto_url;
     const fotoBtn = (m && m.id) ? `<button type="button" class="btn primary btn-foto-miembro" title="${hasFoto ? 'Cambiar Foto' : 'Subir Foto'}" style="padding: 0.25rem 0.5rem; margin-right: 5px;" onclick="uploadFotoMiembro(${m.id})">${hasFoto ? '📸✓' : '📸'}</button>` : '';
     const carnetBtn = (m && m.id) ? `<a href="/carnet/${m.id}" target="_blank" title="Ver Carnet" class="btn secondary" style="padding: 0.25rem 0.5rem; text-decoration: none;">🪪</a>` : '<span style="font-size: 0.7rem; color: #888;">(Guardar antes)</span>';
+    const iceBtn = (m && m.id) ? `<button type="button" class="btn warning" title="Ficha Médica Real (I.C.E.)" style="padding: 0.25rem 0.5rem; margin-left: 5px; background: rgba(231,76,60,0.2); border-color: #e74c3c; color: #ff6b6b; cursor: pointer;" onclick="verIceMiembro(${m.id})">🩸</button>` : '';
 
     tr.innerHTML = `
         <td style="padding: 0.25rem; text-align: center;"><input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} style="transform: scale(1.5);"></td>
@@ -1566,7 +1567,7 @@ function addMiembroRow(m = null) {
         </td>
         <td style="padding: 0.25rem;"><input type="text" class="miembro-telefono" placeholder="Teléfono" value="${tel}" style="width: 100%; padding: 0.25rem;"></td>
         <td style="padding: 0.25rem;"><input type="email" class="miembro-email" placeholder="Email" value="${email}" style="width: 100%; padding: 0.25rem;"></td>
-        <td style="padding: 0.25rem; text-align: center; white-space: nowrap;">${fotoBtn}${carnetBtn}</td>
+        <td style="padding: 0.25rem; text-align: center; white-space: nowrap;">${fotoBtn}${carnetBtn}${iceBtn}</td>
         <td style="padding: 0.25rem; text-align: center;"><button type="button" class="btn danger btn-del-miembro" style="padding: 0.25rem 0.5rem;">X</button></td>
     `;
     
@@ -2442,7 +2443,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnZafarrancho = document.getElementById('btn-zafarrancho');
     if (btnZafarrancho) {
         btnZafarrancho.addEventListener('click', async () => {
-            if (confirm("¡ALERTA ROJA! ¿Estás absolutamente seguro de que quieres BORRAR todas las capturas, respawns y misiones actuales? ESTO NO SE PUEDE DESHACER.")) {
+            if (confirm("¡ALERTA ROJA! ¿Estás absolutamente seguro de que quieres BORRAR todas las capturas, respawns, misiones y usos médicos actuales? ESTO NO SE PUEDE DESHACER.")) {
                 if (prompt("Escribe 'PURGAR' para confirmar:") === 'PURGAR') {
                     const res = await fetch('/api/admin/reset', { method: 'POST' });
                     const data = await res.json();
@@ -3959,3 +3960,163 @@ async function borrarDoc(id) {
         }
     }
 }
+
+// ==================== ICE VIEWER (Punto B) & READY CHECK TL (Punto C) ====================
+
+window.verIceMiembro = async function(id) {
+    try {
+        const res = await fetch(`/api/miembros/${id}/ice`);
+        if (!res.ok) {
+            alert('No se pudo cargar la información médica ICE');
+            return;
+        }
+        const ice = await res.json();
+        const modal = document.getElementById('modal-ice-viewer');
+        if (!modal) return;
+        
+        document.getElementById('ice-view-nick').innerText = `${ice.nombre_jugador || 'Operador'} (${ice.nombre_apellidos || 'Sin nombre'})`;
+        document.getElementById('ice-view-grupo').innerText = ice.grupo_sanguineo || 'No especificado';
+        document.getElementById('ice-view-alergias').innerText = ice.alergias || 'Ninguna declarada';
+        document.getElementById('ice-view-condiciones').innerText = ice.condiciones_medicas || 'Ninguna';
+        document.getElementById('ice-view-medicacion').innerText = ice.medicacion_actual || 'Ninguna';
+        document.getElementById('ice-view-contacto').innerText = `${ice.contacto_nombre || '--'} (${ice.contacto_parentesco || 'ICE'})`;
+        
+        const telEl = document.getElementById('ice-view-tel');
+        if (ice.contacto_telefono) {
+            telEl.innerHTML = `<a href="tel:${ice.contacto_telefono}" style="color:#00d2ff; text-decoration:underline; font-weight:bold; font-size:1.1rem;">${ice.contacto_telefono}</a>`;
+        } else {
+            telEl.innerText = 'No especificado';
+        }
+        document.getElementById('ice-view-obs').innerText = ice.observaciones || 'Sin notas';
+        modal.style.display = 'flex';
+    } catch (e) {
+        alert('Error al consultar datos ICE');
+    }
+};
+
+let readyCheckPollTimer = null;
+
+window.openReadyCheckModal = function() {
+    const modal = document.getElementById('modal-ready-check');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    pollReadyCheckStatusTL();
+    if (readyCheckPollTimer) clearInterval(readyCheckPollTimer);
+    readyCheckPollTimer = setInterval(pollReadyCheckStatusTL, 3000);
+};
+
+window.closeReadyCheckModal = function() {
+    const modal = document.getElementById('modal-ready-check');
+    if (modal) modal.style.display = 'none';
+    if (readyCheckPollTimer) {
+        clearInterval(readyCheckPollTimer);
+        readyCheckPollTimer = null;
+    }
+};
+
+window.pollReadyCheckStatusTL = async function() {
+    try {
+        const eqId = document.getElementById('eq-id')?.value || window.equipoId;
+        const url = eqId ? `/api/ready_check/status?equipo_id=${eqId}` : '/api/ready_check/status';
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        
+        const activeBlock = document.getElementById('rc-tl-active-block');
+        const inactiveBlock = document.getElementById('rc-tl-inactive-block');
+        if (!activeBlock || !inactiveBlock) return;
+        
+        if (data.active) {
+            activeBlock.style.display = 'block';
+            inactiveBlock.style.display = 'none';
+            document.getElementById('rc-tl-title').innerText = data.titulo || 'PASE DE LISTA ACTIVO';
+            
+            const tbody = document.getElementById('rc-tl-members-tbody');
+            tbody.innerHTML = '';
+            
+            let listosCount = 0;
+            const miembros = data.miembros || [];
+            
+            miembros.forEach(m => {
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid rgba(255,255,255,0.06)';
+                
+                let pillColor = '#f1c40f';
+                let pillBg = 'rgba(241,196,15,0.15)';
+                let pillBorder = '#f1c40f';
+                
+                if (m.estado === 'LISTO') {
+                    listosCount++;
+                    pillColor = '#2ecc71';
+                    pillBg = 'rgba(46,204,113,0.15)';
+                    pillBorder = '#2ecc71';
+                } else if (m.estado === 'INCIDENCIA') {
+                    pillColor = '#ff5566';
+                    pillBg = 'rgba(255,51,68,0.15)';
+                    pillBorder = '#ff5566';
+                }
+                
+                tr.innerHTML = `
+                    <td style="padding: 6px 10px; font-weight: bold; color: #fff;">${m.nombre_jugador}</td>
+                    <td style="padding: 6px 10px; color: #888;">${m.rol || 'Operador'}</td>
+                    <td style="padding: 6px 10px; text-align: center;">
+                        <span style="display: inline-block; padding: 2px 8px; border-radius: 3px; font-family: 'Orbitron', monospace; font-size: 0.72rem; font-weight: bold; color: ${pillColor}; background: ${pillBg}; border: 1px solid ${pillBorder};">
+                            ${m.estado}
+                        </span>
+                    </td>
+                    <td style="padding: 6px 10px; font-size: 0.8rem; color: ${m.nota ? '#ff8899' : '#555'}; font-style: ${m.nota ? 'italic' : 'normal'};">
+                        ${m.nota || '--'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('rc-tl-stats').innerText = `${listosCount} / ${miembros.length} LISTOS`;
+        } else {
+            activeBlock.style.display = 'none';
+            inactiveBlock.style.display = 'block';
+        }
+    } catch(e) {}
+};
+
+window.startReadyCheckTL = async function() {
+    const eqId = document.getElementById('eq-id')?.value || window.equipoId;
+    const inputTitle = document.getElementById('rc-new-title');
+    const titulo = inputTitle ? inputTitle.value.trim() : 'Pase de Lista Táctico';
+    
+    try {
+        const res = await fetch('/api/ready_check/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ equipo_id: eqId, titulo })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            pollReadyCheckStatusTL();
+        } else {
+            alert(data.error || 'Error al iniciar pase de lista');
+        }
+    } catch(e) {
+        alert('Error de red al iniciar pase de lista');
+    }
+};
+
+window.stopReadyCheckTL = async function() {
+    const eqId = document.getElementById('eq-id')?.value || window.equipoId;
+    try {
+        const res = await fetch('/api/ready_check/stop', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ equipo_id: eqId })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            pollReadyCheckStatusTL();
+        } else {
+            alert(data.error || 'Error al cerrar pase de lista');
+        }
+    } catch(e) {
+        alert('Error de red al cerrar pase de lista');
+    }
+};
+

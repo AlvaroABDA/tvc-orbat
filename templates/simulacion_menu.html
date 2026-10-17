@@ -837,7 +837,11 @@
                     </div>
                 </div>
                 <div>
-                    <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">📱 INSTALABLE</span>
+                    {% if is_medic %}
+                        <span class="card-badge badge-ready" style="border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.15); font-weight: bold;">🩺 SANITARIO ACREDITADO</span>
+                    {% else %}
+                        <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">📱 INSTALABLE</span>
+                    {% endif %}
                 </div>
             </div>
 

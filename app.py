@@ -204,7 +204,7 @@ def login():
             session['role'] = ADMIN_USERS[usuario]['role']
             return redirect(url_for('index'))
             
-        # 3. Check Equipos (Teams)
+        # 2. Check Equipos (Teams) & 3. Check Operador Individual
         if usuario and password:
             conn = get_db_connection()
             eq = conn.execute('''
@@ -213,7 +213,6 @@ def login():
                 JOIN Faccion f ON e.faccion_id = f.id 
                 WHERE LOWER(e.codigo) = LOWER(?) AND e.codigo != '' AND e.codigo IS NOT NULL
             ''', (usuario,)).fetchone()
-            conn.close()
             
             if eq:
                 # Support both plaintext and legacy hashed passwords
@@ -225,6 +224,7 @@ def login():
                     is_valid = True
                 if is_valid:
                     if eq['estado_sancion'] in ['Sancionado', 'Expulsado', 'Inactivo']:
+                        conn.close()
                         return render_template('login.html', error=f"ACCESO DENEGADO: El equipo se encuentra {eq['estado_sancion'].upper()}")
                         
                     session.permanent = (request.form.get('remember_me') == 'yes')
@@ -232,7 +232,58 @@ def login():
                     session['role'] = 'equipo'
                     session['equipo_id'] = eq['id']
                     session['equipo_nombre'] = eq['nombre']
+                    conn.close()
                     return redirect(url_for('index'))
+
+            # 3. Check Operador Individual (Nick + PIN = 4 primeros dígitos de su DNI)
+            if len(password) == 4 and password.isdigit():
+                candidatos = conn.execute('''
+                    SELECT m.*, e.nombre as equipo_nombre, e.estado_sancion, e.faccion_id,
+                           f.nombre as faccion_nombre, f.color as faccion_color
+                    FROM Miembro m
+                    JOIN Equipo e ON m.equipo_id = e.id
+                    JOIN Faccion f ON e.faccion_id = f.id
+                    WHERE LOWER(TRIM(m.nombre_jugador)) = ? AND m.activo = 1
+                ''', (usuario,)).fetchall()
+                
+                operador_valido = None
+                for cand in candidatos:
+                    dni_clean = ''.join(c for c in (cand['dni'] or '') if c.isdigit())
+                    if len(dni_clean) >= 4 and dni_clean[:4] == password:
+                        operador_valido = cand
+                        break
+                        
+                if operador_valido:
+                    if operador_valido['estado_sancion'] in ['Sancionado', 'Expulsado', 'Inactivo']:
+                        conn.close()
+                        return render_template('login.html', error=f"ACCESO DENEGADO: Tu equipo se encuentra {operador_valido['estado_sancion'].upper()}")
+                        
+                    session.permanent = (request.form.get('remember_me') == 'yes')
+                    session['faction'] = operador_valido['faccion_nombre']
+                    session['faccion_color'] = operador_valido['faccion_color']
+                    session['role'] = 'operador'
+                    session['miembro_id'] = operador_valido['id']
+                    session['miembro_uid'] = operador_valido['uid']
+                    session['miembro_nick'] = operador_valido['nombre_jugador']
+                    session['miembro_rol'] = operador_valido['rol'] or 'Operador'
+                    session['equipo_id'] = operador_valido['equipo_id']
+                    session['equipo_nombre'] = operador_valido['equipo_nombre']
+                    session['sanitario_id'] = operador_valido['uid']
+                    
+                    rol_lower = (operador_valido['rol'] or '').lower()
+                    if any(w in rol_lower for w in ['medico', 'médico', 'sanitario', 'medic']):
+                        session['is_medic'] = True
+                        if 'unlocked_minigames' not in session:
+                            session['unlocked_minigames'] = []
+                        if 'medic' not in session['unlocked_minigames']:
+                            session['unlocked_minigames'].append('medic')
+                    else:
+                        session['is_medic'] = False
+                        
+                    conn.close()
+                    return redirect(url_for('operador_portal'))
+            
+            conn.close()
             
         return render_template('login.html', error='Credenciales incorrectas o no autorizadas')
     return render_template('login.html')
@@ -270,6 +321,9 @@ def logout():
 def index():
     if 'role' not in session:
         return redirect(url_for('login'))
+        
+    if session.get('role') == 'operador':
+        return redirect(url_for('operador_portal'))
         
     conn = get_db_connection()
     op = conn.execute('SELECT nombre FROM Operacion WHERE id=1').fetchone()
@@ -317,12 +371,16 @@ def simulacion_menu():
     sanitario_id = 'ADMIN' if user_role == 'admin' else (session.get('sanitario_id') or session.get('user') or (f"MED-{equipo_id}" if equipo_id else "MED-ALFA"))
     recursos = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id)
     reanim_disp = recursos.get('reanimaciones_disponibles', 3)
+    unlocked = list(session.get('unlocked_minigames', []))
+    if session.get('is_medic') and 'medic' not in unlocked:
+        unlocked.append('medic')
     return render_template('simulacion_menu.html',
                            user_role=user_role,
                            user_faction=user_faction,
-                           unlocked_minigames=session.get('unlocked_minigames', []),
+                           unlocked_minigames=unlocked,
                            reanimaciones_disponibles=reanim_disp,
-                           sanitario_id=sanitario_id)
+                           sanitario_id=sanitario_id,
+                           is_medic=session.get('is_medic', False))
 
 @app.route('/telemetro_recon')
 def telemetro_recon():
@@ -1054,6 +1112,9 @@ def manage_marcadores():
         return jsonify([dict(row) for row in marcadores])
     
     elif request.method == 'POST':
+        if session.get('role') == 'operador':
+            conn.close()
+            return jsonify({'error': 'No autorizado para colocar marcadores tácticos'}), 403
         data = request.json or {}
         ttl_minutos = data.get('ttl_minutos')
         caduca_en = None
@@ -1089,6 +1150,9 @@ def manage_marcadores():
         return jsonify({'id': new_id, 'status': 'success', 'caduca_en': caduca_en, 'autor_nombre': autor_nombre}), 201
     
     elif request.method == 'DELETE':
+        if session.get('role') == 'operador':
+            conn.close()
+            return jsonify({'error': 'No autorizado para eliminar marcadores tácticos'}), 403
         faccion_id = request.args.get('faccion_id')
         if faccion_id:
             conn.execute('DELETE FROM MarcadorMapa WHERE faccion_id = ?', (faccion_id,))
@@ -1098,6 +1162,8 @@ def manage_marcadores():
 
 @app.route('/api/mapa/marcadores/<int:id>', methods=['DELETE'])
 def delete_marcador(id):
+    if session.get('role') == 'operador':
+        return jsonify({'error': 'No autorizado para eliminar marcadores tácticos'}), 403
     conn = get_db_connection()
     conn.execute('DELETE FROM MarcadorMapa WHERE id = ?', (id,))
     conn.commit()
@@ -1106,6 +1172,8 @@ def delete_marcador(id):
 
 @app.route('/api/mapa/marcadores/<int:id>', methods=['PUT'])
 def update_marcador(id):
+    if session.get('role') == 'operador':
+        return jsonify({'error': 'No autorizado para modificar marcadores tácticos'}), 403
     data = request.json or {}
     conn = get_db_connection()
     conn.execute('UPDATE MarcadorMapa SET lat = ?, lng = ? WHERE id = ?', (data['lat'], data['lng'], id))
@@ -1978,8 +2046,15 @@ def admin_reset():
         conn.execute('DELETE FROM respawn')
         conn.execute('UPDATE Grupo_Batalla SET mision_actual_id = NULL')
         conn.execute("UPDATE puntos_interes SET faccion_id = NULL WHERE tipo = 'PC'")
+        
+        # Purgar usos médicos e intervenciones clínicas, y recargar sanitarios según doctrina TVC
+        try:
+            medic_engine.reset_all_medic_data(conn)
+        except Exception as e:
+            print("Error reseteando datos médicos en Zafarrancho:", e)
+            
         conn.commit()
-        return jsonify({'status': 'success', 'message': 'Zafarrancho de combate completado. Todo limpio.'})
+        return jsonify({'status': 'success', 'message': 'Zafarrancho de combate completado. Redes, misiones y usos médicos purgados.'})
     finally:
         conn.close()
 
@@ -2084,6 +2159,51 @@ def ensure_artilleria_tables(conn):
         conn.commit()
     except Exception as e:
         print("Error en ensure_artilleria_tables:", e)
+
+def ensure_operator_and_ice_tables(conn):
+    try:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Miembro_ICE (
+                miembro_id INTEGER PRIMARY KEY,
+                grupo_sanguineo TEXT,
+                alergias TEXT,
+                condiciones_medicas TEXT,
+                medicacion_actual TEXT,
+                contacto_nombre TEXT,
+                contacto_telefono TEXT,
+                contacto_parentesco TEXT,
+                observaciones TEXT,
+                actualizado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Equipo_ReadyCheck (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                equipo_id INTEGER NOT NULL,
+                titulo TEXT DEFAULT 'Pase de Lista Táctico',
+                activo BOOLEAN DEFAULT 1,
+                iniciado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+                cerrado_en DATETIME,
+                FOREIGN KEY (equipo_id) REFERENCES Equipo (id) ON DELETE CASCADE
+            )
+        ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Miembro_ReadyCheck (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                ready_check_id INTEGER NOT NULL,
+                miembro_id INTEGER NOT NULL,
+                estado TEXT DEFAULT 'PENDIENTE',
+                nota TEXT,
+                respondido_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(ready_check_id, miembro_id),
+                FOREIGN KEY (ready_check_id) REFERENCES Equipo_ReadyCheck (id) ON DELETE CASCADE,
+                FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
+            )
+        ''')
+        conn.commit()
+    except Exception as e:
+        print("Error en ensure_operator_and_ice_tables:", e)
 
 @app.route('/api/mortero/pintar', methods=['POST'])
 def api_mortero_pintar():
@@ -2388,14 +2508,17 @@ def view_carnet(id):
         JOIN Faccion f ON e.faccion_id = f.id 
         WHERE m.id = ?
     ''', (id,)).fetchone()
-    conn.close()
     if not miembro:
+        conn.close()
         return "Jugador no encontrado", 404
+        
+    ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (id,)).fetchone()
+    conn.close()
         
     color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
     hex_color = color_map.get(miembro['faccion_color'], '#00d2ff')
     
-    return render_template('carnet.html', miembro=dict(miembro), hex_color=hex_color)
+    return render_template('carnet.html', miembro=dict(miembro), hex_color=hex_color, ice=dict(ice) if ice else None)
 
 @app.route('/api/miembros/<int:id>/foto', methods=['POST'])
 def upload_miembro_foto(id):
@@ -2418,7 +2541,8 @@ def upload_miembro_foto(id):
         
     is_admin = session.get('role') == 'admin'
     is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == miembro['equipo_id'])
-    if not (is_admin or is_owner):
+    is_self = (session.get('role') == 'operador' and session.get('miembro_id') == id)
+    if not (is_admin or is_owner or is_self):
         conn.close()
         return jsonify({'error': 'Unauthorized'}), 403
         
@@ -2583,6 +2707,12 @@ def patch_db():
         except Exception as e:
             print("Error inicializando tablas de artilleria:", e)
 
+        # Inicializar tablas de Operador, ICE y Ready Check
+        try:
+            ensure_operator_and_ice_tables(conn)
+        except Exception as e:
+            print("Error inicializando tablas de operador e ICE:", e)
+
         conn.close()
 
 @app.route('/api/docs', methods=['GET'])
@@ -2622,6 +2752,351 @@ def delete_doc(id):
     conn.close()
     return jsonify({'status': 'success'})
 
+# ==================== OPERADOR, ICE & READY CHECK ROUTES ====================
+
+@app.route('/portal')
+@app.route('/operador')
+def operador_portal():
+    if 'role' not in session:
+        return redirect(url_for('login'))
+        
+    user_role = session.get('role')
+    conn = get_db_connection()
+    
+    miembro_id = session.get('miembro_id')
+    if not miembro_id:
+        if user_role == 'admin':
+            m_first = conn.execute('SELECT id FROM Miembro WHERE activo = 1 LIMIT 1').fetchone()
+            miembro_id = m_first['id'] if m_first else None
+        elif user_role == 'equipo':
+            eq_id = session.get('equipo_id')
+            m_first = conn.execute('SELECT id FROM Miembro WHERE equipo_id = ? AND activo = 1 LIMIT 1', (eq_id,)).fetchone()
+            miembro_id = m_first['id'] if m_first else None
+            
+    if not miembro_id:
+        conn.close()
+        return redirect(url_for('index'))
+        
+    miembro = conn.execute('''
+        SELECT m.*, e.nombre as equipo_nombre, COALESCE(e.logo_url, e.foto_url) as equipo_logo,
+               f.nombre as faccion_nombre, f.color as faccion_color
+        FROM Miembro m
+        JOIN Equipo e ON m.equipo_id = e.id
+        JOIN Faccion f ON e.faccion_id = f.id
+        WHERE m.id = ?
+    ''', (miembro_id,)).fetchone()
+    
+    if not miembro:
+        conn.close()
+        return "Operador no encontrado", 404
+        
+    # Cargar ICE
+    ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (miembro_id,)).fetchone()
+    
+    # Cargar Ready Check activo para el equipo
+    ready_check = conn.execute('''
+        SELECT rc.*, mrc.estado as mi_estado, mrc.nota as mi_nota, mrc.respondido_en
+        FROM Equipo_ReadyCheck rc
+        LEFT JOIN Miembro_ReadyCheck mrc ON rc.id = mrc.ready_check_id AND mrc.miembro_id = ?
+        WHERE rc.equipo_id = ? AND rc.activo = 1
+        ORDER BY rc.id DESC LIMIT 1
+    ''', (miembro_id, miembro['equipo_id'])).fetchone()
+    
+    conn.close()
+    
+    rol_lower = (miembro['rol'] or '').lower()
+    is_medic = any(w in rol_lower for w in ['medico', 'médico', 'sanitario', 'medic']) or session.get('is_medic', False)
+    
+    color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
+    hex_color = color_map.get(miembro['faccion_color'], '#00d2ff')
+    
+    return render_template(
+        'operador_portal.html',
+        miembro=dict(miembro),
+        ice=dict(ice) if ice else None,
+        ready_check=dict(ready_check) if ready_check else None,
+        is_medic=is_medic,
+        hex_color=hex_color,
+        unlocked_minigames=session.get('unlocked_minigames', [])
+    )
+
+@app.route('/operador/mapa')
+def operador_mapa():
+    if 'role' not in session:
+        return redirect(url_for('login'))
+        
+    user_faction = session.get('faction', 'Syldavia')
+    user_role = session.get('role')
+    equipo_nombre = session.get('equipo_nombre', '')
+    operador_nick = session.get('miembro_nick', '')
+    
+    conn = get_db_connection()
+    f_row = conn.execute('SELECT id, color, nombre FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
+    conn.close()
+    
+    faccion_id = f_row['id'] if f_row else 1
+    faccion_color = f_row['color'] if f_row else 'Azul'
+    
+    color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
+    hex_color = color_map.get(faccion_color, '#00d2ff')
+    
+    return render_template(
+        'operador_mapa.html',
+        user_faction=user_faction,
+        faccion_id=faccion_id,
+        faccion_color=faccion_color,
+        hex_color=hex_color,
+        equipo_nombre=equipo_nombre,
+        operador_nick=operador_nick
+    )
+
+@app.route('/api/operador/perfil', methods=['GET', 'POST'])
+def api_operador_perfil():
+    if 'role' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    
+    miembro_id = session.get('miembro_id')
+    if not miembro_id:
+        return jsonify({'error': 'No es un operador activo'}), 403
+        
+    conn = get_db_connection()
+    if request.method == 'GET':
+        m = conn.execute('''
+            SELECT m.id, m.nombre_jugador, m.rol, m.armamento, m.uid, m.nombre_apellidos,
+                   m.dni, m.telefono, m.email, m.foto_url, e.nombre as equipo_nombre, f.nombre as faccion_nombre
+            FROM Miembro m
+            JOIN Equipo e ON m.equipo_id = e.id
+            JOIN Faccion f ON e.faccion_id = f.id
+            WHERE m.id = ?
+        ''', (miembro_id,)).fetchone()
+        conn.close()
+        if not m:
+            return jsonify({'error': 'No encontrado'}), 404
+        return jsonify(dict(m))
+        
+    elif request.method == 'POST':
+        data = request.json or {}
+        nombre_apellidos = data.get('nombre_apellidos', '').strip()
+        dni = data.get('dni', '').strip()
+        telefono = data.get('telefono', '').strip()
+        email = data.get('email', '').strip()
+        armamento = data.get('armamento', '').strip()
+        
+        conn.execute('''
+            UPDATE Miembro 
+            SET nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, armamento = ?
+            WHERE id = ?
+        ''', (nombre_apellidos, dni, telefono, email, armamento, miembro_id))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': 'Expediente actualizado correctamente'})
+
+@app.route('/api/operador/ice', methods=['GET', 'POST'])
+def api_operador_ice():
+    if 'role' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+        
+    miembro_id = session.get('miembro_id')
+    if not miembro_id:
+        return jsonify({'error': 'No es un operador activo'}), 403
+        
+    conn = get_db_connection()
+    if request.method == 'GET':
+        ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (miembro_id,)).fetchone()
+        conn.close()
+        return jsonify(dict(ice) if ice else {})
+        
+    elif request.method == 'POST':
+        data = request.json or {}
+        grupo = data.get('grupo_sanguineo', '').strip()
+        alergias = data.get('alergias', '').strip()
+        condiciones = data.get('condiciones_medicas', '').strip()
+        medicacion = data.get('medicacion_actual', '').strip()
+        c_nombre = data.get('contacto_nombre', '').strip()
+        c_tel = data.get('contacto_telefono', '').strip()
+        c_parentesco = data.get('contacto_parentesco', '').strip()
+        obs = data.get('observaciones', '').strip()
+        
+        conn.execute('''
+            INSERT INTO Miembro_ICE (miembro_id, grupo_sanguineo, alergias, condiciones_medicas,
+                                    medicacion_actual, contacto_nombre, contacto_telefono,
+                                    contacto_parentesco, observaciones, actualizado_en)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            ON CONFLICT(miembro_id) DO UPDATE SET
+                grupo_sanguineo = excluded.grupo_sanguineo,
+                alergias = excluded.alergias,
+                condiciones_medicas = excluded.condiciones_medicas,
+                medicacion_actual = excluded.medicacion_actual,
+                contacto_nombre = excluded.contacto_nombre,
+                contacto_telefono = excluded.contacto_telefono,
+                contacto_parentesco = excluded.contacto_parentesco,
+                observaciones = excluded.observaciones,
+                actualizado_en = excluded.actualizado_en
+        ''', (miembro_id, grupo, alergias, condiciones, medicacion, c_nombre, c_tel, c_parentesco, obs))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': 'Ficha médica ICE guardada'})
+
+@app.route('/api/miembros/<int:id>/ice', methods=['GET'])
+def api_miembro_ice(id):
+    if 'role' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+        
+    conn = get_db_connection()
+    miembro = conn.execute('SELECT equipo_id, nombre_jugador, nombre_apellidos FROM Miembro WHERE id = ?', (id,)).fetchone()
+    if not miembro:
+        conn.close()
+        return jsonify({'error': 'Miembro no encontrado'}), 404
+        
+    is_admin = session.get('role') == 'admin'
+    is_tl = (session.get('role') == 'equipo' and session.get('equipo_id') == miembro['equipo_id'])
+    is_self = (session.get('role') == 'operador' and session.get('miembro_id') == id)
+    
+    if not (is_admin or is_tl or is_self):
+        conn.close()
+        return jsonify({'error': 'No autorizado para consultar estos datos médicos'}), 403
+        
+    ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (id,)).fetchone()
+    conn.close()
+    
+    res = dict(ice) if ice else {}
+    res['nombre_jugador'] = miembro['nombre_jugador']
+    res['nombre_apellidos'] = miembro['nombre_apellidos']
+    return jsonify(res)
+
+@app.route('/api/ready_check/start', methods=['POST'])
+def api_ready_check_start():
+    if session.get('role') not in ['admin', 'equipo']:
+        return jsonify({'error': 'No autorizado'}), 403
+    data = request.json or {}
+    equipo_id = data.get('equipo_id') if session.get('role') == 'admin' else session.get('equipo_id')
+    titulo = data.get('titulo', 'Pase de Lista Táctico').strip() or 'Pase de Lista Táctico'
+    if not equipo_id:
+        return jsonify({'error': 'Equipo requerido'}), 400
+        
+    conn = get_db_connection()
+    conn.execute('UPDATE Equipo_ReadyCheck SET activo = 0, cerrado_en = datetime(\'now\') WHERE equipo_id = ? AND activo = 1', (equipo_id,))
+    
+    cur = conn.cursor()
+    cur.execute('INSERT INTO Equipo_ReadyCheck (equipo_id, titulo, activo) VALUES (?, ?, 1)', (equipo_id, titulo))
+    rc_id = cur.lastrowid
+    
+    miembros = conn.execute('SELECT id FROM Miembro WHERE equipo_id = ? AND activo = 1', (equipo_id,)).fetchall()
+    for m in miembros:
+        conn.execute('INSERT OR IGNORE INTO Miembro_ReadyCheck (ready_check_id, miembro_id, estado) VALUES (?, ?, ?)', (rc_id, m['id'], 'PENDIENTE'))
+        
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'ready_check_id': rc_id})
+
+@app.route('/api/ready_check/stop', methods=['POST'])
+def api_ready_check_stop():
+    if session.get('role') not in ['admin', 'equipo']:
+        return jsonify({'error': 'No autorizado'}), 403
+    data = request.json or {}
+    equipo_id = data.get('equipo_id') if session.get('role') == 'admin' else session.get('equipo_id')
+    conn = get_db_connection()
+    conn.execute('UPDATE Equipo_ReadyCheck SET activo = 0, cerrado_en = datetime(\'now\') WHERE equipo_id = ? AND activo = 1', (equipo_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success'})
+
+@app.route('/api/ready_check/status', methods=['GET'])
+def api_ready_check_status():
+    if 'role' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    equipo_id = request.args.get('equipo_id') if session.get('role') == 'admin' else session.get('equipo_id')
+    if not equipo_id:
+        return jsonify({'active': False})
+        
+    conn = get_db_connection()
+    rc = conn.execute('''
+        SELECT * FROM Equipo_ReadyCheck WHERE equipo_id = ? AND activo = 1 ORDER BY id DESC LIMIT 1
+    ''', (equipo_id,)).fetchone()
+    
+    if not rc:
+        conn.close()
+        return jsonify({'active': False})
+        
+    rows = conn.execute('''
+        SELECT m.id as miembro_id, m.nombre_jugador, m.rol, m.foto_url,
+               COALESCE(mrc.estado, 'PENDIENTE') as estado,
+               mrc.nota, mrc.respondido_en
+        FROM Miembro m
+        LEFT JOIN Miembro_ReadyCheck mrc ON mrc.miembro_id = m.id AND mrc.ready_check_id = ?
+        WHERE m.equipo_id = ? AND m.activo = 1
+        ORDER BY m.id ASC
+    ''', (rc['id'], equipo_id)).fetchall()
+    conn.close()
+    
+    return jsonify({
+        'active': True,
+        'ready_check_id': rc['id'],
+        'titulo': rc['titulo'],
+        'iniciado_en': rc['iniciado_en'],
+        'miembros': [dict(r) for r in rows]
+    })
+
+@app.route('/api/ready_check/active', methods=['GET'])
+def api_ready_check_active():
+    if 'role' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    equipo_id = session.get('equipo_id')
+    miembro_id = session.get('miembro_id')
+    if not equipo_id:
+        return jsonify({'active': False})
+        
+    conn = get_db_connection()
+    rc = conn.execute('''
+        SELECT rc.*, mrc.estado as mi_estado, mrc.nota as mi_nota, mrc.respondido_en
+        FROM Equipo_ReadyCheck rc
+        LEFT JOIN Miembro_ReadyCheck mrc ON rc.id = mrc.ready_check_id AND mrc.miembro_id = ?
+        WHERE rc.equipo_id = ? AND rc.activo = 1
+        ORDER BY rc.id DESC LIMIT 1
+    ''', (miembro_id, equipo_id)).fetchone()
+    conn.close()
+    
+    if not rc:
+        return jsonify({'active': False})
+        
+    return jsonify({
+        'active': True,
+        'ready_check_id': rc['id'],
+        'titulo': rc['titulo'],
+        'iniciado_en': rc['iniciado_en'],
+        'mi_estado': rc['mi_estado'] or 'PENDIENTE',
+        'mi_nota': rc['mi_nota'] or '',
+        'respondido_en': rc['respondido_en']
+    })
+
+@app.route('/api/ready_check/respond', methods=['POST'])
+def api_ready_check_respond():
+    if session.get('role') != 'operador':
+        return jsonify({'error': 'Solo operadores pueden responder al pase de lista'}), 403
+    miembro_id = session.get('miembro_id')
+    equipo_id = session.get('equipo_id')
+    data = request.json or {}
+    estado = data.get('estado', 'LISTO').upper()
+    nota = data.get('nota', '').strip()
+    
+    conn = get_db_connection()
+    rc = conn.execute('SELECT id FROM Equipo_ReadyCheck WHERE equipo_id = ? AND activo = 1 ORDER BY id DESC LIMIT 1', (equipo_id,)).fetchone()
+    if not rc:
+        conn.close()
+        return jsonify({'error': 'No hay ningún pase de lista activo en este momento'}), 400
+        
+    conn.execute('''
+        INSERT INTO Miembro_ReadyCheck (ready_check_id, miembro_id, estado, nota, respondido_en)
+        VALUES (?, ?, ?, ?, datetime('now'))
+        ON CONFLICT(ready_check_id, miembro_id) DO UPDATE SET
+            estado = excluded.estado,
+            nota = excluded.nota,
+            respondido_en = excluded.respondido_en
+    ''', (rc['id'], miembro_id, estado, nota))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'estado': estado, 'nota': nota})
+
 # ==================== FIELD MEDIC ROUTES ====================
 @app.route('/sw_medic.js', methods=['GET'])
 def serve_medic_sw():
@@ -2648,6 +3123,11 @@ def view_medic():
     user_faction = session.get('faction', 'Syldavia')
     equipo_id = session.get('equipo_id')
     equipo_nombre = session.get('equipo_nombre') or session.get('user') or ''
+    
+    # Si es operador pero no es médico ni tiene el juego desbloqueado ni viene por QR, redirigir a simulación
+    if user_role == 'operador' and not session.get('is_medic') and 'medic' not in session.get('unlocked_minigames', []) and not request.args.get('token'):
+        conn.close()
+        return redirect(url_for('simulacion_menu'))
     
     # Lista de sanitarios de la escuadra actual si la sesión pertenece a un equipo
     squad_medics = []

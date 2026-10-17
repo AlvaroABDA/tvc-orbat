@@ -64,6 +64,48 @@ def init_db():
     ''')
     
     cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Miembro_ICE (
+            miembro_id INTEGER PRIMARY KEY,
+            grupo_sanguineo TEXT,
+            alergias TEXT,
+            condiciones_medicas TEXT,
+            medicacion_actual TEXT,
+            contacto_nombre TEXT,
+            contacto_telefono TEXT,
+            contacto_parentesco TEXT,
+            observaciones TEXT,
+            actualizado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Equipo_ReadyCheck (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            equipo_id INTEGER NOT NULL,
+            titulo TEXT DEFAULT 'Pase de Lista Táctico',
+            activo BOOLEAN DEFAULT 1,
+            iniciado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            cerrado_en DATETIME,
+            FOREIGN KEY (equipo_id) REFERENCES Equipo (id) ON DELETE CASCADE
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Miembro_ReadyCheck (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ready_check_id INTEGER NOT NULL,
+            miembro_id INTEGER NOT NULL,
+            estado TEXT DEFAULT 'PENDIENTE',
+            nota TEXT,
+            respondido_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(ready_check_id, miembro_id),
+            FOREIGN KEY (ready_check_id) REFERENCES Equipo_ReadyCheck (id) ON DELETE CASCADE,
+            FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
+        )
+    ''')
+    
+    cursor.execute('''
         CREATE TABLE IF NOT EXISTS Historial_Equipo (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             equipo_id INTEGER,

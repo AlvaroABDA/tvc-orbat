@@ -623,8 +623,66 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertIn('upperToken === boundUid', html)
         self.assertIn('AUTO-ATENCIÓN DENEGADA', html)
 
+    def test_21_zafarrancho_purges_medical_uses(self):
+        # 1. Test unitario directo en self.conn
+        payload = {
+            "episode_id": "EP-ZAFARRANCHO-TEST",
+            "medico_uid": "MED-ZAF-01",
+            "medico_nombre": "Dr. Zafarrancho",
+            "medico_faccion": "Syldavia",
+            "paciente_uid": "PAC-ZAF-99",
+            "paciente_nombre": "Herido Zaf",
+            "paciente_faccion": "Syldavia",
+            "hora_inicio": "2026-10-17T15:00:00Z",
+            "hora_cierre": "2026-10-17T15:02:30Z",
+            "fase_actual": "completed",
+            "hemorragia_controlada": True,
+            "estabilizacion_completada": True,
+            "resultado_final": "EXITO",
+            "duracion_total_segundos": 45.0
+        }
+        medic_engine.sync_episodio_medico(self.conn, payload)
+        medic_engine.update_sanitario_recursos(self.conn, "MED-ZAF-01", 1, 4)
+        
+        ep_count = self.conn.execute("SELECT COUNT(*) FROM EpisodioMedico").fetchone()[0]
+        self.assertGreater(ep_count, 0)
+        rec = medic_engine.get_or_create_sanitario_recursos(self.conn, "MED-ZAF-01")
+        self.assertEqual(rec['reanimaciones_usadas'], 4)
+        
+        # Ejecutar reseteo directo en self.conn
+        res_unit = medic_engine.reset_all_medic_data(self.conn)
+        self.assertEqual(res_unit['status'], 'success')
+        self.assertEqual(self.conn.execute("SELECT COUNT(*) FROM EpisodioMedico").fetchone()[0], 0)
+        rec_after_unit = self.conn.execute("SELECT * FROM MedicoRecursos WHERE sanitario_id = 'MED-ZAF-01'").fetchone()
+        if rec_after_unit:
+            self.assertEqual(rec_after_unit['reanimaciones_usadas'], 0)
+            
+        # 2. Test integración vía endpoint Flask /api/admin/reset en la base de datos de la app
+        with flask_module.app.app_context():
+            app_conn = flask_module.get_db_connection()
+            medic_engine.sync_episodio_medico(app_conn, payload)
+            medic_engine.update_sanitario_recursos(app_conn, "MED-ZAF-01", 1, 4)
+            app_conn.commit()
+            
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'admin'
+        res_reset = self.client.post('/api/admin/reset')
+        self.assertEqual(res_reset.status_code, 200)
+        data = res_reset.get_json()
+        self.assertEqual(data['status'], 'success')
+        self.assertIn('usos médicos purgados', data['message'])
+        
+        with flask_module.app.app_context():
+            app_conn = flask_module.get_db_connection()
+            ep_after = app_conn.execute("SELECT COUNT(*) FROM EpisodioMedico").fetchone()[0]
+            self.assertEqual(ep_after, 0)
+            rec_after = app_conn.execute("SELECT * FROM MedicoRecursos WHERE sanitario_id = 'MED-ZAF-01'").fetchone()
+            if rec_after:
+                self.assertEqual(rec_after['reanimaciones_usadas'], 0)
+
 if __name__ == '__main__':
     unittest.main()
+
 
 
 

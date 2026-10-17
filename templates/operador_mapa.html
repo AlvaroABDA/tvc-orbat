@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TVC ORBAT // MAPA TÁCTICO DE CAMPO</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Rajdhani:wght@600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        :root {
+            --theme-color: {{ hex_color | default('#00d2ff') }};
+            --bg-color: #06090e;
+            --panel-bg: rgba(14, 20, 32, 0.94);
+            --font-mono: 'Orbitron', monospace;
+            --font-main: 'Rajdhani', sans-serif;
+            --font-tech: 'Share Tech Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: var(--font-main);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background-color: #0b0f19;
+        }
+
+        /* Top Bar */
+        .map-topbar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .map-topbar > * {
+            pointer-events: auto;
+        }
+
+        .btn-back {
+            background: var(--panel-bg);
+            border: 1px solid var(--theme-color);
+            color: var(--theme-color);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+        }
+
+        .btn-back:hover, .btn-back:active {
+            background: var(--theme-color);
+            color: #000;
+        }
+
+        .top-info-card {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-left: 3px solid var(--theme-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            backdrop-filter: blur(6px);
+        }
+
+        .info-title {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .info-sub {
+            font-family: var(--font-tech);
+            font-size: 0.7rem;
+            color: var(--theme-color);
+        }
+
+        /* Bottom HUD */
+        .map-bottomhud {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            pointer-events: none;
+        }
+
+        .map-bottomhud > * {
+            pointer-events: auto;
+        }
+
+        .coord-hud {
+            background: rgba(10, 14, 22, 0.95);
+            border: 1px solid var(--theme-color);
+            padding: 8px 14px;
+            border-radius: 4px;
+            font-family: var(--font-tech);
+            font-size: 0.9rem;
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hud-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-tool {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            transition: all 0.2s;
+        }
+
+        .btn-tool.active {
+            background: var(--theme-color);
+            color: #000;
+            border-color: var(--theme-color);
+        }
+
+        /* Beacon marker animations */
+        .beacon-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .beacon-pulse {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--theme-color);
+            border: 2px solid #fff;
+            box-shadow: 0 0 12px var(--theme-color);
+            animation: beacon-anim 2s infinite;
+        }
+
+        @keyframes beacon-anim {
+            0% { transform: scale(0.9); box-shadow: 0 0 4px var(--theme-color); }
+            50% { transform: scale(1.2); box-shadow: 0 0 18px var(--theme-color); }
+            100% { transform: scale(0.9); box-shadow: 0 0 4px var(--theme-color); }
+        }
+
+        .beacon-label {
+            background: rgba(0,0,0,0.85);
+            border: 1px solid var(--theme-color);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: var(--font-tech);
+            font-size: 0.7rem;
+            margin-top: 4px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP BAR -->
+    <div class="map-topbar">
+        <a href="/operador" class="btn-back">
+            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+            PORTAL
+        </a>
+        <div class="top-info-card">
+            <span class="info-title">{{ equipo_nombre or 'ESCUADRA' }}</span>
+            <span class="info-sub">{{ operador_nick }} // {{ user_faction }}</span>
+        </div>
+    </div>
+
+    <!-- LEAFLET MAP CONTAINER -->
+    <div id="map"></div>
+
+    <!-- BOTTOM HUD -->
+    <div class="map-bottomhud">
+        <div class="coord-hud">
+            <span class="material-symbols-outlined" style="font-size:18px; color:var(--theme-color);">crosshair</span>
+            <span id="tracker-coord">CUADRÍCULA: --</span>
+        </div>
+        <div class="hud-actions">
+            <button type="button" class="btn-tool" id="btn-measure" onclick="toggleMeasure()">
+                <span class="material-symbols-outlined" style="font-size:16px;">straighten</span>
+                MEDIR
+            </button>
+            <button type="button" class="btn-tool" onclick="centerOnSquad()">
+                <span class="material-symbols-outlined" style="font-size:16px;">my_location</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        const THEME_COLOR = "{{ hex_color | default('#00d2ff') }}";
+        const FACCION_ID = {{ faccion_id | default(1) }};
+
+        // Grid coordinate system from main map.js
+        function getGridCoordinate(mapLat, mapLng) {
+            const canvasY = 2000 - mapLat;
+            const canvasX = mapLng;
+            const ORIGIN_X = 66.15; 
+            const ORIGIN_Y = 59.5;  
+            const GRID_SIZE_X = 31.71;
+            const GRID_SIZE_Y = 29.9435;
+            
+            const colIdx = Math.floor((canvasX - ORIGIN_X) / GRID_SIZE_X) + 1;
+            const rowIdx = Math.floor((canvasY - ORIGIN_Y) / GRID_SIZE_Y) + 1;
+            
+            if (colIdx < 1 || rowIdx < 1 || colIdx > 100 || rowIdx > 100) return "FUERA MAPA";
+
+            const first_letter = String.fromCharCode(65 + Math.floor((colIdx - 1) / 26));
+            const second_letter = String.fromCharCode(65 + ((colIdx - 1) % 26));
+            const letters = first_letter + second_letter;
+            const numbers = rowIdx.toString().padStart(2, '0');
+            
+            const fracX = ((canvasX - ORIGIN_X) % GRID_SIZE_X) / GRID_SIZE_X;
+            const fracY = ((canvasY - ORIGIN_Y) % GRID_SIZE_Y) / GRID_SIZE_Y;
+            
+            let sub = "";
+            if (fracX > 0.33 && fracX < 0.67 && fracY > 0.33 && fracY < 0.67) {
+                sub = "C";
+            } else {
+                sub = (fracY < 0.5 ? "N" : "S") + (fracX < 0.5 ? "O" : "E");
+            }
+            return `${letters}${numbers}-${sub}`;
+        }
+
+        // Initialize Leaflet
+        const bounds = [[0, 0], [2000, 3000]];
+        const map = L.map('map', {
+            crs: L.CRS.Simple,
+            minZoom: -2,
+            maxZoom: 2,
+            zoomControl: false,
+            maxBounds: bounds,
+            maxBoundsViscosity: 1.0
+        });
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+        L.imageOverlay('/static/map/Full_Mapa%20Oct24.png?v=4', bounds).addTo(map);
+        map.setView([1000, 1500], 0);
+
+        // Tracker mousemove
+        map.on('mousemove', function(e) {
+            const coord = getGridCoordinate(e.latlng.lat, e.latlng.lng);
+            document.getElementById('tracker-coord').innerText = `GRID: ${coord}`;
+        });
+
+        // Layer groups
+        const beaconLayer = L.layerGroup().addTo(map);
+        const markerLayer = L.layerGroup().addTo(map);
+        const routesLayer = L.layerGroup().addTo(map);
+        const zonesLayer = L.layerGroup().addTo(map);
+
+        let squadCoords = null;
+
+        // Fetch Beacons
+        async function updateBeacons() {
+            try {
+                const res = await fetch('/api/bft/beacons');
+                if (!res.ok) return;
+                const beacons = await res.json();
+                beaconLayer.clearLayers();
+
+                beacons.forEach(b => {
+                    if (b.map_lat != null && b.map_lng != null) {
+                        const isMySquad = (b.equipo_nombre === "{{ equipo_nombre }}");
+                        if (isMySquad) squadCoords = [b.map_lat, b.map_lng];
+
+                        const iconHtml = `
+                            <div class="beacon-icon">
+                                <div class="beacon-pulse" style="background:${b.faccion_color === 'Amarillo' ? '#f1c40f' : (b.faccion_color === 'Azul' ? '#00d2ff' : '#2ecc71')};"></div>
+                                <div class="beacon-label">${b.equipo_nombre}</div>
+                            </div>
+                        `;
+                        const customIcon = L.divIcon({
+                            html: iconHtml,
+                            className: '',
+                            iconSize: [60, 40],
+                            iconAnchor: [30, 20]
+                        });
+                        L.marker([b.map_lat, b.map_lng], { icon: customIcon })
+                            .bindPopup(`<strong>${b.equipo_nombre}</strong><br>Grid: ${b.grid_coord || '--'}<br>Actualizado: hace ${b.segundos_transcurridos || 0}s`)
+                            .addTo(beaconLayer);
+                    }
+                });
+            } catch(e) {}
+        }
+
+        // Fetch Markers
+        async function updateMarkers() {
+            try {
+                const res = await fetch(`/api/mapa/marcadores?faccion_id=${FACCION_ID}`);
+                if (!res.ok) return;
+                const markers = await res.json();
+                markerLayer.clearLayers();
+
+                markers.forEach(m => {
+                    const circle = L.circleMarker([m.lat, m.lng], {
+                        radius: 8,
+                        color: THEME_COLOR,
+                        fillColor: '#fff',
+                        fillOpacity: 0.8,
+                        weight: 2
+                    });
+                    circle.bindPopup(`<strong>${m.tipo || 'MARCA'}</strong><br>${m.descripcion || ''}<br><small>Por: ${m.autor_nombre || 'Mando'}</small>`);
+                    circle.addTo(markerLayer);
+                });
+            } catch(e) {}
+        }
+
+        // Fetch Routes & Zones
+        async function updateRoutesAndZones() {
+            try {
+                const [resR, resZ] = await Promise.all([
+                    fetch('/api/mapa/rutas'),
+                    fetch('/api/mapa/zonas')
+                ]);
+                if (resR.ok) {
+                    const rutas = await resR.json();
+                    routesLayer.clearLayers();
+                    rutas.forEach(r => {
+                        try {
+                            const pts = JSON.parse(r.puntos_json);
+                            if (Array.isArray(pts) && pts.length > 1) {
+                                L.polyline(pts, { color: r.color || THEME_COLOR, weight: 3, dashArray: '6, 6' })
+                                    .bindPopup(`Ruta: ${r.nombre || 'Táctica'}`)
+                                    .addTo(routesLayer);
+                            }
+                        } catch(e) {}
+                    });
+                }
+                if (resZ.ok) {
+                    const zonas = await resZ.json();
+                    zonesLayer.clearLayers();
+                    zonas.forEach(z => {
+                        try {
+                            const pts = JSON.parse(z.puntos_json);
+                            if (Array.isArray(pts) && pts.length > 2) {
+                                L.polygon(pts, { color: z.color || THEME_COLOR, fillOpacity: 0.2, weight: 2 })
+                                    .bindPopup(`Zona: ${z.nombre || 'Área'}`)
+                                    .addTo(zonesLayer);
+                            }
+                        } catch(e) {}
+                    });
+                }
+            } catch(e) {}
+        }
+
+        function centerOnSquad() {
+            if (squadCoords) {
+                map.setView(squadCoords, 1);
+            } else {
+                alert('Aún no hay baliza GPS recibida para tu escuadra');
+            }
+        }
+
+        // Measuring tool
+        let isMeasuring = false;
+        let measureLine = null;
+        let measurePoints = [];
+        let measurePopup = null;
+
+        function toggleMeasure() {
+            isMeasuring = !isMeasuring;
+            const btn = document.getElementById('btn-measure');
+            if (btn) btn.classList.toggle('active', isMeasuring);
+            if (!isMeasuring) {
+                if (measureLine) { map.removeLayer(measureLine); measureLine = null; }
+                if (measurePopup) { map.removeLayer(measurePopup); measurePopup = null; }
+                measurePoints = [];
+            }
+        }
+
+        map.on('click', function(e) {
+            if (!isMeasuring) return;
+            measurePoints.push(e.latlng);
+            if (measurePoints.length === 1) {
+                measureLine = L.polyline(measurePoints, { color: '#ff3344', weight: 3, dashArray: '4, 4' }).addTo(map);
+            } else if (measurePoints.length === 2) {
+                measureLine.setLatLngs(measurePoints);
+                const dLat = measurePoints[1].lat - measurePoints[0].lat;
+                const dLng = measurePoints[1].lng - measurePoints[0].lng;
+                const distPx = Math.sqrt(dLat*dLat + dLng*dLng);
+                // Escala de campo ~1 metro por pixel
+                const distMetros = Math.round(distPx);
+                measurePopup = L.popup()
+                    .setLatLng(measurePoints[1])
+                    .setContent(`Distancia: <strong>${distMetros} m</strong>`)
+                    .openOn(map);
+                measurePoints = [];
+            }
+        });
+
+        // Initial loads & intervals
+        updateBeacons();
+        updateMarkers();
+        updateRoutesAndZones();
+        setInterval(updateBeacons, 4000);
+        setInterval(updateMarkers, 8000);
+    </script>
+</body>
+</html>

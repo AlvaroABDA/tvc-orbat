@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TVC ORBAT // PORTAL DEL OPERADOR</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        :root {
+            --theme-color: {{ hex_color | default('#00d2ff') }};
+            --bg-color: #080c12;
+            --panel-bg: rgba(18, 24, 38, 0.92);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --text-main: #e2e8f0;
+            --text-muted: #8b9bb4;
+            --font-main: 'Rajdhani', sans-serif;
+            --font-mono: 'Orbitron', monospace;
+            --font-tech: 'Share Tech Mono', monospace;
+            --danger-color: #ff3344;
+            --success-color: #2ecc71;
+            --warning-color: #f1c40f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 210, 255, 0.08), transparent 45%),
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+            color: var(--text-main);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        /* Top Nav */
+        .top-nav {
+            background: rgba(10, 14, 22, 0.95);
+            border-bottom: 1px solid var(--theme-color);
+            padding: 10px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+
+        .brand-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            height: 32px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,0.3));
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-title {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #fff;
+            line-height: 1.1;
+        }
+
+        .brand-sub {
+            font-family: var(--font-tech);
+            font-size: 0.68rem;
+            color: var(--theme-color);
+            letter-spacing: 1px;
+        }
+
+        .btn-logout {
+            background: rgba(255, 51, 68, 0.15);
+            border: 1px solid rgba(255, 51, 68, 0.5);
+            color: #ff6b7a;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: rgba(255, 51, 68, 0.3);
+            color: #fff;
+        }
+
+        /* Container */
+        .container {
+            max-width: 640px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Operator Header Card */
+        .operator-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--theme-color);
+            border-radius: 6px;
+            padding: 16px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .operator-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--theme-color);
+        }
+
+        .operator-header {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            flex-shrink: 0;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 2px solid var(--theme-color);
+            background: #000;
+            cursor: pointer;
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.7);
+            color: var(--theme-color);
+            font-size: 0.6rem;
+            text-align: center;
+            padding: 2px 0;
+            font-family: var(--font-tech);
+        }
+
+        .operator-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .operator-callsign {
+            font-family: var(--font-mono);
+            font-size: 1.45rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #fff;
+            text-transform: uppercase;
+            line-height: 1.1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .operator-realname {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+
+        .badge {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge-faction {
+            background: rgba(0, 210, 255, 0.15);
+            border: 1px solid var(--theme-color);
+            color: var(--theme-color);
+        }
+
+        .badge-squad {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .badge-medic {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid #2ecc71;
+            color: #2ecc71;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+            animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+            0%, 100% { border-color: #2ecc71; box-shadow: 0 0 8px rgba(46,204,113,0.3); }
+            50% { border-color: #a3f7bf; box-shadow: 0 0 16px rgba(46,204,113,0.7); }
+        }
+
+        /* Ready Check Banner */
+        .ready-check-banner {
+            background: linear-gradient(135deg, rgba(241, 196, 15, 0.12), rgba(20, 26, 38, 0.95));
+            border: 1px solid var(--warning-color);
+            border-radius: 6px;
+            padding: 14px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(241, 196, 15, 0.15);
+            animation: pulse-warning 2.5s infinite;
+        }
+
+        @keyframes pulse-warning {
+            0%, 100% { border-color: rgba(241, 196, 15, 0.6); }
+            50% { border-color: rgba(241, 196, 15, 1); box-shadow: 0 0 25px rgba(241, 196, 15, 0.3); }
+        }
+
+        .rc-title-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .rc-title {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            color: var(--warning-color);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            letter-spacing: 1px;
+        }
+
+        .rc-status-pill {
+            font-family: var(--font-tech);
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .rc-pill-listo {
+            background: rgba(46, 204, 113, 0.25);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+
+        .rc-pill-incidencia {
+            background: rgba(255, 51, 68, 0.25);
+            color: #ff5566;
+            border: 1px solid #ff5566;
+        }
+
+        .rc-pill-pendiente {
+            background: rgba(241, 196, 15, 0.2);
+            color: #f1c40f;
+            border: 1px solid #f1c40f;
+        }
+
+        .rc-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-rc {
+            padding: 12px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-rc-ready {
+            background: rgba(46, 204, 113, 0.2);
+            border-color: #2ecc71;
+            color: #2ecc71;
+        }
+
+        .btn-rc-ready:hover, .btn-rc-ready:active {
+            background: #2ecc71;
+            color: #000;
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
+        }
+
+        .btn-rc-issue {
+            background: rgba(255, 51, 68, 0.2);
+            border-color: #ff5566;
+            color: #ff5566;
+        }
+
+        .btn-rc-issue:hover, .btn-rc-issue:active {
+            background: #ff5566;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 51, 68, 0.5);
+        }
+
+        /* Grid Actions */
+        .hub-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .hub-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 10px;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .hub-card:hover, .hub-card:active {
+            transform: translateY(-2px);
+            border-color: var(--theme-color);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+        }
+
+        .hub-card-icon {
+            font-size: 28px;
+            color: var(--theme-color);
+        }
+
+        .hub-card-title {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+            line-height: 1.2;
+        }
+
+        .hub-card-desc {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.3;
+        }
+
+        .hub-card.medic-highlight {
+            border-color: #2ecc71;
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(18, 24, 38, 0.95));
+            grid-column: span 2;
+        }
+
+        .hub-card.ice-highlight {
+            border-color: #e74c3c;
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(18, 24, 38, 0.95));
+            grid-column: span 2;
+        }
+
+        .ice-summary-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px dashed rgba(231, 76, 60, 0.4);
+            font-size: 0.8rem;
+        }
+
+        /* Modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-box {
+            background: #111722;
+            border: 1px solid var(--theme-color);
+            border-radius: 6px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            color: #fff;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-close {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: #fff;
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-family: var(--font-main);
+            font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--theme-color);
+            box-shadow: 0 0 8px rgba(0, 210, 255, 0.25);
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--theme-color);
+            color: #000;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-submit:hover {
+            filter: brightness(1.15);
+            box-shadow: 0 0 15px var(--theme-color);
+        }
+
+        /* Toast notification */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(18, 24, 38, 0.95);
+            border: 1px solid var(--theme-color);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP NAVIGATION -->
+    <nav class="top-nav">
+        <div class="brand-box">
+            <img src="/static/imgs/tvc_blanco.png" alt="TVC" class="brand-logo">
+            <div class="brand-text">
+                <span class="brand-title">TVC ORBAT</span>
+                <span class="brand-sub">PORTAL OPERADOR // {{ miembro.faccion_nombre | upper }}</span>
+            </div>
+        </div>
+        <a href="/logout" class="btn-logout" title="Cerrar Sesión">
+            <span class="material-symbols-outlined" style="font-size: 16px;">logout</span>
+            SALIR
+        </a>
+    </nav>
+
+    <!-- MAIN CONTAINER -->
+    <main class="container">
+
+        <!-- OPERATOR PROFILE CARD -->
+        <section class="operator-card">
+            <div class="operator-header">
+                <!-- Avatar with direct upload trigger -->
+                <div class="avatar-container" onclick="document.getElementById('avatar-input').click()" title="Pulsar para cambiar foto">
+                    {% if miembro.foto_url %}
+                        <img src="{{ miembro.foto_url }}" alt="{{ miembro.nombre_jugador }}" class="avatar-img" id="avatar-preview">
+                    {% else %}
+                        <div style="width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#1a2233;">
+                            <span class="material-symbols-outlined" style="font-size:40px; color:var(--theme-color);">person</span>
+                        </div>
+                    {% endif %}
+                    <div class="avatar-overlay">FOTO 📷</div>
+                </div>
+                <input type="file" id="avatar-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(this)">
+
+                <div class="operator-info">
+                    <h1 class="operator-callsign">{{ miembro.nombre_jugador }}</h1>
+                    <div class="operator-realname">{{ miembro.nombre_apellidos if miembro.nombre_apellidos else 'Expediente no completado' }}</div>
+                    
+                    <div class="badge-row">
+                        <span class="badge badge-faction">{{ miembro.faccion_nombre }}</span>
+                        <span class="badge badge-squad">{{ miembro.equipo_nombre }}</span>
+                        {% if is_medic %}
+                            <span class="badge badge-medic">🩺 SANITARIO</span>
+                        {% else %}
+                            <span class="badge" style="background:rgba(255,255,255,0.06); border:1px solid #555;">{{ miembro.rol or 'OPERADOR' }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- READY CHECK SECTION (Punto C: SITREP Personal) -->
+        <section id="ready-check-container" style="{{ 'display:block;' if ready_check else 'display:none;' }}">
+            <div class="ready-check-banner">
+                <div class="rc-title-row">
+                    <span class="rc-title">
+                        <span class="material-symbols-outlined" style="font-size:20px;">timer</span>
+                        <span id="rc-titulo-text">{{ ready_check.titulo if ready_check else 'PASE DE LISTA TÁCTICO' }}</span>
+                    </span>
+                    <span id="rc-status-pill" class="rc-status-pill {{ 'rc-pill-listo' if ready_check and ready_check.mi_estado == 'LISTO' else ('rc-pill-incidencia' if ready_check and ready_check.mi_estado == 'INCIDENCIA' else 'rc-pill-pendiente') }}">
+                        {{ ready_check.mi_estado if (ready_check and ready_check.mi_estado) else 'PENDIENTE' }}
+                    </span>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
+                    El Mando ha solicitado comprobación de estado de escuadra. Confirma si estás listo para el despliegue o reporta una incidencia.
+                </div>
+                <div class="rc-buttons">
+                    <button type="button" class="btn-rc btn-rc-ready" onclick="submitReadyCheck('LISTO')">
+                        <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>
+                        ¡ESTOY LISTO!
+                    </button>
+                    <button type="button" class="btn-rc btn-rc-issue" onclick="promptIssueModal()">
+                        <span class="material-symbols-outlined" style="font-size:18px;">report_problem</span>
+                        INCIDENCIA
+                    </button>
+                </div>
+                {% if ready_check and ready_check.mi_nota %}
+                    <div id="rc-nota-feedback" style="margin-top:8px; font-size:0.75rem; color:#ff8899; font-family:var(--font-tech);">
+                        Nota enviada: "{{ ready_check.mi_nota }}"
+                    </div>
+                {% else %}
+                    <div id="rc-nota-feedback" style="display:none; margin-top:8px; font-size:0.75rem; color:#ff8899; font-family:var(--font-tech);"></div>
+                {% endif %}
+            </div>
+        </section>
+
+        <!-- HUB TILES GRID -->
+        <section class="hub-grid">
+
+            <!-- Card: Carnet Digital -->
+            <a href="/carnet/{{ miembro.id }}" target="_blank" class="hub-card">
+                <div>
+                    <span class="material-symbols-outlined hub-card-icon" style="color:#00d2ff;">badge</span>
+                    <h2 class="hub-card-title">MI CARNET TÁCTICO</h2>
+                    <p class="hub-card-desc">Identificación oficial con código QR militar para escaneos y control.</p>
+                </div>
+                <div style="font-family:var(--font-tech); font-size:0.72rem; color:var(--theme-color);">
+                    UID: {{ miembro.uid or 'S/N' }} 🡥
+                </div>
+            </a>
+
+            <!-- Card: Mapa Táctico -->
+            <a href="/operador/mapa" class="hub-card">
+                <div>
+                    <span class="material-symbols-outlined hub-card-icon" style="color:#f1c40f;">radar</span>
+                    <h2 class="hub-card-title">MAPA TÁCTICO</h2>
+                    <p class="hub-card-desc">Visualizador de operaciones en tiempo real: balizas, marcas y sectores.</p>
+                </div>
+                <div style="font-family:var(--font-tech); font-size:0.72rem; color:#f1c40f;">
+                    RADAR DE CAMPO 🡥
+                </div>
+            </a>
+
+            <!-- Card: Médico Designado (Punto E) -->
+            {% if is_medic %}
+                <a href="/medic" class="hub-card medic-highlight">
+                    <div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="material-symbols-outlined hub-card-icon" style="color:#2ecc71;">medical_services</span>
+                            <span class="badge badge-medic">ACCESO PRIORITARIO ACTIVO</span>
+                        </div>
+                        <h2 class="hub-card-title" style="color:#2ecc71; margin-top:4px;">ESTACIÓN MÉDICA MILITAR (FIELD MEDIC)</h2>
+                        <p class="hub-card-desc">Eres Sanitario de Combate. Accede directamente a la Suite PWA para escanear heridos, aplicar torniquetes, vitales y reanimar combatientes.</p>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px dashed rgba(46,204,113,0.3); padding-top:8px;">
+                        <span style="font-family:var(--font-tech); font-size:0.75rem; color:#2ecc71;">DOBLE AUTENTICACIÓN LIBERADA POR ROL</span>
+                        <span style="font-family:var(--font-mono); font-size:0.78rem; font-weight:bold; color:#fff;">ENTRAR A SUITE 🡥</span>
+                    </div>
+                </a>
+            {% else %}
+                <a href="/simulacion" class="hub-card">
+                    <div>
+                        <span class="material-symbols-outlined hub-card-icon" style="color:#ff5566;">health_and_safety</span>
+                        <h2 class="hub-card-title">PUESTO MÉDICO</h2>
+                        <p class="hub-card-desc">Protocolos de socorro y minijuegos médicos con clave facilitada por tu TL.</p>
+                    </div>
+                    <div style="font-family:var(--font-tech); font-size:0.72rem; color:#ff5566;">
+                        ACCESO POR CLAVE 🡥
+                    </div>
+                </a>
+                <a href="/simulacion" class="hub-card">
+                    <div>
+                        <span class="material-symbols-outlined hub-card-icon" style="color:#a855f7;">sports_esports</span>
+                        <h2 class="hub-card-title">MINIJUEGOS TÁCTICOS</h2>
+                        <p class="hub-card-desc">Mortero de apoyo, telémetro de reconocimiento y herramientas.</p>
+                    </div>
+                    <div style="font-family:var(--font-tech); font-size:0.72rem; color:#a855f7;">
+                        SIMULACIÓN 🡥
+                    </div>
+                </a>
+            {% endif %}
+
+            <!-- Card: Ficha ICE Real (Punto B) -->
+            <div class="hub-card ice-highlight" onclick="openIceModal()">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="material-symbols-outlined hub-card-icon" style="color:#ff5566;">e911_emergency</span>
+                        <span class="badge" style="background:#e74c3c; color:#fff;">SEGURIDAD REAL</span>
+                    </div>
+                    <h2 class="hub-card-title" style="color:#ff6b7a; margin-top:4px;">TARJETA DE SALUD REAL (I.C.E. - EMERGENCIA)</h2>
+                    <p class="hub-card-desc">Información crítica para primeros auxilios reales en campo: grupo sanguíneo, alergias conocidas y teléfono de contacto directo de emergencia.</p>
+                </div>
+                
+                <div class="ice-summary-row">
+                    <div>
+                        <strong>GRUPO:</strong> <span style="color:#fff; font-family:var(--font-mono);">{{ ice.grupo_sanguineo if (ice and ice.grupo_sanguineo) else 'NO DEFINIDO' }}</span>
+                        | <strong>ALERGIAS:</strong> <span style="color:#f1c40f;">{{ ice.alergias if (ice and ice.alergias) else 'Ninguna declarada' }}</span>
+                    </div>
+                    <div style="color:var(--theme-color); font-weight:bold; font-size:0.75rem;">
+                        EDITAR ⚙️
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card: Mi Expediente Personal -->
+            <div class="hub-card" style="grid-column: span 2;" onclick="openProfileModal()">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="material-symbols-outlined hub-card-icon" style="color:var(--theme-color);">edit_document</span>
+                        <span class="badge badge-squad">DATOS PERSONALES</span>
+                    </div>
+                    <h2 class="hub-card-title">ACTUALIZAR MI EXPEDIENTE</h2>
+                    <p class="hub-card-desc">Modifica tu nombre completo, teléfono de contacto, email, rol táctico o DNI. (Los 4 primeros dígitos de tu DNI son tu PIN de acceso).</p>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-family:var(--font-tech); font-size:0.75rem; color:var(--theme-color);">
+                    <span>DNI REGISTRADO: {{ miembro.dni[:4] + '****' if miembro.dni else 'SIN DNI' }}</span>
+                    <span style="font-weight:bold;">MODIFICAR ✎</span>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- MODAL: FICHA I.C.E. (Punto B) -->
+    <div id="modal-ice" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title" style="color:#ff6b7a;">
+                    <span class="material-symbols-outlined">health_and_safety</span>
+                    FICHA DE EMERGENCIA REAL (I.C.E.)
+                </div>
+                <button type="button" class="btn-close" onclick="closeIceModal()">&times;</button>
+            </div>
+            
+            <form id="form-ice" onsubmit="saveIce(event)">
+                <div class="form-group">
+                    <label class="form-label">Grupo Sanguíneo</label>
+                    <select class="form-select" id="ice-grupo" style="font-family:var(--font-mono); font-weight:bold;">
+                        <option value="">Seleccionar Grupo...</option>
+                        <option value="A+" {{ 'selected' if ice and ice.grupo_sanguineo == 'A+' else '' }}>A+</option>
+                        <option value="A-" {{ 'selected' if ice and ice.grupo_sanguineo == 'A-' else '' }}>A-</option>
+                        <option value="B+" {{ 'selected' if ice and ice.grupo_sanguineo == 'B+' else '' }}>B+</option>
+                        <option value="B-" {{ 'selected' if ice and ice.grupo_sanguineo == 'B-' else '' }}>B-</option>
+                        <option value="AB+" {{ 'selected' if ice and ice.grupo_sanguineo == 'AB+' else '' }}>AB+</option>
+                        <option value="AB-" {{ 'selected' if ice and ice.grupo_sanguineo == 'AB-' else '' }}>AB-</option>
+                        <option value="O+" {{ 'selected' if ice and ice.grupo_sanguineo == 'O+' else '' }}>O+</option>
+                        <option value="O-" {{ 'selected' if ice and ice.grupo_sanguineo == 'O-' else '' }}>O-</option>
+                        <option value="DESCONOCIDO" {{ 'selected' if ice and ice.grupo_sanguineo == 'DESCONOCIDO' else '' }}>Desconocido / No seguro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Alergias Conocidas (Medicamentos / Alimentos)</label>
+                    <input type="text" class="form-input" id="ice-alergias" placeholder="Ej: Penicilina, polen, frutos secos, ibuprofeno..." value="{{ ice.alergias if ice else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Condiciones Médicas / Crónicas</label>
+                    <input type="text" class="form-input" id="ice-condiciones" placeholder="Ej: Asma, diabetes, hipertensión, marcapasos..." value="{{ ice.condiciones_medicas if ice else '' }}">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Medicación Actual</label>
+                    <input type="text" class="form-input" id="ice-medicacion" placeholder="Ej: Ventolín, insulina..." value="{{ ice.medicacion_actual if ice else '' }}">
+                </div>
+
+                <div style="border-top:1px solid rgba(255,255,255,0.1); margin:16px 0; padding-top:12px;">
+                    <div style="font-family:var(--font-mono); font-size:0.8rem; color:#ff6b7a; margin-bottom:10px; font-weight:bold;">
+                        📞 CONTACTO DE EMERGENCIA
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Nombre del Contacto</label>
+                        <input type="text" class="form-input" id="ice-contacto-nombre" placeholder="Nombre y apellidos" value="{{ ice.contacto_nombre if ice else '' }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Teléfono de Emergencia</label>
+                        <input type="tel" class="form-input" id="ice-contacto-tel" placeholder="Ej: 600123456" value="{{ ice.contacto_telefono if ice else '' }}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Parentesco / Relación</label>
+                        <input type="text" class="form-input" id="ice-contacto-parentesco" placeholder="Ej: Cónyuge, Madre, Padre, Hermano/a..." value="{{ ice.contacto_parentesco if ice else '' }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Notas Adicionales de Seguridad</label>
+                    <textarea class="form-textarea" id="ice-observaciones" rows="2" placeholder="Cualquier información relevante para el equipo médico o dirección...">{{ ice.observaciones if ice else '' }}</textarea>
+                </div>
+
+                <button type="submit" class="btn-submit" style="background:#e74c3c; color:#fff;">
+                    GUARDAR FICHA I.C.E.
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: EXPEDIENTE PERSONAL -->
+    <div id="modal-profile" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <span class="material-symbols-outlined" style="color:var(--theme-color);">badge</span>
+                    MI EXPEDIENTE TÁCTICO
+                </div>
+                <button type="button" class="btn-close" onclick="closeProfileModal()">&times;</button>
+            </div>
+            
+            <form id="form-profile" onsubmit="saveProfile(event)">
+                <div class="form-group">
+                    <label class="form-label">Nombre y Apellidos Reales</label>
+                    <input type="text" class="form-input" id="prof-nombre-apellidos" value="{{ miembro.nombre_apellidos or '' }}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">DNI / Documento Identidad</label>
+                    <input type="text" class="form-input" id="prof-dni" value="{{ miembro.dni or '' }}" required style="font-family:var(--font-mono);">
+                    <small style="color:var(--theme-color); font-size:0.75rem; display:block; margin-top:4px;">
+                        ⚠️ Tus primeros 4 dígitos del DNI son tu PIN de acceso al sistema.
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Teléfono Personal</label>
+                    <input type="tel" class="form-input" id="prof-telefono" value="{{ miembro.telefono or '' }}" placeholder="Ej: 611223344">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Correo Electrónico</label>
+                    <input type="email" class="form-input" id="prof-email" value="{{ miembro.email or '' }}" placeholder="usuario@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Armamento / Configuración Principal</label>
+                    <select class="form-select" id="prof-armamento">
+                        <option value="Fusilero" {{ 'selected' if miembro.armamento == 'Fusilero' else '' }}>Fusilero</option>
+                        <option value="Francotirador" {{ 'selected' if miembro.armamento == 'Francotirador' else '' }}>Francotirador</option>
+                        <option value="Tirador" {{ 'selected' if miembro.armamento == 'Tirador' else '' }}>Tirador Selecto (DMR)</option>
+                        <option value="Apoyo" {{ 'selected' if miembro.armamento == 'Apoyo' else '' }}>Apoyo (LMG)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-submit">
+                    GUARDAR CAMBIOS
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: INCIDENCIA READY CHECK -->
+    <div id="modal-issue" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <div class="modal-title" style="color:#ff5566;">
+                    <span class="material-symbols-outlined">report_problem</span>
+                    REPORTAR INCIDENCIA
+                </div>
+                <button type="button" class="btn-close" onclick="closeIssueModal()">&times;</button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Motivo o Problema de Despliegue</label>
+                <textarea class="form-textarea" id="issue-text" rows="3" placeholder="Ej: Fallo en radio canal 3, batería baja al 15%, réplica averiada, esperando munición..."></textarea>
+            </div>
+
+            <button type="button" class="btn-submit" style="background:#ff3344; color:#fff;" onclick="submitReadyCheck('INCIDENCIA')">
+                ENVIAR REPORTE AL TL
+            </button>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast">
+        <span class="material-symbols-outlined" style="color:var(--theme-color);">info</span>
+        <span id="toast-text">Notificación</span>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-text').innerText = msg;
+            t.style.display = 'flex';
+            setTimeout(() => { t.style.display = 'none'; }, 3500);
+        }
+
+        // --- AVATAR UPLOAD ---
+        async function handleAvatarUpload(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const formData = new FormData();
+            formData.append('foto', file);
+
+            showToast('Subiendo y optimizando foto...');
+            try {
+                const res = await fetch('/api/miembros/{{ miembro.id }}/foto', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('¡Foto actualizada correctamente!');
+                    const img = document.getElementById('avatar-preview');
+                    if (img) img.src = data.foto_url;
+                    else location.reload();
+                } else {
+                    alert('Error: ' + (data.error || 'No se pudo subir la foto'));
+                }
+            } catch (err) {
+                alert('Error de conexión al subir imagen');
+            }
+        }
+
+        // --- READY CHECK LOGIC (Punto C) ---
+        async function submitReadyCheck(estado) {
+            const nota = (estado === 'INCIDENCIA') ? document.getElementById('issue-text').value.trim() : '';
+            try {
+                const res = await fetch('/api/ready_check/respond', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ estado, nota })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast(estado === 'LISTO' ? '✅ Confirmado: ESTOY LISTO' : '⚠️ Incidencia notificada al Mando');
+                    closeIssueModal();
+                    updateReadyCheckUI(estado, nota);
+                } else {
+                    alert(data.error || 'Error al registrar estado');
+                }
+            } catch (e) {
+                alert('Error de red al actualizar estado');
+            }
+        }
+
+        function updateReadyCheckUI(estado, nota) {
+            const pill = document.getElementById('rc-status-pill');
+            if (pill) {
+                pill.className = 'rc-status-pill ' + (estado === 'LISTO' ? 'rc-pill-listo' : (estado === 'INCIDENCIA' ? 'rc-pill-incidencia' : 'rc-pill-pendiente'));
+                pill.innerText = estado;
+            }
+            const feed = document.getElementById('rc-nota-feedback');
+            if (feed) {
+                if (nota) {
+                    feed.style.display = 'block';
+                    feed.innerText = 'Nota enviada: "' + nota + '"';
+                } else {
+                    feed.style.display = 'none';
+                }
+            }
+        }
+
+        function promptIssueModal() {
+            document.getElementById('modal-issue').style.display = 'flex';
+        }
+
+        function closeIssueModal() {
+            document.getElementById('modal-issue').style.display = 'none';
+        }
+
+        // Polling for active Ready Check
+        async function pollActiveReadyCheck() {
+            try {
+                const res = await fetch('/api/ready_check/active');
+                if (!res.ok) return;
+                const data = await res.json();
+                const container = document.getElementById('ready-check-container');
+                if (data.active) {
+                    container.style.display = 'block';
+                    document.getElementById('rc-titulo-text').innerText = data.titulo || 'PASE DE LISTA TÁCTICO';
+                    updateReadyCheckUI(data.mi_estado, data.mi_nota);
+                } else {
+                    container.style.display = 'none';
+                }
+            } catch (err) {}
+        }
+        setInterval(pollActiveReadyCheck, 6000);
+
+        // --- MODALS ICE & PROFILE ---
+        function openIceModal() {
+            document.getElementById('modal-ice').style.display = 'flex';
+        }
+        function closeIceModal() {
+            document.getElementById('modal-ice').style.display = 'none';
+        }
+
+        function openProfileModal() {
+            document.getElementById('modal-profile').style.display = 'flex';
+        }
+        function closeProfileModal() {
+            document.getElementById('modal-profile').style.display = 'none';
+        }
+
+        // Save ICE
+        async function saveIce(e) {
+            e.preventDefault();
+            const payload = {
+                grupo_sanguineo: document.getElementById('ice-grupo').value,
+                alergias: document.getElementById('ice-alergias').value,
+                condiciones_medicas: document.getElementById('ice-condiciones').value,
+                medicacion_actual: document.getElementById('ice-medicacion').value,
+                contacto_nombre: document.getElementById('ice-contacto-nombre').value,
+                contacto_telefono: document.getElementById('ice-contacto-tel').value,
+                contacto_parentesco: document.getElementById('ice-contacto-parentesco').value,
+                observaciones: document.getElementById('ice-observaciones').value
+            };
+
+            try {
+                const res = await fetch('/api/operador/ice', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('Ficha de Seguridad I.C.E. guardada');
+                    closeIceModal();
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    alert('Error al guardar datos ICE');
+                }
+            } catch (err) {
+                alert('Error de conexión');
+            }
+        }
+
+        // Save Profile
+        async function saveProfile(e) {
+            e.preventDefault();
+            const payload = {
+                nombre_apellidos: document.getElementById('prof-nombre-apellidos').value,
+                dni: document.getElementById('prof-dni').value,
+                telefono: document.getElementById('prof-telefono').value,
+                email: document.getElementById('prof-email').value,
+                armamento: document.getElementById('prof-armamento').value
+            };
+
+            try {
+                const res = await fetch('/api/operador/perfil', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('Expediente actualizado');
+                    closeProfileModal();
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    alert(data.error || 'Error al actualizar expediente');
+                }
+            } catch (err) {
+                alert('Error de conexión');
+            }
+        }
+
+        // Close modals on outer click
+        window.onclick = function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                e.target.style.display = 'none';
+            }
+        };
+    </script>
+</body>
+</html>

@@ -986,7 +986,7 @@
                     <div class="panel management-panel" style="border: 2px solid #a32a2a;">
                         <h3 style="color: #ff4d4d; display: flex; align-items: center; gap: 0.5rem;"><span class="material-symbols-outlined">warning</span> ZAFARRANCHO DE COMBATE</h3>
                         <p style="color: #aaa; margin-bottom: 1.5rem; font-size: 0.9rem;">
-                            <strong>ATENCIÓN:</strong> Esto eliminará TODO el historial de capturas de Puntos de Control y todos los registros de Respawn de forma irreversible. Además, desasignará todas las misiones activas y liberará todos los PCs. Utilizar únicamente al inicio de la partida o para reiniciar un evento desde cero.
+                            <strong>ATENCIÓN:</strong> Esto eliminará TODO el historial de capturas de Puntos de Control, todos los registros de Respawn y todas las <strong>intervenciones y usos médicos de campo</strong> de forma irreversible. Además, desasignará todas las misiones activas, liberará todos los PCs y restablecerá los botiquines de los sanitarios según doctrina TVC. Utilizar únicamente al inicio de la partida o para reiniciar un evento desde cero.
                         </p>
                         <button id="btn-zafarrancho" class="btn btn-outline" style="background: rgba(255,0,0,0.2); color: #ff4d4d; border-color: #ff4d4d; width: 100%; font-weight: bold; font-family: var(--font-mono); font-size: 1.2rem; padding: 15px;">PURGAR REDES Y REINICIAR (WIPE)</button>
                     </div>
@@ -1544,12 +1544,18 @@
 
                 <!-- Fila 2: Dashboard de Jugadores -->
                 <div style="background: transparent; padding: 0; margin-bottom: 1rem; border: none;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #333; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 1px solid #333; padding-bottom: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
                         <h3 style="font-size: 1.1rem; margin: 0; color: var(--theme-color); font-weight: bold;">[2] Dashboard de Jugadores</h3>
-                        <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
-                            Efectivos (Activos / Total): <input type="text" id="eq-jugadores" required readonly style="width: 70px; text-align: center;">
-                            <input type="checkbox" id="eq-jugadores-manual" style="margin-left: 10px;"> Forzar manual
-                        </label>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <button type="button" class="btn warning" id="btn-open-ready-check" onclick="openReadyCheckModal()" style="padding: 0.35rem 0.8rem; font-size: 0.82rem; font-weight: bold; background: rgba(241,196,15,0.15); border: 1px solid #f1c40f; color: #f1c40f; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">timer</span>
+                                PASE DE LISTA (READY CHECK)
+                            </button>
+                            <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.25rem;">
+                                Efectivos (Activos / Total): <input type="text" id="eq-jugadores" required readonly style="width: 70px; text-align: center;">
+                                <input type="checkbox" id="eq-jugadores-manual" style="margin-left: 10px;"> Forzar manual
+                            </label>
+                        </div>
                     </div>
                     <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; max-height: 440px; overflow-y: auto; background: rgba(0,0,0,0.3);">
                         <table style="width: 100%; text-align: left; border-collapse: collapse; min-width: 860px;">
@@ -2024,6 +2030,99 @@
             <div class="modal-actions" style="justify-content: center; margin-top: 20px;">
                 <button class="btn" onclick="document.getElementById('minigame-auth-modal').style.display='none'">CANCELAR</button>
                 <button class="btn primary" id="btn-auth-minigame">AUTORIZAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ready Check TL -->
+    <div id="modal-ready-check" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 650px; background: rgba(18, 24, 38, 0.98); border: 1px solid #f1c40f; box-shadow: 0 10px 40px rgba(0,0,0,0.9); font-family: 'Rajdhani', sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(241,196,15,0.4); padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                <h2 style="margin: 0; color: #f1c40f; font-family: 'Orbitron', monospace; font-size: 1.1rem; letter-spacing: 1px; display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #f1c40f;">timer</span>
+                    PASE DE LISTA TÁCTICO // READY CHECK
+                </h2>
+                <button type="button" class="btn" style="padding: 2px 8px; font-size: 1.2rem; cursor: pointer;" onclick="closeReadyCheckModal()">&times;</button>
+            </div>
+            
+            <div id="rc-tl-active-block" style="display: none; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(241,196,15,0.1); border: 1px solid rgba(241,196,15,0.3); padding: 8px 12px; border-radius: 4px; margin-bottom: 12px;">
+                    <div>
+                        <span style="color: #f1c40f; font-weight: bold; font-family: 'Orbitron', monospace;" id="rc-tl-title">COMPROBACIÓN ACTIVA</span>
+                        <div style="font-size: 0.75rem; color: #888;" id="rc-tl-time">Iniciado: hace un momento</div>
+                    </div>
+                    <div id="rc-tl-stats" style="font-family: 'Orbitron', monospace; font-size: 1.1rem; font-weight: bold; color: #2ecc71;">
+                        0 / 0 LISTOS
+                    </div>
+                </div>
+
+                <div style="max-height: 280px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; background: rgba(0,0,0,0.3);">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.88rem;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.15); color: #888; font-family: 'Orbitron', monospace; font-size: 0.75rem;">
+                                <th style="padding: 6px 10px;">OPERADOR</th>
+                                <th style="padding: 6px 10px;">ROL</th>
+                                <th style="padding: 6px 10px; text-align: center;">ESTADO</th>
+                                <th style="padding: 6px 10px;">INCIDENCIA / NOTA</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rc-tl-members-tbody">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 14px;">
+                    <button type="button" class="btn danger" onclick="stopReadyCheckTL()" style="display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">stop_circle</span>
+                        CERRAR PASE DE LISTA
+                    </button>
+                    <button type="button" class="btn warning" onclick="startReadyCheckTL()" style="display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">restart_alt</span>
+                        REINICIAR
+                    </button>
+                </div>
+            </div>
+
+            <div id="rc-tl-inactive-block" style="text-align: center; padding: 20px 10px;">
+                <span class="material-symbols-outlined" style="font-size: 48px; color: #555; margin-bottom: 10px;">hourglass_disabled</span>
+                <p style="color: #bbb; margin-bottom: 15px;">No hay ningún pase de lista activo en este momento para la escuadra.</p>
+                <div style="display: flex; gap: 10px; justify-content: center; align-items: center;">
+                    <input type="text" id="rc-new-title" placeholder="Título (ej: Inserción Fase 1)" style="padding: 8px 12px; background: rgba(0,0,0,0.5); border: 1px solid #444; color: #fff; border-radius: 4px; font-family: 'Rajdhani', sans-serif; font-size: 0.95rem; width: 260px;">
+                    <button type="button" class="btn primary" onclick="startReadyCheckTL()" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">play_arrow</span>
+                        LANZAR PASE DE LISTA
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal ICE Viewer (TL / Admin) -->
+    <div id="modal-ice-viewer" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 480px; background: #111722; border: 1px solid #e74c3c; box-shadow: 0 10px 40px rgba(0,0,0,0.9); font-family: 'Share Tech Mono', monospace; color: #e2e8f0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(231,76,60,0.4); padding-bottom: 10px; margin-bottom: 14px;">
+                <h3 style="color: #ff6b7a; margin: 0; font-size: 1.1rem; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">emergency</span>
+                    FICHA DE EMERGENCIA REAL (I.C.E.)
+                </h3>
+                <button type="button" class="btn" style="background:none; border:none; color:#aaa; font-size:24px; cursor:pointer;" onclick="document.getElementById('modal-ice-viewer').style.display='none'">&times;</button>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.9rem;">
+                <div><strong>OPERADOR:</strong> <span id="ice-view-nick" style="color: #fff; font-weight: bold;">--</span></div>
+                <div><strong>GRUPO SANGUÍNEO:</strong> <span id="ice-view-grupo" style="color: #ff6b7a; font-weight: bold; font-size: 1.1rem; background: rgba(231,76,60,0.15); padding: 2px 6px; border-radius: 3px;">--</span></div>
+                <div><strong>ALERGIAS CONOCIDAS:</strong> <span id="ice-view-alergias" style="color: #f1c40f;">--</span></div>
+                <div><strong>CONDICIONES / CRÓNICAS:</strong> <span id="ice-view-condiciones">--</span></div>
+                <div><strong>MEDICACIÓN ACTUAL:</strong> <span id="ice-view-medicacion">--</span></div>
+                <div style="border-top: 1px dashed rgba(255,255,255,0.15); padding-top: 10px; margin-top: 4px;">
+                    <div style="color: #00d2ff; font-weight: bold; margin-bottom: 4px;">CONTACTO DE EMERGENCIA:</div>
+                    <div id="ice-view-contacto" style="font-size: 1rem; color: #fff;">--</div>
+                    <div style="margin-top: 4px;"><strong>TELÉFONO:</strong> <span id="ice-view-tel">--</span></div>
+                </div>
+                <div style="font-size: 0.78rem; color: #888;"><strong>NOTAS ADICIONALES:</strong> <span id="ice-view-obs">--</span></div>
+            </div>
+            <div style="margin-top: 16px; text-align: right;">
+                <button type="button" class="btn" onclick="document.getElementById('modal-ice-viewer').style.display='none'">CERRAR</button>
             </div>
         </div>
     </div>

@@ -636,3 +636,65 @@ def get_medic_audit_log(conn, limit=150):
             "medicos_activos_count": len(medicos_activos)
         }
     }
+
+def reset_all_medic_data(conn):
+    """
+    Purga completamente todos los registros de episodios e intervenciones médicas (EpisodioMedico)
+    y restablece los recursos de todos los sanitarios (MedicoRecursos) a 0 usadas y cupo completo
+    según la doctrina táctica TVC (miembros de escuadra // médicos asignados).
+    """
+    cursor = conn.cursor()
+    # 1. Purgar historial de episodios
+    cursor.execute('DELETE FROM EpisodioMedico')
+    
+    # 2. Purgar tabla de recursos para reconstrucción limpia
+    cursor.execute('DELETE FROM MedicoRecursos')
+    
+    # 3. Recalcular y reasignar cupos nominales según doctrina
+    count = 0
+    medicos_db = []
+    try:
+        medicos_db = cursor.execute('''
+            SELECT m.nombre_jugador, m.uid, e.id as equipo_id,
+                   (SELECT COUNT(*) FROM Miembro m2 WHERE m2.equipo_id = e.id) as miembros_count,
+                   (SELECT COUNT(*) FROM Miembro m3 WHERE m3.equipo_id = e.id AND (LOWER(m3.rol) LIKE '%medico%' OR LOWER(m3.rol) LIKE '%sanitario%')) as medicos_count
+            FROM Miembro m
+            JOIN Equipo e ON m.equipo_id = e.id
+            WHERE LOWER(m.rol) LIKE '%medico%' OR LOWER(m.rol) LIKE '%sanitario%'
+        ''').fetchall()
+    except sqlite3.OperationalError:
+        pass
+        
+    if medicos_db:
+        for med in medicos_db:
+            pax = med['miembros_count'] or 0
+            meds_count = med['medicos_count'] or 1
+            val = calcular_curas_por_medico(pax, meds_count)
+            update_sanitario_recursos(conn, med['uid'] or med['nombre_jugador'], val, 0)
+            count += 1
+    else:
+        try:
+            equipos = cursor.execute('''
+                SELECT e.id,
+                       (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = e.id) as miembros_count
+                FROM Equipo e
+            ''').fetchall()
+            for eq in equipos:
+                pax = eq['miembros_count'] or 0
+                val = calcular_curas_por_medico(pax, 1)
+                sanitario_id = f"MED-{eq['id']}"
+                update_sanitario_recursos(conn, sanitario_id, val, 0)
+                count += 1
+        except sqlite3.OperationalError:
+            pass
+            
+    # Asignar cupo infinito al Administrador / HQ
+    update_sanitario_recursos(conn, 'ADMIN', 99, 0)
+    conn.commit()
+    
+    return {
+        "status": "success",
+        "medicos_recargados": count,
+        "message": f"Historial médico purgado y {count} sanitarios reiniciados según doctrina."
+    }
+

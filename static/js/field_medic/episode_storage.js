@@ -19,11 +19,13 @@ class EpisodeStorage {
                 
                 // Actualizar cupos locales de reanimaciones para cada sanitario
                 if (data.roster) {
+                    const queue = this.getSyncQueue();
+                    const hasPendingOffline = queue && queue.length > 0;
                     for (const [key, item] of Object.entries(data.roster)) {
                         if (item.is_medic && item.reanimaciones_disponibles !== undefined) {
                             const reanimKey = `tvc_medic_reanim_${key.toUpperCase()}`;
                             const localVal = localStorage.getItem(reanimKey);
-                            if (localVal === null) {
+                            if (localVal === null || !hasPendingOffline) {
                                 localStorage.setItem(reanimKey, item.reanimaciones_disponibles.toString());
                             }
                         }
