@@ -208,7 +208,7 @@ def login():
         if usuario and password:
             conn = get_db_connection()
             eq = conn.execute('''
-                SELECT e.id, e.nombre, e.password_hash, e.estado_sancion, f.nombre as faccion_nombre 
+                SELECT e.id, e.nombre, e.password_hash, e.estado_sancion, e.faccion_id, f.nombre as faccion_nombre, f.color as faccion_color
                 FROM Equipo e 
                 JOIN Faccion f ON e.faccion_id = f.id 
                 WHERE LOWER(e.codigo) = LOWER(?) AND e.codigo != '' AND e.codigo IS NOT NULL
@@ -230,6 +230,7 @@ def login():
                     session.permanent = (request.form.get('remember_me') == 'yes')
                     session['faction'] = eq['faccion_nombre']
                     session['faccion_id'] = eq['faccion_id']
+                    session['faccion_color'] = eq['faccion_color']
                     session['role'] = 'equipo'
                     session['equipo_id'] = eq['id']
                     session['equipo_nombre'] = eq['nombre']
