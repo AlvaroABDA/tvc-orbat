@@ -205,6 +205,147 @@
             margin-top: 4px;
             white-space: nowrap;
         }
+
+        /* Tactical Click Ping */
+        .tactical-click-ping {
+            position: relative;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            cursor: pointer;
+        }
+        .tactical-click-ping .ping-dot {
+            width: 8px;
+            height: 8px;
+            background: #00f0ff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff;
+            z-index: 2;
+        }
+        .tactical-click-ping .ping-crosshair-h {
+            position: absolute;
+            width: 24px;
+            height: 1.5px;
+            background: rgba(0, 240, 255, 0.7);
+            pointer-events: none;
+        }
+        .tactical-click-ping .ping-crosshair-v {
+            position: absolute;
+            width: 1.5px;
+            height: 24px;
+            background: rgba(0, 240, 255, 0.7);
+            pointer-events: none;
+        }
+        .tactical-click-ping .ping-ring {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border: 1.5px solid #00f0ff;
+            border-radius: 50%;
+            animation: tacticalPingPulse 1.8s ease-out infinite;
+            pointer-events: none;
+        }
+        .tactical-click-ping .ping-badge {
+            position: absolute;
+            top: 26px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(6, 9, 14, 0.92);
+            color: #00f0ff;
+            border: 1px solid #00f0ff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: var(--font-mono, monospace);
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+            pointer-events: none;
+        }
+        @keyframes tacticalPingPulse {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+
+        /* Tactical ATAK Popups */
+        .tactical-popup .leaflet-popup-content-wrapper {
+            background: rgba(14, 20, 32, 0.96) !important;
+            border: 1px solid var(--theme-color) !important;
+            color: #fff !important;
+            border-radius: 6px !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.8) !important;
+            padding: 0 !important;
+        }
+        .tactical-popup .leaflet-popup-content {
+            margin: 0 !important;
+            line-height: 1.4 !important;
+        }
+        .tactical-popup .leaflet-popup-tip {
+            background: rgba(14, 20, 32, 0.96) !important;
+            border: 1px solid var(--theme-color) !important;
+        }
+        .tactical-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(0,0,0,0.4);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .tactical-card-title {
+            font-family: var(--font-mono);
+            font-weight: 800;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+        }
+        .tactical-badge {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .tactical-card-body {
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 0.82rem;
+        }
+        .tactical-desc {
+            color: #f1f5f9;
+            font-size: 0.82rem;
+            margin-bottom: 4px;
+        }
+        .tactical-meta-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+        .tactical-timer-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            margin-top: 4px;
+        }
+        .measure-flag-container {
+            user-select: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -246,6 +387,67 @@
     <script>
         const THEME_COLOR = "{{ hex_color | default('#00d2ff') }}";
         const FACCION_ID = {{ faccion_id | default(1) }};
+
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function formatElapsed(seg) {
+            if (seg === null || seg === undefined || isNaN(seg)) return "--";
+            seg = Math.max(0, parseInt(seg, 10));
+            if (seg < 60) return `${seg}s`;
+            const min = Math.floor(seg / 60);
+            if (min < 60) return `${min}m`;
+            const hrs = Math.floor(min / 60);
+            return `${hrs}h ${min % 60}m`;
+        }
+
+        function formatRemaining(seg) {
+            if (seg === null || seg === undefined || isNaN(seg)) return "Permanente";
+            seg = parseInt(seg, 10);
+            if (seg <= 0) return "Expirando...";
+            if (seg < 60) return `${seg}s`;
+            const min = Math.floor(seg / 60);
+            if (min < 60) return `${min}m`;
+            const hrs = Math.floor(min / 60);
+            return `${hrs}h ${min % 60}m`;
+        }
+
+        class GPSMapper {
+            constructor(p1, p2, p3) {
+                const u1 = p1.gps.lng, v1 = p1.gps.lat, x1 = p1.px.lng, y1 = p1.px.lat;
+                const u2 = p2.gps.lng, v2 = p2.gps.lat, x2 = p2.px.lng, y2 = p2.px.lat;
+                const u3 = p3.gps.lng, v3 = p3.gps.lat, x3 = p3.px.lng, y3 = p3.px.lat;
+
+                const det = u1*(v2 - v3) - v1*(u2 - u3) + (u2*v3 - u3*v2);
+
+                this.A = (x1*(v2 - v3) - v1*(x2 - x3) + (x2*v3 - x3*v2)) / det;
+                this.B = (u1*(x2 - x3) - x1*(u2 - u3) + (u2*x3 - u3*x2)) / det;
+                this.C = x1 - this.A * u1 - this.B * v1;
+
+                this.D = (y1*(v2 - v3) - v1*(y2 - y3) + (y2*v3 - y3*v2)) / det;
+                this.E = (u1*(y2 - y3) - y1*(u2 - u3) + (u2*y3 - u3*y2)) / det;
+                this.F = y1 - this.D * u1 - this.E * v1;
+            }
+
+            gpsToMap(lat, lng) {
+                const x = this.A * lng + this.B * lat + this.C;
+                const y = this.D * lng + this.E * lat + this.F;
+                return { lat: y, lng: x };
+            }
+        }
+
+        const mapProjector = new GPSMapper(
+            { gps: { lat: 41.95586014650798, lng: -6.256770847102261 }, px: { lat: 1139, lng: 1244.75 } },
+            { gps: { lat: 41.95764427861231, lng: -6.2679631830511005 }, px: { lat: 1257.75, lng: 674 } },
+            { gps: { lat: 41.96462525160695, lng: -6.2547713027579865 }, px: { lat: 1727.75, lng: 1343.75 } }
+        );
 
         // Grid coordinate system from main map.js
         function getGridCoordinate(mapLat, mapLng) {
@@ -301,13 +503,59 @@
 
         // Layer groups
         const beaconLayer = L.layerGroup().addTo(map);
+        const poiLayer = L.layerGroup().addTo(map);
         const markerLayer = L.layerGroup().addTo(map);
         const routesLayer = L.layerGroup().addTo(map);
         const zonesLayer = L.layerGroup().addTo(map);
 
         let squadCoords = null;
+        let currentClickPing = null;
+        let clickPingTimeout = null;
 
-        // Fetch Beacons
+        function showClickPing(targetMap, latlng, gridStr) {
+            if (!targetMap || !latlng) return;
+            if (!gridStr) {
+                gridStr = getGridCoordinate(latlng.lat, latlng.lng);
+            }
+            if (currentClickPing) {
+                try { targetMap.removeLayer(currentClickPing); } catch(e) {}
+                currentClickPing = null;
+            }
+            if (clickPingTimeout) {
+                clearTimeout(clickPingTimeout);
+                clickPingTimeout = null;
+            }
+            const pingHtml = `
+                <div class="tactical-click-ping">
+                    <div class="ping-ring"></div>
+                    <div class="ping-crosshair-h"></div>
+                    <div class="ping-crosshair-v"></div>
+                    <div class="ping-dot"></div>
+                    <div class="ping-badge">[${gridStr}]</div>
+                </div>
+            `;
+            const pingIcon = L.divIcon({
+                className: 'click-ping-div-icon',
+                html: pingHtml,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+            currentClickPing = L.marker(latlng, { icon: pingIcon, interactive: true }).addTo(targetMap);
+            currentClickPing.on('click', () => {
+                if (currentClickPing) {
+                    try { targetMap.removeLayer(currentClickPing); } catch(e) {}
+                    currentClickPing = null;
+                }
+            });
+            clickPingTimeout = setTimeout(() => {
+                if (currentClickPing) {
+                    try { targetMap.removeLayer(currentClickPing); } catch(e) {}
+                    currentClickPing = null;
+                }
+            }, 15000);
+        }
+
+        // Fetch Beacons (BFT)
         async function updateBeacons() {
             try {
                 const res = await fetch('/api/bft/beacons');
@@ -323,7 +571,7 @@
                         const iconHtml = `
                             <div class="beacon-icon">
                                 <div class="beacon-pulse" style="background:${b.faccion_color === 'Amarillo' ? '#f1c40f' : (b.faccion_color === 'Azul' ? '#00d2ff' : '#2ecc71')};"></div>
-                                <div class="beacon-label">${b.equipo_nombre}</div>
+                                <div class="beacon-label">${escapeHtml(b.equipo_nombre)}</div>
                             </div>
                         `;
                         const customIcon = L.divIcon({
@@ -333,14 +581,55 @@
                             iconAnchor: [30, 20]
                         });
                         L.marker([b.map_lat, b.map_lng], { icon: customIcon })
-                            .bindPopup(`<strong>${b.equipo_nombre}</strong><br>Grid: ${b.grid_coord || '--'}<br>Actualizado: hace ${b.segundos_transcurridos || 0}s`)
+                            .bindPopup(`<strong>${escapeHtml(b.equipo_nombre)}</strong><br>Grid: ${b.grid_coord || '--'}<br>Actualizado: hace ${b.segundos_transcurridos || 0}s`)
                             .addTo(beaconLayer);
                     }
                 });
             } catch(e) {}
         }
 
-        // Fetch Markers
+        // Fetch POIs (Friendly Bases, PCs, and assigned OPs)
+        async function updatePOIs() {
+            try {
+                const res = await fetch('/api/pois');
+                if (!res.ok) return;
+                const pois = await res.json();
+                poiLayer.clearLayers();
+
+                pois.forEach(poi => {
+                    if (poi.tipo === 'OP' && poi.faccion_id !== FACCION_ID) return;
+
+                    let color = '#777';
+                    if (poi.faccion_id === 1) color = '#DAA520';
+                    else if (poi.faccion_id === 2) color = '#1E90FF';
+                    else if (poi.faccion_id === 3) color = '#2E7D32';
+
+                    let iconHtml = '';
+                    if (poi.tipo === 'RESPAWN') {
+                        iconHtml = `<div style="background-color: ${color}; width: 30px; height: 30px; border-radius: 5px; border: 2px solid white; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px ${color};"><span class="material-symbols-outlined" style="color:white; font-size: 19px;">home</span></div>`;
+                    } else if (poi.tipo === 'PC') {
+                        iconHtml = `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 50%; border: 2px solid white; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px ${color};"><span class="material-symbols-outlined" style="color:white; font-size: 16px;">tour</span></div>`;
+                    } else if (poi.tipo === 'MISION') {
+                        iconHtml = `<div style="background-color: #ff9800; width: 28px; height: 28px; transform: rotate(45deg); border: 2px solid white; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px #ff9800;"><span class="material-symbols-outlined" style="color:white; font-size: 16px; transform: rotate(-45deg);">star</span></div>`;
+                    } else if (poi.tipo === 'OP') {
+                        iconHtml = `<div style="background-color: ${color}; width: 28px; height: 28px; border-radius: 5px; border: 2px solid white; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 10px ${color};"><span class="material-symbols-outlined" style="color:white; font-size: 18px;">visibility</span></div>`;
+                    }
+
+                    const mapPx = mapProjector.gpsToMap(poi.lat, poi.lng);
+                    const m = L.marker([mapPx.lat, mapPx.lng], {
+                        icon: L.divIcon({
+                            className: 'poi-marker',
+                            html: iconHtml,
+                            iconSize: [30, 30],
+                            iconAnchor: [15, 15]
+                        })
+                    }).addTo(poiLayer);
+                    m.bindTooltip(`<b>[${poi.tipo}]</b> ${escapeHtml(poi.nombre)}`, { direction: 'top', offset: [0, -15] });
+                });
+            } catch(e) {}
+        }
+
+        // Fetch ATAK Tactical Markers
         async function updateMarkers() {
             try {
                 const res = await fetch(`/api/mapa/marcadores?faccion_id=${FACCION_ID}`);
@@ -349,25 +638,103 @@
                 markerLayer.clearLayers();
 
                 markers.forEach(m => {
-                    const circle = L.circleMarker([m.lat, m.lng], {
-                        radius: 8,
-                        color: THEME_COLOR,
-                        fillColor: '#fff',
-                        fillOpacity: 0.8,
-                        weight: 2
+                    const isTL = m.tipo === 'tl_pos';
+                    const tipo = m.tipo || 'intel';
+
+                    let tipoIcon = 'radar';
+                    let tipoColor = '#ff3344';
+                    let tipoLabel = 'Reporte Intel';
+                    let htmlIcon = '';
+
+                    if (tipo === 'tl_pos') {
+                        tipoIcon = 'my_location';
+                        tipoColor = THEME_COLOR;
+                        tipoLabel = 'Posición Aliada (TL)';
+                        htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 28px; height: 28px; border-radius: 50%; background-color: ${tipoColor}; border: 2px solid white; box-shadow: 0 0 8px black; color: white; margin: auto;"><span class="material-symbols-outlined" style="font-size: 18px;">my_location</span></div>`;
+                    } else if (tipo === 'observacion') {
+                        tipoIcon = 'visibility';
+                        tipoColor = '#eab308';
+                        tipoLabel = 'Observación';
+                        htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(234, 179, 8, 0.95); border: 2px solid white; box-shadow: 0 0 6px black; color: black; border-radius: 5px;"><span class="material-symbols-outlined" style="font-size: 17px; font-weight: bold;">visibility</span></div>`;
+                    } else if (tipo === 'objetivo') {
+                        tipoIcon = 'adjust';
+                        tipoColor = '#06b6d4';
+                        tipoLabel = 'Objetivo Táctico';
+                        htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(6, 182, 212, 0.95); border: 2px solid white; box-shadow: 0 0 6px black; color: white; border-radius: 50%;"><span class="material-symbols-outlined" style="font-size: 18px;">adjust</span></div>`;
+                    } else if (tipo === 'aviso') {
+                        tipoIcon = 'campaign';
+                        tipoColor = '#a855f7';
+                        tipoLabel = 'Aviso / Peligro';
+                        htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(168, 85, 247, 0.95); border: 2px solid white; box-shadow: 0 0 6px black; color: white; border-radius: 4px;"><span class="material-symbols-outlined" style="font-size: 17px;">campaign</span></div>`;
+                    } else if (tipo === 'reunion' || tipo === 'punto_reunion') {
+                        tipoIcon = 'flag';
+                        tipoColor = '#22c55e';
+                        tipoLabel = 'Punto de Reunión';
+                        htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(34, 197, 94, 0.95); border: 2px solid white; box-shadow: 0 0 6px black; color: white; border-radius: 4px;"><span class="material-symbols-outlined" style="font-size: 17px;">flag</span></div>`;
+                    } else if (tipo === 'amenaza') {
+                        tipoIcon = 'warning';
+                        tipoColor = '#ef4444';
+                        tipoLabel = 'Amenaza Enemiga';
+                        htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(220, 38, 38, 0.95); border: 2px solid white; box-shadow: 0 0 6px black; color: white; border-radius: 4px; transform: rotate(45deg);"><span class="material-symbols-outlined" style="transform: rotate(-45deg); font-size: 17px;">warning</span></div>`;
+                    } else {
+                        tipoIcon = 'radar';
+                        tipoColor = '#ff3344';
+                        tipoLabel = 'Reporte Intel';
+                        htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(255, 51, 68, 0.95); border: 2px solid white; box-shadow: 0 0 8px rgba(255,51,68,0.8); color: white; border-radius: 4px; transform: rotate(45deg);"><span class="material-symbols-outlined" style="transform: rotate(-45deg); font-size: 17px;">radar</span></div>`;
+                    }
+
+                    const gridStr = getGridCoordinate(m.lat, m.lng);
+                    const elapsedStr = formatElapsed(m.segundos_transcurridos);
+                    const remainingStr = m.caduca_en ? formatRemaining(m.segundos_restantes) : "Permanente";
+
+                    const marker = L.marker([m.lat, m.lng], {
+                        icon: L.divIcon({
+                            className: isTL ? 'tl-marker' : 'intel-marker',
+                            html: htmlIcon,
+                            iconSize: [26, 26],
+                            iconAnchor: [13, 13]
+                        })
+                    }).addTo(markerLayer);
+
+                    marker.bindTooltip(`<b>[${gridStr}]</b> ${escapeHtml(m.descripcion || tipoLabel)}`, {
+                        direction: 'top',
+                        offset: [0, -15]
                     });
-                    circle.bindPopup(`<strong>${m.tipo || 'MARCA'}</strong><br>${m.descripcion || ''}<br><small>Por: ${m.autor_nombre || 'Mando'}</small>`);
-                    circle.addTo(markerLayer);
+
+                    const popupHtml = `
+                        <div class="tactical-card-header">
+                            <span class="tactical-card-title" style="color: ${tipoColor};">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">${tipoIcon}</span>
+                                ${tipoLabel}
+                            </span>
+                            <span class="tactical-badge" style="background: rgba(255,255,255,0.08); color: var(--theme-color); border: 1px solid var(--theme-color);">${gridStr}</span>
+                        </div>
+                        <div class="tactical-card-body">
+                            <div class="tactical-desc">${escapeHtml(m.descripcion || 'Sin mensaje adicional')}</div>
+                            <div class="tactical-meta-row">
+                                <span>👤 <strong>${escapeHtml(m.autor_nombre || 'Mando')}</strong></span>
+                                <span>⏱️ Hace ${elapsedStr}</span>
+                            </div>
+                            <div class="tactical-timer-box">
+                                <span style="display:flex; align-items:center; gap:4px;">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">hourglass_top</span>
+                                    ${m.caduca_en ? 'Caducidad:' : 'Vigencia:'}
+                                </span>
+                                <strong>${remainingStr}</strong>
+                            </div>
+                        </div>
+                    `;
+                    marker.bindPopup(popupHtml, { className: 'tactical-popup', maxWidth: 280 });
                 });
             } catch(e) {}
         }
 
-        // Fetch Routes & Zones
+        // Fetch Routes & Zones (Filtered strictly by faction)
         async function updateRoutesAndZones() {
             try {
                 const [resR, resZ] = await Promise.all([
-                    fetch('/api/mapa/rutas'),
-                    fetch('/api/mapa/zonas')
+                    fetch(`/api/mapa/rutas?faccion_id=${FACCION_ID}`),
+                    fetch(`/api/mapa/zonas?faccion_id=${FACCION_ID}`)
                 ]);
                 if (resR.ok) {
                     const rutas = await resR.json();
@@ -376,8 +743,8 @@
                         try {
                             const pts = JSON.parse(r.puntos_json);
                             if (Array.isArray(pts) && pts.length > 1) {
-                                L.polyline(pts, { color: r.color || THEME_COLOR, weight: 3, dashArray: '6, 6' })
-                                    .bindPopup(`Ruta: ${r.nombre || 'Táctica'}`)
+                                L.polyline(pts, { color: r.color || THEME_COLOR, weight: 4, opacity: 0.75 })
+                                    .bindPopup(`<strong>Ruta Táctica:</strong> ${escapeHtml(r.nombre || 'Sin nombre')}`)
                                     .addTo(routesLayer);
                             }
                         } catch(e) {}
@@ -390,8 +757,8 @@
                         try {
                             const pts = JSON.parse(z.puntos_json);
                             if (Array.isArray(pts) && pts.length > 2) {
-                                L.polygon(pts, { color: z.color || THEME_COLOR, fillOpacity: 0.2, weight: 2 })
-                                    .bindPopup(`Zona: ${z.nombre || 'Área'}`)
+                                L.polygon(pts, { color: z.color || THEME_COLOR, fillOpacity: 0.25, weight: 2 })
+                                    .bindPopup(`<strong>Zona Táctica:</strong> ${escapeHtml(z.nombre || 'Área Operativa')}`)
                                     .addTo(zonesLayer);
                             }
                         } catch(e) {}
@@ -408,49 +775,89 @@
             }
         }
 
-        // Measuring tool
+        // Measuring tool with dismissible button and click-to-clear
         let isMeasuring = false;
         let measureLine = null;
         let measurePoints = [];
         let measurePopup = null;
+
+        function clearMeasure() {
+            if (measureLine) {
+                try { map.removeLayer(measureLine); } catch(e) {}
+                measureLine = null;
+            }
+            if (measurePopup) {
+                try { map.removeLayer(measurePopup); } catch(e) {}
+                measurePopup = null;
+            }
+            measurePoints = [];
+        }
 
         function toggleMeasure() {
             isMeasuring = !isMeasuring;
             const btn = document.getElementById('btn-measure');
             if (btn) btn.classList.toggle('active', isMeasuring);
             if (!isMeasuring) {
-                if (measureLine) { map.removeLayer(measureLine); measureLine = null; }
-                if (measurePopup) { map.removeLayer(measurePopup); measurePopup = null; }
-                measurePoints = [];
+                clearMeasure();
             }
         }
 
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                clearMeasure();
+                if (isMeasuring) toggleMeasure();
+            }
+        });
+
+        map.on('contextmenu', (e) => {
+            e.originalEvent.preventDefault();
+            clearMeasure();
+        });
+
         map.on('click', function(e) {
-            if (!isMeasuring) return;
-            measurePoints.push(e.latlng);
-            if (measurePoints.length === 1) {
-                measureLine = L.polyline(measurePoints, { color: '#ff3344', weight: 3, dashArray: '4, 4' }).addTo(map);
-            } else if (measurePoints.length === 2) {
-                measureLine.setLatLngs(measurePoints);
-                const dLat = measurePoints[1].lat - measurePoints[0].lat;
-                const dLng = measurePoints[1].lng - measurePoints[0].lng;
-                const distPx = Math.sqrt(dLat*dLat + dLng*dLng);
-                // Escala de campo ~1 metro por pixel
-                const distMetros = Math.round(distPx);
-                measurePopup = L.popup()
-                    .setLatLng(measurePoints[1])
-                    .setContent(`Distancia: <strong>${distMetros} m</strong>`)
-                    .openOn(map);
-                measurePoints = [];
+            const gridCoord = getGridCoordinate(e.latlng.lat, e.latlng.lng);
+
+            if (!isMeasuring) {
+                showClickPing(map, e.latlng, gridCoord);
+                return;
+            }
+
+            if (measurePoints.length === 0 || measurePoints.length === 2) {
+                clearMeasure();
+                measurePoints = [e.latlng];
+                showClickPing(map, e.latlng, gridCoord);
+            } else if (measurePoints.length === 1) {
+                measurePoints.push(e.latlng);
+                const p1 = measurePoints[0];
+                const p2 = measurePoints[1];
+
+                measureLine = L.polyline([p1, p2], { color: '#ffff00', weight: 4, dashArray: '5, 5' }).addTo(map);
+
+                const pxDist = Math.sqrt(Math.pow(p2.lat - p1.lat, 2) + Math.pow(p2.lng - p1.lng, 2));
+                const meters = (pxDist / 32) * 50;
+
+                const flagHtml = `
+                    <div class="measure-flag-container" style="display:inline-flex; align-items:center; gap:6px; background:rgba(6,9,14,0.95); color:#ffff00; border:1px solid #ffff00; padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem; font-weight:bold; box-shadow:0 2px 8px rgba(0,0,0,0.8); cursor:pointer;">
+                        <span>📏 ${meters.toFixed(0)}m</span>
+                        <span style="color:#ff4444; font-size:0.95rem; font-weight:bold; margin-left:3px; padding:0 2px;" title="Borrar medición">✕</span>
+                    </div>
+                `;
+                const flagIcon = L.divIcon({ className: 'measure-flag', html: flagHtml, iconSize: null, iconAnchor: [-10, 15] });
+                measurePopup = L.marker(p2, { icon: flagIcon, interactive: true }).addTo(map);
+                measurePopup.on('click', clearMeasure);
+                measureLine.on('click', clearMeasure);
             }
         });
 
         // Initial loads & intervals
         updateBeacons();
+        updatePOIs();
         updateMarkers();
         updateRoutesAndZones();
         setInterval(updateBeacons, 4000);
         setInterval(updateMarkers, 8000);
+        setInterval(updatePOIs, 15000);
+        setInterval(updateRoutesAndZones, 15000);
     </script>
 </body>
 </html>

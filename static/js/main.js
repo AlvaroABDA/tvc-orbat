@@ -2644,6 +2644,10 @@ function initMorteroLeaflet() {
 
     // Click to place battery
     morteroMap.on('click', (e) => {
+        if (typeof showClickPing === 'function') {
+            const gridCoord = typeof getGridCoordinate === 'function' ? getGridCoordinate(e.latlng.lat, e.latlng.lng) : '--';
+            showClickPing(morteroMap, e.latlng, gridCoord);
+        }
         if (typeof currentMode !== 'undefined' && currentMode === 'measure') {
             if (typeof handleMapClick === 'function') {
                 handleMapClick(e);
@@ -3085,9 +3089,16 @@ function verEsquema(esquemaJsonStr) {
             zoomControl: true,
             attributionControl: false
         });
-        const bounds = [[0, 0], [2081, 3000]];
-        const imageOverlay = L.imageOverlay('/static/map/Full_Mapa%20Oct24.png', bounds).addTo(visorMap);
+        const bounds = [[0, 0], [2000, 3000]];
+        const imageOverlay = L.imageOverlay('/static/map/Full_Mapa%20Oct24.png?v=4', bounds).addTo(visorMap);
         visorMap.fitBounds(bounds);
+
+        visorMap.on('click', (e) => {
+            if (typeof showClickPing === 'function') {
+                const gridCoord = typeof getGridCoordinate === 'function' ? getGridCoordinate(e.latlng.lat, e.latlng.lng) : '--';
+                showClickPing(visorMap, e.latlng, gridCoord);
+            }
+        });
     }
     
     // Limpiar capas previas

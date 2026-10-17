@@ -54,6 +54,7 @@ def init_db():
             uid TEXT,
             nombre_apellidos TEXT,
             dni TEXT,
+            pin TEXT,
             telefono TEXT,
             email TEXT,
             bando_original TEXT,

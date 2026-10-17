@@ -2241,4 +2241,90 @@ select option { color: #000; background: #fff; }
 }
 .bft-quick-btn:active {
     transform: scale(0.95);
+}
+
+/* ==========================================================================
+   TACTICAL CLICK PING & MEASUREMENT HUD STYLES
+   ========================================================================== */
+.custom-click-ping-icon {
+    background: transparent !important;
+    border: none !important;
+}
+
+.tactical-click-ping {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.tactical-click-ping .ping-dot {
+    width: 8px;
+    height: 8px;
+    background: #00f0ff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff;
+    z-index: 2;
+}
+
+.tactical-click-ping .ping-crosshair-h {
+    position: absolute;
+    width: 24px;
+    height: 1.5px;
+    background: rgba(0, 240, 255, 0.7);
+    pointer-events: none;
+}
+
+.tactical-click-ping .ping-crosshair-v {
+    position: absolute;
+    width: 1.5px;
+    height: 24px;
+    background: rgba(0, 240, 255, 0.7);
+    pointer-events: none;
+}
+
+.tactical-click-ping .ping-ring {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border: 1.5px solid #00f0ff;
+    border-radius: 50%;
+    animation: tacticalPingPulse 1.8s ease-out infinite;
+    pointer-events: none;
+}
+
+.tactical-click-ping .ping-badge {
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(6, 9, 14, 0.92);
+    color: #00f0ff;
+    border: 1px solid #00f0ff;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: var(--font-mono, monospace);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
+    pointer-events: none;
+}
+
+@keyframes tacticalPingPulse {
+    0% { transform: scale(0.5); opacity: 1; }
+    100% { transform: scale(2.4); opacity: 0; }
+}
+
+.measure-flag-container {
+    user-select: none;
+    cursor: default;
+}
+.measure-flag-container button:hover {
+    color: #ff1122 !important;
+    transform: scale(1.2);
 }

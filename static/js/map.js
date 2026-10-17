@@ -150,9 +150,77 @@ function toggleMapMobilePanel() {
 }
 window.toggleMapMobilePanel = toggleMapMobilePanel;
 
+let currentClickPing = null;
+let clickPingTimeout = null;
+
+function showClickPing(targetMap, latlng, gridStr) {
+    if (!targetMap || !latlng) return;
+    if (!gridStr) {
+        gridStr = typeof getGridCoordinate === 'function' ? getGridCoordinate(latlng.lat, latlng.lng) : '--';
+    }
+    if (currentClickPing) {
+        try { targetMap.removeLayer(currentClickPing); } catch(e) {}
+        currentClickPing = null;
+    }
+    if (clickPingTimeout) {
+        clearTimeout(clickPingTimeout);
+        clickPingTimeout = null;
+    }
+    const pingHtml = `
+        <div class="tactical-click-ping">
+            <div class="ping-ring"></div>
+            <div class="ping-crosshair-h"></div>
+            <div class="ping-crosshair-v"></div>
+            <div class="ping-dot"></div>
+            <div class="ping-badge">[${escapeHtml(gridStr)}]</div>
+        </div>
+    `;
+    const pingIcon = L.divIcon({
+        className: 'click-ping-div-icon',
+        html: pingHtml,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+    });
+    currentClickPing = L.marker(latlng, { icon: pingIcon, interactive: true }).addTo(targetMap);
+    currentClickPing.on('click', () => {
+        if (currentClickPing) {
+            try { targetMap.removeLayer(currentClickPing); } catch(e) {}
+            currentClickPing = null;
+        }
+    });
+    clickPingTimeout = setTimeout(() => {
+        if (currentClickPing) {
+            try { targetMap.removeLayer(currentClickPing); } catch(e) {}
+            currentClickPing = null;
+        }
+    }, 15000);
+}
+window.showClickPing = showClickPing;
+
+function clearMeasurement() {
+    let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
+    if (measureLine && targetMap) {
+        try { targetMap.removeLayer(measureLine); } catch(e) {}
+        measureLine = null;
+    }
+    if (measurePopup && targetMap) {
+        try { targetMap.removeLayer(measurePopup); } catch(e) {}
+        measurePopup = null;
+    }
+    currentRoutePoints = [];
+}
+window.clearMeasurement = clearMeasurement;
+
 // Initialize map only when the tab is shown to prevent rendering issues
 function initMap() {
     if (map) return; // Already initialized
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            clearMeasurement();
+            if (currentMode !== 'pan') setMode('pan');
+        }
+    });
 
     const bounds = [[0, 0], [2000, 3000]]; 
     
@@ -398,11 +466,21 @@ async function loadMapData() {
             tipoColor = '#a855f7';
             tipoLabel = 'Aviso / Peligro';
             htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(168, 85, 247, 0.95); border: 2px solid white; box-shadow: 0 0 6px black; color: white; border-radius: 4px;"><span class="material-symbols-outlined" style="font-size: 17px;">campaign</span></div>`;
-        } else {
+        } else if (tipo === 'reunion' || tipo === 'punto_reunion') {
+            tipoIcon = 'flag';
+            tipoColor = '#22c55e';
+            tipoLabel = 'Punto de Reunión';
+            htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(34, 197, 94, 0.95); border: 2px solid white; box-shadow: 0 0 6px black; color: white; border-radius: 4px;"><span class="material-symbols-outlined" style="font-size: 17px;">flag</span></div>`;
+        } else if (tipo === 'amenaza') {
             tipoIcon = 'warning';
             tipoColor = '#ef4444';
             tipoLabel = 'Amenaza Enemiga';
             htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(220, 38, 38, 0.95); border: 2px solid white; box-shadow: 0 0 6px black; color: white; border-radius: 4px; transform: rotate(45deg);"><span class="material-symbols-outlined" style="transform: rotate(-45deg); font-size: 17px;">warning</span></div>`;
+        } else {
+            tipoIcon = 'radar';
+            tipoColor = '#ff3344';
+            tipoLabel = 'Reporte Intel';
+            htmlIcon = `<div style="display:flex; justify-content:center; align-items:center; width: 26px; height: 26px; background: rgba(255, 51, 68, 0.95); border: 2px solid white; box-shadow: 0 0 8px rgba(255,51,68,0.8); color: white; border-radius: 4px; transform: rotate(45deg);"><span class="material-symbols-outlined" style="transform: rotate(-45deg); font-size: 17px;">radar</span></div>`;
         }
 
         const isExpiringSoon = m.caduca_en && m.segundos_restantes !== null && m.segundos_restantes <= 120;
@@ -711,6 +789,14 @@ function renderRouteOnMap(pts, color, id, name) {
 }
 
 function handleMapClick(e) {
+    let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
+    const gridCoord = getGridCoordinate(e.latlng.lat, e.latlng.lng);
+
+    // Show visual reticle ping on map clicks (always show unless actively placing 1st point of measurement)
+    if (currentMode !== 'measure') {
+        showClickPing(targetMap, e.latlng, gridCoord);
+    }
+
     if (currentMode === 'pan') {
         return;
     }
@@ -783,18 +869,16 @@ function handleMapClick(e) {
     else if (currentMode === 'measure') {
         if (currentRoutePoints.length === 0 || currentRoutePoints.length === 2) {
             // Start new measurement
+            clearMeasurement();
             currentRoutePoints = [e.latlng];
-            let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
-            if (measureLine) targetMap.removeLayer(measureLine);
-            if (measurePopup) targetMap.removeLayer(measurePopup);
-            if (window.measureTimeout) clearTimeout(window.measureTimeout);
+            showClickPing(targetMap, e.latlng, gridCoord);
         } else if (currentRoutePoints.length === 1) {
             // Second point, finish measurement
             currentRoutePoints.push(e.latlng);
             let targetMap = (typeof morteroMap !== 'undefined' && morteroMap && window.location.pathname === '/mortero_app') ? morteroMap : map;
             
-            if (measureLine) targetMap.removeLayer(measureLine);
-            if (measurePopup) targetMap.removeLayer(measurePopup);
+            if (measureLine && targetMap) targetMap.removeLayer(measureLine);
+            if (measurePopup && targetMap) targetMap.removeLayer(measurePopup);
 
             const p1 = currentRoutePoints[0];
             const p2 = currentRoutePoints[1];
@@ -804,11 +888,16 @@ function handleMapClick(e) {
             const pixelsPerGrid = 32; 
             const meters = (pxDist / pixelsPerGrid) * 50;
             
-            const flagHtml = `<div style="color: #000; font-family: var(--font-mono); font-weight: bold; font-size: 0.8rem; white-space: nowrap; text-shadow: 1px 1px 0px #fff, -1px -1px 0px #fff, 1px -1px 0px #fff, -1px 1px 0px #fff;">${meters.toFixed(0)}m</div>`;
+            const flagHtml = `
+                <div class="measure-flag-container" style="display:inline-flex; align-items:center; gap:6px; background:rgba(6,9,14,0.95); color:#ffff00; border:1px solid #ffff00; padding:2px 8px; border-radius:4px; font-family:var(--font-mono); font-size:0.8rem; font-weight:bold; box-shadow:0 2px 8px rgba(0,0,0,0.8); cursor:pointer;">
+                    <span>📏 ${meters.toFixed(0)}m</span>
+                    <span style="color:#ff4444; font-size:0.95rem; font-weight:bold; margin-left:3px; padding:0 2px;" title="Borrar medición">✕</span>
+                </div>
+            `;
             const flagIcon = L.divIcon({ className: 'measure-flag', html: flagHtml, iconSize: null, iconAnchor: [-10, 15] });
-            measurePopup = L.marker(p2, { icon: flagIcon, interactive: false }).addTo(targetMap);
-                
-            
+            measurePopup = L.marker(p2, { icon: flagIcon, interactive: true }).addTo(targetMap);
+            measurePopup.on('click', clearMeasurement);
+            measureLine.on('click', clearMeasurement);
         }
     }
     else if (currentMode === 'draw_zone') {
@@ -845,10 +934,6 @@ function handleMapMouseMove(e) {
         const p2 = e.latlng;
         measureLine = L.polyline([p1, p2], {color: '#ffff00', weight: 4, dashArray: '5, 5'}).addTo(targetMap);
         
-        // Calibration: User noted 16m was actually 50m. 
-        // Previously: pxDist = 32 pixels => 16m formula => pxDist/100 * 50 = 16 => pxDist = 32.
-        // New correct formula: 1 grid (which is 32 px) = 50m.
-        // So: meters = (pxDist / 32) * 50
         const pxDist = Math.sqrt(Math.pow(p2.lat - p1.lat, 2) + Math.pow(p2.lng - p1.lng, 2));
         const pixelsPerGrid = 32; 
         const meters = (pxDist / pixelsPerGrid) * 50;
@@ -875,6 +960,9 @@ function handleMapDoubleClick(e) {
 
 function handleMapRightClick(e) {
     e.originalEvent.preventDefault();
+    if (measureLine || measurePopup) {
+        clearMeasurement();
+    }
     if (currentMode === 'draw_route' && currentRoutePoints.length > 0) {
         saveRoute(currentRoutePoints);
     } else if (currentMode === 'draw_zone' && currentZonePoints.length > 0) {

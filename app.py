@@ -229,14 +229,15 @@ def login():
                         
                     session.permanent = (request.form.get('remember_me') == 'yes')
                     session['faction'] = eq['faccion_nombre']
+                    session['faccion_id'] = eq['faccion_id']
                     session['role'] = 'equipo'
                     session['equipo_id'] = eq['id']
                     session['equipo_nombre'] = eq['nombre']
                     conn.close()
                     return redirect(url_for('index'))
 
-            # 3. Check Operador Individual (Nick + PIN = 4 primeros dígitos de su DNI)
-            if len(password) == 4 and password.isdigit():
+            # 3. Check Operador Individual (Nick + PIN = PIN personalizado o 4 primeros dígitos de su DNI)
+            if len(password) >= 4:
                 candidatos = conn.execute('''
                     SELECT m.*, e.nombre as equipo_nombre, e.estado_sancion, e.faccion_id,
                            f.nombre as faccion_nombre, f.color as faccion_color
@@ -248,8 +249,13 @@ def login():
                 
                 operador_valido = None
                 for cand in candidatos:
+                    custom_pin = str(cand['pin'] or '').strip()
                     dni_clean = ''.join(c for c in (cand['dni'] or '') if c.isdigit())
-                    if len(dni_clean) >= 4 and dni_clean[:4] == password:
+                    if custom_pin:
+                        if custom_pin == password:
+                            operador_valido = cand
+                            break
+                    elif len(dni_clean) >= 4 and dni_clean[:4] == password:
                         operador_valido = cand
                         break
                         
@@ -260,6 +266,7 @@ def login():
                         
                     session.permanent = (request.form.get('remember_me') == 'yes')
                     session['faction'] = operador_valido['faccion_nombre']
+                    session['faccion_id'] = operador_valido['faccion_id']
                     session['faccion_color'] = operador_valido['faccion_color']
                     session['role'] = 'operador'
                     session['miembro_id'] = operador_valido['id']
@@ -1095,6 +1102,19 @@ def manage_marcadores():
             pass
 
         faccion_id = request.args.get('faccion_id')
+        user_role = session.get('role')
+        if user_role != 'admin':
+            f_id = session.get('faccion_id')
+            if not f_id and session.get('equipo_id'):
+                eq_row = conn.execute('SELECT faccion_id FROM Equipo WHERE id = ?', (session.get('equipo_id'),)).fetchone()
+                if eq_row: f_id = eq_row['faccion_id']
+            if not f_id and session.get('faction'):
+                fac_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (session.get('faction'),)).fetchone()
+                if fac_row: f_id = fac_row['id']
+            faccion_id = f_id
+            if not faccion_id:
+                conn.close()
+                return jsonify([])
         query = '''
             SELECT id, faccion_id, tipo, lat, lng, descripcion, autor_nombre, creado_en, caduca_en,
                    CAST((strftime('%s', 'now') - strftime('%s', COALESCE(creado_en, datetime('now')))) AS INTEGER) as segundos_transcurridos,
@@ -1327,6 +1347,20 @@ def manage_rutas():
     conn = get_db_connection()
     if request.method == 'GET':
         faccion_id = request.args.get('faccion_id')
+        user_role = session.get('role')
+        if user_role != 'admin':
+            f_id = session.get('faccion_id')
+            if not f_id and session.get('equipo_id'):
+                eq_row = conn.execute('SELECT faccion_id FROM Equipo WHERE id = ?', (session.get('equipo_id'),)).fetchone()
+                if eq_row: f_id = eq_row['faccion_id']
+            if not f_id and session.get('faction'):
+                fac_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (session.get('faction'),)).fetchone()
+                if fac_row: f_id = fac_row['id']
+            faccion_id = f_id
+            if not faccion_id:
+                conn.close()
+                return jsonify([])
+            
         query = 'SELECT * FROM RutaMapa'
         params = ()
         if faccion_id:
@@ -1337,6 +1371,9 @@ def manage_rutas():
         return jsonify([dict(row) for row in rutas])
     
     elif request.method == 'POST':
+        if session.get('role') == 'operador':
+            conn.close()
+            return jsonify({'error': 'No autorizado para trazar rutas'}), 403
         data = request.json
         cursor = conn.cursor()
         cursor.execute(
@@ -1349,6 +1386,9 @@ def manage_rutas():
         return jsonify({'id': new_id, 'status': 'success'}), 201
     
     elif request.method == 'DELETE':
+        if session.get('role') == 'operador':
+            conn.close()
+            return jsonify({'error': 'No autorizado'}), 403
         faccion_id = request.args.get('faccion_id')
         if faccion_id:
             conn.execute('DELETE FROM RutaMapa WHERE faccion_id = ?', (faccion_id,))
@@ -1358,6 +1398,8 @@ def manage_rutas():
 
 @app.route('/api/mapa/rutas/<int:id>', methods=['DELETE'])
 def delete_ruta(id):
+    if session.get('role') == 'operador':
+        return jsonify({'error': 'No autorizado'}), 403
     conn = get_db_connection()
     conn.execute('DELETE FROM RutaMapa WHERE id = ?', (id,))
     conn.commit()
@@ -1369,6 +1411,20 @@ def manage_zonas():
     conn = get_db_connection()
     if request.method == 'GET':
         faccion_id = request.args.get('faccion_id')
+        user_role = session.get('role')
+        if user_role != 'admin':
+            f_id = session.get('faccion_id')
+            if not f_id and session.get('equipo_id'):
+                eq_row = conn.execute('SELECT faccion_id FROM Equipo WHERE id = ?', (session.get('equipo_id'),)).fetchone()
+                if eq_row: f_id = eq_row['faccion_id']
+            if not f_id and session.get('faction'):
+                fac_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (session.get('faction'),)).fetchone()
+                if fac_row: f_id = fac_row['id']
+            faccion_id = f_id
+            if not faccion_id:
+                conn.close()
+                return jsonify([])
+            
         query = 'SELECT * FROM ZonaMapa'
         params = ()
         if faccion_id:
@@ -1379,6 +1435,9 @@ def manage_zonas():
         return jsonify([dict(row) for row in zonas])
     
     elif request.method == 'POST':
+        if session.get('role') == 'operador':
+            conn.close()
+            return jsonify({'error': 'No autorizado para trazar zonas'}), 403
         data = request.json
         cursor = conn.cursor()
         cursor.execute(
@@ -1391,6 +1450,9 @@ def manage_zonas():
         return jsonify({'id': new_id, 'status': 'success'}), 201
     
     elif request.method == 'DELETE':
+        if session.get('role') == 'operador':
+            conn.close()
+            return jsonify({'error': 'No autorizado'}), 403
         faccion_id = request.args.get('faccion_id')
         if faccion_id:
             conn.execute('DELETE FROM ZonaMapa WHERE faccion_id = ?', (faccion_id,))
@@ -1400,6 +1462,8 @@ def manage_zonas():
 
 @app.route('/api/mapa/zonas/<int:id>', methods=['DELETE'])
 def delete_zona(id):
+    if session.get('role') == 'operador':
+        return jsonify({'error': 'No autorizado'}), 403
     conn = get_db_connection()
     conn.execute('DELETE FROM ZonaMapa WHERE id = ?', (id,))
     conn.commit()
@@ -2201,6 +2265,10 @@ def ensure_operator_and_ice_tables(conn):
                 FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
             )
         ''')
+        try:
+            conn.execute('ALTER TABLE Miembro ADD COLUMN pin TEXT;')
+        except Exception:
+            pass
         conn.commit()
     except Exception as e:
         print("Error en ensure_operator_and_ice_tables:", e)
@@ -2863,7 +2931,7 @@ def api_operador_perfil():
     if request.method == 'GET':
         m = conn.execute('''
             SELECT m.id, m.nombre_jugador, m.rol, m.armamento, m.uid, m.nombre_apellidos,
-                   m.dni, m.telefono, m.email, m.foto_url, e.nombre as equipo_nombre, f.nombre as faccion_nombre
+                   m.dni, m.pin, m.telefono, m.email, m.foto_url, e.nombre as equipo_nombre, f.nombre as faccion_nombre
             FROM Miembro m
             JOIN Equipo e ON m.equipo_id = e.id
             JOIN Faccion f ON e.faccion_id = f.id
@@ -2882,14 +2950,29 @@ def api_operador_perfil():
         email = data.get('email', '').strip()
         armamento = data.get('armamento', '').strip()
         
-        conn.execute('''
+        pin = data.get('pin')
+        pin_update_sql = ""
+        params = [nombre_apellidos, dni, telefono, email, armamento]
+        if pin is not None:
+            pin_str = str(pin).strip()
+            if pin_str:
+                if len(pin_str) != 4 or not pin_str.isdigit():
+                    conn.close()
+                    return jsonify({'error': 'El PIN debe contener exactamente 4 dígitos numéricos'}), 400
+                pin_update_sql = ", pin = ?"
+                params.append(pin_str)
+            else:
+                pin_update_sql = ", pin = NULL"
+        params.append(miembro_id)
+        
+        conn.execute(f'''
             UPDATE Miembro 
-            SET nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, armamento = ?
+            SET nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, armamento = ? {pin_update_sql}
             WHERE id = ?
-        ''', (nombre_apellidos, dni, telefono, email, armamento, miembro_id))
+        ''', params)
         conn.commit()
         conn.close()
-        return jsonify({'status': 'success', 'message': 'Expediente actualizado correctamente'})
+        return jsonify({'status': 'success', 'message': 'Expediente y PIN actualizados correctamente'})
 
 @app.route('/api/operador/ice', methods=['GET', 'POST'])
 def api_operador_ice():
