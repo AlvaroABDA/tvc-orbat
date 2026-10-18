@@ -615,10 +615,10 @@ body[data-theme="Khemed"] {
     border-spacing: 0 0.5rem; 
 }
 .data-table th { 
-    padding: 0.5rem 1rem; 
+    padding: 0.5rem 0.8rem; 
     text-align: left; 
     font-family: var(--font-mono); 
-    font-size: 1.2rem; 
+    font-size: 0.95rem; 
     color: var(--theme-color); 
     text-transform: uppercase; 
     letter-spacing: 1px; 
@@ -631,9 +631,11 @@ body[data-theme="Khemed"] {
     background: rgba(255,255,255,0.06);
 }
 .data-table td { 
-    padding: 1rem; 
+    padding: 0.6rem 0.8rem; 
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    vertical-align: middle;
 }
 .data-table td:first-child {
     border-left: 3px solid var(--theme-color);
@@ -643,46 +645,91 @@ body[data-theme="Khemed"] {
 }
 
 .btn {
-    padding: 0.5rem 1.5rem;
+    padding: 5px 12px;
     background: rgba(0, 20, 10, 0.6);
     border: 1px solid var(--theme-color);
-    border-radius: 2px;
+    border-radius: 3px;
     font-family: var(--font-mono);
-    font-size: 1.1rem;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
     color: var(--theme-color);
     cursor: pointer;
     transition: all 0.2s;
     text-transform: uppercase;
     box-shadow: 0 0 5px rgba(0,0,0,0.5);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    vertical-align: middle;
 }
 .btn:hover { 
     background: var(--theme-color);
     color: #050505;
-    box-shadow: 0 0 10px var(--theme-color);
+    box-shadow: 0 0 8px var(--theme-color);
 }
 .btn.primary { 
-    border-width: 2px;
+    border-width: 1px;
     font-weight: 700; 
+    background: rgba(0, 240, 255, 0.15);
+    border-color: var(--theme-color);
+    color: var(--theme-color);
 }
 .btn.secondary { 
-    background: transparent; 
-    border: 1px solid var(--text-muted);
-    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.04); 
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #cbd5e1;
 }
 .btn.secondary:hover {
-    background: var(--text-muted);
-    color: #050505;
-    box-shadow: 0 0 10px var(--text-muted);
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 8px rgba(255,255,255,0.2);
 }
 .btn.danger { 
-    background: rgba(200, 0, 0, 0.1); 
-    color: #ff4444; 
-    border-color: #ff4444; 
+    background: rgba(231, 76, 60, 0.12); 
+    color: #ff6b7a; 
+    border-color: rgba(231, 76, 60, 0.4); 
 }
 .btn.danger:hover {
     background: #ff4444;
-    color: #111;
-    box-shadow: 0 0 10px #ff4444;
+    color: #fff;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+}
+.btn.outline {
+    background: transparent;
+    border: 1px solid var(--theme-color);
+    color: var(--theme-color);
+}
+.btn.outline:hover {
+    background: var(--theme-color);
+    color: #050505;
+}
+.btn-sm, .btn.btn-sm {
+    padding: 3px 8px !important;
+    font-size: 0.72rem !important;
+    line-height: 1.15 !important;
+}
+
+/* Compact Table Action Buttons */
+.data-table td .btn,
+.table-tactical td .btn,
+[data-label="Acciones"] .btn,
+[data-label="Acciones"] button,
+[data-label="QR"] .btn {
+    padding: 3px 8px !important;
+    font-size: 0.72rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0.5px !important;
+    border-radius: 3px !important;
+    font-weight: 600 !important;
+    margin: 1px 2px !important;
+}
+
+[data-label="Acciones"],
+td[data-label="Acciones"] {
+    white-space: nowrap !important;
 }
 
 /* Modal */

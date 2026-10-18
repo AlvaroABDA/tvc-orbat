@@ -1081,9 +1081,18 @@ function renderEquiposTable(equipos) {
     equipos.forEach(eq => {
         const logoHtml = eq.logo_url ? `<img src="${eq.logo_url}" style="width:30px; height:30px; object-fit:contain; vertical-align:middle; margin-right:10px;">` : '';
         const userCode = eq.codigo ? `<span style="color:#ffcc00; font-family:var(--font-mono); font-weight:bold;">${eq.codigo}</span>` : `<span style="color:#888;">--</span>`;
+        const docs = eq.documentos || [];
+        const hasSeguro = docs.some(d => d.tipo === 'SEGURO');
+        const hasExencion = docs.some(d => d.tipo === 'EXENCION');
+        const docsBadges = `
+            <div style="font-size: 0.68rem; margin-top: 3px; display: flex; gap: 4px; flex-wrap: wrap;">
+                ${hasSeguro ? '<span style="color:#2ecc71; background:rgba(46,204,113,0.1); border:1px solid rgba(46,204,113,0.3); padding:1px 5px; border-radius:3px; display:inline-flex; align-items:center; gap:2px;" title="Póliza de seguro subida"><span class="material-symbols-outlined" style="font-size:11px;">verified</span> Seguro OK</span>' : '<span style="color:#e2b938; background:rgba(226,185,56,0.08); border:1px solid rgba(226,185,56,0.25); padding:1px 5px; border-radius:3px;" title="Seguro pendiente de adjuntar">Sin Seguro</span>'}
+                ${hasExencion ? '<span style="color:#00f0ff; background:rgba(0,240,255,0.1); border:1px solid rgba(0,240,255,0.3); padding:1px 5px; border-radius:3px; display:inline-flex; align-items:center; gap:2px;" title="Exención de seguridad subida"><span class="material-symbols-outlined" style="font-size:11px;">gavel</span> Exención OK</span>' : ''}
+            </div>
+        `;
         tbody.innerHTML += `
             <tr>
-                <td data-label="Unidad"><div style="display: flex; align-items: center;">${logoHtml}<span style="font-weight:bold;">${eq.nombre}</span></div></td>
+                <td data-label="Unidad"><div style="display: flex; align-items: center;">${logoHtml}<div><span style="font-weight:bold;">${eq.nombre}</span>${docsBadges}</div></div></td>
                 <td data-label="Usuario (Login)">${userCode}</td>
                 <td data-label="Facción" class="color-${eq.faccion_nombre}">${eq.faccion_nombre}</td>
                 <td data-label="Jugadores" style="text-align:center;">${eq.jugadores}</td>
@@ -1094,9 +1103,11 @@ function renderEquiposTable(equipos) {
                         <button class="btn btn-outline btn-sm" onclick="updateEquipoPwd(${eq.id})" style="padding: 4px 8px; font-size: 0.75rem;">Guardar</button>
                     </div>
                 </td>
-                <td data-label="Acciones">
-                    <button class="btn secondary btn-edit" data-id="${eq.id}">Editar</button>
-                    <button class="btn danger btn-del" data-id="${eq.id}">Borrar</button>
+                <td data-label="Acciones" style="white-space: nowrap;">
+                    <div style="display: inline-flex; gap: 4px; align-items: center;">
+                        <button class="btn secondary btn-edit" data-id="${eq.id}">Editar</button>
+                        <button class="btn danger btn-del" data-id="${eq.id}">Borrar</button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -1429,6 +1440,7 @@ function openModal(equipo = null) {
     }
     
     modal.classList.add('active');
+    cargarEquipoDocumentos(equipo ? equipo.id : null, equipo ? equipo.documentos : null);
     if (equipo && equipo.id) {
         startEquipoReadinessPolling(equipo.id);
     }
@@ -1803,6 +1815,164 @@ function closeModal() {
     document.getElementById('miembros-container').innerHTML = '';
 }
 
+// --- DOCUMENTACIÓN OFICIAL PDF DE UNIDAD ---
+async function cargarEquipoDocumentos(equipoId, docsPreloaded = null) {
+    const noticeEl = document.getElementById('docs-equipo-notice');
+    if (!equipoId) {
+        if (noticeEl) noticeEl.style.display = 'block';
+        renderDocSlot('SEGURO', null, false);
+        renderDocSlot('EXENCION', null, false);
+        return;
+    }
+
+    if (noticeEl) noticeEl.style.display = 'none';
+
+    let docs = docsPreloaded;
+    if (!docs) {
+        try {
+            const res = await fetch(`/api/equipos/${equipoId}/documentos`);
+            if (res.ok) {
+                docs = await res.json();
+            }
+        } catch (e) {
+            console.error("Error cargando documentos de unidad:", e);
+        }
+    }
+
+    docs = docs || [];
+    const docSeguro = docs.find(d => d.tipo === 'SEGURO');
+    const docExencion = docs.find(d => d.tipo === 'EXENCION');
+
+    renderDocSlot('SEGURO', docSeguro, true, equipoId);
+    renderDocSlot('EXENCION', docExencion, true, equipoId);
+}
+
+function formatBytes(bytes, decimals = 1) {
+    if (!bytes || bytes === 0) return '0 B';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+function renderDocSlot(tipo, doc, canUpload, equipoId = null) {
+    const key = tipo.toLowerCase();
+    const statusEl = document.getElementById(`${key}-doc-status`);
+    const actionsEl = document.getElementById(`${key}-doc-actions`);
+    if (!statusEl || !actionsEl) return;
+
+    if (!canUpload) {
+        statusEl.innerHTML = `<span style="color: #888;">(Guarda la unidad primero para adjuntar archivos)</span>`;
+        actionsEl.innerHTML = `<span style="font-size: 0.72rem; color: #666;">No disponible</span>`;
+        return;
+    }
+
+    if (doc) {
+        const sizeStr = formatBytes(doc.tamano_bytes);
+        const fecha = doc.subido_en ? doc.subido_en.split(' ')[0] : '';
+        statusEl.innerHTML = `
+            <div style="color: #2ecc71; font-weight: bold; display: flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px;" title="${doc.nombre_original}">${doc.nombre_original}</span>
+            </div>
+            <div style="color: #94a3b8; font-size: 0.7rem; margin-top: 2px;">${sizeStr} ${fecha ? '• ' + fecha : ''}</div>
+        `;
+
+        actionsEl.innerHTML = `
+            <a href="${doc.archivo_url}" target="_blank" class="btn outline btn-sm" style="text-decoration: none;" title="Abrir y visualizar documento PDF">
+                <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span> Ver PDF
+            </a>
+            <label class="btn secondary btn-sm" style="cursor: pointer; margin: 0;" title="Subir nuevo PDF para actualizar">
+                <span class="material-symbols-outlined" style="font-size: 14px;">sync</span> Cambiar
+                <input type="file" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('${tipo}', this)">
+            </label>
+            <button type="button" class="btn danger btn-sm" onclick="deleteEquipoDoc(${doc.id}, '${tipo}')" title="Eliminar archivo">
+                <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
+            </button>
+        `;
+    } else {
+        statusEl.innerHTML = `<span style="color: #e2b938;">🟡 Pendiente de adjuntar</span>`;
+        actionsEl.innerHTML = `
+            <label class="btn outline btn-sm" style="cursor: pointer; margin: 0;">
+                <span class="material-symbols-outlined" style="font-size: 14px;">upload_file</span> Subir ${tipo === 'SEGURO' ? 'Seguro' : 'Exención'} (PDF)
+                <input type="file" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('${tipo}', this)">
+            </label>
+        `;
+    }
+}
+
+async function uploadEquipoDoc(tipo, inputEl) {
+    const eqId = document.getElementById('eq-id').value;
+    if (!eqId) {
+        alert("Por favor, guarda la unidad antes de subir documentos.");
+        inputEl.value = '';
+        return;
+    }
+
+    if (!inputEl.files || !inputEl.files[0]) return;
+    const file = inputEl.files[0];
+
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+        alert("El archivo debe ser un documento PDF (.pdf)");
+        inputEl.value = '';
+        return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+        alert("El archivo excede el tamaño máximo permitido de 10 MB.");
+        inputEl.value = '';
+        return;
+    }
+
+    const key = tipo.toLowerCase();
+    const statusEl = document.getElementById(`${key}-doc-status`);
+    if (statusEl) statusEl.innerHTML = `<span style="color: #00f0ff;">⏳ Subiendo ${file.name}...</span>`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('tipo', tipo);
+
+    try {
+        const res = await fetch(`/api/equipos/${eqId}/documentos`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            await cargarEquipoDocumentos(eqId);
+            await loadEquipos();
+        } else {
+            alert("Error al subir documento: " + (data.error || "Error del servidor"));
+            await cargarEquipoDocumentos(eqId);
+        }
+    } catch (e) {
+        alert("Error de red al subir documento PDF.");
+        await cargarEquipoDocumentos(eqId);
+    } finally {
+        inputEl.value = '';
+    }
+}
+
+async function deleteEquipoDoc(docId, tipo) {
+    const tipoLabel = tipo === 'SEGURO' ? 'la póliza de seguro' : 'la exención de seguridad';
+    if (!confirm(`¿Eliminar ${tipoLabel} de esta unidad?`)) return;
+
+    const eqId = document.getElementById('eq-id').value;
+    try {
+        const res = await fetch(`/api/documentos_equipo/${docId}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            await cargarEquipoDocumentos(eqId);
+            await loadEquipos();
+        } else {
+            alert("Error al eliminar documento: " + (data.error || "Error del servidor"));
+        }
+    } catch (e) {
+        alert("Error de conexión al eliminar documento.");
+    }
+}
+
 // --- CRUD MISIONES ---
 function renderMisionesTable(misiones) {
     const tbody = document.getElementById('misiones-tbody');
@@ -1824,10 +1994,12 @@ function renderMisionesTable(misiones) {
                 <td data-label="Oficial Resp.">${mis.oficial_responsable || '-'}</td>
                 <td data-label="Persistente">${mis.persistente ? '🔄 SÍ' : 'NO'}</td>
                 <td data-label="Revelada">${mis.revelada ? '👁️ SÍ' : 'NO'}</td>
-                <td data-label="Acciones">
-                    <button class="btn secondary btn-edit-mision" data-id="${mis.id}" data-obj='${JSON.stringify(mis)}'>Editar</button>
-                    <button class="btn secondary btn-dup-mision" data-id="${mis.id}">Duplicar</button>
-                    <button class="btn danger btn-del-mision" data-id="${mis.id}">Borrar</button>
+                <td data-label="Acciones" style="white-space: nowrap;">
+                    <div style="display: inline-flex; gap: 4px; align-items: center;">
+                        <button class="btn secondary btn-edit-mision" data-id="${mis.id}" data-obj='${JSON.stringify(mis)}'>Editar</button>
+                        <button class="btn secondary btn-dup-mision" data-id="${mis.id}">Duplicar</button>
+                        <button class="btn danger btn-del-mision" data-id="${mis.id}">Borrar</button>
+                    </div>
                 </td>
             </tr>
         `;
@@ -2090,14 +2262,16 @@ function renderPOIsTable() {
                 <td data-label="Tipo"><strong>${poi.tipo}</strong></td>
                 <td data-label="Radio">${poi.tolerancia_metros}m</td>
                 <td data-label="Facción">${faccionName}</td>
-                <td data-label="QR" style="font-family: monospace; letter-spacing: 2px;">
-                    ${poi.token_qr} 
-                    <button class="btn outline btn-view-qr" style="padding: 2px 5px; font-size: 0.7rem; margin-left: 5px;" data-token="${poi.token_qr}">Ver QR</button>
-                    <a href="/scan/${poi.token_qr}" target="_blank" class="btn outline" style="padding: 2px 5px; font-size: 0.7rem; margin-left: 5px; text-decoration: none;">Probar Scanner</a>
+                <td data-label="QR" style="font-family: monospace; letter-spacing: 1px; white-space: nowrap;">
+                    <span>${poi.token_qr}</span> 
+                    <button class="btn outline btn-view-qr" style="padding: 2px 6px; font-size: 0.7rem; margin-left: 5px;" data-token="${poi.token_qr}">Ver QR</button>
+                    <a href="/scan/${poi.token_qr}" target="_blank" class="btn outline" style="padding: 2px 6px; font-size: 0.7rem; margin-left: 3px; text-decoration: none;">Probar Scanner</a>
                 </td>
-                <td data-label="Acciones">
-                    <button class="btn secondary btn-edit-poi" data-id="${poi.id}" data-obj='${JSON.stringify(poi)}'>Editar</button>
-                    <button class="btn danger btn-del-poi" data-id="${poi.id}">Borrar</button>
+                <td data-label="Acciones" style="white-space: nowrap;">
+                    <div style="display: inline-flex; gap: 4px; align-items: center;">
+                        <button class="btn secondary btn-edit-poi" data-id="${poi.id}" data-obj='${JSON.stringify(poi)}'>Editar</button>
+                        <button class="btn danger btn-del-poi" data-id="${poi.id}">Borrar</button>
+                    </div>
                 </td>
             </tr>
         `;

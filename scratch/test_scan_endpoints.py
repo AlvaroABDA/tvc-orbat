@@ -59,12 +59,11 @@ class TestScanEndpoints(unittest.TestCase):
         res_carnet = self.client.get(f'/carnet/{jefe_id}')
         self.assertEqual(res_carnet.status_code, 200)
         html_carnet = res_carnet.data.decode('utf-8')
-        self.assertIn('ROL // PAPEL EN PARTIDA', html_carnet)
-        self.assertIn('role-dossier-box', html_carnet)
         self.assertIn('role-badge', html_carnet)
+        self.assertNotIn('back-cover', html_carnet)
         self.assertNotIn('ice-badge-box', html_carnet)
         self.assertNotIn('crono-badge-box', html_carnet)
-        print("OK: /carnet/<id> displays player role and omits ICE/replicas")
+        print("OK: /carnet/<id> displays player role badge on front and omits back-cover/ICE/replicas")
 
 if __name__ == '__main__':
     unittest.main()

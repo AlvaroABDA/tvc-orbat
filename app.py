@@ -505,6 +505,9 @@ def manage_equipos():
             historial = conn.execute('SELECT * FROM Historial_Equipo WHERE equipo_id = ?', (eq['id'],)).fetchall()
             eq['historial'] = [dict(h) for h in historial]
             
+            docs = conn.execute('SELECT id, tipo, nombre_original, archivo_url, tamano_bytes, subido_en FROM Equipo_Documento WHERE equipo_id = ?', (eq['id'],)).fetchall()
+            eq['documentos'] = [dict(d) for d in docs]
+            
             if not is_admin:
                 for h in eq['historial']:
                     h.pop('valoracion', None)
@@ -652,6 +655,120 @@ def upload_equipo_foto(id):
     conn.close()
     
     return jsonify({'status': 'success', 'foto_url': foto_url})
+
+UPLOAD_DOCS_FOLDER = os.path.join(app.root_path, 'static', 'uploads', 'documentos_unidad')
+os.makedirs(UPLOAD_DOCS_FOLDER, exist_ok=True)
+
+@app.route('/api/equipos/<int:id>/documentos', methods=['GET'])
+def get_equipo_documentos(id):
+    if 'role' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+    is_admin = session.get('role') == 'admin'
+    is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == id)
+    is_operador = (session.get('role') == 'operador' and session.get('equipo_id') == id)
+    if not (is_admin or is_owner or is_operador):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    conn = get_db_connection()
+    docs = conn.execute('''
+        SELECT id, equipo_id, tipo, nombre_original, archivo_url, tamano_bytes, subido_en, subido_por
+        FROM Equipo_Documento
+        WHERE equipo_id = ?
+        ORDER BY id ASC
+    ''', (id,)).fetchall()
+    conn.close()
+    return jsonify([dict(d) for d in docs])
+
+@app.route('/api/equipos/<int:id>/documentos', methods=['POST'])
+def upload_equipo_documento(id):
+    is_admin = session.get('role') == 'admin'
+    is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == id)
+    if not (is_admin or is_owner):
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No se ha subido ningún archivo'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'Ningún archivo seleccionado'}), 400
+
+    tipo = request.form.get('tipo', 'SEGURO').strip().upper()
+    if tipo not in ['SEGURO', 'EXENCION']:
+        return jsonify({'error': 'Tipo de documento inválido. Debe ser SEGURO o EXENCION'}), 400
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext != '.pdf':
+        return jsonify({'error': 'Solo se admiten documentos en formato PDF (.pdf)'}), 400
+
+    conn = get_db_connection()
+    equipo = conn.execute('SELECT nombre FROM Equipo WHERE id = ?', (id,)).fetchone()
+    if not equipo:
+        conn.close()
+        return jsonify({'error': 'Equipo no encontrado'}), 404
+
+    # Limpiar archivo anterior del mismo tipo en disco si existía
+    old_docs = conn.execute('SELECT id, archivo_path FROM Equipo_Documento WHERE equipo_id = ? AND tipo = ?', (id, tipo)).fetchall()
+    for od in old_docs:
+        try:
+            if od['archivo_path'] and os.path.isfile(od['archivo_path']):
+                os.remove(od['archivo_path'])
+        except Exception as e:
+            print(f"Error eliminando documento previo de disco: {e}")
+        conn.execute('DELETE FROM Equipo_Documento WHERE id = ?', (od['id'],))
+
+    import secrets
+    safe_name = "".join([c for c in equipo['nombre'] if c.isalnum() or c in ('_', '-')]).strip()
+    if not safe_name:
+        safe_name = f"equipo_{id}"
+    rand_token = secrets.token_hex(4)
+    filename = f"eq_{id}_{tipo.lower()}_{safe_name}_{rand_token}.pdf"
+    filepath = os.path.join(UPLOAD_DOCS_FOLDER, filename)
+    file.save(filepath)
+
+    tamano_bytes = os.path.getsize(filepath)
+    archivo_url = f"/static/uploads/documentos_unidad/{filename}?v={int(time.time())}"
+    uploader_name = session.get('usuario') or ('Dirección (Admin)' if is_admin else equipo['nombre'])
+
+    cur = conn.cursor()
+    cur.execute('''
+        INSERT INTO Equipo_Documento (equipo_id, tipo, nombre_original, archivo_url, archivo_path, tamano_bytes, subido_por)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (id, tipo, file.filename, archivo_url, filepath, tamano_bytes, uploader_name))
+    new_id = cur.lastrowid
+    conn.commit()
+
+    new_row = conn.execute('SELECT * FROM Equipo_Documento WHERE id = ?', (new_id,)).fetchone()
+    conn.close()
+    return jsonify({'status': 'success', 'documento': dict(new_row)})
+
+@app.route('/api/documentos_equipo/<int:doc_id>', methods=['DELETE'])
+def delete_equipo_documento(doc_id):
+    if 'role' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    conn = get_db_connection()
+    doc = conn.execute('SELECT * FROM Equipo_Documento WHERE id = ?', (doc_id,)).fetchone()
+    if not doc:
+        conn.close()
+        return jsonify({'error': 'Documento no encontrado'}), 404
+
+    is_admin = session.get('role') == 'admin'
+    is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == doc['equipo_id'])
+    if not (is_admin or is_owner):
+        conn.close()
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    try:
+        if doc['archivo_path'] and os.path.isfile(doc['archivo_path']):
+            os.remove(doc['archivo_path'])
+    except Exception as e:
+        print(f"Error eliminando archivo PDF de disco: {e}")
+
+    conn.execute('DELETE FROM Equipo_Documento WHERE id = ?', (doc_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'message': 'Documento eliminado correctamente'})
 
 @app.route('/api/equipos/<int:id>', methods=['PUT', 'DELETE'])
 def update_delete_equipo(id):
@@ -2743,6 +2860,26 @@ def patch_db():
                     actualizado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (equipo_id) REFERENCES Equipo (id),
                     FOREIGN KEY (faccion_id) REFERENCES Faccion (id)
+                )
+            ''')
+            conn.commit()
+        except Exception:
+            pass
+
+        # Migración para Equipo_Documento (Seguro y Exención de Seguridad en PDF)
+        try:
+            conn.execute('''
+                CREATE TABLE IF NOT EXISTS Equipo_Documento (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    equipo_id INTEGER NOT NULL,
+                    tipo TEXT NOT NULL,
+                    nombre_original TEXT NOT NULL,
+                    archivo_url TEXT NOT NULL,
+                    archivo_path TEXT NOT NULL,
+                    tamano_bytes INTEGER DEFAULT 0,
+                    subido_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    subido_por TEXT DEFAULT '',
+                    FOREIGN KEY (equipo_id) REFERENCES Equipo (id) ON DELETE CASCADE
                 )
             ''')
             conn.commit()
