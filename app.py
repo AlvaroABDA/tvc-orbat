@@ -3539,10 +3539,34 @@ def api_ready_check_active():
 
 @app.route('/api/operador/ready', methods=['POST'])
 def api_operador_ready():
-    if session.get('role') != 'operador' or not session.get('miembro_id'):
-        return jsonify({'error': 'Solo operadores pueden actualizar su estado'}), 403
-    miembro_id = session.get('miembro_id')
+    role = session.get('role')
+    if not role:
+        return jsonify({'error': 'No autenticado'}), 401
+        
     data = request.json or {}
+    miembro_id = session.get('miembro_id')
+    
+    # Permitir miembro_id explícito si el usuario tiene rol autorizado
+    requested_id = data.get('miembro_id')
+    if requested_id and role in ('admin', 'equipo', 'operador'):
+        miembro_id = requested_id
+        
+    if not miembro_id:
+        if role == 'admin':
+            conn = get_db_connection()
+            m_first = conn.execute('SELECT id FROM Miembro WHERE activo = 1 LIMIT 1').fetchone()
+            miembro_id = m_first['id'] if m_first else None
+            conn.close()
+        elif role == 'equipo':
+            conn = get_db_connection()
+            eq_id = session.get('equipo_id')
+            m_first = conn.execute('SELECT id FROM Miembro WHERE equipo_id = ? AND activo = 1 LIMIT 1', (eq_id,)).fetchone()
+            miembro_id = m_first['id'] if m_first else None
+            conn.close()
+
+    if not miembro_id:
+        return jsonify({'error': 'No se identificó ningún operador activo'}), 403
+
     conn = get_db_connection()
     curr = conn.execute('SELECT listo_combate FROM Miembro WHERE id = ?', (miembro_id,)).fetchone()
     if not curr:
@@ -3562,7 +3586,12 @@ def api_operador_ready():
     ''', (new_val, miembro_id))
     conn.commit()
     conn.close()
-    return jsonify({'status': 'success', 'listo_combate': new_val})
+    return jsonify({
+        'status': 'success',
+        'success': True,
+        'listo': bool(new_val),
+        'listo_combate': new_val
+    })
 
 @app.route('/api/ready_check/respond', methods=['POST'])
 def api_ready_check_respond():

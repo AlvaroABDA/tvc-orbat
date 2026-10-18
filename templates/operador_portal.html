@@ -1149,12 +1149,13 @@
                 const res = await fetch('/api/operador/ready', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({})
+                    body: JSON.stringify({ miembro_id: {{ miembro.id }} })
                 });
                 const data = await res.json();
-                if (data.success) {
-                    updateOperatorReadyUI(data.listo);
-                    showToast(data.listo ? '✅ Estado actualizado: OPERATIVO' : 'ℹ️ Estado: EN ESPERA');
+                if (res.ok && (data.success || data.status === 'success')) {
+                    const isReady = (data.listo !== undefined) ? data.listo : (data.listo_combate === 1);
+                    updateOperatorReadyUI(isReady);
+                    showToast(isReady ? '✅ Estado actualizado: OPERATIVO' : 'ℹ️ Estado: EN ESPERA');
                 } else {
                     alert(data.error || 'Error al actualizar estado de combate');
                 }
