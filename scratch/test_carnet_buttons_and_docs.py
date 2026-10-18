@@ -15,8 +15,8 @@ class TestCarnetButtonsDocs(unittest.TestCase):
         app.config['TESTING'] = True
         self.client = app.test_client()
 
-    def test_carnet_no_back_cover(self):
-        """Verifica que el carnet no tenga contraportada/reverso y muestre el anverso limpio."""
+    def test_carnet_has_back_cover_without_weapons_emergencies(self):
+        """Verifica que el carnet tenga contraportada/reverso y no muestre armas ni emergencias."""
         with self.client.session_transaction() as sess:
             sess['role'] = 'admin'
             sess['faction'] = 'All'
@@ -31,8 +31,10 @@ class TestCarnetButtonsDocs(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         html = res.get_data(as_text=True)
 
-        self.assertNotIn('back-cover', html, "El carnet no debe contener la clase 'back-cover'")
-        self.assertNotIn('CONTRAPORTADA', html, "El carnet no debe contener la sección de contraportada")
+        self.assertIn('back-cover', html, "El carnet debe contener la clase 'back-cover'")
+        self.assertIn('CONTRAPORTADA', html, "El carnet debe contener la sección de contraportada")
+        self.assertNotIn('CONTROL CRONO & EQUIPAMIENTO', html, "No debe mostrar lista de réplicas en el carnet")
+        self.assertNotIn('🚨 I.C.E. EMERGENCIA REAL', html, "No debe mostrar bloque de emergencias en el carnet")
         self.assertIn('print-wrapper', html)
         self.assertIn('carnet-container', html)
         self.assertIn('qrcode', html)
