@@ -760,6 +760,13 @@ def update_delete_equipo(id):
         conn.close()
         return jsonify({'status': 'success'})
 
+@app.route('/api/equipos/<int:id>/readiness', methods=['GET'])
+def get_equipo_readiness(id):
+    conn = get_db_connection()
+    members = conn.execute('SELECT id, nombre_jugador, listo_combate, listo_timestamp FROM Miembro WHERE equipo_id = ?', (id,)).fetchall()
+    conn.close()
+    return jsonify([dict(m) for m in members])
+
 @app.route('/api/misiones', methods=['GET', 'POST'])
 def manage_misiones():
     conn = get_db_connection()
@@ -2266,10 +2273,39 @@ def ensure_operator_and_ice_tables(conn):
                 FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
             )
         ''')
-        try:
-            conn.execute('ALTER TABLE Miembro ADD COLUMN pin TEXT;')
-        except Exception:
-            pass
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS Miembro_Arma (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                miembro_id INTEGER NOT NULL,
+                modelo TEXT NOT NULL,
+                tipo TEXT NOT NULL,
+                fps REAL DEFAULT NULL,
+                julios REAL DEFAULT NULL,
+                peso_bb TEXT DEFAULT '0.20g',
+                estado_crono TEXT DEFAULT 'PENDIENTE',
+                precinto_num TEXT DEFAULT '',
+                cronometrado_en DATETIME DEFAULT NULL,
+                cronometrado_por TEXT DEFAULT '',
+                FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
+            )
+        ''')
+        cols_to_add = [
+            ("pin", "TEXT"),
+            ("tiene_dron", "BOOLEAN DEFAULT 0"),
+            ("dron_modelo", "TEXT DEFAULT ''"),
+            ("tiene_nvg", "BOOLEAN DEFAULT 0"),
+            ("nvg_categoria", "TEXT DEFAULT ''"),
+            ("nvg_modelo", "TEXT DEFAULT ''"),
+            ("listo_combate", "BOOLEAN DEFAULT 0"),
+            ("listo_timestamp", "DATETIME")
+        ]
+        existing_cols = {row[1] for row in conn.execute('PRAGMA table_info(Miembro)').fetchall()}
+        for col_name, col_type in cols_to_add:
+            if col_name not in existing_cols:
+                try:
+                    conn.execute(f'ALTER TABLE Miembro ADD COLUMN {col_name} {col_type};')
+                except Exception:
+                    pass
         conn.commit()
     except Exception as e:
         print("Error en ensure_operator_and_ice_tables:", e)
@@ -2582,12 +2618,19 @@ def view_carnet(id):
         return "Jugador no encontrado", 404
         
     ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (id,)).fetchone()
+    armas = conn.execute('SELECT * FROM Miembro_Arma WHERE miembro_id = ? ORDER BY id ASC', (id,)).fetchall()
     conn.close()
         
     color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
     hex_color = color_map.get(miembro['faccion_color'], '#00d2ff')
     
-    return render_template('carnet.html', miembro=dict(miembro), hex_color=hex_color, ice=dict(ice) if ice else None)
+    return render_template(
+        'carnet.html',
+        miembro=dict(miembro),
+        hex_color=hex_color,
+        ice=dict(ice) if ice else None,
+        armas=[dict(a) for a in armas]
+    )
 
 @app.route('/api/miembros/<int:id>/foto', methods=['POST'])
 def upload_miembro_foto(id):
@@ -2862,6 +2905,9 @@ def operador_portal():
     # Cargar ICE
     ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (miembro_id,)).fetchone()
     
+    # Cargar Armas
+    armas = conn.execute('SELECT * FROM Miembro_Arma WHERE miembro_id = ? ORDER BY id ASC', (miembro_id,)).fetchall()
+    
     # Cargar Ready Check activo para el equipo
     ready_check = conn.execute('''
         SELECT rc.*, mrc.estado as mi_estado, mrc.nota as mi_nota, mrc.respondido_en
@@ -2883,6 +2929,7 @@ def operador_portal():
         'operador_portal.html',
         miembro=dict(miembro),
         ice=dict(ice) if ice else None,
+        armas=[dict(a) for a in armas],
         ready_check=dict(ready_check) if ready_check else None,
         is_medic=is_medic,
         hex_color=hex_color,
@@ -2932,7 +2979,9 @@ def api_operador_perfil():
     if request.method == 'GET':
         m = conn.execute('''
             SELECT m.id, m.nombre_jugador, m.rol, m.armamento, m.uid, m.nombre_apellidos,
-                   m.dni, m.pin, m.telefono, m.email, m.foto_url, e.nombre as equipo_nombre, f.nombre as faccion_nombre
+                   m.dni, m.pin, m.telefono, m.email, m.foto_url,
+                   m.tiene_dron, m.dron_modelo, m.tiene_nvg, m.nvg_categoria, m.nvg_modelo,
+                   e.nombre as equipo_nombre, f.nombre as faccion_nombre
             FROM Miembro m
             JOIN Equipo e ON m.equipo_id = e.id
             JOIN Faccion f ON e.faccion_id = f.id
@@ -2951,9 +3000,15 @@ def api_operador_perfil():
         email = data.get('email', '').strip()
         armamento = data.get('armamento', '').strip()
         
+        tiene_dron = 1 if data.get('tiene_dron') in [True, 1, '1', 'true', 'on'] else 0
+        dron_modelo = data.get('dron_modelo', '').strip() if tiene_dron else ''
+        tiene_nvg = 1 if data.get('tiene_nvg') in [True, 1, '1', 'true', 'on'] else 0
+        nvg_categoria = data.get('nvg_categoria', '').strip() if tiene_nvg else ''
+        nvg_modelo = data.get('nvg_modelo', '').strip() if tiene_nvg else ''
+        
         pin = data.get('pin')
         pin_update_sql = ""
-        params = [nombre_apellidos, dni, telefono, email, armamento]
+        params = [nombre_apellidos, dni, telefono, email, armamento, tiene_dron, dron_modelo, tiene_nvg, nvg_categoria, nvg_modelo]
         if pin is not None:
             pin_str = str(pin).strip()
             if pin_str:
@@ -2968,12 +3023,341 @@ def api_operador_perfil():
         
         conn.execute(f'''
             UPDATE Miembro 
-            SET nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, armamento = ? {pin_update_sql}
+            SET nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, armamento = ?,
+                tiene_dron = ?, dron_modelo = ?, tiene_nvg = ?, nvg_categoria = ?, nvg_modelo = ?
+                {pin_update_sql}
             WHERE id = ?
         ''', params)
         conn.commit()
         conn.close()
         return jsonify({'status': 'success', 'message': 'Expediente y PIN actualizados correctamente'})
+
+# ==================== OPERATOR WEAPONS & EQUIPMENT API ====================
+@app.route('/api/operador/armas', methods=['GET', 'POST'])
+def api_operador_armas():
+    if 'role' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    miembro_id = session.get('miembro_id')
+    if not miembro_id:
+        return jsonify({'error': 'No es un operador activo'}), 403
+        
+    conn = get_db_connection()
+    if request.method == 'GET':
+        rows = conn.execute('SELECT * FROM Miembro_Arma WHERE miembro_id = ? ORDER BY id ASC', (miembro_id,)).fetchall()
+        conn.close()
+        return jsonify([dict(r) for r in rows])
+        
+    elif request.method == 'POST':
+        data = request.json or {}
+        modelo = data.get('modelo', '').strip()
+        tipo = data.get('tipo', 'Fusil / Asalto').strip()
+        if not modelo:
+            conn.close()
+            return jsonify({'error': 'El modelo o denominación de la réplica es obligatorio'}), 400
+            
+        cur = conn.cursor()
+        # Security: the operator CANNOT set fps, julios, estado_crono, or precinto_num!
+        cur.execute('''
+            INSERT INTO Miembro_Arma (miembro_id, modelo, tipo, estado_crono, peso_bb)
+            VALUES (?, ?, ?, 'PENDIENTE', '0.20g')
+        ''', (miembro_id, modelo, tipo))
+        new_id = cur.lastrowid
+        conn.commit()
+        
+        row = conn.execute('SELECT * FROM Miembro_Arma WHERE id = ?', (new_id,)).fetchone()
+        conn.close()
+        return jsonify({'status': 'success', 'arma': dict(row)})
+
+@app.route('/api/operador/armas/<int:arma_id>', methods=['DELETE'])
+def api_operador_arma_delete(arma_id):
+    if 'role' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    miembro_id = session.get('miembro_id')
+    if not miembro_id:
+        return jsonify({'error': 'No es un operador activo'}), 403
+        
+    conn = get_db_connection()
+    arma = conn.execute('SELECT * FROM Miembro_Arma WHERE id = ?', (arma_id,)).fetchone()
+    if not arma:
+        conn.close()
+        return jsonify({'error': 'Arma no encontrada'}), 404
+        
+    if arma['miembro_id'] != miembro_id and session.get('role') != 'admin':
+        conn.close()
+        return jsonify({'error': 'No autorizado para eliminar esta réplica'}), 403
+        
+    conn.execute('DELETE FROM Miembro_Arma WHERE id = ?', (arma_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'message': 'Réplica eliminada correctamente'})
+
+@app.route('/api/operador/equipamiento', methods=['GET', 'POST'])
+def api_operador_equipamiento():
+    if 'role' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    miembro_id = session.get('miembro_id')
+    if not miembro_id:
+        return jsonify({'error': 'No es un operador activo'}), 403
+        
+    conn = get_db_connection()
+    if request.method == 'GET':
+        m = conn.execute('SELECT tiene_dron, dron_modelo, tiene_nvg, nvg_categoria, nvg_modelo FROM Miembro WHERE id = ?', (miembro_id,)).fetchone()
+        conn.close()
+        return jsonify(dict(m) if m else {})
+        
+    elif request.method == 'POST':
+        data = request.json or {}
+        tiene_dron = 1 if data.get('tiene_dron') in [True, 1, '1', 'true', 'on'] else 0
+        dron_modelo = data.get('dron_modelo', '').strip() if tiene_dron else ''
+        tiene_nvg = 1 if data.get('tiene_nvg') in [True, 1, '1', 'true', 'on'] else 0
+        nvg_categoria = data.get('nvg_categoria', '').strip() if tiene_nvg else ''
+        nvg_modelo = data.get('nvg_modelo', '').strip() if tiene_nvg else ''
+        
+        conn.execute('''
+            UPDATE Miembro 
+            SET tiene_dron = ?, dron_modelo = ?, tiene_nvg = ?, nvg_categoria = ?, nvg_modelo = ?
+            WHERE id = ?
+        ''', (tiene_dron, dron_modelo, tiene_nvg, nvg_categoria, nvg_modelo, miembro_id))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': 'Equipamiento táctico especial guardado'})
+
+# ==================== ADMIN CHRONO & WEAPONS MANAGEMENT ====================
+@app.route('/api/crono/armas', methods=['GET'])
+def api_crono_armas():
+    if session.get('role') not in ['admin', 'equipo']:
+        return jsonify({'error': 'No autorizado'}), 403
+        
+    conn = get_db_connection()
+    query = '''
+        SELECT a.*, m.nombre_jugador, m.nombre_apellidos, m.rol as miembro_rol, m.uid as miembro_uid,
+               m.foto_url as miembro_foto, m.tiene_nvg, m.nvg_categoria, m.tiene_dron, m.dron_modelo,
+               e.id as equipo_id, e.nombre as equipo_nombre, f.nombre as faccion_nombre, f.color as faccion_color
+        FROM Miembro_Arma a
+        JOIN Miembro m ON a.miembro_id = m.id
+        JOIN Equipo e ON m.equipo_id = e.id
+        JOIN Faccion f ON e.faccion_id = f.id
+        WHERE 1=1
+    '''
+    params = []
+    
+    if session.get('role') == 'equipo':
+        query += ' AND e.id = ?'
+        params.append(session.get('equipo_id'))
+    else:
+        equipo_id = request.args.get('equipo_id')
+        if equipo_id:
+            query += ' AND e.id = ?'
+            params.append(equipo_id)
+            
+    miembro_id = request.args.get('miembro_id')
+    if miembro_id:
+        query += ' AND m.id = ?'
+        params.append(miembro_id)
+        
+    estado = request.args.get('estado')
+    if estado:
+        query += ' AND a.estado_crono = ?'
+        params.append(estado.upper())
+        
+    query += ' ORDER BY a.id DESC'
+    rows = conn.execute(query, params).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+@app.route('/api/crono/arma/<int:arma_id>', methods=['POST', 'DELETE'])
+def api_crono_arma_admin(arma_id):
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Solo la Dirección / Administración puede validar el crono'}), 403
+        
+    conn = get_db_connection()
+    if request.method == 'DELETE':
+        conn.execute('DELETE FROM Miembro_Arma WHERE id = ?', (arma_id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'status': 'success', 'message': 'Réplica eliminada'})
+        
+    data = request.json or {}
+    fps = data.get('fps')
+    julios = data.get('julios')
+    peso_bb = data.get('peso_bb', '0.20g').strip() or '0.20g'
+    estado_crono = data.get('estado_crono', 'APROBADO').strip().upper()
+    precinto_num = data.get('precinto_num', '').strip()
+    modelo = data.get('modelo')
+    tipo = data.get('tipo')
+    
+    admin_name = session.get('usuario') or 'Dirección'
+    
+    updates = [
+        "fps = ?",
+        "julios = ?",
+        "peso_bb = ?",
+        "estado_crono = ?",
+        "precinto_num = ?",
+        "cronometrado_en = datetime('now')",
+        "cronometrado_por = ?"
+    ]
+    params = [fps, julios, peso_bb, estado_crono, precinto_num, admin_name]
+    
+    if modelo:
+        updates.append("modelo = ?")
+        params.append(modelo.strip())
+    if tipo:
+        updates.append("tipo = ?")
+        params.append(tipo.strip())
+        
+    params.append(arma_id)
+    
+    conn.execute(f"UPDATE Miembro_Arma SET {', '.join(updates)} WHERE id = ?", params)
+    conn.commit()
+    
+    updated = conn.execute('SELECT * FROM Miembro_Arma WHERE id = ?', (arma_id,)).fetchone()
+    conn.close()
+    return jsonify({'status': 'success', 'arma': dict(updated)})
+
+@app.route('/api/admin/armas_dashboard', methods=['GET'])
+def api_admin_armas_dashboard():
+    if session.get('role') not in ['admin', 'equipo']:
+        return jsonify({'error': 'No autorizado'}), 403
+
+    conn = get_db_connection()
+    equipo_filter = ""
+    params = []
+    if session.get('role') == 'equipo':
+        equipo_filter = " WHERE e.id = ?"
+        params.append(session.get('equipo_id'))
+
+    query = f'''
+        SELECT m.id, m.nombre_jugador, m.nombre_apellidos, m.rol, m.uid, m.foto_url,
+               m.tiene_dron, m.dron_modelo, m.tiene_nvg, m.nvg_categoria, m.nvg_modelo,
+               e.id as equipo_id, e.nombre as equipo_nombre,
+               f.id as faccion_id, f.nombre as faccion_nombre, f.color as faccion_color
+        FROM Miembro m
+        JOIN Equipo e ON m.equipo_id = e.id
+        JOIN Faccion f ON e.faccion_id = f.id
+        {equipo_filter}
+        ORDER BY f.id ASC, e.nombre ASC, m.nombre_jugador ASC
+    '''
+    miembros = [dict(r) for r in conn.execute(query, params).fetchall()]
+    
+    armas_rows = conn.execute('SELECT * FROM Miembro_Arma ORDER BY id ASC').fetchall()
+    armas_by_member = {}
+    for a in armas_rows:
+        ad = dict(a)
+        armas_by_member.setdefault(ad['miembro_id'], []).append(ad)
+
+    for m in miembros:
+        m['armas'] = armas_by_member.get(m['id'], [])
+
+    conn.close()
+    return jsonify(miembros)
+
+@app.route('/api/admin/miembro/<int:id>/tactico', methods=['POST'])
+def api_admin_miembro_tactico(id):
+    if session.get('role') not in ['admin', 'equipo']:
+        return jsonify({'error': 'No autorizado'}), 403
+    data = request.json or {}
+    tiene_dron = 1 if data.get('tiene_dron') else 0
+    dron_modelo = (data.get('dron_modelo') or '').strip()
+    tiene_nvg = 1 if data.get('tiene_nvg') else 0
+    nvg_categoria = (data.get('nvg_categoria') or '').strip()
+    nvg_modelo = (data.get('nvg_modelo') or '').strip()
+
+    conn = get_db_connection()
+    conn.execute('''
+        UPDATE Miembro
+        SET tiene_dron = ?, dron_modelo = ?, tiene_nvg = ?, nvg_categoria = ?, nvg_modelo = ?
+        WHERE id = ?
+    ''', (tiene_dron, dron_modelo, tiene_nvg, nvg_categoria, nvg_modelo, id))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success'})
+
+@app.route('/api/crono/arma/nueva', methods=['POST'])
+def api_crono_arma_nueva():
+    if session.get('role') not in ['admin', 'equipo']:
+        return jsonify({'error': 'No autorizado'}), 403
+        
+    data = request.json or {}
+    miembro_id = data.get('miembro_id')
+    modelo = data.get('modelo', '').strip()
+    tipo = data.get('tipo', 'Fusil / Asalto').strip()
+    fps = data.get('fps')
+    julios = data.get('julios')
+    peso_bb = data.get('peso_bb', '0.20g').strip() or '0.20g'
+    estado_crono = data.get('estado_crono', 'APROBADO').strip().upper()
+    precinto_num = data.get('precinto_num', '').strip()
+    admin_name = session.get('usuario') or 'Dirección'
+    
+    if not miembro_id or not modelo:
+        return jsonify({'error': 'Miembro y Modelo requeridos'}), 400
+        
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('''
+        INSERT INTO Miembro_Arma (miembro_id, modelo, tipo, fps, julios, peso_bb, estado_crono, precinto_num, cronometrado_en, cronometrado_por)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
+    ''', (miembro_id, modelo, tipo, fps, julios, peso_bb, estado_crono, precinto_num, admin_name))
+    new_id = cur.lastrowid
+    conn.commit()
+    
+    row = conn.execute('SELECT * FROM Miembro_Arma WHERE id = ?', (new_id,)).fetchone()
+    conn.close()
+    return jsonify({'status': 'success', 'arma': dict(row)})
+
+@app.route('/api/miembros/<int:id>/armas', methods=['GET', 'POST'])
+def api_miembro_armas(id):
+    if 'role' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+        
+    conn = get_db_connection()
+    miembro = conn.execute('SELECT equipo_id FROM Miembro WHERE id = ?', (id,)).fetchone()
+    if not miembro:
+        conn.close()
+        return jsonify({'error': 'Miembro no encontrado'}), 404
+        
+    is_admin = session.get('role') == 'admin'
+    is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == miembro['equipo_id'])
+    is_self = (session.get('role') == 'operador' and session.get('miembro_id') == id)
+    if not (is_admin or is_owner or is_self):
+        conn.close()
+        return jsonify({'error': 'No autorizado'}), 403
+        
+    if request.method == 'GET':
+        rows = conn.execute('SELECT * FROM Miembro_Arma WHERE miembro_id = ? ORDER BY id ASC', (id,)).fetchall()
+        conn.close()
+        return jsonify([dict(r) for r in rows])
+        
+    elif request.method == 'POST':
+        data = request.json or {}
+        modelo = data.get('modelo', '').strip()
+        tipo = data.get('tipo', 'Fusil / Asalto').strip()
+        if not modelo:
+            conn.close()
+            return jsonify({'error': 'Modelo requerido'}), 400
+            
+        cur = conn.cursor()
+        if is_admin:
+            fps = data.get('fps')
+            julios = data.get('julios')
+            peso_bb = data.get('peso_bb', '0.20g')
+            estado_crono = data.get('estado_crono', 'APROBADO')
+            precinto_num = data.get('precinto_num', '')
+            admin_name = session.get('usuario') or 'Dirección'
+            cur.execute('''
+                INSERT INTO Miembro_Arma (miembro_id, modelo, tipo, fps, julios, peso_bb, estado_crono, precinto_num, cronometrado_en, cronometrado_por)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?)
+            ''', (id, modelo, tipo, fps, julios, peso_bb, estado_crono, precinto_num, admin_name))
+        else:
+            cur.execute('''
+                INSERT INTO Miembro_Arma (miembro_id, modelo, tipo, estado_crono, peso_bb)
+                VALUES (?, ?, ?, 'PENDIENTE', '0.20g')
+            ''', (id, modelo, tipo))
+        new_id = cur.lastrowid
+        conn.commit()
+        row = conn.execute('SELECT * FROM Miembro_Arma WHERE id = ?', (new_id,)).fetchone()
+        conn.close()
+        return jsonify({'status': 'success', 'arma': dict(row)})
 
 @app.route('/api/operador/ice', methods=['GET', 'POST'])
 def api_operador_ice():
@@ -3153,6 +3537,33 @@ def api_ready_check_active():
         'respondido_en': rc['respondido_en']
     })
 
+@app.route('/api/operador/ready', methods=['POST'])
+def api_operador_ready():
+    if session.get('role') != 'operador' or not session.get('miembro_id'):
+        return jsonify({'error': 'Solo operadores pueden actualizar su estado'}), 403
+    miembro_id = session.get('miembro_id')
+    data = request.json or {}
+    conn = get_db_connection()
+    curr = conn.execute('SELECT listo_combate FROM Miembro WHERE id = ?', (miembro_id,)).fetchone()
+    if not curr:
+        conn.close()
+        return jsonify({'error': 'Miembro no encontrado'}), 404
+        
+    curr_val = curr['listo_combate'] or 0
+    if 'listo' in data:
+        new_val = 1 if data['listo'] else 0
+    else:
+        new_val = 0 if curr_val == 1 else 1
+
+    conn.execute('''
+        UPDATE Miembro
+        SET listo_combate = ?, listo_timestamp = datetime('now')
+        WHERE id = ?
+    ''', (new_val, miembro_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'listo_combate': new_val})
+
 @app.route('/api/ready_check/respond', methods=['POST'])
 def api_ready_check_respond():
     if session.get('role') != 'operador':
@@ -3164,22 +3575,24 @@ def api_ready_check_respond():
     nota = data.get('nota', '').strip()
     
     conn = get_db_connection()
+    # Actualizar estado directo en el combatiente
+    listo_val = 1 if estado == 'LISTO' else 0
+    conn.execute('UPDATE Miembro SET listo_combate = ?, listo_timestamp = datetime(\'now\') WHERE id = ?', (listo_val, miembro_id))
+
     rc = conn.execute('SELECT id FROM Equipo_ReadyCheck WHERE equipo_id = ? AND activo = 1 ORDER BY id DESC LIMIT 1', (equipo_id,)).fetchone()
-    if not rc:
-        conn.close()
-        return jsonify({'error': 'No hay ningún pase de lista activo en este momento'}), 400
+    if rc:
+        conn.execute('''
+            INSERT INTO Miembro_ReadyCheck (ready_check_id, miembro_id, estado, nota, respondido_en)
+            VALUES (?, ?, ?, ?, datetime('now'))
+            ON CONFLICT(ready_check_id, miembro_id) DO UPDATE SET
+                estado = excluded.estado,
+                nota = excluded.nota,
+                respondido_en = excluded.respondido_en
+        ''', (rc['id'], miembro_id, estado, nota))
         
-    conn.execute('''
-        INSERT INTO Miembro_ReadyCheck (ready_check_id, miembro_id, estado, nota, respondido_en)
-        VALUES (?, ?, ?, ?, datetime('now'))
-        ON CONFLICT(ready_check_id, miembro_id) DO UPDATE SET
-            estado = excluded.estado,
-            nota = excluded.nota,
-            respondido_en = excluded.respondido_en
-    ''', (rc['id'], miembro_id, estado, nota))
     conn.commit()
     conn.close()
-    return jsonify({'status': 'success', 'estado': estado, 'nota': nota})
+    return jsonify({'status': 'success', 'estado': estado, 'nota': nota, 'listo_combate': listo_val})
 
 # ==================== FIELD MEDIC ROUTES ====================
 @app.route('/sw_medic.js', methods=['GET'])

@@ -1080,12 +1080,20 @@ function renderEquiposTable(equipos) {
 
     equipos.forEach(eq => {
         const logoHtml = eq.logo_url ? `<img src="${eq.logo_url}" style="width:30px; height:30px; object-fit:contain; vertical-align:middle; margin-right:10px;">` : '';
+        const userCode = eq.codigo ? `<span style="color:#ffcc00; font-family:var(--font-mono); font-weight:bold;">${eq.codigo}</span>` : `<span style="color:#888;">--</span>`;
         tbody.innerHTML += `
             <tr>
-                <td data-label="Unidad"><div style="display: flex; align-items: center;">${logoHtml}<span>${eq.nombre}</span></div></td>
+                <td data-label="Unidad"><div style="display: flex; align-items: center;">${logoHtml}<span style="font-weight:bold;">${eq.nombre}</span></div></td>
+                <td data-label="Usuario (Login)">${userCode}</td>
                 <td data-label="Facción" class="color-${eq.faccion_nombre}">${eq.faccion_nombre}</td>
-                <td data-label="Jugadores">${eq.jugadores}</td>
+                <td data-label="Jugadores" style="text-align:center;">${eq.jugadores}</td>
                 <td data-label="Perfil">${eq.tipo}</td>
+                <td data-label="PIN / Contraseña">
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <input type="text" id="eq-pwd-${eq.id}" placeholder="PIN" maxlength="4" style="width: 70px; padding: 4px 6px; font-family: var(--font-mono); font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid #444; color: #fff; border-radius: 3px; text-align: center;">
+                        <button class="btn btn-outline btn-sm" onclick="updateEquipoPwd(${eq.id})" style="padding: 4px 8px; font-size: 0.75rem;">Guardar</button>
+                    </div>
+                </td>
                 <td data-label="Acciones">
                     <button class="btn secondary btn-edit" data-id="${eq.id}">Editar</button>
                     <button class="btn danger btn-del" data-id="${eq.id}">Borrar</button>
@@ -1421,6 +1429,54 @@ function openModal(equipo = null) {
     }
     
     modal.classList.add('active');
+    if (equipo && equipo.id) {
+        startEquipoReadinessPolling(equipo.id);
+    }
+}
+
+window.equipoReadinessInterval = null;
+function startEquipoReadinessPolling(equipoId) {
+    stopEquipoReadinessPolling();
+    if (!equipoId) return;
+
+    const poll = async () => {
+        const modal = document.getElementById('modal-equipo');
+        if (!modal || !modal.classList.contains('active')) {
+            stopEquipoReadinessPolling();
+            return;
+        }
+        try {
+            const res = await fetch(`/api/equipos/${equipoId}/readiness`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const readinessMap = {};
+            data.forEach(item => {
+                readinessMap[item.id] = (item.listo_combate == 1);
+            });
+            const rows = document.querySelectorAll('#miembros-container .miembro-row');
+            rows.forEach(tr => {
+                const mid = parseInt(tr.dataset.id);
+                if (mid && readinessMap[mid] !== undefined) {
+                    if (readinessMap[mid]) {
+                        tr.style.background = 'rgba(0, 240, 255, 0.08)';
+                        tr.style.boxShadow = 'inset 3px 0 0 #00f0ff';
+                    } else {
+                        tr.style.background = 'transparent';
+                        tr.style.boxShadow = 'none';
+                    }
+                }
+            });
+        } catch (e) {}
+    };
+
+    window.equipoReadinessInterval = setInterval(poll, 3500);
+}
+
+function stopEquipoReadinessPolling() {
+    if (window.equipoReadinessInterval) {
+        clearInterval(window.equipoReadinessInterval);
+        window.equipoReadinessInterval = null;
+    }
 }
 
 function updateJugadoresState() {
@@ -1529,6 +1585,17 @@ function addMiembroRow(m = null) {
     tr.className = 'miembro-row';
     tr.dataset.id = m ? m.id : '';
     
+    // Check de combate personal: línea en verde turquesa cristal suave y sutil
+    const isListo = m && (m.listo_combate == 1 || m.listo == 1);
+    if (isListo) {
+        tr.style.background = 'rgba(0, 240, 255, 0.08)';
+        tr.style.boxShadow = 'inset 3px 0 0 #00f0ff';
+    } else {
+        tr.style.background = 'transparent';
+        tr.style.boxShadow = 'none';
+    }
+    tr.style.transition = 'background 0.3s ease, box-shadow 0.3s ease';
+    
     const activo = (m && m.activo !== undefined) ? (m.activo == 1) : true;
     const nombre = m ? m.nombre_jugador : '';
     const fullname = m ? (m.nombre_apellidos || '') : '';
@@ -1539,13 +1606,28 @@ function addMiembroRow(m = null) {
     const email = m ? (m.email || '') : '';
     
     const hasFoto = m && m.foto_url;
-    const fotoBtn = (m && m.id) ? `<button type="button" class="btn primary btn-foto-miembro" title="${hasFoto ? 'Cambiar Foto' : 'Subir Foto'}" style="padding: 0.25rem 0.5rem; margin-right: 5px;" onclick="uploadFotoMiembro(${m.id})">${hasFoto ? '📸✓' : '📸'}</button>` : '';
-    const carnetBtn = (m && m.id) ? `<a href="/carnet/${m.id}" target="_blank" title="Ver Carnet" class="btn secondary" style="padding: 0.25rem 0.5rem; text-decoration: none;">🪪</a>` : '<span style="font-size: 0.7rem; color: #888;">(Guardar antes)</span>';
-    const iceBtn = (m && m.id) ? `<button type="button" class="btn warning" title="Ficha Médica Real (I.C.E.)" style="padding: 0.25rem 0.5rem; margin-left: 5px; background: rgba(231,76,60,0.2); border-color: #e74c3c; color: #ff6b6b; cursor: pointer;" onclick="verIceMiembro(${m.id})">🩸</button>` : '';
+    // Si la foto está introducida que no salga un check, si no que el fondo se ponga en verde turquesa cristal
+    const fotoBtn = (m && m.id) ? `<button type="button" class="btn-foto-miembro" title="${hasFoto ? 'Foto cargada (clic para cambiar)' : 'Subir fotografía'}" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; ${hasFoto ? 'background: rgba(0, 240, 255, 0.16); border: 1px solid rgba(0, 240, 255, 0.45); color: #00f0ff;' : 'background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #64748b;'}" onclick="uploadFotoMiembro(${m.id})"><span class="material-symbols-outlined" style="font-size: 16px;">photo_camera</span></button>` : '';
+    
+    const carnetBtn = (m && m.id) ? `<a href="/carnet/${m.id}" target="_blank" title="Ver Carnet / QR" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; text-decoration: none; cursor: pointer; transition: all 0.2s; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #94a3b8;"><span class="material-symbols-outlined" style="font-size: 16px;">badge</span></a>` : '';
+    
+    const iceBtn = (m && m.id) ? `<button type="button" title="Ficha Médica Real (I.C.E.)" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(231, 76, 60, 0.12); border: 1px solid rgba(231, 76, 60, 0.35); color: #ff6b7a;" onclick="verIceMiembro(${m.id})"><span class="material-symbols-outlined" style="font-size: 16px;">emergency</span></button>` : '';
+
+    const placeholderGuardar = (!m || !m.id) ? `<span style="font-size: 0.68rem; color: #64748b; font-family: monospace;">(guardar)</span>` : '';
+
+    const delBtn = `<button type="button" class="btn-del-miembro" title="Eliminar operador" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #888;" onmouseover="this.style.color='#ff5566'; this.style.borderColor='rgba(255,85,102,0.4)';" onmouseout="this.style.color='#888'; this.style.borderColor='rgba(255,255,255,0.12)';"><span class="material-symbols-outlined" style="font-size: 15px;">close</span></button>`;
+
+    const nvgBadge = (m && m.tiene_nvg) ? `<span title="NVG: ${m.nvg_categoria || 'Visión Nocturna'}" style="font-size: 0.68rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); color: #00f0ff; padding: 1px 5px; border-radius: 3px; font-weight: 600; cursor: help; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 11px;">visibility</span> NVG</span>` : '';
+    const dronBadge = (m && m.tiene_dron) ? `<span title="Dron: ${m.dron_modelo || 'Reconocimiento'}" style="font-size: 0.68rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); color: #00f0ff; padding: 1px 5px; border-radius: 3px; font-weight: 600; cursor: help; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 11px;">flight</span> Dron</span>` : '';
 
     tr.innerHTML = `
-        <td style="padding: 0.25rem; text-align: center;"><input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} style="transform: scale(1.5);"></td>
-        <td style="padding: 0.25rem;"><input type="text" class="miembro-nombre" placeholder="Nick" value="${nombre}" style="width: 100%; padding: 0.25rem;"></td>
+        <td style="padding: 0.25rem; text-align: center;"><input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} style="transform: scale(1.3); cursor: pointer;"></td>
+        <td style="padding: 0.25rem;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <input type="text" class="miembro-nombre" placeholder="Nick" value="${nombre}" style="flex: 1; min-width: 80px; padding: 0.25rem;">
+                ${nvgBadge}${dronBadge}
+            </div>
+        </td>
         <td style="padding: 0.25rem;"><input type="text" class="miembro-fullname" placeholder="Nombre completo" value="${fullname}" style="width: 100%; padding: 0.25rem;"></td>
         <td style="padding: 0.25rem;"><input type="text" class="miembro-dni" placeholder="DNI" value="${dni}" style="width: 100%; padding: 0.25rem;"></td>
         <td style="padding: 0.25rem;">
@@ -1567,8 +1649,8 @@ function addMiembroRow(m = null) {
         </td>
         <td style="padding: 0.25rem;"><input type="text" class="miembro-telefono" placeholder="Teléfono" value="${tel}" style="width: 100%; padding: 0.25rem;"></td>
         <td style="padding: 0.25rem;"><input type="email" class="miembro-email" placeholder="Email" value="${email}" style="width: 100%; padding: 0.25rem;"></td>
-        <td style="padding: 0.25rem; text-align: center; white-space: nowrap;">${fotoBtn}${carnetBtn}${iceBtn}</td>
-        <td style="padding: 0.25rem; text-align: center;"><button type="button" class="btn danger btn-del-miembro" style="padding: 0.25rem 0.5rem;">X</button></td>
+        <td style="padding: 0.25rem; text-align: center; white-space: nowrap;"><div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">${fotoBtn}${carnetBtn}${iceBtn}${placeholderGuardar}</div></td>
+        <td style="padding: 0.25rem; text-align: center;">${delBtn}</td>
     `;
     
     const inputNombre = tr.querySelector('.miembro-nombre');
@@ -1714,6 +1796,7 @@ document.getElementById('btn-add-historial')?.addEventListener('click', () => {
 });
 
 function closeModal() {
+    stopEquipoReadinessPolling();
     const modal = document.getElementById('modal-equipo');
     modal.classList.remove('active');
     document.getElementById('form-equipo').reset();
@@ -2370,6 +2453,9 @@ document.querySelectorAll('.nav-icon-btn').forEach(btn => {
         }
         if (target === 'view-seguridad') {
             loadSeguridad();
+            if (typeof cargarArmasDashboard === 'function') {
+                cargarArmasDashboard();
+            }
         }
     });
 });
@@ -2412,8 +2498,13 @@ async function loadSeguridad() {
 }
 
 async function updateEquipoPwd(id) {
-    const input = document.getElementById(`pwd-${id}`);
-    const pwd = input.value;
+    const input = document.getElementById(`eq-pwd-${id}`) || document.getElementById(`pwd-${id}`);
+    if (!input) return;
+    const pwd = input.value.trim();
+    if (!pwd) {
+        alert("Introduce un nuevo PIN de acceso para la unidad.");
+        return;
+    }
     
     // To update only the password, we need to fetch the current equipo data and merge the new code
     const resGet = await fetch('/api/equipos');
@@ -2421,9 +2512,7 @@ async function updateEquipoPwd(id) {
     const eq = equipos.find(e => e.id == id);
     if (!eq) return;
     
-    if (pwd) {
-        eq.password = pwd;
-    }
+    eq.password = pwd;
     
     const resPut = await fetch(`/api/equipos/${id}`, {
         method: 'PUT',
@@ -2432,7 +2521,9 @@ async function updateEquipoPwd(id) {
     });
     
     if (resPut.ok) {
-        input.style.borderColor = 'green';
+        input.style.borderColor = '#2ecc71';
+        input.value = '';
+        input.placeholder = 'OK';
         setTimeout(() => input.style.borderColor = '#444', 2000);
     } else {
         alert("Error al actualizar la contraseña");
@@ -3721,8 +3812,10 @@ window.uploadFotoMiembro = function(id) {
                 alert('Foto de jugador subida correctamente.');
                 const btn = document.querySelector(`button[onclick="uploadFotoMiembro(${id})"]`);
                 if (btn) {
-                    btn.innerHTML = '📸✓';
-                    btn.title = 'Cambiar Foto';
+                    btn.style.background = 'rgba(0, 240, 255, 0.16)';
+                    btn.style.borderColor = 'rgba(0, 240, 255, 0.45)';
+                    btn.style.color = '#00f0ff';
+                    btn.title = 'Foto cargada (clic para cambiar)';
                 }
                 if (typeof todosEquipos !== 'undefined' && Array.isArray(todosEquipos)) {
                     for (const eq of todosEquipos) {
@@ -4005,6 +4098,367 @@ window.verIceMiembro = async function(id) {
     }
 };
 
+// ==================== CRONO & ARMAS VIEWER / MANAGEMENT ====================
+
+window.currentCronoMiembroId = null;
+window.currentCronoMiembroNick = '';
+
+window.verCronoMiembro = async function(id, nick) {
+    window.currentCronoMiembroId = id;
+    window.currentCronoMiembroNick = nick;
+    const modal = document.getElementById('modal-crono-miembro');
+    if (!modal) return;
+    document.getElementById('crono-miembro-nick').innerText = nick || 'Operador';
+    modal.style.display = 'flex';
+    await reloadMiembroCronoBody();
+};
+
+async function reloadMiembroCronoBody() {
+    const id = window.currentCronoMiembroId;
+    const body = document.getElementById('crono-miembro-body');
+    if (!id || !body) return;
+    
+    body.innerHTML = '<div style="padding: 15px; text-align: center; color: #888;">Cargando réplicas y mediciones...</div>';
+    try {
+        const res = await fetch(`/api/miembros/${id}/armas`);
+        if (!res.ok) {
+            body.innerHTML = '<div style="padding: 15px; color: #ff5566;">Error al cargar las réplicas del operador.</div>';
+            return;
+        }
+        const armas = await res.json();
+        const isAdmin = (window.userRole === 'admin');
+
+        if (!armas || armas.length === 0) {
+            body.innerHTML = '<div style="padding: 18px; text-align: center; color: #64748b; border: 1px dashed rgba(255,255,255,0.1); border-radius: 4px;">Este operador no tiene ninguna réplica registrada.</div>';
+            return;
+        }
+
+        let html = `
+            <div style="overflow-x: auto; max-height: 280px; overflow-y: auto;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.82rem;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid rgba(0,240,255,0.3); color: #00f0ff;">
+                            <th style="padding: 6px 8px;">RÉPLICA</th>
+                            <th style="padding: 6px 8px;">TIPO</th>
+                            <th style="padding: 6px 8px; width: 75px;">FPS</th>
+                            <th style="padding: 6px 8px; width: 65px;">JULIOS</th>
+                            <th style="padding: 6px 8px; width: 70px;">BOLA</th>
+                            <th style="padding: 6px 8px; width: 80px;">PRECINTO</th>
+                            <th style="padding: 6px 8px;">ESTADO</th>
+                            ${isAdmin ? '<th style="padding: 6px 8px; text-align: center; width: 75px;">ACCIÓN</th>' : ''}
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        armas.forEach(a => {
+            const estadoColor = a.estado_crono === 'APROBADO' ? '#2ecc71' : (a.estado_crono === 'EXCEDIDO' || a.estado_crono === 'RECHAZADO' ? '#ff5566' : '#f1c40f');
+            if (isAdmin) {
+                html += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                        <td style="padding: 6px 8px;">
+                            <input type="text" id="m-arma-mod-${a.id}" value="${a.modelo || ''}" style="width: 100%; font-size: 0.8rem; background: #000; border: 1px solid #444; color: #fff; padding: 2px 4px;">
+                        </td>
+                        <td style="padding: 6px 8px;">
+                            <select id="m-arma-tipo-${a.id}" style="width: 100%; font-size: 0.78rem; background: #000; border: 1px solid #444; color: #fff; padding: 2px;">
+                                <option value="Fusil / Asalto" ${a.tipo === 'Fusil / Asalto' ? 'selected' : ''}>Fusil</option>
+                                <option value="Tirador Selecto (DMR)" ${a.tipo === 'Tirador Selecto (DMR)' ? 'selected' : ''}>DMR</option>
+                                <option value="Francotirador (Cerrojo)" ${a.tipo === 'Francotirador (Cerrojo)' ? 'selected' : ''}>Sniper</option>
+                                <option value="Apoyo (LMG)" ${a.tipo === 'Apoyo (LMG)' ? 'selected' : ''}>Apoyo</option>
+                                <option value="Secundaria / Pistola" ${a.tipo === 'Secundaria / Pistola' ? 'selected' : ''}>Pistola</option>
+                                <option value="Escopeta" ${a.tipo === 'Escopeta' ? 'selected' : ''}>Escopeta</option>
+                            </select>
+                        </td>
+                        <td style="padding: 6px 8px;">
+                            <input type="number" step="0.1" id="m-arma-fps-${a.id}" value="${a.fps !== null ? a.fps : ''}" placeholder="FPS" style="width: 65px; font-size: 0.8rem; background: #000; border: 1px solid #444; color: #fff; padding: 2px 4px;">
+                        </td>
+                        <td style="padding: 6px 8px;">
+                            <input type="number" step="0.01" id="m-arma-julios-${a.id}" value="${a.julios !== null ? a.julios : ''}" placeholder="J" style="width: 55px; font-size: 0.8rem; background: #000; border: 1px solid #444; color: #fff; padding: 2px 4px;">
+                        </td>
+                        <td style="padding: 6px 8px;">
+                            <input type="text" id="m-arma-peso-${a.id}" value="${a.peso_bb || '0.20g'}" style="width: 60px; font-size: 0.8rem; background: #000; border: 1px solid #444; color: #fff; padding: 2px 4px;">
+                        </td>
+                        <td style="padding: 6px 8px;">
+                            <input type="text" id="m-arma-precinto-${a.id}" value="${a.precinto_num || ''}" placeholder="#Precinto" style="width: 70px; font-size: 0.8rem; background: #000; border: 1px solid #444; color: #fff; padding: 2px 4px;">
+                        </td>
+                        <td style="padding: 6px 8px;">
+                            <select id="m-arma-estado-${a.id}" style="font-size: 0.78rem; background: #000; border: 1px solid #444; color: ${estadoColor}; font-weight: bold; padding: 2px;">
+                                <option value="APROBADO" ${a.estado_crono === 'APROBADO' ? 'selected' : ''} style="color:#2ecc71;">✓ APROBADO</option>
+                                <option value="PENDIENTE" ${a.estado_crono === 'PENDIENTE' ? 'selected' : ''} style="color:#f1c40f;">⏳ PENDIENTE</option>
+                                <option value="EXCEDIDO" ${a.estado_crono === 'EXCEDIDO' ? 'selected' : ''} style="color:#ff5566;">✕ EXCEDIDO</option>
+                                <option value="RECHAZADO" ${a.estado_crono === 'RECHAZADO' ? 'selected' : ''} style="color:#ff5566;">✕ RECHAZADO</option>
+                            </select>
+                        </td>
+                        <td style="padding: 6px 8px; text-align: center; white-space: nowrap;">
+                            <button type="button" class="btn primary" title="Guardar validación crono" onclick="submitAdminSaveArma(${a.id})" style="padding: 3px 6px; font-size: 0.75rem;">💾</button>
+                            <button type="button" class="btn danger" title="Eliminar" onclick="deleteAdminArma(${a.id})" style="padding: 3px 6px; font-size: 0.75rem; margin-left: 3px;">🗑</button>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                html += `
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+                        <td style="padding: 8px; font-weight: bold; color: #fff;">${a.modelo}</td>
+                        <td style="padding: 8px; color: #cbd5e1;">${a.tipo}</td>
+                        <td style="padding: 8px; font-family: monospace;">${a.fps !== null ? a.fps + ' fps' : '---'}</td>
+                        <td style="padding: 8px; font-family: monospace;">${a.julios !== null ? a.julios + ' J' : '---'}</td>
+                        <td style="padding: 8px;">${a.peso_bb || '0.20g'}</td>
+                        <td style="padding: 8px; color: #00f0ff;">${a.precinto_num ? '#' + a.precinto_num : '---'}</td>
+                        <td style="padding: 8px;">
+                            <span style="color: ${estadoColor}; font-weight: bold; font-size: 0.75rem; border: 1px solid ${estadoColor}; padding: 2px 6px; border-radius: 3px;">
+                                ${a.estado_crono || 'PENDIENTE'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+
+        html += '</tbody></table></div>';
+        if (!isAdmin) {
+            html += '<div style="margin-top: 10px; font-size: 0.75rem; color: #888; font-style: italic;">* Los valores de FPS, Julios y Precinto solo pueden ser ingresados por la Organización / Jueces en el puesto de crono.</div>';
+        }
+        body.innerHTML = html;
+    } catch (e) {
+        body.innerHTML = '<div style="padding: 15px; color: #ff5566;">Error al procesar réplicas.</div>';
+    }
+}
+
+window.submitAdminSaveArma = async function(armaId) {
+    const modelo = document.getElementById(`m-arma-mod-${armaId}`)?.value;
+    const tipo = document.getElementById(`m-arma-tipo-${armaId}`)?.value;
+    const fps = document.getElementById(`m-arma-fps-${armaId}`)?.value;
+    const julios = document.getElementById(`m-arma-julios-${armaId}`)?.value;
+    const peso_bb = document.getElementById(`m-arma-peso-${armaId}`)?.value;
+    const precinto_num = document.getElementById(`m-arma-precinto-${armaId}`)?.value;
+    const estado_crono = document.getElementById(`m-arma-estado-${armaId}`)?.value;
+
+    try {
+        const res = await fetch(`/api/crono/arma/${armaId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                modelo, tipo, fps: fps ? parseFloat(fps) : null,
+                julios: julios ? parseFloat(julios) : null,
+                peso_bb, precinto_num, estado_crono
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            alert('Crono guardado correctamente.');
+            await reloadMiembroCronoBody();
+        } else {
+            alert(data.error || 'Error al guardar crono');
+        }
+    } catch (err) {
+        alert('Error de conexión');
+    }
+};
+
+window.submitAdminNewArma = async function() {
+    const miembroId = window.currentCronoMiembroId;
+    if (!miembroId) return;
+
+    const modelo = document.getElementById('admin-new-arma-modelo')?.value.trim();
+    const tipo = document.getElementById('admin-new-arma-tipo')?.value;
+    const fps = document.getElementById('admin-new-arma-fps')?.value;
+    const julios = document.getElementById('admin-new-arma-julios')?.value;
+    const precinto = document.getElementById('admin-new-arma-precinto')?.value.trim();
+
+    if (!modelo) {
+        alert('Introduce el modelo de la réplica');
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/crono/arma/nueva', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                miembro_id: miembroId,
+                modelo, tipo,
+                fps: fps ? parseFloat(fps) : null,
+                julios: julios ? parseFloat(julios) : null,
+                peso_bb: '0.20g',
+                estado_crono: 'APROBADO',
+                precinto_num: precinto
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            document.getElementById('admin-new-arma-modelo').value = '';
+            document.getElementById('admin-new-arma-fps').value = '';
+            document.getElementById('admin-new-arma-julios').value = '';
+            document.getElementById('admin-new-arma-precinto').value = '';
+            await reloadMiembroCronoBody();
+        } else {
+            alert(data.error || 'Error al registrar réplica');
+        }
+    } catch (e) {
+        alert('Error de conexión');
+    }
+};
+
+window.deleteAdminArma = async function(armaId) {
+    if (!confirm('¿Deseas eliminar esta réplica del inventario?')) return;
+    try {
+        const res = await fetch(`/api/crono/arma/${armaId}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            await reloadMiembroCronoBody();
+        } else {
+            alert(data.error || 'Error al eliminar');
+        }
+    } catch (e) {
+        alert('Error de conexión');
+    }
+};
+
+// ==================== PUESTO DE CRONAJE GLOBAL ====================
+
+window.allCronoArmas = [];
+
+window.openCronoStationModal = function() {
+    const modal = document.getElementById('modal-crono-station');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    loadCronoStation();
+};
+
+window.loadCronoStation = async function() {
+    const tbody = document.getElementById('crono-station-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="8" style="padding:20px; text-align:center; color:#888;">Cargando armas de todos los operadores...</td></tr>';
+    try {
+        const res = await fetch('/api/crono/armas');
+        if (!res.ok) {
+            tbody.innerHTML = '<tr><td colspan="8" style="padding:20px; text-align:center; color:#ff5566;">Error al cargar datos de cronaje.</td></tr>';
+            return;
+        }
+        window.allCronoArmas = await res.json();
+        filterCronoStation();
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="8" style="padding:20px; text-align:center; color:#ff5566;">Error de conexión.</td></tr>';
+    }
+};
+
+window.filterCronoStation = function() {
+    const q = (document.getElementById('crono-filter-search')?.value || '').toLowerCase().trim();
+    const estado = (document.getElementById('crono-filter-estado')?.value || '').toUpperCase();
+    
+    let filtered = window.allCronoArmas || [];
+    if (q) {
+        filtered = filtered.filter(a => {
+            const nick = (a.nombre_jugador || '').toLowerCase();
+            const full = (a.nombre_apellidos || '').toLowerCase();
+            const mod = (a.modelo || '').toLowerCase();
+            const team = (a.equipo_nombre || '').toLowerCase();
+            const prec = (a.precinto_num || '').toLowerCase();
+            return nick.includes(q) || full.includes(q) || mod.includes(q) || team.includes(q) || prec.includes(q);
+        });
+    }
+    if (estado) {
+        filtered = filtered.filter(a => (a.estado_crono || 'PENDIENTE').toUpperCase() === estado);
+    }
+    renderCronoStationRows(filtered);
+};
+
+function renderCronoStationRows(list) {
+    const tbody = document.getElementById('crono-station-tbody');
+    if (!tbody) return;
+    if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="padding:20px; text-align:center; color:#64748b;">No se encontraron réplicas con los filtros actuales.</td></tr>';
+        return;
+    }
+
+    let rowsHtml = '';
+    list.forEach(a => {
+        const estadoColor = a.estado_crono === 'APROBADO' ? '#2ecc71' : (a.estado_crono === 'EXCEDIDO' || a.estado_crono === 'RECHAZADO' ? '#ff5566' : '#f1c40f');
+        const facColor = a.faccion_color === 'Amarillo' ? '#f1c40f' : (a.faccion_color === 'Rojo' ? '#ff5566' : '#00d2ff');
+
+        rowsHtml += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <td style="padding: 6px 8px;">
+                    <div style="font-weight: bold; color: #fff;">${a.nombre_jugador}</div>
+                    <div style="font-size: 0.72rem; color: ${facColor};">${a.equipo_nombre} [${a.faccion_nombre}]</div>
+                </td>
+                <td style="padding: 6px 8px;">
+                    <div style="color: #cbd5e1; font-weight: 600;">${a.modelo}</div>
+                    <div style="font-size: 0.72rem; color: #888;">${a.tipo}</div>
+                </td>
+                <td style="padding: 6px 8px;">
+                    <input type="number" step="0.1" id="st-fps-${a.id}" value="${a.fps !== null ? a.fps : ''}" placeholder="FPS" style="width: 70px; background: #050810; border: 1px solid #444; color: #fff; padding: 3px 5px; font-size: 0.8rem;">
+                </td>
+                <td style="padding: 6px 8px;">
+                    <input type="number" step="0.01" id="st-julios-${a.id}" value="${a.julios !== null ? a.julios : ''}" placeholder="J" style="width: 60px; background: #050810; border: 1px solid #444; color: #fff; padding: 3px 5px; font-size: 0.8rem;">
+                </td>
+                <td style="padding: 6px 8px;">
+                    <input type="text" id="st-peso-${a.id}" value="${a.peso_bb || '0.20g'}" style="width: 65px; background: #050810; border: 1px solid #444; color: #fff; padding: 3px 5px; font-size: 0.8rem;">
+                </td>
+                <td style="padding: 6px 8px;">
+                    <input type="text" id="st-precinto-${a.id}" value="${a.precinto_num || ''}" placeholder="#Precinto" style="width: 75px; background: #050810; border: 1px solid #444; color: #fff; padding: 3px 5px; font-size: 0.8rem;">
+                </td>
+                <td style="padding: 6px 8px;">
+                    <select id="st-estado-${a.id}" style="padding: 3px 5px; background: #050810; border: 1px solid #444; color: ${estadoColor}; font-weight: bold; font-size: 0.78rem;">
+                        <option value="APROBADO" ${a.estado_crono === 'APROBADO' ? 'selected' : ''} style="color:#2ecc71;">✓ APROBADO</option>
+                        <option value="PENDIENTE" ${a.estado_crono === 'PENDIENTE' ? 'selected' : ''} style="color:#f1c40f;">⏳ PENDIENTE</option>
+                        <option value="EXCEDIDO" ${a.estado_crono === 'EXCEDIDO' ? 'selected' : ''} style="color:#ff5566;">✕ EXCEDIDO</option>
+                        <option value="RECHAZADO" ${a.estado_crono === 'RECHAZADO' ? 'selected' : ''} style="color:#ff5566;">✕ RECHAZADO</option>
+                    </select>
+                </td>
+                <td style="padding: 6px 8px; text-align: center;">
+                    <button type="button" class="btn primary" onclick="saveCronoStationRow(${a.id})" style="padding: 4px 8px; font-size: 0.75rem;">
+                        GUARDAR
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    tbody.innerHTML = rowsHtml;
+}
+
+window.saveCronoStationRow = async function(armaId) {
+    const fps = document.getElementById(`st-fps-${armaId}`)?.value;
+    const julios = document.getElementById(`st-julios-${armaId}`)?.value;
+    const peso_bb = document.getElementById(`st-peso-${armaId}`)?.value;
+    const precinto_num = document.getElementById(`st-precinto-${armaId}`)?.value;
+    const estado_crono = document.getElementById(`st-estado-${armaId}`)?.value;
+
+    try {
+        const res = await fetch(`/api/crono/arma/${armaId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                fps: fps ? parseFloat(fps) : null,
+                julios: julios ? parseFloat(julios) : null,
+                peso_bb, precinto_num, estado_crono
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            const found = window.allCronoArmas.find(x => x.id === armaId);
+            if (found) {
+                found.fps = data.arma.fps;
+                found.julios = data.arma.julios;
+                found.peso_bb = data.arma.peso_bb;
+                found.precinto_num = data.arma.precinto_num;
+                found.estado_crono = data.arma.estado_crono;
+            }
+            const sel = document.getElementById(`st-estado-${armaId}`);
+            if (sel) {
+                sel.style.color = (estado_crono === 'APROBADO' ? '#2ecc71' : (estado_crono === 'EXCEDIDO' || estado_crono === 'RECHAZADO' ? '#ff5566' : '#f1c40f'));
+            }
+            alert(`Réplica actualizada (${estado_crono})`);
+        } else {
+            alert(data.error || 'Error al guardar');
+        }
+    } catch (e) {
+        alert('Error de conexión');
+    }
+};
+
 let readyCheckPollTimer = null;
 
 window.openReadyCheckModal = function() {
@@ -4130,4 +4584,348 @@ window.stopReadyCheckTL = async function() {
         alert('Error de red al cerrar pase de lista');
     }
 };
+
+// ==========================================
+// CONTROL DE RÉPLICAS Y CAPACIDADES TÁCTICAS
+// ==========================================
+window.armasDashboardData = [];
+window.activeArmasMiembroId = null;
+
+async function cargarArmasDashboard() {
+    const tbody = document.getElementById('armas-dashboard-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#888;">Cargando combatientes y réplicas...</td></tr>';
+    
+    try {
+        const res = await fetch('/api/admin/armas_dashboard');
+        if (!res.ok) throw new Error('Error al cargar datos');
+        const data = await res.json();
+        window.armasDashboardData = data || [];
+
+        // Auto-popular selector de equipos únicos
+        const selEq = document.getElementById('filtro-armas-equipo');
+        if (selEq) {
+            const currentVal = selEq.value;
+            const equiposSet = new Set();
+            window.armasDashboardData.forEach(m => {
+                if (m.equipo_nombre) equiposSet.add(m.equipo_nombre);
+            });
+            const sortedEquipos = Array.from(equiposSet).sort();
+            selEq.innerHTML = '<option value="">Todas las unidades</option>' + sortedEquipos.map(eq => `<option value="${eq.toLowerCase()}">${eq}</option>`).join('');
+            if (currentVal) selEq.value = currentVal;
+        }
+
+        filtrarArmasDashboard();
+    } catch (e) {
+        console.error("Error al cargar armas dashboard:", e);
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:18px; color:#ff5566;">Error al cargar el inventario de réplicas.</td></tr>';
+    }
+}
+
+function filtrarArmasDashboard() {
+    const texto = (document.getElementById('filtro-armas-texto')?.value || '').toLowerCase().trim();
+    const faccion = (document.getElementById('filtro-armas-faccion')?.value || '').toLowerCase().trim();
+    const equipo = (document.getElementById('filtro-armas-equipo')?.value || '').toLowerCase().trim();
+    
+    let lista = window.armasDashboardData || [];
+    
+    if (faccion) {
+        lista = lista.filter(m => (m.faccion_nombre || '').toLowerCase().includes(faccion));
+    }
+
+    if (equipo) {
+        lista = lista.filter(m => (m.equipo_nombre || '').toLowerCase() === equipo || (m.equipo_nombre || '').toLowerCase().includes(equipo));
+    }
+    
+    if (texto) {
+        lista = lista.filter(m => {
+            const nom = (m.nombre_jugador || '').toLowerCase();
+            const ape = (m.nombre_apellidos || '').toLowerCase();
+            const uid = (m.uid || '').toLowerCase();
+            const eq = (m.equipo_nombre || '').toLowerCase();
+            const tieneArma = (m.armas || []).some(a => (a.modelo || '').toLowerCase().includes(texto) || (a.tipo || '').toLowerCase().includes(texto));
+            const dron = (m.dron_modelo || '').toLowerCase();
+            return nom.includes(texto) || ape.includes(texto) || uid.includes(texto) || eq.includes(texto) || tieneArma || dron.includes(texto);
+        });
+    }
+    
+    renderArmasDashboard(lista);
+}
+
+function renderArmasDashboard(lista) {
+    const tbody = document.getElementById('armas-dashboard-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (!lista || lista.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:#888;">No se encontraron combatientes con los filtros aplicados.</td></tr>';
+        return;
+    }
+    
+    lista.forEach(m => {
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.title = 'Haz clic para gestionar réplicas y capacidades de este combatiente';
+        tr.onclick = (e) => {
+            if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                abrirModalArmas(m.id);
+            }
+        };
+        
+        const fac = (m.faccion_nombre || '').toLowerCase();
+        const facBadgeClass = fac.includes('syl') ? 'med-badge-syldavia' : (fac.includes('vol') ? 'med-badge-volkovia' : 'med-badge-neutral');
+        const borderAccent = fac.includes('syl') ? '#f1c40f' : (fac.includes('vol') ? '#5dade2' : '#2ecc71');
+        
+        // Capacidades especiales
+        let capHtml = [];
+        if (m.tiene_dron) {
+            capHtml.push(`<span style="background: rgba(0,240,255,0.15); color: #00f0ff; border: 1px solid rgba(0,240,255,0.4); padding: 2px 7px; border-radius: 3px; font-size: 0.72rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">🛸 Dron${m.dron_modelo ? ': ' + m.dron_modelo : ''}</span>`);
+        }
+        if (m.tiene_nvg) {
+            capHtml.push(`<span style="background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.4); padding: 2px 7px; border-radius: 3px; font-size: 0.72rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;">👁️ NVG (${m.nvg_categoria || 'Gen 3'})</span>`);
+        }
+        const capacidadesFinal = capHtml.length > 0 
+            ? `<div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">${capHtml.join('')}</div>`
+            : `<span style="color: #64748b; font-size: 0.76rem; font-style: italic;">Sin Dron ni NVG</span>`;
+            
+        // Réplicas
+        let armasHtml = '';
+        if (m.armas && m.armas.length > 0) {
+            armasHtml = '<div style="display: flex; flex-wrap: wrap; gap: 6px;">' + m.armas.map(a => {
+                const balistica = (a.fps ? `${a.fps} FPS` : '') + (a.julios ? ` · ${a.julios}J` : '');
+                return `
+                    <span style="background: rgba(226,185,56,0.1); border: 1px solid rgba(226,185,56,0.35); color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 0.76rem; display: inline-flex; align-items: center; gap: 6px;">
+                        <span style="color: #e2b938; font-weight: bold;">[${a.tipo || 'Fusil'}]</span>
+                        <span>${a.modelo}</span>
+                        ${balistica ? `<span style="color: #00f0ff; font-family: monospace; font-weight: bold; background: rgba(0,240,255,0.08); padding: 1px 4px; border-radius: 2px;">${balistica}</span>` : ''}
+                    </span>
+                `;
+            }).join('') + '</div>';
+        } else {
+            armasHtml = `<span style="color: #64748b; font-size: 0.76rem; font-style: italic;">Sin réplicas registradas</span>`;
+        }
+        
+        tr.innerHTML = `
+            <td style="border-left: 3px solid ${borderAccent} !important;">
+                <div style="color: #fff; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 1.15rem; color: #e2b938;">person</span>
+                    <span>${m.nombre_jugador || 'Operador'}</span>
+                </div>
+                <div style="margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                    <span class="med-uid-tag">${m.rol || 'Combatiente'}</span>
+                    ${m.uid ? `<span class="med-uid-tag" style="color: #00f0ff; border-color: rgba(0,240,255,0.3);">QR: ${m.uid}</span>` : ''}
+                </div>
+            </td>
+            <td>
+                <div style="font-weight: 700; color: #fff; font-size: 0.92rem;">${m.equipo_nombre}</div>
+                <div style="margin-top: 4px;"><span class="med-badge-faction ${facBadgeClass}">${m.faccion_nombre}</span></div>
+            </td>
+            <td>${capacidadesFinal}</td>
+            <td>${armasHtml}</td>
+            <td style="text-align: center;">
+                <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); abrirModalArmas(${m.id})" style="border-color: #e2b938; color: #e2b938; background: rgba(226,185,56,0.08); padding: 4px 8px; font-size: 0.74rem; font-weight: 600; border-radius: 3px; display: inline-flex; align-items: center; gap: 4px;">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">tune</span> GESTIONAR
+                </button>
+            </td>
+        `;
+        
+        tbody.appendChild(tr);
+    });
+}
+
+function abrirModalArmas(miembroId) {
+    const miembro = (window.armasDashboardData || []).find(x => x.id === miembroId);
+    if (!miembro) return;
+    
+    window.activeArmasMiembroId = miembroId;
+    
+    const nombreEl = document.getElementById('modal-armas-jugador-nombre');
+    const subEl = document.getElementById('modal-armas-jugador-sub');
+    if (nombreEl) nombreEl.textContent = miembro.nombre_jugador + (miembro.nombre_apellidos ? ` (${miembro.nombre_apellidos})` : '');
+    if (subEl) subEl.textContent = `${miembro.equipo_nombre} • [${miembro.faccion_nombre}] • ${miembro.rol || 'Combatiente'} • QR: ${miembro.uid || '--'}`;
+    
+    // Checkboxes Dron & NVG
+    const dronCheck = document.getElementById('modal-armas-dron-check');
+    const dronModelo = document.getElementById('modal-armas-dron-modelo');
+    if (dronCheck) dronCheck.checked = !!miembro.tiene_dron;
+    if (dronModelo) {
+        dronModelo.value = miembro.dron_modelo || '';
+        dronModelo.style.display = miembro.tiene_dron ? 'block' : 'none';
+    }
+    
+    const nvgCheck = document.getElementById('modal-armas-nvg-check');
+    const nvgCat = document.getElementById('modal-armas-nvg-cat');
+    if (nvgCheck) nvgCheck.checked = !!miembro.tiene_nvg;
+    if (nvgCat) {
+        nvgCat.value = miembro.nvg_categoria || 'Gen 3';
+        nvgCat.style.display = miembro.tiene_nvg ? 'block' : 'none';
+    }
+    
+    renderModalArmasExistentes(miembro.armas || []);
+    
+    // Limpiar formulario de nueva réplica
+    const modInp = document.getElementById('modal-nueva-modelo');
+    const fpsInp = document.getElementById('modal-nueva-fps');
+    const julInp = document.getElementById('modal-nueva-julios');
+    if (modInp) modInp.value = '';
+    if (fpsInp) fpsInp.value = '';
+    if (julInp) julInp.value = '';
+    
+    const modal = document.getElementById('modal-gestionar-armas');
+    if (modal) modal.style.display = 'flex';
+}
+
+function cerrarModalArmas() {
+    const modal = document.getElementById('modal-gestionar-armas');
+    if (modal) modal.style.display = 'none';
+    window.activeArmasMiembroId = null;
+}
+
+function toggleDronFields() {
+    const chk = document.getElementById('modal-armas-dron-check');
+    const inp = document.getElementById('modal-armas-dron-modelo');
+    if (inp) inp.style.display = chk && chk.checked ? 'block' : 'none';
+}
+
+function toggleNvgFields() {
+    const chk = document.getElementById('modal-armas-nvg-check');
+    const sel = document.getElementById('modal-armas-nvg-cat');
+    if (sel) sel.style.display = chk && chk.checked ? 'block' : 'none';
+}
+
+function renderModalArmasExistentes(armas) {
+    const cont = document.getElementById('modal-armas-lista-existentes');
+    const badge = document.getElementById('modal-armas-count-badge');
+    if (!cont) return;
+    cont.innerHTML = '';
+    
+    if (badge) badge.textContent = `${armas.length} réplica${armas.length === 1 ? '' : 's'}`;
+    
+    if (!armas || armas.length === 0) {
+        cont.innerHTML = '<div style="color: #64748b; font-size: 0.8rem; font-style: italic; padding: 6px 0;">Este operador aún no tiene réplicas registradas. Añade una abajo.</div>';
+        return;
+    }
+    
+    armas.forEach(a => {
+        const item = document.createElement('div');
+        item.style.cssText = 'background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); padding: 8px 12px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px;';
+        
+        const balistica = (a.fps ? `<b>${a.fps} FPS</b>` : '') + (a.julios ? ` · <b>${a.julios} Julios</b>` : '');
+        
+        item.innerHTML = `
+            <div style="font-size: 0.85rem;">
+                <span style="color: #e2b938; font-weight: bold; margin-right: 6px;">[${a.tipo || 'Fusil'}]</span>
+                <span style="color: #fff; font-weight: 500;">${a.modelo}</span>
+                ${balistica ? `<span style="margin-left: 8px; color: #00f0ff; font-family: monospace; font-size: 0.8rem; background: rgba(0,240,255,0.08); padding: 2px 6px; border-radius: 3px;">${balistica}</span>` : ''}
+            </div>
+            <button type="button" class="btn danger btn-sm" onclick="eliminarReplica(${a.id})" style="padding: 3px 8px; font-size: 0.72rem; line-height: 1; border-radius: 3px; display: inline-flex; align-items: center; gap: 4px;" title="Eliminar réplica"><span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Borrar</button>
+        `;
+        cont.appendChild(item);
+    });
+}
+
+async function guardarEquipamientoTactico() {
+    if (!window.activeArmasMiembroId) return;
+    
+    const tieneDron = document.getElementById('modal-armas-dron-check')?.checked || false;
+    const dronModelo = document.getElementById('modal-armas-dron-modelo')?.value || '';
+    const tieneNvg = document.getElementById('modal-armas-nvg-check')?.checked || false;
+    const nvgCategoria = document.getElementById('modal-armas-nvg-cat')?.value || 'Gen 3';
+    
+    try {
+        const res = await fetch(`/api/admin/miembro/${window.activeArmasMiembroId}/tactico`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                tiene_dron: tieneDron,
+                dron_modelo: dronModelo,
+                tiene_nvg: tieneNvg,
+                nvg_categoria: nvgCategoria
+            })
+        });
+        
+        if (res.ok) {
+            await cargarArmasDashboard();
+            const miembro = (window.armasDashboardData || []).find(x => x.id === window.activeArmasMiembroId);
+            if (miembro) {
+                renderModalArmasExistentes(miembro.armas || []);
+            }
+            alert("✅ Capacidades tácticas (Dron / NVG) actualizadas.");
+        } else {
+            alert("Error al guardar capacidades.");
+        }
+    } catch(e) {
+        alert("Error de conexión al guardar capacidades.");
+    }
+}
+
+async function guardarNuevaReplica() {
+    if (!window.activeArmasMiembroId) return;
+    
+    const tipo = document.getElementById('modal-nueva-tipo')?.value || 'Fusilero / Asalto';
+    const modelo = (document.getElementById('modal-nueva-modelo')?.value || '').trim();
+    const fps = document.getElementById('modal-nueva-fps')?.value;
+    const julios = document.getElementById('modal-nueva-julios')?.value;
+    
+    if (!modelo) {
+        alert("Por favor, introduce el modelo o nombre específico de la réplica.");
+        document.getElementById('modal-nueva-modelo')?.focus();
+        return;
+    }
+    
+    try {
+        const res = await fetch('/api/crono/arma/nueva', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                miembro_id: window.activeArmasMiembroId,
+                modelo: modelo,
+                tipo: tipo,
+                fps: fps ? parseFloat(fps) : null,
+                julios: julios ? parseFloat(julios) : null,
+                estado_crono: 'APROBADO'
+            })
+        });
+        
+        const data = await res.json();
+        if (data.status === 'success') {
+            await cargarArmasDashboard();
+            const miembro = (window.armasDashboardData || []).find(x => x.id === window.activeArmasMiembroId);
+            if (miembro) {
+                renderModalArmasExistentes(miembro.armas || []);
+            }
+            // Limpiar inputs
+            document.getElementById('modal-nueva-modelo').value = '';
+            document.getElementById('modal-nueva-fps').value = '';
+            document.getElementById('modal-nueva-julios').value = '';
+            document.getElementById('modal-nueva-modelo').focus();
+        } else {
+            alert(data.error || "Error al añadir la réplica.");
+        }
+    } catch(e) {
+        alert("Error de red al añadir réplica.");
+    }
+}
+
+async function eliminarReplica(armaId) {
+    if (!confirm("¿Eliminar esta réplica del combatiente?")) return;
+    
+    try {
+        const res = await fetch(`/api/crono/arma/${armaId}`, {
+            method: 'DELETE'
+        });
+        if (res.ok) {
+            await cargarArmasDashboard();
+            const miembro = (window.armasDashboardData || []).find(x => x.id === window.activeArmasMiembroId);
+            if (miembro) {
+                renderModalArmasExistentes(miembro.armas || []);
+            }
+        } else {
+            alert("Error al eliminar la réplica.");
+        }
+    } catch(e) {
+        alert("Error de red al eliminar la réplica.");
+    }
+}
+
 

@@ -507,7 +507,7 @@
             </div>
 
             {% if ice %}
-            <div class="ice-badge-box" style="margin: 0 10px 10px 10px; padding: 6px 8px; background: rgba(231,76,60,0.18); border: 1px solid rgba(231,76,60,0.5); border-radius: 4px; text-align: left; font-size: 0.62rem; color: #fff; line-height: 1.25;">
+            <div class="ice-badge-box" style="margin: 0 10px 8px 10px; padding: 5px 8px; background: rgba(231,76,60,0.18); border: 1px solid rgba(231,76,60,0.5); border-radius: 4px; text-align: left; font-size: 0.62rem; color: #fff; line-height: 1.25;">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(231,76,60,0.3); padding-bottom: 2px; margin-bottom: 4px;">
                     <span style="font-weight: bold; color: #ff6b7a; letter-spacing: 1px; font-size: 0.65rem;">🚨 I.C.E. EMERGENCIA REAL</span>
                     {% if ice.grupo_sanguineo %}
@@ -519,6 +519,38 @@
                 {% endif %}
                 {% if ice.alergias %}
                     <div style="color: #f1c40f; margin-top: 2px;"><strong>Alergias:</strong> {{ ice.alergias }}</div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            {% if armas or (miembro and (miembro.tiene_nvg or miembro.tiene_dron)) %}
+            <div class="crono-badge-box" style="margin: 0 10px 10px 10px; padding: 5px 8px; background: rgba(0, 210, 255, 0.1); border: 1px solid rgba(0, 210, 255, 0.35); border-radius: 4px; text-align: left; font-size: 0.60rem; color: #e2e8f0; line-height: 1.2;">
+                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0,210,255,0.25); padding-bottom: 2px; margin-bottom: 3px;">
+                    <span style="font-weight: bold; color: var(--theme-color); letter-spacing: 1px;">⚖️ CONTROL CRONO & EQUIPAMIENTO</span>
+                </div>
+                {% if armas %}
+                    {% for a in armas %}
+                        <div style="display:flex; justify-content:space-between; margin-top:2px;">
+                            <span>• {{ a.modelo[:18] }}</span>
+                            {% if a.estado_crono == 'APROBADO' %}
+                                <span style="color:#2ecc71; font-weight:bold;">{{ a.fps or 'OK' }} FPS / {{ a.julios or '' }}J</span>
+                            {% elif a.estado_crono == 'EXCEDIDO' %}
+                                <span style="color:#e74c3c; font-weight:bold;">EXCEDIDO</span>
+                            {% else %}
+                                <span style="color:#f1c40f;">PENDIENTE</span>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                {% if miembro and (miembro.tiene_nvg or miembro.tiene_dron) %}
+                    <div style="margin-top:3px; padding-top:2px; border-top:1px dashed rgba(255,255,255,0.15); display:flex; gap:6px; flex-wrap:wrap;">
+                        {% if miembro.tiene_nvg %}
+                            <span style="background:rgba(46,204,113,0.25); border:1px solid #2ecc71; color:#2ecc71; padding:1px 3px; border-radius:2px; font-weight:bold;">👁️ NVG: {{ miembro.nvg_categoria or 'SÍ' }}</span>
+                        {% endif %}
+                        {% if miembro.tiene_dron %}
+                            <span style="background:rgba(0,210,255,0.25); border:1px solid #00d2ff; color:#00d2ff; padding:1px 3px; border-radius:2px; font-weight:bold;">🛸 DRON: {{ miembro.dron_modelo[:12] if miembro.dron_modelo else 'SÍ' }}</span>
+                        {% endif %}
+                    </div>
                 {% endif %}
             </div>
             {% endif %}

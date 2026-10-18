@@ -621,38 +621,26 @@
             </div>
         </section>
 
-        <!-- READY CHECK SECTION (Punto C: SITREP Personal) -->
-        <section id="ready-check-container" style="{{ 'display:block;' if ready_check else 'display:none;' }}">
-            <div class="ready-check-banner">
-                <div class="rc-title-row">
-                    <span class="rc-title">
-                        <span class="material-symbols-outlined" style="font-size:20px;">timer</span>
-                        <span id="rc-titulo-text">{{ ready_check.titulo if ready_check else 'PASE DE LISTA TÁCTICO' }}</span>
-                    </span>
-                    <span id="rc-status-pill" class="rc-status-pill {{ 'rc-pill-listo' if ready_check and ready_check.mi_estado == 'LISTO' else ('rc-pill-incidencia' if ready_check and ready_check.mi_estado == 'INCIDENCIA' else 'rc-pill-pendiente') }}">
-                        {{ ready_check.mi_estado if (ready_check and ready_check.mi_estado) else 'PENDIENTE' }}
-                    </span>
-                </div>
-                <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.3;">
-                    El Mando ha solicitado comprobación de estado de escuadra. Confirma si estás listo para el despliegue o reporta una incidencia.
-                </div>
-                <div class="rc-buttons">
-                    <button type="button" class="btn-rc btn-rc-ready" onclick="submitReadyCheck('LISTO')">
-                        <span class="material-symbols-outlined" style="font-size:18px;">check_circle</span>
-                        ¡ESTOY LISTO!
-                    </button>
-                    <button type="button" class="btn-rc btn-rc-issue" onclick="promptIssueModal()">
-                        <span class="material-symbols-outlined" style="font-size:18px;">report_problem</span>
-                        INCIDENCIA
-                    </button>
-                </div>
-                {% if ready_check and ready_check.mi_nota %}
-                    <div id="rc-nota-feedback" style="margin-top:8px; font-size:0.75rem; color:#ff8899; font-family:var(--font-tech);">
-                        Nota enviada: "{{ ready_check.mi_nota }}"
+        <!-- CHECK DE COMBATE OPERACIONAL (Cristal Minimalista) -->
+        <section id="operator-ready-section" style="margin-bottom: 20px;">
+            <div style="background: rgba(0, 240, 255, 0.04); border: 1px solid rgba(0, 240, 255, 0.22); border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 14px; backdrop-filter: blur(8px); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25); transition: all 0.3s ease;">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                    <div id="op-ready-indicator" style="width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: {{ 'rgba(0, 240, 255, 0.16)' if miembro.listo_combate else 'rgba(255, 255, 255, 0.04)' }}; border: 1px solid {{ 'rgba(0, 240, 255, 0.45)' if miembro.listo_combate else 'rgba(255, 255, 255, 0.12)' }}; color: {{ '#00f0ff' if miembro.listo_combate else '#64748b' }};">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">verified_user</span>
                     </div>
-                {% else %}
-                    <div id="rc-nota-feedback" style="display:none; margin-top:8px; font-size:0.75rem; color:#ff8899; font-family:var(--font-tech);"></div>
-                {% endif %}
+                    <div style="min-width: 0;">
+                        <div style="font-family: var(--font-mono); font-size: 0.88rem; font-weight: 700; letter-spacing: 0.5px; color: {{ '#c0f7ff' if miembro.listo_combate else '#e2e8f0' }}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" id="op-ready-title">
+                            {{ 'LISTO PARA EL COMBATE' if miembro.listo_combate else 'CHECK DE COMBATE PENDIENTE' }}
+                        </div>
+                        <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 1px;" id="op-ready-subtext">
+                            {{ 'Tu línea se muestra en verde turquesa en el panel de tu escuadra' if miembro.listo_combate else 'Confirma a tu unidad que estás equipado y listo' }}
+                        </div>
+                    </div>
+                </div>
+                <button type="button" id="btn-toggle-operator-ready" onclick="toggleOperatorReady()" style="padding: 6px 14px; border-radius: 4px; font-family: var(--font-mono); font-size: 0.76rem; font-weight: 700; letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s ease; border: 1px solid {{ 'rgba(0, 240, 255, 0.5)' if miembro.listo_combate else 'rgba(0, 240, 255, 0.25)' }}; background: {{ 'rgba(0, 240, 255, 0.16)' if miembro.listo_combate else 'rgba(0, 240, 255, 0.06)' }}; color: #00f0ff; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">{{ 'check_circle' if miembro.listo_combate else 'radio_button_unchecked' }}</span>
+                    <span id="btn-toggle-operator-text">{{ 'CONFIRMADO ✓' if miembro.listo_combate else 'DAR CHECK' }}</span>
+                </button>
             </div>
         </section>
 
@@ -741,6 +729,46 @@
                     <div style="color:var(--theme-color); font-weight:bold; font-size:0.75rem;">
                         EDITAR ⚙️
                     </div>
+                </div>
+            </div>
+
+            <!-- Card: Mi Armamento & Crono -->
+            <div class="hub-card" onclick="openArmasModal()">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="material-symbols-outlined hub-card-icon" style="color:#00f0ff;">military_tech</span>
+                        {% set aprobadas = armas | selectattr('estado_crono', 'equalto', 'APROBADO') | list | length if armas else 0 %}
+                        {% if aprobadas > 0 %}
+                            <span class="badge" style="background:rgba(46,204,113,0.2); border:1px solid #2ecc71; color:#2ecc71;">CRONO PASADO ({{ aprobadas }})</span>
+                        {% else %}
+                            <span class="badge" style="background:rgba(241,196,15,0.2); border:1px solid #f1c40f; color:#f1c40f;">CRONO PENDIENTE</span>
+                        {% endif %}
+                    </div>
+                    <h2 class="hub-card-title" style="color:#00f0ff; margin-top:4px;">MI ARMAMENTO & CRONO</h2>
+                    <p class="hub-card-desc">Registra tus réplicas (nombre y tipo) y consulta la medición de FPS y Julios validada por la Organización en el puesto de crono.</p>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-family:var(--font-tech); font-size:0.75rem; color:var(--text-muted); border-top:1px dashed rgba(255,255,255,0.1); padding-top:6px;">
+                    <span>{{ armas|length if armas else 0 }} réplica(s) registrada(s)</span>
+                    <span style="color:var(--theme-color); font-weight:bold;">GESTIONAR ⚙️</span>
+                </div>
+            </div>
+
+            <!-- Card: Equipamiento Especial (Dron & NVG) -->
+            <div class="hub-card" onclick="openEquipModal()">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="material-symbols-outlined hub-card-icon" style="color:#2ecc71;">visibility</span>
+                        <span class="badge" style="background:rgba(46,204,113,0.15); border:1px solid #2ecc71; color:#2ecc71;">CAPACIDADES ISR</span>
+                    </div>
+                    <h2 class="hub-card-title" style="color:#a3f7bf; margin-top:4px;">EQUIPAMIENTO ESPECIAL // DRON & NVG</h2>
+                    <p class="hub-card-desc">Declara tus sistemas tácticos de Visión Nocturna (categoría/gen) y Drones de reconocimiento para la planificación de tu escuadra y bando.</p>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-family:var(--font-tech); font-size:0.75rem; color:var(--text-muted); border-top:1px dashed rgba(255,255,255,0.1); padding-top:6px;">
+                    <span>
+                        👁️ NVG: {{ miembro.nvg_categoria if miembro.tiene_nvg else 'No' }} |
+                        🛸 DRON: {{ 'Sí' if miembro.tiene_dron else 'No' }}
+                    </span>
+                    <span style="color:#2ecc71; font-weight:bold;">CONFIGURAR ⚙️</span>
                 </div>
             </div>
 
@@ -925,6 +953,154 @@
         </div>
     </div>
 
+    <!-- MODAL: ARMAMENTO & CRONO -->
+    <div id="modal-armas" class="modal-overlay">
+        <div class="modal-box" style="max-width: 560px;">
+            <div class="modal-header">
+                <div class="modal-title" style="color:#00f0ff; display:flex; align-items:center; gap:8px;">
+                    <span class="material-symbols-outlined">military_tech</span>
+                    MI ARMAMENTO & CRONO
+                </div>
+                <button type="button" class="btn-close" onclick="closeArmasModal()">&times;</button>
+            </div>
+            
+            <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.2); border-radius: 4px; padding: 10px 12px; margin-bottom: 14px; font-size: 0.78rem; color: #94a3b8; line-height: 1.35;">
+                <span style="color:#00f0ff; font-weight:bold;">⚖️ CONTROL OFICIAL DE CRONOMETRAJE:</span> Registra las réplicas que llevarás a la misión. La medición de velocidad (FPS) y energía (Julios) es realizada y validada exclusivamente por los jueces de la Organización en la carpa de crono.
+            </div>
+
+            <!-- List of weapons -->
+            <div id="armas-list-container" style="max-height: 240px; overflow-y: auto; margin-bottom: 16px;">
+                {% if armas and armas|length > 0 %}
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                    {% for a in armas %}
+                        <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+                            <div>
+                                <div style="font-family: var(--font-mono); font-weight: bold; font-size: 0.92rem; color: #fff;">
+                                    {{ a.modelo }}
+                                </div>
+                                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 2px;">
+                                    Categoría: <span style="color: #cbd5e1; font-weight: 600;">{{ a.tipo }}</span>
+                                </div>
+                                <div style="margin-top: 6px;">
+                                    {% if a.estado_crono == 'APROBADO' %}
+                                        <span style="background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; color: #2ecc71; font-size: 0.72rem; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-family: var(--font-mono); display: inline-flex; align-items: center; gap: 4px;">
+                                            ✓ APROBADO: {{ a.fps or '---' }} FPS | {{ a.julios or '---' }} J ({{ a.peso_bb }})
+                                            {% if a.precinto_num %} • Precinto: #{{ a.precinto_num }}{% endif %}
+                                        </span>
+                                    {% elif a.estado_crono == 'EXCEDIDO' %}
+                                        <span style="background: rgba(255, 51, 68, 0.2); border: 1px solid #ff3344; color: #ff5566; font-size: 0.72rem; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-family: var(--font-mono);">
+                                            ✕ EXCEDIDO: {{ a.fps or '---' }} FPS | {{ a.julios or '---' }} J (NO APTO)
+                                        </span>
+                                    {% elif a.estado_crono == 'RECHAZADO' %}
+                                        <span style="background: rgba(255, 51, 68, 0.2); border: 1px solid #ff3344; color: #ff5566; font-size: 0.72rem; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-family: var(--font-mono);">
+                                            ✕ RECHAZADA POR DIRECCIÓN
+                                        </span>
+                                    {% else %}
+                                        <span style="background: rgba(241, 196, 15, 0.15); border: 1px solid #f1c40f; color: #f1c40f; font-size: 0.72rem; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-family: var(--font-mono); display: inline-flex; align-items: center; gap: 4px;">
+                                            ⏳ PENDIENTE DE CRONO (Pasa por la carpa)
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <button type="button" style="background: rgba(255,51,68,0.15); border: 1px solid rgba(255,51,68,0.4); color: #ff5566; padding: 6px 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center;" title="Eliminar réplica" onclick="deleteArma({{ a.id }})">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                            </button>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 18px; color: #64748b; font-size: 0.85rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 4px;">
+                        No tienes ninguna réplica registrada todavía. Añade una a continuación.
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Form to add new weapon -->
+            <form id="form-add-arma" onsubmit="submitAddArma(event)" style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 14px;">
+                <h4 style="margin: 0 0 10px 0; font-size: 0.82rem; color: #fff; text-transform: uppercase; font-family: var(--font-mono); display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size:16px; color:#00f0ff;">add_circle</span>
+                    Registrar Nueva Réplica
+                </h4>
+                <div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label" style="font-size:0.75rem;">Modelo / Denominación</label>
+                        <input type="text" class="form-input" id="arma-modelo" placeholder="Ej: Tokyo Marui M4 SOPMOD MWS" required style="font-size:0.85rem;">
+                    </div>
+                    <div>
+                        <label class="form-label" style="font-size:0.75rem;">Tipo / Categoría</label>
+                        <select class="form-select" id="arma-tipo" style="font-size:0.85rem;">
+                            <option value="Fusil / Asalto">Fusil / Asalto</option>
+                            <option value="Tirador Selecto (DMR)">Tirador Selecto (DMR)</option>
+                            <option value="Francotirador (Cerrojo)">Francotirador (Cerrojo)</option>
+                            <option value="Apoyo (LMG)">Apoyo (LMG)</option>
+                            <option value="Secundaria / Pistola">Secundaria / Pistola</option>
+                            <option value="Escopeta">Escopeta</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-submit" style="padding: 10px; font-size: 0.82rem; background: linear-gradient(135deg, rgba(0,240,255,0.25), rgba(0,180,220,0.6)); border: 1px solid #00f0ff;">
+                    + GUARDAR EN MI INVENTARIO
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: EQUIPAMIENTO ESPECIAL (DRON & NVG) -->
+    <div id="modal-equip" class="modal-overlay">
+        <div class="modal-box" style="max-width: 520px;">
+            <div class="modal-header">
+                <div class="modal-title" style="color:#2ecc71; display:flex; align-items:center; gap:8px;">
+                    <span class="material-symbols-outlined">visibility</span>
+                    EQUIPAMIENTO ESPECIAL // DRON & NVG
+                </div>
+                <button type="button" class="btn-close" onclick="closeEquipModal()">&times;</button>
+            </div>
+
+            <form id="form-equip" onsubmit="submitEquip(event)">
+                <div style="background: rgba(46, 204, 113, 0.05); border: 1px solid rgba(46, 204, 113, 0.25); border-radius: 4px; padding: 12px; margin-bottom: 14px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #fff; cursor: pointer; font-size: 0.9rem;">
+                        <input type="checkbox" id="equip-tiene-dron" {{ 'checked' if miembro.tiene_dron else '' }} onchange="toggleDronInput()" style="transform: scale(1.3); cursor: pointer;">
+                        <span>🛸 Cuento con Dron táctico de reconocimiento</span>
+                    </label>
+                    <div id="dron-fields" style="margin-top: 10px; display: {{ 'block' if miembro.tiene_dron else 'none' }};">
+                        <label class="form-label" style="font-size: 0.75rem;">Modelo / Especificación del Dron</label>
+                        <input type="text" class="form-input" id="equip-dron-modelo" value="{{ miembro.dron_modelo or '' }}" placeholder="Ej: DJI Mini 3 Pro - Grabación 4K / Térmica">
+                    </div>
+                </div>
+
+                <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 4px; padding: 12px; margin-bottom: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-weight: bold; color: #fff; cursor: pointer; font-size: 0.9rem;">
+                        <input type="checkbox" id="equip-tiene-nvg" {{ 'checked' if miembro.tiene_nvg else '' }} onchange="toggleNvgInput()" style="transform: scale(1.3); cursor: pointer;">
+                        <span>👁️ Cuento con Sistema de Visión Nocturna (NVG)</span>
+                    </label>
+                    <div id="nvg-fields" style="margin-top: 10px; display: {{ 'block' if miembro.tiene_nvg else 'none' }};">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                            <div>
+                                <label class="form-label" style="font-size: 0.75rem;">Categoría / Generación</label>
+                                <select class="form-select" id="equip-nvg-cat">
+                                    <option value="Digital" {{ 'selected' if miembro.nvg_categoria == 'Digital' else '' }}>Digital (Sionyx / Cámara)</option>
+                                    <option value="Gen 1" {{ 'selected' if miembro.nvg_categoria == 'Gen 1' else '' }}>Gen 1</option>
+                                    <option value="Gen 2" {{ 'selected' if miembro.nvg_categoria == 'Gen 2' else '' }}>Gen 2</option>
+                                    <option value="Gen 2+" {{ 'selected' if (not miembro.nvg_categoria or miembro.nvg_categoria == 'Gen 2+') else '' }}>Gen 2+ (Fósforo Blanco/Verde)</option>
+                                    <option value="Gen 3" {{ 'selected' if miembro.nvg_categoria == 'Gen 3' else '' }}>Gen 3 (Militar)</option>
+                                    <option value="Fusión / Térmica" {{ 'selected' if miembro.nvg_categoria == 'Fusión / Térmica' else '' }}>Fusión / Térmica</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="form-label" style="font-size: 0.75rem;">Modelo del Dispositivo (Opcional)</label>
+                                <input type="text" class="form-input" id="equip-nvg-modelo" value="{{ miembro.nvg_modelo or '' }}" placeholder="Ej: PVS-14 Photonis">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit" style="background: linear-gradient(135deg, rgba(46,204,113,0.3), rgba(46,204,113,0.8)); border: 1px solid #2ecc71;">
+                    GUARDAR CAPACIDADES TÁCTICAS
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION -->
     <div id="toast">
         <span class="material-symbols-outlined" style="color:var(--theme-color);">info</span>
@@ -967,70 +1143,74 @@
             }
         }
 
-        // --- READY CHECK LOGIC (Punto C) ---
-        async function submitReadyCheck(estado) {
-            const nota = (estado === 'INCIDENCIA') ? document.getElementById('issue-text').value.trim() : '';
+        // --- OPERATOR COMBAT READY CHECK ---
+        async function toggleOperatorReady() {
             try {
-                const res = await fetch('/api/ready_check/respond', {
+                const res = await fetch('/api/operador/ready', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ estado, nota })
+                    body: JSON.stringify({})
                 });
                 const data = await res.json();
-                if (data.status === 'success') {
-                    showToast(estado === 'LISTO' ? '✅ Confirmado: ESTOY LISTO' : '⚠️ Incidencia notificada al Mando');
-                    closeIssueModal();
-                    updateReadyCheckUI(estado, nota);
+                if (data.success) {
+                    updateOperatorReadyUI(data.listo);
+                    showToast(data.listo ? '✅ Estado actualizado: OPERATIVO' : 'ℹ️ Estado: EN ESPERA');
                 } else {
-                    alert(data.error || 'Error al registrar estado');
+                    alert(data.error || 'Error al actualizar estado de combate');
                 }
             } catch (e) {
-                alert('Error de red al actualizar estado');
+                alert('Error de red al actualizar estado de combate');
             }
         }
 
-        function updateReadyCheckUI(estado, nota) {
-            const pill = document.getElementById('rc-status-pill');
-            if (pill) {
-                pill.className = 'rc-status-pill ' + (estado === 'LISTO' ? 'rc-pill-listo' : (estado === 'INCIDENCIA' ? 'rc-pill-incidencia' : 'rc-pill-pendiente'));
-                pill.innerText = estado;
-            }
-            const feed = document.getElementById('rc-nota-feedback');
-            if (feed) {
-                if (nota) {
-                    feed.style.display = 'block';
-                    feed.innerText = 'Nota enviada: "' + nota + '"';
-                } else {
-                    feed.style.display = 'none';
+        function updateOperatorReadyUI(isReady) {
+            const indicator = document.getElementById('op-ready-indicator');
+            const title = document.getElementById('op-ready-title');
+            const subtext = document.getElementById('op-ready-subtext');
+            const btn = document.getElementById('btn-toggle-operator-ready');
+            const btnText = document.getElementById('btn-toggle-operator-text');
+            const icon = btn ? btn.querySelector('.material-symbols-outlined') : null;
+            
+            if (isReady) {
+                if (indicator) {
+                    indicator.style.background = 'rgba(0, 240, 255, 0.16)';
+                    indicator.style.borderColor = 'rgba(0, 240, 255, 0.45)';
+                    indicator.style.color = '#00f0ff';
                 }
+                if (title) {
+                    title.style.color = '#c0f7ff';
+                    title.textContent = 'LISTO PARA EL COMBATE';
+                }
+                if (subtext) {
+                    subtext.textContent = 'Tu línea se muestra en verde turquesa en el panel de tu escuadra';
+                }
+                if (btn) {
+                    btn.style.background = 'rgba(0, 240, 255, 0.16)';
+                    btn.style.borderColor = 'rgba(0, 240, 255, 0.5)';
+                }
+                if (btnText) btnText.textContent = 'CONFIRMADO ✓';
+                if (icon) icon.textContent = 'check_circle';
+            } else {
+                if (indicator) {
+                    indicator.style.background = 'rgba(255, 255, 255, 0.04)';
+                    indicator.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                    indicator.style.color = '#64748b';
+                }
+                if (title) {
+                    title.style.color = '#e2e8f0';
+                    title.textContent = 'CHECK DE COMBATE PENDIENTE';
+                }
+                if (subtext) {
+                    subtext.textContent = 'Confirma a tu unidad que estás equipado y listo';
+                }
+                if (btn) {
+                    btn.style.background = 'rgba(0, 240, 255, 0.06)';
+                    btn.style.borderColor = 'rgba(0, 240, 255, 0.25)';
+                }
+                if (btnText) btnText.textContent = 'DAR CHECK';
+                if (icon) icon.textContent = 'radio_button_unchecked';
             }
         }
-
-        function promptIssueModal() {
-            document.getElementById('modal-issue').style.display = 'flex';
-        }
-
-        function closeIssueModal() {
-            document.getElementById('modal-issue').style.display = 'none';
-        }
-
-        // Polling for active Ready Check
-        async function pollActiveReadyCheck() {
-            try {
-                const res = await fetch('/api/ready_check/active');
-                if (!res.ok) return;
-                const data = await res.json();
-                const container = document.getElementById('ready-check-container');
-                if (data.active) {
-                    container.style.display = 'block';
-                    document.getElementById('rc-titulo-text').innerText = data.titulo || 'PASE DE LISTA TÁCTICO';
-                    updateReadyCheckUI(data.mi_estado, data.mi_nota);
-                } else {
-                    container.style.display = 'none';
-                }
-            } catch (err) {}
-        }
-        setInterval(pollActiveReadyCheck, 6000);
 
         // --- MODALS ICE & PROFILE ---
         function openIceModal() {
@@ -1106,6 +1286,107 @@
                     setTimeout(() => location.reload(), 800);
                 } else {
                     alert(data.error || 'Error al actualizar expediente');
+                }
+            } catch (err) {
+                alert('Error de conexión');
+            }
+        }
+
+        // --- MODALS ARMAMENTO & CRONO ---
+        function openArmasModal() {
+            document.getElementById('modal-armas').style.display = 'flex';
+        }
+        function closeArmasModal() {
+            document.getElementById('modal-armas').style.display = 'none';
+        }
+
+        async function submitAddArma(e) {
+            e.preventDefault();
+            const modelo = document.getElementById('arma-modelo').value.trim();
+            const tipo = document.getElementById('arma-tipo').value;
+            if (!modelo) return;
+
+            try {
+                const res = await fetch('/api/operador/armas', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ modelo, tipo })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('Réplica registrada en inventario');
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    alert(data.error || 'Error al añadir réplica');
+                }
+            } catch (err) {
+                alert('Error de conexión');
+            }
+        }
+
+        async function deleteArma(armaId) {
+            if (!confirm('¿Deseas retirar esta réplica de tu inventario?')) return;
+            try {
+                const res = await fetch(`/api/operador/armas/${armaId}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('Réplica eliminada');
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    alert(data.error || 'Error al eliminar réplica');
+                }
+            } catch (err) {
+                alert('Error de conexión');
+            }
+        }
+
+        // --- MODALS EQUIPAMIENTO ESPECIAL (DRON & NVG) ---
+        function openEquipModal() {
+            document.getElementById('modal-equip').style.display = 'flex';
+        }
+        function closeEquipModal() {
+            document.getElementById('modal-equip').style.display = 'none';
+        }
+
+        function toggleDronInput() {
+            const chk = document.getElementById('equip-tiene-dron');
+            document.getElementById('dron-fields').style.display = chk.checked ? 'block' : 'none';
+        }
+
+        function toggleNvgInput() {
+            const chk = document.getElementById('equip-tiene-nvg');
+            document.getElementById('nvg-fields').style.display = chk.checked ? 'block' : 'none';
+        }
+
+        async function submitEquip(e) {
+            e.preventDefault();
+            const tieneDron = document.getElementById('equip-tiene-dron').checked ? 1 : 0;
+            const dronModelo = document.getElementById('equip-dron-modelo').value.trim();
+            const tieneNvg = document.getElementById('equip-tiene-nvg').checked ? 1 : 0;
+            const nvgCat = document.getElementById('equip-nvg-cat').value;
+            const nvgModelo = document.getElementById('equip-nvg-modelo').value.trim();
+
+            try {
+                const res = await fetch('/api/operador/equipamiento', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        tiene_dron: tieneDron,
+                        dron_modelo: dronModelo,
+                        tiene_nvg: tieneNvg,
+                        nvg_categoria: nvgCat,
+                        nvg_modelo: nvgModelo
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    showToast('Capacidades especiales actualizadas');
+                    closeEquipModal();
+                    setTimeout(() => location.reload(), 600);
+                } else {
+                    alert(data.error || 'Error al guardar equipamiento');
                 }
             } catch (err) {
                 alert('Error de conexión');

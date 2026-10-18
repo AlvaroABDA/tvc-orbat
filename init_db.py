@@ -60,7 +60,29 @@ def init_db():
             bando_original TEXT,
             activo BOOLEAN DEFAULT 1,
             foto_url TEXT,
+            tiene_dron BOOLEAN DEFAULT 0,
+            dron_modelo TEXT,
+            tiene_nvg BOOLEAN DEFAULT 0,
+            nvg_categoria TEXT,
+            nvg_modelo TEXT,
             FOREIGN KEY (equipo_id) REFERENCES Equipo (id) ON DELETE CASCADE
+        )
+    ''')
+    
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Miembro_Arma (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            miembro_id INTEGER NOT NULL,
+            modelo TEXT NOT NULL,
+            tipo TEXT NOT NULL,
+            fps REAL DEFAULT NULL,
+            julios REAL DEFAULT NULL,
+            peso_bb TEXT DEFAULT '0.20g',
+            estado_crono TEXT DEFAULT 'PENDIENTE',
+            precinto_num TEXT DEFAULT '',
+            cronometrado_en DATETIME DEFAULT NULL,
+            cronometrado_por TEXT DEFAULT '',
+            FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
         )
     ''')
     
