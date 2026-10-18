@@ -952,6 +952,152 @@
             </div>
         </div>
 
+        <!-- Card: Prismáticos Tácticos AR -->
+        <div class="card-menu">
+            <div class="card-header-row" onclick="handleCardClick('prismaticos', true, '/prismaticos')">
+                <div class="card-icon-title">
+                    <div class="card-icon" style="background: rgba(0, 240, 255, 0.12); border: 1px solid var(--accent-cyan); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 6px;">
+                        <span class="material-symbols-outlined" style="color: var(--accent-cyan); font-size: 26px;">visibility</span>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Prismáticos Tácticos AR</h2>
+                        <div style="font-size: 0.75rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">LOCALIZACIÓN DE BALIZAS // REALIDAD AUMENTADA</div>
+                    </div>
+                </div>
+                <div>
+                    <span class="card-badge badge-ready" style="border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.12); font-weight: bold;">DISPONIBLE PARA TODA LA TROPA</span>
+                </div>
+            </div>
+
+            <div class="card-tags">
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">view_in_ar</span> REALIDAD AUMENTADA</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">explore</span> BRÚJULA 360° + INCLINACIÓN</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">radar</span> FLECHAS RADAR PERIMÉTRICAS</span>
+                <span class="card-tag" style="color: var(--accent-gold); border-color: rgba(255,215,0,0.3);"><span class="material-symbols-outlined" style="font-size:13px;">near_me</span> MODO DEMO LOCAL (300m)</span>
+            </div>
+
+            <p class="card-desc">
+                Visor electro-óptico con cámara móvil y sensores de orientación. Proyecta en tiempo real las balizas, POIs, bases y objetivos flotando sobre el paisaje real con azimut, distancia, filtros térmicos NVG/FLIR y modo de entrenamiento demo local.
+            </p>
+
+            <!-- INSTRUCCIONES EN LA TARJETA -->
+            <div class="card-instructions-panel" onclick="event.stopPropagation()">
+                <div class="card-instructions-header" id="card-inst-header-prismaticos" onclick="toggleCardInstructions('prismaticos')">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> MANUAL DE OPERACIÓN DEL VISOR AR
+                    </div>
+                    <span class="card-tag" id="card-arrow-prismaticos" style="border-color: rgba(0,240,255,0.3); color: #00f0ff;">▼ VER INSTRUCCIONES</span>
+                </div>
+                <div class="card-instructions-drawer" id="card-drawer-prismaticos">
+                    <div class="card-inst-box">
+                        <b style="color: #00f0ff;">OBJETIVO:</b> Orientarse en el terreno de combate, localizar balizas y puntos de control amigos o enemigos a simple vista a través de la cámara del smartphone.
+                    </div>
+                    <div class="card-step-item">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">1.</span> Selección de Modo de Operación</div>
+                        <div class="card-step-desc">Elige entre <b>Modo Demo Local (30-300m)</b> para probar inmediatamente en tu casa/calle, <b>Modo Virtual en el Campo</b> (simula estar en Fuerte Stanley) o <b>Modo GPS Real</b> para el día de partida.</div>
+                    </div>
+                    <div class="card-step-item">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">2.</span> Orientación y Brújula Táctica</div>
+                        <div class="card-step-desc">Permite el acceso a la cámara y gira el smartphone suavemente en círculo para alinear el rumbo de la brújula con el norte magnético. Si no tienes giroscopio o estás en PC, puedes arrastrar la pantalla con el ratón.</div>
+                    </div>
+                    <div class="card-step-item">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">3.</span> Detección Perimétrica Off-Screen</div>
+                        <div class="card-step-desc">Si un objetivo está a tu espalda o fuera del ángulo de la cámara, aparecerá una flecha radar parpadeante en el borde indicando los grados que debes girar para centrarlo.</div>
+                    </div>
+                    <div class="card-step-item">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">4.</span> Modos de Visión y Zoom</div>
+                        <div class="card-step-desc">Alterna entre visión diurna Óptica, Visión Nocturna NVG (Fósforo verde), Termografía FLIR y Ámbar de alto contraste. Emplea el selector de zoom digital (1X, 2X, 4X, 8X) para observar sectores lejanos.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <span>ESTADO: OPERATIVO // ACCESO LIBRE</span>
+                <div class="card-footer-btns">
+                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('prismaticos')" title="Desplegar instrucciones del visor">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
+                        INSTRUCCIONES
+                    </button>
+                    <button type="button" class="btn-action" onclick="handleCardClick('prismaticos', true, '/prismaticos')">
+                        ENTRAR AL VISOR AR ➔
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card: Defensa Antiaérea / Batería SAM AAA -->
+        <div class="card-menu">
+            <div class="card-header-row" onclick="handleCardClick('simulador_aaa', true, '/simulador_aaa')">
+                <div class="card-icon-title">
+                    <div class="card-icon" style="background: rgba(255, 51, 68, 0.12); border: 1px solid var(--accent-red); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 6px;">
+                        <span class="material-symbols-outlined" style="color: var(--accent-red); font-size: 26px;">flight_takeoff</span>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Defensa Antiaérea (AAA)</h2>
+                        <div style="font-size: 0.75rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">BATERÍA SAM // MISIL GUIADO FOX-1 // RADAR IFF</div>
+                    </div>
+                </div>
+                <div>
+                    <span class="card-badge badge-ready" style="border-color: #ff3344; color: #ff5566; background: rgba(255, 51, 68, 0.12); font-weight: bold;">OPERATIVO</span>
+                </div>
+            </div>
+
+            <div class="card-tags">
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">radar</span> TRANSPONDEDORES SQUAWK IFF</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">track_changes</span> LOCK-ON ACÚSTICO</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">rocket_launch</span> MISIL GUIADO FOX-1</span>
+                <span class="card-tag" style="color: var(--accent-green); border-color: rgba(46,204,113,0.3);"><span class="material-symbols-outlined" style="font-size:13px;">check_circle</span> SPLASH ONE CONFIRMED</span>
+            </div>
+
+            <p class="card-desc">
+                Simulador de defensa antiaérea y puesto de tiro MANPADS. Rastrea aeronaves y drones en el cielo, verifica su código transpondedor en la tabla IFF para evitar bajas amigas/civiles, fija el blanco con la cámara y dispara misiles guiados FOX-1.
+            </p>
+
+            <!-- INSTRUCCIONES EN LA TARJETA -->
+            <div class="card-instructions-panel" onclick="event.stopPropagation()">
+                <div class="card-instructions-header" id="card-inst-header-aaa" onclick="toggleCardInstructions('aaa')">
+                    <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> PROTOCOLO DE TIRO DE DEFENSA AÉREA
+                    </div>
+                    <span class="card-tag" id="card-arrow-aaa" style="border-color: rgba(255,51,68,0.3); color: #ff5566;">▼ VER INSTRUCCIONES</span>
+                </div>
+                <div class="card-instructions-drawer" id="card-drawer-aaa">
+                    <div class="card-inst-box" style="border-left-color: var(--accent-red); background: rgba(255,51,68,0.06);">
+                        <b style="color: var(--accent-red);">OBJETIVO:</b> Proteger el espacio aéreo del teatro de operaciones, identificar aeronaves hostiles mediante Squawk y derribarlas con misiles tierra-aire sin causar fuego amigo.
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
+                        <div class="card-step-title"><span style="color: var(--accent-red);">1.</span> Adquisición de Contacto Radar</div>
+                        <div class="card-step-desc">Apunta la cámara del móvil hacia el cielo para localizar los aparatos en vuelo. Cada aeronave mostrará su altitud, distancia, velocidad y código transpondedor (ej: SQ-4021).</div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
+                        <div class="card-step-title"><span style="color: var(--accent-red);">2.</span> Verificación en la Tabla Intel IFF</div>
+                        <div class="card-step-desc">Pulsa <b>TABLA INTEL IFF</b> para consultar el código: Su-25 y drones Shahed son hostiles autorizados para derribo. C-130 y Reaper son aliados amigos. Vuelos comerciales y Medevac están estrictamente protegidos.</div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
+                        <div class="card-step-title"><span style="color: var(--accent-red);">3.</span> Persecución y Enganche Acústico (Lock-On)</div>
+                        <div class="card-step-desc">Sigue el blanco suavemente manteniendo el rombo central centrado en el avión. El tono sonoro pasará de pitidos rápidos a un <b>tono continuo agudo</b> al alcanzar el 100% de fijación.</div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
+                        <div class="card-step-title"><span style="color: var(--accent-red);">4.</span> Disparo FOX-1 y Splash One</div>
+                        <div class="card-step-desc">Presiona <b>DISPARAR: FOX-1</b> para lanzar el misil. El proyectil volará con estela de humo hacia la posición interceptada provocando una detonación masiva y confirmando el derribo.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <span>ESTADO: OPERATIVO // ACCESO LIBRE</span>
+                <div class="card-footer-btns">
+                    <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('aaa')" title="Desplegar protocolo de tiro antiaéreo">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
+                        INSTRUCCIONES
+                    </button>
+                    <button type="button" class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.12);" onclick="handleCardClick('simulador_aaa', true, '/simulador_aaa')">
+                        ACCEDER A BATERÍA AAA ➔
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- Contingencia QR -->
         <div class="info-contingencia">
             <span class="material-symbols-outlined">info</span>
@@ -1133,6 +1279,44 @@
                 tips: [
                     "Si te quedas sin botiquines en combate, debes acudir a un punto de RESPAWN autorizado para reaprovisionar material médico.",
                     "En Android o iOS, ejecuta la app a pantalla completa desde el icono instalado para una respuesta táctica más rápida."
+                ]
+            },
+            prismaticos: {
+                title: "PRISMÁTICOS TÁCTICOS AR",
+                subtitle: "LOCALIZACIÓN DE BALIZAS // REALIDAD AUMENTADA",
+                iconType: "icon",
+                iconValue: "visibility",
+                iconColor: "var(--accent-cyan)",
+                iconBg: "rgba(0, 240, 255, 0.15)",
+                objective: "Localizar balizas, bases y puntos de interés sobre el terreno mediante visión aumentada por cámara móvil, brújula 360° y telemetría de azimut y metros.",
+                steps: [
+                    { title: "1. Selección de Modo", desc: "Elige Modo Demo Local (para entrenar en cualquier lugar a corta distancia), Virtual en el Campo o GPS Real." },
+                    { title: "2. Calibración de Rumbo", desc: "Gira el teléfono 360° para calibrar el sensor. Emplea el botón CALIB 180° si la brújula apunta invertida." },
+                    { title: "3. Flechas Perimétricas", desc: "Sigue los indicadores radar en los bordes de la pantalla para ubicar objetivos que están fuera del campo de visión de la cámara." },
+                    { title: "4. Filtros Ópticos", desc: "Alterna entre visión diurna, Visión Nocturna NVG (Fósforo verde) y Termografía FLIR según las condiciones de luz." }
+                ],
+                tips: [
+                    "Puedes activar los distintos aumentos (1X a 8X) para inspeccionar objetivos a larga distancia.",
+                    "Si estás en un ordenador o no tienes giroscopio, arrastra la pantalla con el ratón para orientar la vista."
+                ]
+            },
+            aaa: {
+                title: "DEFENSA ANTIAÉREA (AAA)",
+                subtitle: "BATERÍA SAM // MISIL GUIADO FOX-1 // RADAR IFF",
+                iconType: "icon",
+                iconValue: "flight_takeoff",
+                iconColor: "var(--accent-red)",
+                iconBg: "rgba(255, 51, 68, 0.15)",
+                objective: "Rastrear contactos aéreos en el cielo, verificar su transpondedor IFF en la base de datos, lograr fijación acústica (Lock-On) y destruir blancos hostiles con misiles guiados FOX-1.",
+                steps: [
+                    { title: "1. Detección en Cúpula 3D", desc: "Apunta la cámara hacia el cielo para adquirir los contactos aéreos en vuelo y leer su código Squawk." },
+                    { title: "2. Verificación IFF", desc: "Abre la Tabla Intel IFF: confirma que el código corresponde a un blanco hostil antes de autorizar el fuego." },
+                    { title: "3. Fijación Acústica (Lock-On)", desc: "Mantén el retículo centrado suavemente en el avión hasta escuchar el tono continuo agudo de bloqueo al 100%." },
+                    { title: "4. Disparo y Splash One", desc: "Pulsa DISPARAR: FOX-1 para lanzar el misil y confirmar el impacto de derribo en el cielo." }
+                ],
+                tips: [
+                    "¡Cuidado con el fuego amigo! Derribar aparatos aliados o vuelos civiles acarrea graves penalizaciones de puntos.",
+                    "Mantén el blanco dentro de la retícula durante el vuelo del misil para asegurar el guiado terminal."
                 ]
             }
         };

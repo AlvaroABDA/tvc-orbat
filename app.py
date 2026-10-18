@@ -390,6 +390,48 @@ def simulacion_menu():
                            sanitario_id=sanitario_id,
                            is_medic=session.get('is_medic', False))
 
+@app.route('/prismaticos')
+@app.route('/prismaticos_ar')
+@app.route('/visor_ar')
+def prismaticos_ar():
+    if 'role' not in session:
+        return redirect(url_for('login'))
+    user_role = session.get('role', 'player')
+    user_faction = session.get('faction')
+    equipo_id = session.get('equipo_id')
+
+    conn = get_db_connection()
+    f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
+    fac_id = f_row['id'] if f_row else None
+
+    if user_role == 'admin':
+        pois_rows = conn.execute("SELECT id, nombre, descripcion, lat, lng, tolerancia_metros, tipo, faccion_id FROM puntos_interes ORDER BY nombre").fetchall()
+    else:
+        pois_rows = conn.execute("SELECT id, nombre, descripcion, lat, lng, tolerancia_metros, tipo, faccion_id FROM puntos_interes WHERE faccion_id = ? OR faccion_id IS NULL OR faccion_id = 0 ORDER BY nombre", (fac_id,)).fetchall()
+
+    pois = [dict(r) for r in pois_rows]
+    conn.close()
+
+    return render_template('prismaticos_ar.html',
+                           user_role=user_role,
+                           user_faction=user_faction,
+                           equipo_id=equipo_id,
+                           initial_pois=pois)
+
+@app.route('/simulador_aaa')
+@app.route('/aaa_sim')
+def simulador_aaa():
+    if 'role' not in session:
+        return redirect(url_for('login'))
+    user_role = session.get('role', 'player')
+    user_faction = session.get('faction')
+    equipo_id = session.get('equipo_id')
+
+    return render_template('simulador_aaa.html',
+                           user_role=user_role,
+                           user_faction=user_faction,
+                           equipo_id=equipo_id)
+
 @app.route('/telemetro_recon')
 def telemetro_recon():
     if 'role' not in session:

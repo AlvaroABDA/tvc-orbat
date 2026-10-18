@@ -21,5 +21,7 @@ ENV/
 .DS_Store
 
 # Logs
-*.log
+# Uploads
+static/uploads/documentos_unidad/*.pdf
+!static/uploads/documentos_unidad/.gitkeep
 

@@ -1,0 +1,1420 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ORBAT - Simulador AAA // Batería SAM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800;900&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        :root {
+            --bg-color: #03070d;
+            --sam-cyan: #00f0ff;
+            --sam-gold: #ffd700;
+            --sam-green: #2ecc71;
+            --sam-red: #ff3344;
+            --sam-dim: rgba(0, 240, 255, 0.25);
+            --sam-dim-red: rgba(255, 51, 68, 0.3);
+            --font-tactical: 'Share Tech Mono', monospace;
+            --font-heading: 'Orbitron', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: #fff;
+            font-family: var(--font-tactical);
+        }
+
+        /* Video de Cámara Real */
+        #camera-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            background-color: #000;
+        }
+
+        /* Cúpula de Cielo Simulado si no hay cámara activa */
+        #simulated-sky-dome {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            background: radial-gradient(circle at 50% 30%, #0c1a2e 0%, #03060a 100%);
+            overflow: hidden;
+        }
+
+        .star-point {
+            position: absolute;
+            background: #fff;
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+
+        /* Canvas de Capa de Fuego y Proyectiles */
+        #missile-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 8;
+            pointer-events: none;
+        }
+
+        /* Canvas de Retícula HUD y Telemetría */
+        #hud-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Capa de Marcadores Aéreos DOM */
+        #contacts-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* Viñeta de Óptica Antiaérea */
+        .sam-vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 4;
+            pointer-events: none;
+            box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(0, 240, 255, 0.15);
+        }
+
+        /* Barra Superior HUD */
+        .top-hud-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 25;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: linear-gradient(180deg, rgba(3, 7, 13, 0.95) 0%, rgba(3, 7, 13, 0.5) 70%, transparent 100%);
+            border-bottom: 1px solid var(--sam-dim);
+        }
+
+        .hud-btn {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid var(--sam-cyan);
+            color: var(--sam-cyan);
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: var(--font-tactical);
+            font-size: 0.72rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .hud-btn:active {
+            transform: scale(0.96);
+            background: var(--sam-cyan);
+            color: #000;
+        }
+
+        .hud-btn-gold {
+            border-color: var(--sam-gold);
+            color: var(--sam-gold);
+            background: rgba(255, 215, 0, 0.12);
+        }
+
+        .hud-btn-red {
+            border-color: var(--sam-red);
+            color: var(--sam-red);
+            background: rgba(255, 51, 68, 0.15);
+        }
+
+        /* Indicador Central de Seeker y Lock-On */
+        .seeker-reticle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 12;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .seeker-outer-ring {
+            width: 110px;
+            height: 110px;
+            border: 2px dashed var(--sam-dim);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.15s, transform 0.1s;
+        }
+
+        .seeker-outer-ring.tracking {
+            border-color: var(--sam-gold);
+            border-style: solid;
+            animation: ring-pulse 0.8s infinite alternate;
+        }
+
+        .seeker-outer-ring.locked {
+            border-color: var(--sam-red);
+            border-width: 3px;
+            border-style: solid;
+            box-shadow: 0 0 25px rgba(255, 51, 68, 0.8);
+            transform: scale(0.95);
+        }
+
+        @keyframes ring-pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.06); }
+        }
+
+        .seeker-inner-diamond {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--sam-cyan);
+            transform: rotate(45deg);
+            position: absolute;
+            transition: border-color 0.15s;
+        }
+
+        .seeker-outer-ring.locked .seeker-inner-diamond {
+            border-color: var(--sam-red);
+            background: rgba(255, 51, 68, 0.25);
+        }
+
+        .seeker-status-text {
+            position: absolute;
+            bottom: -32px;
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            letter-spacing: 1.5px;
+            font-weight: 800;
+            color: var(--sam-cyan);
+            white-space: nowrap;
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+        }
+
+        .seeker-status-text.locked {
+            color: var(--sam-red);
+            animation: blink 0.3s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0.2; }
+        }
+
+        /* Barra de Progreso de Fijación (Lock Meter) */
+        .lock-meter-container {
+            position: absolute;
+            top: -18px;
+            width: 90px;
+            height: 5px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--sam-dim);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .lock-meter-fill {
+            width: 0%;
+            height: 100%;
+            background: var(--sam-cyan);
+            transition: width 0.05s linear, background-color 0.2s;
+        }
+
+        .lock-meter-fill.locked {
+            background: var(--sam-red);
+        }
+
+        /* Tarjeta de Contacto Aéreo en Vuelo */
+        .air-contact-target {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            will-change: transform;
+            pointer-events: auto;
+            cursor: crosshair;
+        }
+
+        .air-contact-box {
+            background: rgba(3, 7, 13, 0.85);
+            border: 1px solid var(--sam-cyan);
+            padding: 4px 8px;
+            border-radius: 3px;
+            min-width: 110px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            backdrop-filter: blur(4px);
+        }
+
+        .air-contact-box.tracked {
+            border-color: var(--sam-gold);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+        }
+
+        .air-contact-box.locked {
+            border-color: var(--sam-red);
+            box-shadow: 0 0 20px rgba(255, 51, 68, 0.8);
+            background: rgba(255, 51, 68, 0.15);
+        }
+
+        .air-squawk-header {
+            font-family: var(--font-heading);
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .air-squawk-code {
+            color: var(--sam-gold);
+        }
+
+        .air-telemetry-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.62rem;
+            color: #94a3b8;
+        }
+
+        .air-icon-pip {
+            width: 10px;
+            height: 10px;
+            border: 2px solid var(--sam-cyan);
+            border-radius: 2px;
+            background: rgba(0, 240, 255, 0.3);
+            margin-top: 1px;
+        }
+
+        /* Banner de Derribo / Impacto Splash One */
+        #splash-banner {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            background: rgba(3, 7, 13, 0.95);
+            border: 2px solid var(--sam-green);
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 0 35px rgba(46, 204, 113, 0.8);
+            animation: pop-banner 0.3s ease;
+        }
+
+        #splash-banner.penalty {
+            border-color: var(--sam-red);
+            box-shadow: 0 0 35px rgba(255, 51, 68, 0.9);
+        }
+
+        @keyframes pop-banner {
+            from { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .splash-title {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .splash-sub {
+            font-size: 0.78rem;
+            color: #cbd5e1;
+        }
+
+        /* Barra Inferior de Disparo y Misiles */
+        .bottom-fire-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 25;
+            padding: 10px 14px;
+            background: linear-gradient(0deg, rgba(3, 7, 13, 0.98) 0%, rgba(3, 7, 13, 0.7) 80%, transparent 100%);
+            border-top: 1px solid var(--sam-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .fire-btn-container {
+            flex: 1;
+            max-width: 320px;
+        }
+
+        .btn-launch-missile {
+            width: 100%;
+            background: linear-gradient(180deg, #ff3344 0%, #aa1122 100%);
+            border: 2px solid #ff6677;
+            color: #fff;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 0 20px rgba(255, 51, 68, 0.5);
+            transition: all 0.15s;
+        }
+
+        .btn-launch-missile:active {
+            transform: scale(0.97);
+            background: #ff1122;
+            box-shadow: 0 0 35px rgba(255, 51, 68, 0.9);
+        }
+
+        .btn-launch-missile.disabled {
+            background: #2a3340;
+            border-color: #475569;
+            color: #94a3b8;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        /* Puntuación y Munición */
+        .score-board {
+            display: flex;
+            gap: 14px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .score-val {
+            font-family: var(--font-heading);
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        /* Modal Tabla Intel IFF */
+        .modal-iff-drawer {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+        }
+
+        .modal-iff-box {
+            background: #090f17;
+            border: 1px solid var(--sam-gold);
+            border-radius: 6px;
+            max-width: 600px;
+            width: 100%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.25);
+            overflow: hidden;
+        }
+
+        .iff-header {
+            padding: 12px 16px;
+            background: rgba(255, 215, 0, 0.1);
+            border-bottom: 1px solid var(--sam-gold);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .iff-list {
+            padding: 12px 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .iff-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 4px solid #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.78rem;
+        }
+
+        .iff-card.hostile { border-left-color: var(--sam-red); background: rgba(255, 51, 68, 0.08); }
+        .iff-card.friendly { border-left-color: var(--sam-green); background: rgba(46, 204, 113, 0.08); }
+        .iff-card.civilian { border-left-color: var(--sam-gold); background: rgba(255, 215, 0, 0.08); }
+
+        .iff-badge {
+            font-family: var(--font-heading);
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .badge-hostile { background: rgba(255, 51, 68, 0.2); color: var(--sam-red); border: 1px solid var(--sam-red); }
+        .badge-friendly { background: rgba(46, 204, 113, 0.2); color: var(--sam-green); border: 1px solid var(--sam-green); }
+        .badge-civilian { background: rgba(255, 215, 0, 0.2); color: var(--sam-gold); border: 1px solid var(--sam-gold); }
+
+        /* Controles Virtuales Touch / Desktop */
+        #virtual-touch-hint {
+            position: absolute;
+            bottom: 75px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 18;
+            background: rgba(3, 7, 13, 0.85);
+            border: 1px dashed var(--sam-dim);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            color: #cbd5e1;
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Stream de Cámara Real -->
+    <video id="camera-video" playsinline autoplay muted></video>
+
+    <!-- Fondo de Cúpula Aérea Simulada si la cámara está apagada o no permitida -->
+    <div id="simulated-sky-dome">
+        <!-- Puntos estelares generados por JS -->
+    </div>
+
+    <div class="sam-vignette"></div>
+
+    <!-- Canvas de Misiles y Efectos Balísticos -->
+    <canvas id="missile-canvas"></canvas>
+
+    <!-- Canvas HUD para Pitch Ladder y Brújula -->
+    <canvas id="hud-canvas"></canvas>
+
+    <!-- Capa de Contactos Aéreos -->
+    <div id="contacts-layer"></div>
+
+    <!-- Retícula Central del Seeker Óptico -->
+    <div class="seeker-reticle">
+        <div class="lock-meter-container">
+            <div class="lock-meter-fill" id="lock-meter-fill"></div>
+        </div>
+        <div class="seeker-outer-ring" id="seeker-outer-ring">
+            <div class="seeker-inner-diamond"></div>
+        </div>
+        <div class="seeker-status-text" id="seeker-status-text">BÚSQUEDA AUTÓNOMA</div>
+    </div>
+
+    <!-- Banner de Derribo Splash One / Penalización -->
+    <div id="splash-banner">
+        <div class="splash-title" id="splash-title" style="color: var(--sam-green);">💥 SPLASH ONE CONFIRMED!</div>
+        <div class="splash-sub" id="splash-sub">SQUAWK SQ-4021 [SU-25] DESTRUIDO (+100 PTS)</div>
+    </div>
+
+    <!-- Aviso de Control Táctil / Desktop -->
+    <div id="virtual-touch-hint">
+        🕹️ MODO VIRTUAL ACTIVO: ARRASTRA PARA SEGUIR EL BLANCO EN EL CIELO
+    </div>
+
+    <!-- Barra Superior -->
+    <header class="top-hud-bar">
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <button type="button" class="hud-btn" onclick="exitAndReturn('/simulacion')" title="Volver al menú de simulación">
+                <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span> MENÚ
+            </button>
+            <button type="button" class="hud-btn hud-btn-gold" onclick="toggleIffModal()" title="Abrir tabla de transpondedores IFF">
+                <span class="material-symbols-outlined" style="font-size: 15px;">menu_book</span> TABLA INTEL IFF
+            </button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <button type="button" class="hud-btn" id="btn-camera-toggle" onclick="toggleCameraDevice()">
+                📷 CÁMARA
+            </button>
+            <a href="/prismaticos" class="hud-btn" style="color: var(--sam-cyan);" title="Cambiar a Prismáticos Tácticos AR">
+                <span class="material-symbols-outlined" style="font-size: 15px;">visibility</span> PRISMÁTICOS ➔
+            </a>
+        </div>
+    </header>
+
+    <!-- Barra Inferior de Fuego -->
+    <footer class="bottom-fire-bar">
+        <div class="score-board">
+            <div>DERRIBOS: <span class="score-val" id="score-kills" style="color: var(--sam-green);">0</span></div>
+            <div>PUNTOS: <span class="score-val" id="score-points">0</span></div>
+            <div>MISILES: <span class="score-val" id="score-ammo" style="color: var(--sam-cyan);">4/4</span></div>
+        </div>
+
+        <div class="fire-btn-container">
+            <button type="button" class="btn-launch-missile" id="btn-launch" onclick="launchMissile()">
+                <span class="material-symbols-outlined" style="font-size: 20px;">rocket_launch</span>
+                DISPARAR: FOX-1
+            </button>
+        </div>
+    </footer>
+
+    <!-- Modal Base de Datos / Tabla IFF de Transpondedores -->
+    <div id="modal-iff" class="modal-iff-drawer" onclick="if(event.target === this) toggleIffModal()">
+        <div class="modal-iff-box">
+            <div class="iff-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: var(--sam-gold);">radar</span>
+                    <h3 style="font-family: var(--font-heading); font-size: 0.95rem; color: #fff; margin: 0;">INTELIGENCIA // TRANSPONDEDORES IFF</h3>
+                </div>
+                <button type="button" onclick="toggleIffModal()" style="background: none; border: none; color: #aaa; font-size: 22px; cursor: pointer;">&times;</button>
+            </div>
+
+            <div class="iff-list">
+                <div style="font-size: 0.68rem; color: #94a3b8; margin-bottom: 4px;">
+                    CONSULTA EL CÓDIGO SQUAWK DEL BLANCO ANTES DE DISPARAR. EL DERRIBO DE AMIGOS O CIVILES CONLLEVA SEVERAS PENALIZACIONES DE COMBATE.
+                </div>
+
+                <!-- Hostiles -->
+                <div class="iff-card hostile">
+                    <div>
+                        <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-4021 • Su-25 "Frogfoot"</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Reactor de ataque a tierra • 750 km/h • 1,400m altitud</div>
+                    </div>
+                    <span class="iff-badge badge-hostile">HOSTIL • FUEGO</span>
+                </div>
+
+                <div class="iff-card hostile">
+                    <div>
+                        <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-6612 • Shahed-136</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Drone kamikaze merodeador • 185 km/h • 600m altitud</div>
+                    </div>
+                    <span class="iff-badge badge-hostile">HOSTIL • ALTA PRIORIDAD</span>
+                </div>
+
+                <div class="iff-card hostile">
+                    <div>
+                        <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-8830 • Mi-24 "Hind"</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Helicóptero de asalto y apoyo aéreo • 260 km/h • 400m altitud</div>
+                    </div>
+                    <span class="iff-badge badge-hostile">HOSTIL • FUEGO</span>
+                </div>
+
+                <!-- Amigos -->
+                <div class="iff-card friendly">
+                    <div>
+                        <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-1104 • MQ-9 Reaper Aliado</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">UCAV enlace de reconocimiento amigo • 280 km/h • 2,800m altitud</div>
+                    </div>
+                    <span class="iff-badge badge-friendly">ALIADO • ALTO EL FUEGO</span>
+                </div>
+
+                <div class="iff-card friendly">
+                    <div>
+                        <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-2240 • C-130 Hercules</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Transporte logístico amigo • 520 km/h • 2,400m altitud</div>
+                    </div>
+                    <span class="iff-badge badge-friendly">ALIADO • PROHIBIDO DISPARAR</span>
+                </div>
+
+                <!-- Civiles / Médicos -->
+                <div class="iff-card civilian">
+                    <div>
+                        <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-7000 • Airbus A320 Comercial</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Vuelo de línea civil en corredor internacional • 840 km/h • 3,200m</div>
+                    </div>
+                    <span class="iff-badge badge-civilian">CIVIL • CORTE MARCIAL</span>
+                </div>
+
+                <div class="iff-card civilian">
+                    <div>
+                        <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-7700 • Bell 412 Medevac</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Evacuación médica sanitaria urgente • 220 km/h • 450m altitud</div>
+                    </div>
+                    <span class="iff-badge badge-civilian">SANITARIO • PROTEGIDO</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== BASE DE DATOS DE INTELIGENCIA ====================
+        const INTEL_DB = {
+            'SQ-4021': { name: 'Su-25 Frogfoot', type: 'HOSTILE', pts: 100, desc: 'Reactor Ataque' },
+            'SQ-6612': { name: 'Shahed-136 Drone', type: 'HOSTILE', pts: 150, desc: 'Drone Kamikaze' },
+            'SQ-8830': { name: 'Mi-24 Hind', type: 'HOSTILE', pts: 100, desc: 'Helicóptero Ataque' },
+            'SQ-1104': { name: 'MQ-9 Reaper', type: 'FRIENDLY', pts: -500, desc: 'UCAV Amigo' },
+            'SQ-2240': { name: 'C-130 Hercules', type: 'FRIENDLY', pts: -500, desc: 'Transporte Amigo' },
+            'SQ-7000': { name: 'Airbus A320', type: 'CIVILIAN', pts: -1000, desc: 'Vuelo Comercial' },
+            'SQ-7700': { name: 'Bell 412 Medevac', type: 'CIVILIAN', pts: -1000, desc: 'Sanitario Urgente' }
+        };
+
+        // ==================== ESTADO DEL SIMULADOR ====================
+        let currentHeading = 0;       // 0° a 360°
+        let currentPitch = 25;        // Elevación inicial mirando hacia arriba
+        let headingOffset = 0;
+        let isVirtualControl = false;
+        let isDragging = false;
+        let dragStartX = 0, dragStartY = 0;
+        let dragStartHeading = 0, dragStartPitch = 0;
+
+        let cameraStream = null;
+        let scoreKills = 0;
+        let scorePoints = 0;
+        let missilesAvailable = 4;
+
+        // Estado del Seeker y Lock-on
+        let lockedTarget = null;
+        let trackingTarget = null;
+        let lockProgress = 0.0;       // 0.0 a 1.0 (100%)
+        let isSolidLock = false;
+
+        // Proyectiles y Explosiones
+        let activeMissiles = [];
+        let activeExplosions = [];
+
+        // FOV angular del visor AAA
+        const FOV_H = 65.0;
+        const FOV_V = 45.0;
+
+        // Contactos aéreos en vuelo cinemático
+        let airContacts = [];
+
+        // ==================== INICIALIZACIÓN ====================
+        window.addEventListener('DOMContentLoaded', async () => {
+            initStarSky();
+            setupSensors();
+            setupPointerDragControls();
+            await startCamera();
+            initAirspaceContacts();
+            requestAnimationFrame(simLoop);
+        });
+
+        function exitAndReturn(targetUrl = '/simulacion') {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+            }
+            window.location.href = targetUrl;
+        }
+
+        function initStarSky() {
+            const dome = document.getElementById('simulated-sky-dome');
+            if (!dome) return;
+            for (let i = 0; i < 60; i++) {
+                const star = document.createElement('div');
+                star.className = 'star-point';
+                star.style.width = `${Math.random() * 2 + 1}px`;
+                star.style.height = star.style.width;
+                star.style.top = `${Math.random() * 85}%`;
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.opacity = `${Math.random() * 0.7 + 0.3}`;
+                dome.appendChild(star);
+            }
+        }
+
+        // ==================== GENERACIÓN Y FÍSICA DE CONTACTOS AÉREOS ====================
+        function initAirspaceContacts() {
+            const squawks = Object.keys(INTEL_DB);
+            airContacts = [];
+
+            for (let i = 0; i < 4; i++) {
+                spawnBogey(squawks[i % squawks.length], (i * 90 + 30) % 360);
+            }
+        }
+
+        function spawnBogey(squawkCode, initialAzimuth = null) {
+            const az = initialAzimuth !== null ? initialAzimuth : Math.random() * 360;
+            const el = 15 + Math.random() * 45; // Elevación entre 15° y 60°
+            const dist = 1200 + Math.random() * 1800; // Distancia entre 1200m y 3000m
+            const alt = 600 + Math.random() * 2000;
+            const speed = 180 + Math.random() * 450; // km/h
+            const headingFlight = (az + 90 + (Math.random() * 60 - 30)) % 360; // Vuelo transversal
+            const intel = INTEL_DB[squawkCode] || { name: 'Desconocido', type: 'HOSTILE', pts: 100 };
+
+            airContacts.push({
+                id: 'BOGEY_' + Math.floor(Math.random() * 10000),
+                squawk: squawkCode,
+                name: intel.name,
+                type: intel.type,
+                pts: intel.pts,
+                azimuth: az,
+                elevation: el,
+                distance: dist,
+                altitude: alt,
+                speed: speed,
+                flightHeading: headingFlight,
+                destroyed: false
+            });
+        }
+
+        function updateContactsPhysics(dt) {
+            airContacts.forEach(c => {
+                if (c.destroyed) return;
+                // Movimiento angular aparente en la cúpula del cielo
+                const speedDegPerSec = (c.speed / (c.distance * 0.05)) * dt;
+                c.azimuth = (c.azimuth + speedDegPerSec + 360) % 360;
+                // Ligera oscilación de altitud
+                c.elevation += Math.sin(Date.now() * 0.001 + c.azimuth) * 0.02;
+                if (c.elevation < 10) c.elevation = 10;
+                if (c.elevation > 75) c.elevation = 75;
+            });
+        }
+
+        // ==================== SENSORES Y CONTROL TÁCTIL ====================
+        function setupSensors() {
+            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+            window.addEventListener('deviceorientation', handleOrientation, true);
+        }
+
+        function handleOrientation(e) {
+            if (isVirtualControl) return;
+
+            let heading = null;
+            if (typeof e.webkitCompassHeading !== 'undefined' && e.webkitCompassHeading !== null) {
+                heading = e.webkitCompassHeading;
+            } else if (e.alpha !== null) {
+                heading = (360 - e.alpha) % 360;
+            }
+
+            if (heading !== null && !isNaN(heading)) {
+                currentHeading = (Math.round(heading) + headingOffset + 360) % 360;
+            }
+
+            if (e.beta !== null && !isNaN(e.beta)) {
+                currentPitch = Math.round(e.beta - 90);
+                if (currentPitch < -10) currentPitch = -10;
+                if (currentPitch > 85) currentPitch = 85;
+            }
+        }
+
+        function setupPointerDragControls() {
+            const onPointerDown = (clientX, clientY) => {
+                isDragging = true;
+                dragStartX = clientX;
+                dragStartY = clientY;
+                dragStartHeading = currentHeading;
+                dragStartPitch = currentPitch;
+            };
+
+            const onPointerMove = (clientX, clientY) => {
+                if (!isDragging) return;
+                isVirtualControl = true;
+                const hint = document.getElementById('virtual-touch-hint');
+                if (hint) hint.style.display = 'block';
+
+                const deltaX = clientX - dragStartX;
+                const deltaY = clientY - dragStartY;
+
+                const sensitivity = FOV_H / window.innerWidth;
+                currentHeading = (dragStartHeading - deltaX * sensitivity + 360) % 360;
+                currentPitch = Math.max(-10, Math.min(85, dragStartPitch + deltaY * sensitivity));
+            };
+
+            const onPointerUp = () => { isDragging = false; };
+
+            window.addEventListener('mousedown', (e) => {
+                if (e.target.closest('button, a, .modal-iff-box')) return;
+                onPointerDown(e.clientX, e.clientY);
+            });
+            window.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', onPointerUp);
+
+            window.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    if (e.target.closest('button, a, .modal-iff-box')) return;
+                    onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging) {
+                    onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchend', onPointerUp);
+        }
+
+        // ==================== CÁMARA ====================
+        async function startCamera() {
+            try {
+                if (cameraStream) cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: "environment" } },
+                    audio: false
+                });
+                document.getElementById('camera-video').srcObject = cameraStream;
+            } catch (err) {
+                console.warn("Cámara no activa en simulador AAA. Modo cúpula estelar activo:", err);
+            }
+        }
+
+        function toggleCameraDevice() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(t => t.stop());
+                cameraStream = null;
+                document.getElementById('camera-video').srcObject = null;
+                document.getElementById('btn-camera-toggle').textContent = "📷 ACTIVAR";
+            } else {
+                startCamera().then(() => {
+                    document.getElementById('btn-camera-toggle').textContent = "📷 CÁMARA";
+                });
+            }
+        }
+
+        // ==================== LOOP PRINCIPAL DE SIMULACIÓN ====================
+        let lastFrameTime = performance.now();
+        let lastBeepTime = 0;
+
+        function simLoop(now) {
+            const dt = (now - lastFrameTime) / 1000;
+            lastFrameTime = now;
+
+            updateContactsPhysics(dt);
+            renderContactsAndSeeker(now);
+            updateMissilesPhysics(dt);
+            renderMissilesAndExplosions();
+
+            requestAnimationFrame(simLoop);
+        }
+
+        // ==================== RENDERIZADO DE CONTACTOS Y LOCK-ON ====================
+        function renderContactsAndSeeker(now) {
+            const layer = document.getElementById('contacts-layer');
+            if (!layer) return;
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            layer.innerHTML = '';
+            let bestTarget = null;
+            let bestAngularDist = 999;
+
+            airContacts.forEach(contact => {
+                if (contact.destroyed) return;
+
+                let deltaAz = ((contact.azimuth - currentHeading + 540) % 360) - 180;
+                let deltaEl = contact.elevation - currentPitch;
+
+                const inFOV_H = Math.abs(deltaAz) <= (FOV_H / 2);
+                const inFOV_V = Math.abs(deltaEl) <= (FOV_V / 2);
+
+                if (inFOV_H && inFOV_V) {
+                    const screenX = cx + (deltaAz / (FOV_H / 2)) * (w / 2);
+                    const screenY = cy - (deltaEl / (FOV_V / 2)) * (h / 2);
+
+                    const angDist = Math.hypot(deltaAz, deltaEl);
+                    if (angDist < bestAngularDist) {
+                        bestAngularDist = angDist;
+                        bestTarget = contact;
+                    }
+
+                    const isTracked = (contact === trackingTarget);
+                    const isLocked = (contact === lockedTarget && isSolidLock);
+
+                    const el = document.createElement('div');
+                    el.className = 'air-contact-target';
+                    el.style.left = `${screenX}px`;
+                    el.style.top = `${screenY}px`;
+                    el.innerHTML = `
+                        <div class="air-contact-box ${isLocked ? 'locked' : (isTracked ? 'tracked' : '')}">
+                            <div class="air-squawk-header">
+                                <span class="air-squawk-code">${contact.squawk}</span>
+                                <span style="font-size:0.60rem; color:${contact.type === 'HOSTILE' ? '#ff5566' : (contact.type === 'FRIENDLY' ? '#2ecc71' : '#ffd700')}">
+                                    [IFF]
+                                </span>
+                            </div>
+                            <div class="air-telemetry-row">
+                                <span>RNG: ${Math.round(contact.distance)}m</span>
+                                <span>ALT: ${Math.round(contact.altitude)}m</span>
+                            </div>
+                            <div class="air-telemetry-row">
+                                <span>SPD: ${Math.round(contact.speed)}km/h</span>
+                                <span>AZ: ${String(Math.round(contact.azimuth)).padStart(3,'0')}°</span>
+                            </div>
+                        </div>
+                        <div class="air-icon-pip" style="border-color:${isLocked ? '#ff3344' : (isTracked ? '#ffd700' : '#00f0ff')}"></div>
+                    `;
+                    layer.appendChild(el);
+                }
+            });
+
+            // Lógica de enganche (Seeker Lock-On)
+            const seekerRing = document.getElementById('seeker-outer-ring');
+            const statusText = document.getElementById('seeker-status-text');
+            const lockFill = document.getElementById('lock-meter-fill');
+
+            // Tolerancia angular para centrar el blanco (4.5 grados)
+            if (bestTarget && bestAngularDist < 4.8) {
+                trackingTarget = bestTarget;
+                // Incrementar progreso de fijación
+                lockProgress = Math.min(1.0, lockProgress + 0.022);
+
+                if (lockProgress >= 1.0) {
+                    isSolidLock = true;
+                    lockedTarget = bestTarget;
+                    seekerRing.className = 'seeker-outer-ring locked';
+                    statusText.className = 'seeker-status-text locked';
+                    statusText.textContent = `★ LOCK-ON CONFIRMADO: ${bestTarget.squawk} ★`;
+                    lockFill.className = 'lock-meter-fill locked';
+                    lockFill.style.width = '100%';
+
+                    // Tono continuo agudo de fijación
+                    playSolidLockTone();
+                } else {
+                    isSolidLock = false;
+                    lockedTarget = null;
+                    seekerRing.className = 'seeker-outer-ring tracking';
+                    statusText.className = 'seeker-status-text';
+                    statusText.textContent = `ENGANCHANDO: ${Math.round(lockProgress * 100)}%`;
+                    lockFill.className = 'lock-meter-fill';
+                    lockFill.style.width = `${Math.round(lockProgress * 100)}%`;
+
+                    // Pitidos modulados en frecuencia creciente
+                    const beepInterval = 320 - (lockProgress * 230);
+                    if (now - lastBeepTime > beepInterval) {
+                        lastBeepTime = now;
+                        playTrackingBeep(500 + lockProgress * 700);
+                    }
+                }
+            } else {
+                // Pérdida de objetivo
+                lockProgress = Math.max(0.0, lockProgress - 0.035);
+                trackingTarget = null;
+                lockedTarget = null;
+                isSolidLock = false;
+
+                seekerRing.className = 'seeker-outer-ring';
+                statusText.className = 'seeker-status-text';
+                statusText.textContent = 'BÚSQUEDA AUTÓNOMA';
+                lockFill.className = 'lock-meter-fill';
+                lockFill.style.width = `${Math.round(lockProgress * 100)}%`;
+
+                stopSolidLockTone();
+            }
+        }
+
+        // ==================== DISPARO Y BALÍSTICA FOX-1 ====================
+        function launchMissile() {
+            if (missilesAvailable <= 0) {
+                playTacticalBeep(300, 0.15, 'sawtooth');
+                alert("¡BATERÍA AGOTADA! Todos los misiles FOX-1 han sido disparados.");
+                return;
+            }
+
+            missilesAvailable--;
+            document.getElementById('score-ammo').textContent = `${missilesAvailable}/4`;
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+
+            // Iniciar entidad misil desde la parte inferior central de la pantalla
+            const missile = {
+                id: 'M_' + Date.now(),
+                startX: w / 2,
+                startY: h - 30,
+                x: w / 2,
+                y: h - 30,
+                target: lockedTarget || trackingTarget || (airContacts.find(c => !c.destroyed) || null),
+                flightTime: 0,
+                totalDuration: 2.8, // 2.8 segundos de vuelo a velocidad supersónica
+                smokeTrail: []
+            };
+
+            activeMissiles.push(missile);
+
+            // Audio de lanzamiento del cohete
+            playRocketLaunchSound();
+
+            if (missilesAvailable === 0) {
+                document.getElementById('btn-launch').classList.add('disabled');
+            }
+        }
+
+        function updateMissilesPhysics(dt) {
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            for (let i = activeMissiles.length - 1; i >= 0; i--) {
+                const m = activeMissiles[i];
+                m.flightTime += dt;
+                const progress = m.flightTime / m.totalDuration;
+
+                // Añadir partícula de humo
+                m.smokeTrail.push({ x: m.x, y: m.y, life: 1.0 });
+
+                let destX = cx;
+                let destY = cy - 80;
+
+                if (m.target && !m.target.destroyed) {
+                    let deltaAz = ((m.target.azimuth - currentHeading + 540) % 360) - 180;
+                    let deltaEl = m.target.elevation - currentPitch;
+                    destX = cx + (deltaAz / (FOV_H / 2)) * (w / 2);
+                    destY = cy - (deltaEl / (FOV_V / 2)) * (h / 2);
+                }
+
+                // Interpolación curva hacia el blanco con guiado
+                const t = Math.min(1.0, progress);
+                m.x = m.startX + (destX - m.startX) * (t * t);
+                m.y = m.startY + (destY - m.startY) * (t);
+
+                // Disipación de humo
+                m.smokeTrail.forEach(p => p.life -= dt * 1.5);
+                m.smokeTrail = m.smokeTrail.filter(p => p.life > 0);
+
+                // Impacto o final de trayectoria
+                if (progress >= 1.0) {
+                    activeMissiles.splice(i, 1);
+                    if (m.target && !m.target.destroyed) {
+                        detonateTarget(m.target, destX, destY);
+                    } else {
+                        // Detonación en vacío si no había blanco fijado
+                        createExplosionEffect(destX, destY, false);
+                    }
+                }
+            }
+
+            // Actualizar partículas de explosiones
+            for (let j = activeExplosions.length - 1; j >= 0; j--) {
+                const exp = activeExplosions[j];
+                exp.life -= dt;
+                exp.radius += dt * 45;
+                exp.particles.forEach(p => {
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+                    p.alpha -= dt * 0.9;
+                });
+                if (exp.life <= 0) {
+                    activeExplosions.splice(j, 1);
+                }
+            }
+        }
+
+        function detonateTarget(target, x, y) {
+            target.destroyed = true;
+            createExplosionEffect(x, y, true);
+            playExplosionSound();
+
+            const intel = INTEL_DB[target.squawk] || { name: 'Aparato', type: 'HOSTILE', pts: 100 };
+            const pts = intel.pts;
+            scorePoints += pts;
+            document.getElementById('score-points').textContent = scorePoints;
+
+            const banner = document.getElementById('splash-banner');
+            const titleEl = document.getElementById('splash-title');
+            const subEl = document.getElementById('splash-sub');
+
+            if (intel.type === 'HOSTILE') {
+                scoreKills++;
+                document.getElementById('score-kills').textContent = scoreKills;
+                banner.className = '';
+                titleEl.style.color = '#2ecc71';
+                titleEl.textContent = '💥 SPLASH ONE CONFIRMED!';
+                subEl.textContent = `SQUAWK ${target.squawk} [${intel.name}] DERRIBADO (+${pts} PTS)`;
+            } else if (intel.type === 'FRIENDLY') {
+                banner.className = 'penalty';
+                titleEl.style.color = '#ff3344';
+                titleEl.textContent = '🚨 ¡ALTO EL FUEGO! ¡DERRIBO AMIGO!';
+                subEl.textContent = `AERONAVE AMIGA ${target.squawk} DERRIBADA (${pts} PTS)`;
+            } else {
+                banner.className = 'penalty';
+                titleEl.style.color = '#ffd700';
+                titleEl.textContent = '⚠️ ¡CORTE MARCIAL! ¡AVIÓN CIVIL!';
+                subEl.textContent = `VUELO NO COMBATIENTE ${target.squawk} DESTRUIDO (${pts} PTS)`;
+            }
+
+            banner.style.display = 'block';
+            setTimeout(() => { banner.style.display = 'none'; }, 3200);
+
+            // Reemplazar objetivo tras 5 segundos
+            setTimeout(() => {
+                const squawks = Object.keys(INTEL_DB);
+                const nextSq = squawks[Math.floor(Math.random() * squawks.length)];
+                spawnBogey(nextSq);
+            }, 5000);
+        }
+
+        function createExplosionEffect(x, y, isTargetHit) {
+            const particles = [];
+            const count = isTargetHit ? 35 : 15;
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const spd = 40 + Math.random() * 140;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * spd,
+                    vy: Math.sin(angle) * spd,
+                    color: Math.random() > 0.4 ? '#ff5522' : (Math.random() > 0.5 ? '#ffd700' : '#ffffff'),
+                    size: 2 + Math.random() * 4,
+                    alpha: 1.0
+                });
+            }
+
+            activeExplosions.push({
+                x: x,
+                y: y,
+                radius: 10,
+                life: 1.2,
+                particles: particles
+            });
+        }
+
+        function renderMissilesAndExplosions() {
+            const canvas = document.getElementById('missile-canvas');
+            if (!canvas) return;
+            if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Dibujar estelas y proyectiles FOX-1
+            activeMissiles.forEach(m => {
+                // Estela de humo blanco
+                m.smokeTrail.forEach(p => {
+                    ctx.fillStyle = `rgba(220, 230, 242, ${p.life * 0.45})`;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, (1.0 - p.life) * 8 + 3, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                // Caja del Misil FOX-1
+                ctx.save();
+                ctx.strokeStyle = '#ffd700';
+                ctx.lineWidth = 1.5;
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+                ctx.strokeRect(m.x - 12, m.y - 12, 24, 24);
+                ctx.fillRect(m.x - 12, m.y - 12, 24, 24);
+
+                // Llama de propulsión
+                ctx.fillStyle = '#ff4400';
+                ctx.beginPath();
+                ctx.arc(m.x, m.y + 14, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Etiqueta FOX-1
+                ctx.fillStyle = '#fff';
+                ctx.font = "10px 'Orbitron', monospace";
+                ctx.fillText("FOX-1", m.x + 16, m.y + 4);
+                ctx.restore();
+            });
+
+            // 2. Dibujar Explosiones
+            activeExplosions.forEach(exp => {
+                // Onda expansiva
+                ctx.save();
+                ctx.strokeStyle = `rgba(255, 215, 0, ${exp.life})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Partículas incandescentes
+                exp.particles.forEach(p => {
+                    if (p.alpha <= 0) return;
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = Math.max(0, p.alpha);
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                ctx.restore();
+            });
+        }
+
+        function toggleIffModal() {
+            const m = document.getElementById('modal-iff');
+            m.style.display = (m.style.display === 'flex' ? 'none' : 'flex');
+        }
+
+        // ==================== GENERADOR DE AUDIO MILITAR SINTETIZADO ====================
+        let audioCtx = null;
+        let solidOsc = null;
+        let solidGain = null;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioClass) audioCtx = new AudioClass();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playTacticalBeep(freq = 880, duration = 0.06, type = 'sine') {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playTrackingBeep(freq) {
+            playTacticalBeep(freq, 0.05, 'square');
+        }
+
+        function playSolidLockTone() {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                if (!solidOsc) {
+                    solidOsc = ctx.createOscillator();
+                    solidGain = ctx.createGain();
+                    solidOsc.type = 'sawtooth';
+                    solidOsc.frequency.setValueAtTime(1450, ctx.currentTime);
+                    solidGain.gain.setValueAtTime(0.07, ctx.currentTime);
+                    solidOsc.connect(solidGain);
+                    solidGain.connect(ctx.destination);
+                    solidOsc.start();
+                }
+            } catch (e) {}
+        }
+
+        function stopSolidLockTone() {
+            if (solidOsc) {
+                try {
+                    solidOsc.stop();
+                    solidOsc.disconnect();
+                } catch (e) {}
+                solidOsc = null;
+                solidGain = null;
+            }
+        }
+
+        function playRocketLaunchSound() {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                // Buffer de ruido blanco con filtro paso bajo que barre frecuencias
+                const bufferSize = ctx.sampleRate * 0.8;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1200, ctx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.8);
+
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                noise.start();
+            } catch (e) {}
+        }
+
+        function playExplosionSound() {
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const bufferSize = ctx.sampleRate * 1.2;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(180, ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(40, ctx.currentTime + 1.2);
+
+                const gain = ctx.createGain();
+                gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.2);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(ctx.destination);
+                noise.start();
+            } catch (e) {}
+        }
+    </script>
+</body>
+</html>
