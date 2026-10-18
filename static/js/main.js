@@ -4733,8 +4733,12 @@ function renderArmasDashboard(lista) {
     });
 }
 
-function abrirModalArmas(miembroId) {
-    const miembro = (window.armasDashboardData || []).find(x => x.id === miembroId);
+async function abrirModalArmas(miembroId) {
+    let miembro = (window.armasDashboardData || []).find(x => x.id === miembroId);
+    if (!miembro) {
+        await cargarArmasDashboard();
+        miembro = (window.armasDashboardData || []).find(x => x.id === miembroId);
+    }
     if (!miembro) return;
     
     window.activeArmasMiembroId = miembroId;
@@ -4927,5 +4931,177 @@ async function eliminarReplica(armaId) {
         alert("Error de red al eliminar la réplica.");
     }
 }
+
+// ==================== ESCÁNER QR CARNET PARA RÉPLICAS ====================
+let armasQrScanner = null;
+
+function playScanSuccessBeep() {
+    try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const audioCtx = new AudioCtx();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+        osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.12); // E6
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.12);
+    } catch (e) {
+        // Ignorar si el navegador bloquea audio antes de interacción
+    }
+}
+
+function extractUidFromQr(rawText) {
+    if (!rawText) return '';
+    let text = String(rawText).trim();
+    // 1. URL con ?token= o &token= (formato estándar de carnet.html)
+    if (text.includes('token=')) {
+        try {
+            const url = new URL(text.startsWith('http') ? text : 'http://dummy/' + text);
+            const token = url.searchParams.get('token');
+            if (token) return token.trim().toUpperCase();
+        } catch (e) {
+            const match = text.match(/[?&]token=([a-zA-Z0-9_-]+)/i);
+            if (match) return match[1].trim().toUpperCase();
+        }
+    }
+    // 2. URL terminada en /scan/UID o /UID
+    if (text.includes('/')) {
+        const parts = text.split(/[?#]/)[0].split('/');
+        const last = parts[parts.length - 1];
+        if (last && last.length >= 4) {
+            return last.trim().toUpperCase();
+        }
+    }
+    // 3. Raw UID directo
+    return text.replace(/[^a-zA-Z0-9_-]/g, '').toUpperCase();
+}
+
+async function abrirScannerQrArmas() {
+    const modal = document.getElementById('modal-scanner-armas');
+    if (!modal) return;
+    
+    // Limpiar input manual y estado
+    const manualInput = document.getElementById('armas-scanner-manual-uid');
+    if (manualInput) manualInput.value = '';
+    const statusEl = document.getElementById('armas-scanner-status');
+    if (statusEl) statusEl.textContent = 'Iniciando cámara...';
+    
+    modal.style.display = 'flex';
+    
+    const video = document.getElementById('armas-scanner-video');
+    if (!video) return;
+
+    if (typeof MedicQRScanner !== 'undefined') {
+        if (armasQrScanner) {
+            armasQrScanner.stop();
+        }
+        armasQrScanner = new MedicQRScanner(
+            video,
+            (rawText) => onArmasQrDetectado(rawText),
+            (errMsg) => {
+                if (statusEl) statusEl.textContent = errMsg || 'No se pudo acceder a la cámara. Usa entrada manual.';
+            }
+        );
+        try {
+            await armasQrScanner.start();
+            if (statusEl) statusEl.textContent = 'Buscando código QR del carnet...';
+        } catch (e) {
+            if (statusEl) statusEl.textContent = 'Cámara no disponible. Introduce el UID manual.';
+        }
+    } else {
+        if (statusEl) statusEl.textContent = 'Módulo QR no cargado. Introduce el UID manual.';
+    }
+    
+    if (manualInput) manualInput.focus();
+}
+
+function cerrarScannerQrArmas() {
+    if (armasQrScanner) {
+        armasQrScanner.stop();
+        armasQrScanner = null;
+    }
+    const modal = document.getElementById('modal-scanner-armas');
+    if (modal) modal.style.display = 'none';
+}
+
+async function toggleArmasScannerCamera() {
+    if (armasQrScanner) {
+        const mode = await armasQrScanner.toggleCamera();
+        const statusEl = document.getElementById('armas-scanner-status');
+        if (statusEl) statusEl.textContent = `Cámara cambiada (${mode === 'environment' ? 'trasera' : 'frontal'}).`;
+    }
+}
+
+async function toggleArmasScannerTorch() {
+    if (armasQrScanner) {
+        const isTorchOn = await armasQrScanner.toggleTorch();
+        const btn = document.getElementById('btn-armas-scanner-torch');
+        if (btn) {
+            btn.style.background = isTorchOn ? 'rgba(226,185,56,0.3)' : 'transparent';
+        }
+    }
+}
+
+async function onArmasQrDetectado(rawText) {
+    playScanSuccessBeep();
+    cerrarScannerQrArmas();
+    await abrirModalArmasPorUid(rawText);
+}
+
+async function buscarJugadorPorUidManual() {
+    const input = document.getElementById('armas-scanner-manual-uid');
+    const val = (input ? input.value : '').trim();
+    if (!val) {
+        alert('Por favor introduce un UID o código de carnet.');
+        if (input) input.focus();
+        return;
+    }
+    cerrarScannerQrArmas();
+    await abrirModalArmasPorUid(val);
+}
+
+async function abrirModalArmasPorUid(rawUid) {
+    const uid = extractUidFromQr(rawUid);
+    if (!uid) {
+        alert('Código de carnet no válido o vacío.');
+        return;
+    }
+    
+    // 1. Buscar en memoria local si el dashboard ya está cargado
+    let miembro = (window.armasDashboardData || []).find(x => (x.uid || '').trim().toUpperCase() === uid);
+    
+    // 2. Si no se encuentra en memoria, consultar backend
+    if (!miembro) {
+        try {
+            const res = await fetch(`/api/admin/miembro_por_uid/${encodeURIComponent(uid)}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && data.id) {
+                    await cargarArmasDashboard();
+                    miembro = (window.armasDashboardData || []).find(x => x.id === data.id);
+                }
+            }
+        } catch (e) {
+            console.warn('Error consultando miembro por UID:', e);
+        }
+    }
+    
+    if (miembro) {
+        await abrirModalArmas(miembro.id);
+        setTimeout(() => {
+            const modInp = document.getElementById('modal-nueva-modelo');
+            if (modInp) modInp.focus();
+        }, 150);
+    } else {
+        alert(`No se encontró ningún combatiente con UID / Carnet: ${uid}.\nVerifica que el jugador esté registrado en su unidad.`);
+    }
+}
+
 
 

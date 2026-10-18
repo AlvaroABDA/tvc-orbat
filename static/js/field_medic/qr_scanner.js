@@ -109,6 +109,28 @@ class MedicQRScanner {
                         return;
                     }
                 } catch (e) {}
+            } else if (window.jsQR) {
+                try {
+                    if (!this.canvas) {
+                        this.canvas = document.createElement('canvas');
+                        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+                    }
+                    const w = this.video.videoWidth;
+                    const h = this.video.videoHeight;
+                    if (w > 0 && h > 0) {
+                        this.canvas.width = w;
+                        this.canvas.height = h;
+                        this.ctx.drawImage(this.video, 0, 0, w, h);
+                        const imgData = this.ctx.getImageData(0, 0, w, h);
+                        const code = window.jsQR(imgData.data, imgData.width, imgData.height, {
+                            inversionAttempts: "dontInvert"
+                        });
+                        if (code && code.data) {
+                            this.processRawQR(code.data);
+                            return;
+                        }
+                    }
+                } catch (e) {}
             }
         }
 
@@ -116,12 +138,23 @@ class MedicQRScanner {
     }
 
     processRawQR(rawText) {
-        // Formato carnet: "https://tvc-orbat.com/medic?token=UID", "UID" o "MED-XXX"
+        // Formato carnet: "https://tvc-orbat.com/medic?token=UID", "UID", "MED-XXX", etc.
         let token = (rawText || '').trim();
         try {
             if (token.includes('token=')) {
-                const url = new URL(token);
-                token = url.searchParams.get('token') || token;
+                const match = token.match(/[?&]token=([a-zA-Z0-9_-]+)/i);
+                if (match) {
+                    token = match[1];
+                } else {
+                    const url = new URL(token.startsWith('http') ? token : 'http://dummy/' + token);
+                    token = url.searchParams.get('token') || token;
+                }
+            } else if (token.includes('/')) {
+                const parts = token.split(/[?#]/)[0].split('/');
+                const last = parts[parts.length - 1];
+                if (last && last.length >= 4) {
+                    token = last;
+                }
             }
         } catch (e) {}
 

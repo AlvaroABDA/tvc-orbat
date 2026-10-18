@@ -3252,6 +3252,49 @@ def api_admin_armas_dashboard():
     conn.close()
     return jsonify(miembros)
 
+@app.route('/api/admin/miembro_por_uid/', defaults={'uid': ''}, methods=['GET'])
+@app.route('/api/admin/miembro_por_uid/<path:uid>', methods=['GET'])
+def api_admin_miembro_por_uid(uid=''):
+    if session.get('role') not in ['admin', 'equipo']:
+        return jsonify({'error': 'No autorizado'}), 403
+    
+    token_arg = request.args.get('token') or request.args.get('uid')
+    raw_uid = token_arg if token_arg else uid
+    clean_uid = (raw_uid or '').strip().upper()
+    if 'TOKEN=' in clean_uid:
+        import re
+        m_token = re.search(r'[?&]TOKEN=([A-Z0-9_-]+)', clean_uid)
+        if m_token:
+            clean_uid = m_token.group(1)
+    if '/' in clean_uid:
+        clean_uid = clean_uid.split('/')[-1]
+
+    conn = get_db_connection()
+    query = '''
+        SELECT m.id, m.nombre_jugador, m.nombre_apellidos, m.rol, m.uid, m.foto_url,
+               m.tiene_dron, m.dron_modelo, m.tiene_nvg, m.nvg_categoria, m.nvg_modelo,
+               e.id as equipo_id, e.nombre as equipo_nombre,
+               f.id as faccion_id, f.nombre as faccion_nombre, f.color as faccion_color
+        FROM Miembro m
+        JOIN Equipo e ON m.equipo_id = e.id
+        JOIN Faccion f ON e.faccion_id = f.id
+        WHERE UPPER(TRIM(m.uid)) = ?
+    '''
+    m = conn.execute(query, (clean_uid,)).fetchone()
+    if not m:
+        conn.close()
+        return jsonify({'error': 'Combatiente no encontrado', 'uid': clean_uid}), 404
+
+    if session.get('role') == 'equipo' and session.get('equipo_id') != m['equipo_id']:
+        conn.close()
+        return jsonify({'error': 'No autorizado para ver combatientes de otra unidad'}), 403
+
+    m_dict = dict(m)
+    armas = [dict(a) for a in conn.execute('SELECT * FROM Miembro_Arma WHERE miembro_id = ? ORDER BY id ASC', (m_dict['id'],)).fetchall()]
+    m_dict['armas'] = armas
+    conn.close()
+    return jsonify(m_dict)
+
 @app.route('/api/admin/miembro/<int:id>/tactico', methods=['POST'])
 def api_admin_miembro_tactico(id):
     if session.get('role') not in ['admin', 'equipo']:
