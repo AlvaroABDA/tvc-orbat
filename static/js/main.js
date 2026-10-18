@@ -2160,9 +2160,11 @@ function renderPOIsTable() {
     document.querySelectorAll('.btn-view-qr').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const token = e.target.dataset.token;
-            document.getElementById('qr-raw-content').innerText = token;
-            // Usamos un API publica gratuita para generar el QR on-the-fly
-            document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(token)}`;
+            const fullUrl = `${window.location.origin}/scan/${token}`;
+            const rawContentEl = document.getElementById('qr-raw-content');
+            if (rawContentEl) rawContentEl.innerText = fullUrl;
+            // Usamos un API publica para generar el QR con la URL completa de navegación
+            document.getElementById('qr-image').src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(fullUrl)}`;
             document.getElementById('modal-qr').classList.add('active');
         });
     });

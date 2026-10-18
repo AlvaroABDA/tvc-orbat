@@ -119,7 +119,7 @@
             </select>
             
             <button class="btn btn-neutral" id="btn-reclamar-pc" disabled onclick="capturarPC()" style="opacity: 0.5;">Reclamar Sector</button>
-            <button class="btn btn-neutral" onclick="window.location.href='/'">Volver al Radar</button>
+            <button class="btn btn-neutral" onclick="window.location.href=returnUrl">Volver al Radar</button>
             
             {% if user_role == 'admin' %}
             <button class="btn btn-neutral" style="margin-top: 30px;" onclick="capturar(0, null)">[ADMIN] Hacer Neutral</button>
@@ -138,18 +138,39 @@
             </select>
             
             <button class="btn {% if poi.faccion_id == 1 %}btn-syldavia{% elif poi.faccion_id == 2 %}btn-volkovia{% else %}btn-neutral{% endif %}" id="btn-respawn" onclick="registrarRespawn({{ poi.faccion_id }})">Activar Despliegue</button>
-            <button class="btn btn-neutral" onclick="window.location.href='/'" style="margin-top: 15px;">Volver al Radar</button>
+            <button class="btn btn-neutral" onclick="window.location.href=returnUrl" style="margin-top: 15px;">Volver al Radar</button>
         {% endif %}
         
         <div id="message"></div>
     </div>
 
     <script>
+        const returnUrl = "{{ '/operador/mapa' if user_role == 'operador' else '/' }}";
         const equiposData = [
             {% for eq in equipos %}
             { id: {{ eq.id }}, nombre: "{{ eq.nombre }}", faccion: {{ eq.faccion_id }} }{% if not loop.last %},{% endif %}
             {% endfor %}
         ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const userFac = parseInt("{{ user_faccion_id or 0 }}", 10);
+            const userEq = parseInt("{{ user_equipo_id or 0 }}", 10);
+            
+            const facSelect = document.getElementById('faccion-select-pc');
+            if (facSelect && userFac) {
+                facSelect.value = String(userFac);
+                updateEquiposPC();
+                const eqSelectPC = document.getElementById('equipo-select-pc');
+                if (eqSelectPC && userEq) {
+                    eqSelectPC.value = String(userEq);
+                }
+            }
+            
+            const eqSelectRespawn = document.getElementById('equipo-select');
+            if (eqSelectRespawn && userEq) {
+                eqSelectRespawn.value = String(userEq);
+            }
+        });
 
         function showMessage(msg, color) {
             const el = document.getElementById('message');
@@ -239,7 +260,7 @@
                 const data = await res.json();
                 if (res.ok) {
                     showMessage(data.message, '#4ade80');
-                    setTimeout(() => window.location.href = '/', 1500);
+                    setTimeout(() => window.location.href = returnUrl, 1500);
                 } else {
                     showMessage(data.message, '#f87171');
                     setButtonsState(false);
@@ -292,7 +313,7 @@
                 
                 if (res.ok) {
                     showMessage(data.message, '#4ade80');
-                    setTimeout(() => window.location.href = '/', 1500);
+                    setTimeout(() => window.location.href = returnUrl, 1500);
                 } else {
                     showMessage(data.message, '#f87171');
                     setButtonsState(false);

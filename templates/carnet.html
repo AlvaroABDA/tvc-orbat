@@ -649,9 +649,10 @@
             }
         }
 
-        // Generar QR
+        // Generar QR dinámico adaptado al dominio actual
         const uid = playerData.uid || "TVC-TEST";
-        const qrContent = "https://tvc-orbat.com/medic?token=" + uid;
+        const originUrl = (window.location && window.location.origin) ? window.location.origin : "https://tvc-orbat.com";
+        const qrContent = originUrl + "/medic?token=" + encodeURIComponent(uid);
 
         new QRCode(document.getElementById("qrcode"), {
             text: qrContent,

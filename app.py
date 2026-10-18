@@ -1628,67 +1628,27 @@ def scan_qr():
                     pass
                 
             conn.execute('INSERT INTO respawn (poi_id, faccion_id, equipo_id) VALUES (?, ?, ?)', (poi['id'], poi['faccion_id'], equipo_id))
+            
+            # Recarga reglamentaria de botiquines al pasar por Respawn
+            try:
+                medicos = conn.execute("SELECT id, uid, rol FROM Miembro WHERE equipo_id = ? AND (LOWER(rol) LIKE '%medico%' OR LOWER(rol) LIKE '%médico%' OR LOWER(rol) LIKE '%sanitario%' OR LOWER(rol) LIKE '%medic%')", (equipo_id,)).fetchall()
+                total_miembros = conn.execute("SELECT COUNT(*) as c FROM Miembro WHERE equipo_id = ? AND activo = 1", (equipo_id,)).fetchone()['c'] or 1
+                cuota = medic_engine.calcular_curas_por_medico(total_miembros, len(medicos) if medicos else 1)
+                
+                targets = [m['uid'] for m in medicos if m['uid']]
+                targets.append(f"MED-{equipo_id}")
+                for target_med in set(targets):
+                    medic_engine.update_sanitario_recursos(conn, target_med, disponibles=cuota, usadas=0)
+            except Exception as e:
+                print("Error recargando botiquines en /api/scan:", e)
+
             conn.commit()
-            return jsonify({'status': 'success', 'message': "Despliegue autorizado."})
+            return jsonify({'status': 'success', 'message': "Despliegue autorizado y recursos médicos recargados."})
             
         else:
             return jsonify({'status': 'error', 'message': 'Este punto no admite esta acción.'}), 400
     finally:
         conn.close()
-
-
-
-        
-    if poi['tipo'] == 'PC':
-        # Convert neutral (0) to None
-        fac_id = None if str(faccion_id) == '0' else int(faccion_id)
-        
-        if fac_id not in [1, 2, None]:
-            conn.close()
-            return jsonify({'status': 'error', 'message': 'Facción inválida para banderas.'}), 400
-            
-        if fac_id not in [1, 2] and session.get('role') != 'admin':
-            conn.close()
-            return jsonify({'status': 'error', 'message': 'No tienes permisos para neutralizar este punto.'}), 403
-            
-        if poi['faccion_id'] == fac_id:
-            conn.close()
-            return jsonify({'status': 'success', 'message': 'Este punto ya está en ese estado.'})
-            
-        conn.execute('UPDATE puntos_interes SET faccion_id = ? WHERE id = ?', (fac_id, poi['id']))
-        # Inserción en historial
-        conn.execute('INSERT INTO puntos_control (poi_id, faccion_id) VALUES (?, ?)', (poi['id'], fac_id))
-        conn.commit()
-        conn.close()
-        return jsonify({'status': 'success', 'message': "Punto capturado con éxito."})
-        
-    elif poi['tipo'] == 'RESPAWN':
-        equipo_id = data.get('equipo_id')
-        if not equipo_id:
-            conn.close()
-            return jsonify({'status': 'error', 'message': 'Debes seleccionar un equipo.'}), 400
-            
-        conn.execute('INSERT INTO respawn (poi_id, faccion_id, equipo_id) VALUES (?, ?, ?)', (poi['id'], faccion_id, equipo_id))
-        
-        # RECARGA AUTOMÁTICA DE BOTIQUINES / REANIMACIONES DEL MÉDICO AL PASAR POR RESPAWN
-        sanitario_id = f"MED-{equipo_id}"
-        config_med = medic_engine.load_medic_config()
-        reanim_full = config_med.get("reanimaciones_iniciales_medico", 3)
-        conn.execute('''
-            INSERT INTO MedicoRecursos (sanitario_id, reanimaciones_disponibles, reanimaciones_usadas, actualizado_en)
-            VALUES (?, ?, 0, CURRENT_TIMESTAMP)
-            ON CONFLICT(sanitario_id) DO UPDATE SET
-                reanimaciones_disponibles = ?,
-                actualizado_en = CURRENT_TIMESTAMP
-        ''', (sanitario_id, reanim_full, reanim_full))
-
-        conn.commit()
-        conn.close()
-        return jsonify({'status': 'success', 'message': "Respawn registrado y recursos médicos recargados al 100%."})
-        
-    else:
-        conn.close()
-        return jsonify({'status': 'error', 'message': 'Este punto no admite esta acción.'}), 400
 
 
 @app.route('/api/capturas/stats', methods=['GET'])
@@ -1820,7 +1780,14 @@ def view_scan(token):
     for eq in equipos_db:
         equipos.append({'id': eq['id'], 'nombre': eq['nombre'], 'faccion_id': eq['faccion_id']})
         
-    return render_template('scan.html', poi=poi, user_role=session.get('role', 'player'), equipos=equipos)
+    return render_template(
+        'scan.html', 
+        poi=poi, 
+        user_role=session.get('role', 'player'), 
+        equipos=equipos,
+        user_equipo_id=session.get('equipo_id'),
+        user_faccion_id=session.get('faccion_id')
+    )
 
 @app.route('/target', methods=['GET'])
 def view_target():

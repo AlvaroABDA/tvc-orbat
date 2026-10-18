@@ -719,7 +719,14 @@ def process_respawn_recharge(conn, token_qr, sanitario_id, user_lat=None, user_l
         return {'status': 'error', 'message': f'Baliza de Respawn no encontrada para el código QR ({clean_token}).'}, 404
 
     if poi['tipo'] != 'RESPAWN':
-        return {'status': 'error', 'message': f'La baliza "{poi["nombre"]}" es de tipo {poi["tipo"]}, no es un punto de RESPAWN autorizado.'}, 400
+        return {
+            'status': 'error',
+            'poi_tipo': poi['tipo'],
+            'poi_nombre': poi['nombre'],
+            'token_qr': clean_token,
+            'redirect_url': f'/scan/{clean_token}',
+            'message': f'La baliza "{poi["nombre"]}" es de tipo {poi["tipo"]}, no es un punto de RESPAWN autorizado.'
+        }, 400
 
     # Validación GPS si está activa en la configuración general
     import math

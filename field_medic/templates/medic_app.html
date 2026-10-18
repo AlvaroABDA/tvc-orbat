@@ -1905,6 +1905,15 @@
 
                     showRespawnSuccessModal(data.poi_nombre || 'PUNTO DE RESPAWN', newTotal, data.sanitario_id || activeSanitario);
                 } else {
+                    if (data.poi_tipo === 'PC' || data.poi_tipo === 'OP') {
+                        const esPC = data.poi_tipo === 'PC';
+                        const nombreTipo = esPC ? 'Captura de Bandera / Sector (PC)' : 'Misión Táctica / Reconocimiento (OP)';
+                        const abrir = confirm(`📍 BALIZA TÁCTICA DETECTADA: ${data.poi_nombre || 'SECTOR'}\n\nEste código QR no es una base de Respawn médico, sino: ${nombreTipo}.\n\n¿Deseas abrir la terminal táctica correspondiente ahora?`);
+                        if (abrir) {
+                            window.location.href = data.redirect_url || `/scan/${cleanToken}`;
+                            return;
+                        }
+                    }
                     alert(`⚠️ ERROR EN RESPAWN // RECARGA DENEGADA\n\n${data.message || 'No se pudo validar la baliza de Respawn.'}`);
                 }
             } catch (err) {
