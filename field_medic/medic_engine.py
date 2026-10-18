@@ -698,3 +698,123 @@ def reset_all_medic_data(conn):
         "message": f"Historial médico purgado y {count} sanitarios reiniciados según doctrina."
     }
 
+def process_respawn_recharge(conn, token_qr, sanitario_id, user_lat=None, user_lng=None):
+    """
+    Valida la baliza de RESPAWN física, registra la inserción táctica del combatiente/sanitario
+    en la tabla de Respawn y recarga sus botiquines de reanimación según la doctrina reglamentaria TVC.
+    """
+    clean_token = (token_qr or '').strip()
+    if '/scan/' in clean_token:
+        clean_token = clean_token.split('/scan/')[-1].split('?')[0].split('#')[0].strip()
+    elif 'token=' in clean_token:
+        import re
+        m = re.search(r'[?&]token=([a-zA-Z0-9_-]+)', clean_token)
+        if m:
+            clean_token = m.group(1).strip()
+    elif '/' in clean_token:
+        clean_token = clean_token.split('/')[-1].split('?')[0].split('#')[0].strip()
+
+    poi = conn.execute('SELECT * FROM puntos_interes WHERE token_qr = ?', (clean_token,)).fetchone()
+    if not poi:
+        return {'status': 'error', 'message': f'Baliza de Respawn no encontrada para el código QR ({clean_token}).'}, 404
+
+    if poi['tipo'] != 'RESPAWN':
+        return {'status': 'error', 'message': f'La baliza "{poi["nombre"]}" es de tipo {poi["tipo"]}, no es un punto de RESPAWN autorizado.'}, 400
+
+    # Validación GPS si está activa en la configuración general
+    import math
+    def haversine_m(lat1, lon1, lat2, lon2):
+        R = 6371000
+        phi1 = math.radians(lat1)
+        phi2 = math.radians(lat2)
+        delta_phi = math.radians(lat2 - lat1)
+        delta_lambda = math.radians(lon2 - lon1)
+        a = math.sin(delta_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2)**2
+        return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+    config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'config.json')
+    geo_enabled = False
+    if os.path.exists(config_path):
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                cdata = json.load(f)
+                geo_enabled = bool(cdata.get('geo_validation_enabled'))
+        except Exception:
+            pass
+
+    if geo_enabled:
+        if user_lat is None or user_lng is None:
+            return {'status': 'error', 'message': 'Se requiere ubicación GPS activa para validar la presencia física en el Respawn.'}, 400
+        dist = haversine_m(float(user_lat), float(user_lng), float(poi['lat']), float(poi['lng']))
+        tol = float(poi['tolerancia_metros']) if poi['tolerancia_metros'] else 15.0
+        if dist > tol:
+            return {'status': 'error', 'message': f'Estás demasiado lejos de la baliza de Respawn ({int(dist)}m > {int(tol)}m). Acércate a la base.'}, 400
+
+    # Comprobación de requisitos de bases avanzadas
+    if poi['datos_extra']:
+        try:
+            datos = json.loads(poi['datos_extra'])
+            reqs = datos.get('requisitos_captura', {})
+            fac_req = str(poi['faccion_id'])
+            if fac_req in reqs:
+                required_pc_ids = reqs[fac_req]
+                if required_pc_ids:
+                    placeholders = ','.join('?' for _ in required_pc_ids)
+                    pcs = conn.execute(f"SELECT id, nombre, faccion_id FROM puntos_interes WHERE id IN ({placeholders})", required_pc_ids).fetchall()
+                    faltan = [pc['nombre'] for pc in pcs if pc['faccion_id'] != poi['faccion_id']]
+                    if faltan:
+                        return {'status': 'error', 'message': f'Base comprometida. Requiere control previo de: {", ".join(faltan)}'}, 403
+        except Exception as e:
+            print("[Respawn Recharge] Error en datos_extra:", e)
+
+    # Resolución del sanitario y su dotación reglamentaria
+    canonical, aliases = resolve_sanitario_id_and_aliases(conn, sanitario_id)
+    
+    cursor = conn.cursor()
+    m = None
+    try:
+        m = cursor.execute('''
+            SELECT m.id, m.uid, m.nombre_jugador, m.equipo_id, e.nombre as equipo_nombre, e.faccion_id,
+                   (SELECT COUNT(*) FROM Miembro m2 WHERE m2.equipo_id = e.id) as miembros_count,
+                   (SELECT COUNT(*) FROM Miembro m3 WHERE m3.equipo_id = e.id AND (LOWER(m3.rol) LIKE '%medico%' OR LOWER(m3.rol) LIKE '%sanitario%')) as medicos_count
+            FROM Miembro m
+            JOIN Equipo e ON m.equipo_id = e.id
+            WHERE UPPER(m.uid) = ? OR UPPER(m.nombre_jugador) = ?
+        ''', (canonical.upper(), canonical.upper())).fetchone()
+    except sqlite3.OperationalError:
+        m = None
+
+    faccion_id = poi['faccion_id']
+    equipo_id = None
+    if m:
+        equipo_id = m['equipo_id']
+        # Comprobar bando: no se permite respawn en base enemiga
+        if poi['faccion_id'] and m['faccion_id'] and poi['faccion_id'] != m['faccion_id']:
+            return {'status': 'error', 'message': f'Baliza de RESPAWN enemiga ({poi["nombre"]}). Despliegue y recarga denegados para tu facción.'}, 403
+        faccion_id = m['faccion_id'] or poi['faccion_id']
+        quota = calcular_curas_por_medico(m['miembros_count'], m['medicos_count'])
+    else:
+        med_cfg = load_medic_config()
+        quota = med_cfg.get('reanimaciones_iniciales_medico', 3)
+        if canonical.upper() == 'ADMIN':
+            quota = 99
+
+    # 1. Registrar inserción en la tabla de respawn
+    cursor.execute('INSERT INTO respawn (poi_id, faccion_id, equipo_id) VALUES (?, ?, ?)', (poi['id'], faccion_id, equipo_id))
+
+    # 2. Recargar recursos de reanimación del sanitario
+    update_sanitario_recursos(conn, canonical, disponibles=quota, usadas=0)
+    conn.commit()
+
+    return {
+        'status': 'success',
+        'message': f'Despliegue confirmado en {poi["nombre"]}. Botiquines restablecidos a {quota} curas reglamentarias.',
+        'reanimaciones_disponibles': quota,
+        'poi_id': poi['id'],
+        'poi_nombre': poi['nombre'],
+        'faccion_id': faccion_id,
+        'equipo_id': equipo_id,
+        'sanitario_id': canonical
+    }, 200
+
+

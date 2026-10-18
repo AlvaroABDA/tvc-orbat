@@ -3797,6 +3797,21 @@ def api_medic_admin_unlock():
         'message': 'PIN de Dirección incorrecto o credencial denegada.'
     }), 403
 
+@app.route('/api/medic/respawn_recharge', methods=['POST'])
+def api_medic_respawn_recharge():
+    """
+    Endpoint táctico de recarga y registro de respawn para sanitarios de campo.
+    """
+    data = request.json or {}
+    token_qr = data.get('token_qr')
+    sanitario_id = data.get('sanitario_id') or session.get('sanitario_id') or session.get('usuario') or 'MED-ALFA'
+    user_lat = data.get('user_lat')
+    user_lng = data.get('user_lng')
+
+    conn = get_db_connection()
+    result, status_code = medic_engine.process_respawn_recharge(conn, token_qr, sanitario_id, user_lat, user_lng)
+    return jsonify(result), status_code
+
 # ==================== ADMIN MÉDICOS DASHBOARD ====================
 @app.route('/api/admin/medicos/audit', methods=['GET'])
 def api_admin_medicos_audit():

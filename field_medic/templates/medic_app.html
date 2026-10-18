@@ -1773,6 +1773,8 @@
                     handleScannedBindingToken(token);
                 } else if (scannerTargetMode === 'ADMIN_UNLOCK') {
                     handleScannedAdminUnlockToken(token);
+                } else if (scannerTargetMode === 'RESPAWN') {
+                    handleScannedRespawnToken(token);
                 } else {
                     startNewEpisodeWithToken(token);
                 }
@@ -1842,6 +1844,99 @@
             });
         }
 
+        // ==================== REAPROVISIONAMIENTO Y RESPAWN TÁCTICO ====================
+        async function handleScannedRespawnToken(rawToken) {
+            if (!rawToken) return;
+
+            let cleanToken = String(rawToken).trim();
+            if (cleanToken.includes('/scan/')) {
+                const parts = cleanToken.split('/scan/');
+                cleanToken = parts[parts.length - 1].split(/[?#]/)[0].trim();
+            } else if (cleanToken.includes('token=')) {
+                const match = cleanToken.match(/[?&]token=([a-zA-Z0-9_-]+)/i);
+                if (match) cleanToken = match[1].trim();
+            }
+
+            const activeSanitario = (localStorage.getItem('tvc_medic_bound_uid') || 
+                                     localStorage.getItem('tvc_medic_active_sanitario_id') || 
+                                     storage.currentSessionId || sanitarioId || 'MED-ALFA').trim();
+
+            // Intento de geolocalización rápida (máx 3s)
+            let lat = null, lng = null;
+            if (navigator.geolocation) {
+                try {
+                    const pos = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: true,
+                            timeout: 3000,
+                            maximumAge: 15000
+                        });
+                    });
+                    if (pos && pos.coords) {
+                        lat = pos.coords.latitude;
+                        lng = pos.coords.longitude;
+                    }
+                } catch (e) {
+                    // Continuar sin GPS si el sensor o permisos no están listos
+                }
+            }
+
+            try {
+                const res = await fetch('/api/medic/respawn_recharge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token_qr: cleanToken,
+                        sanitario_id: activeSanitario,
+                        user_lat: lat,
+                        user_lng: lng
+                    })
+                });
+
+                const data = await res.json();
+                if (res.ok && data.status === 'success') {
+                    const newTotal = data.reanimaciones_disponibles;
+                    storage.setMedicReanimations(activeSanitario, newTotal);
+                    storage.setLocalReanimations(newTotal);
+                    sessionStorage.removeItem('tvc_medic_last_consumption');
+                    dismissConsumptionNotice();
+                    closeNoKitsModal();
+                    updateReanimUI();
+
+                    showRespawnSuccessModal(data.poi_nombre || 'PUNTO DE RESPAWN', newTotal, data.sanitario_id || activeSanitario);
+                } else {
+                    alert(`⚠️ ERROR EN RESPAWN // RECARGA DENEGADA\n\n${data.message || 'No se pudo validar la baliza de Respawn.'}`);
+                }
+            } catch (err) {
+                console.warn("[Respawn] Sin conexión al servidor, aplicando recarga offline en campo:", err);
+                const nominal = parseInt(localStorage.getItem('tvc_medic_nominal_quota') || '0', 10) || storage.getMedicNominalQuota(activeSanitario, 3);
+                storage.setMedicReanimations(activeSanitario, nominal);
+                storage.setLocalReanimations(nominal);
+                sessionStorage.removeItem('tvc_medic_last_consumption');
+                dismissConsumptionNotice();
+                closeNoKitsModal();
+                updateReanimUI();
+
+                showRespawnSuccessModal('RESPAWN (MODO CAMPO OFFLINE)', nominal, activeSanitario);
+            }
+        }
+
+        function showRespawnSuccessModal(poiNombre, kits, sanitario) {
+            const modal = document.getElementById('modal-respawn-success');
+            const poiEl = document.getElementById('respawn-success-poi');
+            const kitsEl = document.getElementById('respawn-success-kits');
+            const sanEl = document.getElementById('respawn-success-sanitario');
+            if (poiEl) poiEl.textContent = poiNombre || 'PUNTO DE RESPAWN';
+            if (kitsEl) kitsEl.textContent = `${kits} BOTIQUINES`;
+            if (sanEl) sanEl.textContent = sanitario || '--';
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeRespawnSuccessModal() {
+            const modal = document.getElementById('modal-respawn-success');
+            if (modal) modal.style.display = 'none';
+        }
+
         // ==================== INICIO / RECUPERACIÓN DE EPISODIO ====================
         function startNewEpisodeWithToken(token) {
             const cleanToken = (token || '').trim();
@@ -1850,20 +1945,8 @@
             const boundUid = (localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId || '').trim().toUpperCase();
 
             // RECARGA MEDIANTE PUNTO DE RESPAWN / CÓDIGO QR DE SUMINISTRO
-            if (upperToken.includes('RESPAWN') || upperToken.includes('RECARGA') || upperToken.includes('SUPPLY') || upperToken.includes('BASE')) {
-                const targetMedic = boundUid || 'MED-ALFA';
-                const nominal = parseInt(localStorage.getItem('tvc_medic_nominal_quota') || '0', 10) || storage.getMedicNominalQuota(targetMedic, 3);
-                const newTotal = nominal; // Reposición reglamentaria al llegar a base/respawn: cupo normal por defecto (miembros // médicos)
-                storage.setMedicReanimations(targetMedic, newTotal);
-                updateReanimUI();
-                fetch('/api/admin/medicos/update', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sanitario_id: targetMedic, reanimaciones: newTotal })
-                }).catch(() => {});
-                sessionStorage.removeItem('tvc_medic_last_consumption');
-                dismissConsumptionNotice();
-                alert(`📦 ¡PUNTO DE REAPROVISIONAMIENTO ESCANEADO!\n\nBotiquines recargados a cupo de escuadra (${newTotal} curas disponibles).\nSanitario: ${targetMedic}`);
+            if (upperToken.includes('RESPAWN') || upperToken.includes('RECARGA') || upperToken.includes('SUPPLY') || upperToken.includes('BASE') || cleanToken.includes('/scan/')) {
+                handleScannedRespawnToken(cleanToken);
                 return;
             }
 
@@ -2477,6 +2560,35 @@
                     ENTENDIDO // CERRAR
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Modal Confirmación de Respawn y Reaprovisionamiento -->
+    <div id="modal-respawn-success" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.88); backdrop-filter: blur(8px); z-index: 99999; justify-content: center; align-items: center; padding: 20px;" onclick="if(event.target === this) closeRespawnSuccessModal()">
+        <div style="background: #11141c; border: 2px solid #2ecc71; max-width: 440px; width: 100%; padding: 22px; box-shadow: 0 10px 40px rgba(46,204,113,0.3); animation: modalPop 0.2s cubic-bezier(0.16, 1, 0.3, 1); text-align: center;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: rgba(46,204,113,0.15); border: 2px solid #2ecc71; margin-bottom: 12px; box-shadow: 0 0 20px rgba(46,204,113,0.3);">
+                <span class="material-symbols-outlined" style="color: #2ecc71; font-size: 34px;">local_shipping</span>
+            </div>
+            
+            <h3 style="margin: 0 0 4px 0; font-family: 'Orbitron', sans-serif; font-size: 1.1rem; color: #2ecc71; letter-spacing: 1px;">
+                RESPAWN Y RECARGA COMPLETADOS
+            </h3>
+            <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; color: #94a3b8; margin-bottom: 14px;">
+                INSERCIÓN Y BOTIQUINES REGLAMENTARIOS
+            </div>
+            
+            <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px; margin-bottom: 16px; font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; line-height: 1.6; text-align: left;">
+                <div>📍 <b>Punto:</b> <span id="respawn-success-poi" style="color: #00f0ff;">--</span></div>
+                <div>👤 <b>Sanitario:</b> <span id="respawn-success-sanitario" style="color: #fff;">--</span></div>
+                <div style="margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.15);">
+                    ✚ <b>Botiquines Recargados:</b> <b id="respawn-success-kits" style="color: #2ecc71; font-size: 1.05rem;">--</b>
+                </div>
+                <div style="font-size: 0.72rem; color: #94a3b8; margin-top: 4px;">Inserción táctica registrada en telemetría de ORBAT.</div>
+            </div>
+            
+            <button type="button" class="btn-action-large btn-green" onclick="closeRespawnSuccessModal()" style="font-size: 0.85rem; padding: 12px; width: 100%;">
+                VOLVER AL SERVICIO OPERATIVO
+            </button>
         </div>
     </div>
 

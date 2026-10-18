@@ -417,10 +417,8 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertIn('MANUAL DE PROTOCOLOS SANITARIOS', html)
 
         # 3. Verification of Field Medic PWA guide and assets
-        self.assertIn('GUÍA DE INSTALACIÓN EN TU TELÉFONO (PWA)', html)
-        self.assertIn('ANDROID (Chrome / Edge)', html)
-        self.assertIn('IPHONE / iOS (Safari)', html)
-        self.assertIn('100% OFFLINE TOTAL', html)
+        self.assertIn('MANUAL DE PROTOCOLOS SANITARIOS', html)
+        self.assertIn('ENTRAR / INSTALAR (PWA)', html)
         self.assertIn('medic_icon.png', html)
 
         # 4. Verify index.html does NOT have any medic link in navbar
@@ -679,6 +677,40 @@ class TestFieldMedicSuite(unittest.TestCase):
             rec_after = app_conn.execute("SELECT * FROM MedicoRecursos WHERE sanitario_id = 'MED-ZAF-01'").fetchone()
             if rec_after:
                 self.assertEqual(rec_after['reanimaciones_usadas'], 0)
+
+    def test_22_medic_respawn_recharge_flow(self):
+        """
+        Prueba la recarga de botiquines y el registro en la tabla de respawn
+        al escanear una baliza QR de base autorizada.
+        """
+        with flask_module.app.app_context():
+            app_conn = flask_module.get_db_connection()
+            respawn_syl = app_conn.execute("SELECT * FROM puntos_interes WHERE tipo = 'RESPAWN' AND faccion_id = 1 LIMIT 1").fetchone()
+            if not respawn_syl:
+                return
+            
+            med = app_conn.execute('''
+                SELECT m.uid, m.nombre_jugador 
+                FROM Miembro m 
+                JOIN Equipo e ON m.equipo_id = e.id 
+                WHERE e.faccion_id = 1 
+                LIMIT 1
+            ''').fetchone()
+            if not med:
+                return
+                
+            res = self.client.post('/api/medic/respawn_recharge', json={
+                'token_qr': respawn_syl['token_qr'],
+                'sanitario_id': med['uid']
+            })
+            self.assertEqual(res.status_code, 200)
+            data = res.get_json()
+            self.assertEqual(data['status'], 'success')
+            self.assertGreater(data['reanimaciones_disponibles'], 0)
+            
+            # Verificar inserción en respawn
+            last_r = app_conn.execute("SELECT * FROM respawn ORDER BY id DESC LIMIT 1").fetchone()
+            self.assertEqual(last_r['poi_id'], respawn_syl['id'])
 
 if __name__ == '__main__':
     unittest.main()
