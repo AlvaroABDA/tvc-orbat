@@ -51,5 +51,20 @@ class TestScanEndpoints(unittest.TestCase):
         self.assertEqual(res_api_respawn.json['status'], 'success')
         print("OK: /api/scan respawn registers and updates medic quota")
 
+        # 6. Test carnet rendering with player role and without ICE or replicas
+        with app.app_context():
+            conn = get_db_connection()
+            jefe = conn.execute("SELECT id FROM Miembro WHERE rol LIKE '%Jefe%' LIMIT 1").fetchone()
+            jefe_id = jefe['id'] if jefe else 303
+        res_carnet = self.client.get(f'/carnet/{jefe_id}')
+        self.assertEqual(res_carnet.status_code, 200)
+        html_carnet = res_carnet.data.decode('utf-8')
+        self.assertIn('ROL // PAPEL EN PARTIDA', html_carnet)
+        self.assertIn('role-dossier-box', html_carnet)
+        self.assertIn('role-badge', html_carnet)
+        self.assertNotIn('ice-badge-box', html_carnet)
+        self.assertNotIn('crono-badge-box', html_carnet)
+        print("OK: /carnet/<id> displays player role and omits ICE/replicas")
+
 if __name__ == '__main__':
     unittest.main()
