@@ -35,6 +35,8 @@ class TestCarnetButtonsDocs(unittest.TestCase):
         self.assertIn('CONTRAPORTADA', html, "El carnet debe contener la sección de contraportada")
         self.assertNotIn('CONTROL CRONO & EQUIPAMIENTO', html, "No debe mostrar lista de réplicas en el carnet")
         self.assertNotIn('🚨 I.C.E. EMERGENCIA REAL', html, "No debe mostrar bloque de emergencias en el carnet")
+        self.assertNotIn('role-dossier-box', html, "No debe contener el cuadro de rol en el reverso")
+        self.assertNotIn('ROL // PAPEL EN PARTIDA', html, "No debe mostrar el cuadro ROL // PAPEL EN PARTIDA")
         self.assertIn('print-wrapper', html)
         self.assertIn('carnet-container', html)
         self.assertIn('qrcode', html)
