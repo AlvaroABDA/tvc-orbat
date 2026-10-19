@@ -137,6 +137,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: 8px;
         }
 
         .card-icon-title {
@@ -178,13 +179,18 @@
 
         .card-badge {
             font-family: 'Share Tech Mono', monospace;
-            font-size: 0.72rem;
-            padding: 4px 10px;
+            font-size: 0.70rem;
+            padding: 3px 8px;
             border-radius: 3px;
             font-weight: bold;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
             backdrop-filter: blur(6px);
+            white-space: nowrap;
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .badge-ready {
@@ -639,6 +645,40 @@
             font-family: 'Orbitron', sans-serif;
             letter-spacing: 1px;
         }
+
+        @media (max-width: 600px) {
+            .card-header-row {
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .card-icon-title {
+                gap: 10px;
+                min-width: 0;
+            }
+            .card-icon {
+                width: 38px;
+                height: 38px;
+                font-size: 20px;
+                flex-shrink: 0;
+            }
+            .card-title {
+                font-size: 0.98rem;
+                letter-spacing: 0.5px;
+            }
+            .card-badge {
+                font-size: 0.65rem;
+                padding: 2px 6px;
+                letter-spacing: 0.3px;
+            }
+            .card-footer {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .card-footer-btns {
+                justify-content: flex-end;
+            }
+        }
     </style>
 </head>
 <body>
@@ -679,7 +719,7 @@
                     {% if recon_unlocked %}
                     <span class="card-badge badge-ready">OPERATIVO</span>
                     {% else %}
-                    <span class="card-badge badge-locked">🔒 REQUIERE PIN</span>
+                    <span class="card-badge badge-locked">🔒 PIN</span>
                     {% endif %}
                 </div>
             </div>
@@ -760,7 +800,7 @@
                     {% if mortero_unlocked %}
                     <span class="card-badge badge-ready">OPERATIVO</span>
                     {% else %}
-                    <span class="card-badge badge-locked">🔒 REQUIERE PIN</span>
+                    <span class="card-badge badge-locked">🔒 PIN</span>
                     {% endif %}
                 </div>
             </div>
@@ -838,9 +878,9 @@
                 </div>
                 <div>
                     {% if is_medic %}
-                        <span class="card-badge badge-ready" style="border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.15); font-weight: bold;">🩺 SANITARIO ACREDITADO</span>
+                        <span class="card-badge badge-ready" style="border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.15); font-weight: bold;">🩺 SANITARIO</span>
                     {% else %}
-                        <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">📱 INSTALABLE</span>
+                        <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">📱 PWA</span>
                     {% endif %}
                 </div>
             </div>
@@ -939,7 +979,7 @@
             </div>
 
             <div class="card-footer">
-                <span>ESTADO: 📱 LISTA PARA INSTALACIÓN Y USO OFFLINE</span>
+                <span>ESTADO: 📱 PWA OFFLINE</span>
                 <div class="card-footer-btns">
                     <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('medic')" title="Desplegar manual sanitario">
                         <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
@@ -965,7 +1005,7 @@
                     </div>
                 </div>
                 <div>
-                    <span class="card-badge badge-ready" style="border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.12); font-weight: bold;">DISPONIBLE PARA TODA LA TROPA</span>
+                    <span class="card-badge badge-ready" style="border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.12); font-weight: bold;">ACCESO LIBRE</span>
                 </div>
             </div>
 
@@ -973,11 +1013,13 @@
                 <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">view_in_ar</span> REALIDAD AUMENTADA</span>
                 <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">explore</span> BRÚJULA 360° + INCLINACIÓN</span>
                 <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">radar</span> FLECHAS RADAR PERIMÉTRICAS</span>
-                <span class="card-tag" style="color: var(--accent-gold); border-color: rgba(255,215,0,0.3);"><span class="material-symbols-outlined" style="font-size:13px;">near_me</span> MODO DEMO LOCAL (300m)</span>
+                {% if user_role == 'admin' %}
+                <span class="card-tag" style="color: var(--accent-gold); border-color: rgba(255,215,0,0.3);"><span class="material-symbols-outlined" style="font-size:13px;">near_me</span> MODO DEMO (ADMIN)</span>
+                {% endif %}
             </div>
 
             <p class="card-desc">
-                Visor electro-óptico con cámara móvil y sensores de orientación. Proyecta en tiempo real las balizas, POIs, bases y objetivos flotando sobre el paisaje real con azimut, distancia, filtros térmicos NVG/FLIR y modo de entrenamiento demo local.
+                Visor electro-óptico con cámara móvil y sensores de orientación. Proyecta en tiempo real las balizas, POIs, bases y objetivos flotando sobre el paisaje real con azimut, distancia y filtros térmicos NVG/FLIR.
             </p>
 
             <!-- INSTRUCCIONES EN LA TARJETA -->
@@ -994,7 +1036,7 @@
                     </div>
                     <div class="card-step-item">
                         <div class="card-step-title"><span style="color: var(--accent-cyan);">1.</span> Selección de Modo de Operación</div>
-                        <div class="card-step-desc">Elige entre <b>Modo Demo Local (30-300m)</b> para probar inmediatamente en tu casa/calle, <b>Modo Virtual en el Campo</b> (simula estar en Fuerte Stanley) o <b>Modo GPS Real</b> para el día de partida.</div>
+                        <div class="card-step-desc">{% if user_role == 'admin' %}Elige entre <b>Modo Demo Local (30-300m)</b>, <b>Fuerte Stanley</b> o <b>Modo GPS Real</b> para calibrar.{% else %}Apunta en vivo en el campo de batalla mediante el <b>Modo GPS Real</b> sincronizado con el ORBAT.{% endif %}</div>
                     </div>
                     <div class="card-step-item">
                         <div class="card-step-title"><span style="color: var(--accent-cyan);">2.</span> Orientación y Brújula Táctica</div>
@@ -1006,13 +1048,13 @@
                     </div>
                     <div class="card-step-item">
                         <div class="card-step-title"><span style="color: var(--accent-cyan);">4.</span> Modos de Visión y Zoom</div>
-                        <div class="card-step-desc">Alterna entre visión diurna Óptica, Visión Nocturna NVG (Fósforo verde), Termografía FLIR y Ámbar de alto contraste. Emplea el selector de zoom digital (1X, 2X, 4X, 8X) para observar sectores lejanos.</div>
+                        <div class="card-step-desc">Alterna entre visión diurna Óptica, Visión Nocturna NVG (Fósforo verde) y Termografía FLIR. Emplea el selector de zoom digital (1X, 2X, 4X, 8X) para observar sectores lejanos.</div>
                     </div>
                 </div>
             </div>
 
             <div class="card-footer">
-                <span>ESTADO: OPERATIVO // ACCESO LIBRE</span>
+                <span>ESTADO: ACCESO LIBRE</span>
                 <div class="card-footer-btns">
                     <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('prismaticos')" title="Desplegar instrucciones del visor">
                         <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
@@ -1042,7 +1084,7 @@
                     {% if aaa_unlocked %}
                     <span class="card-badge badge-ready">OPERATIVO</span>
                     {% else %}
-                    <span class="card-badge badge-locked">🔒 REQUIERE PIN</span>
+                    <span class="card-badge badge-locked">🔒 PIN</span>
                     {% endif %}
                 </div>
             </div>

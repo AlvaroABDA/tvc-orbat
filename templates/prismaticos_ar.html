@@ -592,10 +592,12 @@
             <button type="button" class="hud-btn" onclick="exitAndReturn()" title="Salir del visor">
                 <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span> SALIR
             </button>
-            <button type="button" class="hud-btn hud-btn-gold" id="btn-mode-toggle" onclick="openModeModal()" title="Seleccionar modo de localización">
+            {% if user_role == 'admin' %}
+            <button type="button" class="hud-btn hud-btn-gold" id="btn-mode-toggle" onclick="openModeModal()" title="Seleccionar modo de localización (Admin)">
                 <span class="material-symbols-outlined" style="font-size: 13px;">my_location</span>
                 <span id="current-mode-label">DEMO (300m)</span>
             </button>
+            {% endif %}
         </div>
 
         <div style="display: flex; align-items: center; gap: 6px;">
@@ -673,11 +675,12 @@
         </div>
     </footer>
 
-    <!-- Modal Selector de Modos (Para probar a 300 km) -->
+    {% if user_role == 'admin' %}
+    <!-- Modal Selector de Modos (Exclusivo Administrador: Para calibrar a 300 km) -->
     <div id="modal-mode-select" class="modal-mode-select" onclick="if(event.target === this) closeModeModal()">
         <div class="modal-mode-box">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--hud-dim); padding-bottom: 6px;">
-                <h3 style="font-family: var(--font-heading); font-size: 0.95rem; color: var(--hud-primary); margin: 0;">MODO DE OPERACIÓN // UBICACIÓN</h3>
+                <h3 style="font-family: var(--font-heading); font-size: 0.95rem; color: var(--hud-primary); margin: 0;">MODO DE OPERACIÓN // UBICACIÓN (ADMIN)</h3>
                 <button type="button" onclick="closeModeModal()" style="background: none; border: none; color: #aaa; font-size: 22px; cursor: pointer;">&times;</button>
             </div>
 
@@ -688,7 +691,7 @@
                         1. MODO DEMO LOCAL (A TU ALREDEDOR, 30-300m)
                     </div>
                     <div class="mode-option-desc">
-                        <b>Ideal para probar desde casa o la calle (a 300 km del campo).</b> Crea balizas y POIs virtuales alrededor de donde te encuentras ahora mismo para que puedas girar el teléfono 360° y apuntar directamente en tu entorno.
+                        <b>Modo de pruebas para calibración remota fuera del campo.</b> Crea balizas y POIs virtuales alrededor de donde te encuentras ahora mismo para verificar retículas y sensores 360°.
                     </div>
                 </div>
 
@@ -708,7 +711,7 @@
                         3. MODO CAMPO REAL (GPS EN VIVO)
                     </div>
                     <div class="mode-option-desc">
-                        Utiliza tus coordenadas GPS reales frente a las del terreno. Si estás a 300 km, calculará el azimut real y la distancia kilométrica hacia el campo de combate.
+                        Utiliza tus coordenadas GPS reales frente a las del terreno. Es la vista estándar por la que operan todos los combatientes en el evento.
                     </div>
                 </div>
             </div>
@@ -718,15 +721,17 @@
             </div>
         </div>
     </div>
+    {% endif %}
 
     <script>
         // ==================== ESTADO DEL SISTEMA ====================
+        const isAdminUser = {{ 'true' if user_role == 'admin' else 'false' }};
         let currentHeading = 0;      // 0° a 360°
         let currentPitch = 0;        // Inclinación vertical (-90° a +90°)
         let currentRoll = 0;         // Inclinación lateral (-90° a +90°)
         let headingOffset = 0;       // Calibración manual (0° o 180°)
         let currentVisionMode = 'optical'; // optical, nvg, flir (sin ámbar)
-        let operatingMode = 'demo';   // 'demo', 'sim_field', 'real_gps'
+        let operatingMode = isAdminUser ? 'demo' : 'real_gps';   // Solo admin accede a simulación/demo; la tropa ve la vista normal en campo (GPS real)
         let hasDemoInitialized = false;
         let hasTriggeredInitialFs = false;
         
@@ -1132,28 +1137,34 @@
         }
 
         function openModeModal() {
-            document.getElementById('modal-mode-select').style.display = 'flex';
+            const m = document.getElementById('modal-mode-select');
+            if (m) m.style.display = 'flex';
         }
 
         function closeModeModal() {
-            document.getElementById('modal-mode-select').style.display = 'none';
+            const m = document.getElementById('modal-mode-select');
+            if (m) m.style.display = 'none';
         }
 
         function selectMode(m) {
             operatingMode = m;
             document.querySelectorAll('.mode-option-btn').forEach(b => b.classList.remove('active'));
+            const lbl = document.getElementById('current-mode-label');
             if (m === 'demo') {
-                document.getElementById('opt-mode-demo').classList.add('active');
-                document.getElementById('current-mode-label').textContent = "DEMO (300m)";
+                const opt = document.getElementById('opt-mode-demo');
+                if (opt) opt.classList.add('active');
+                if (lbl) lbl.textContent = "DEMO (300m)";
                 hasDemoInitialized = false;
             } else if (m === 'sim_field') {
-                document.getElementById('opt-mode-sim-field').classList.add('active');
-                document.getElementById('current-mode-label').textContent = "VIRTUAL CAMPO";
+                const opt = document.getElementById('opt-mode-sim-field');
+                if (opt) opt.classList.add('active');
+                if (lbl) lbl.textContent = "VIRTUAL CAMPO";
                 userLat = 41.959817; // Fuerte Stanley
                 userLng = -6.258969;
             } else if (m === 'real_gps') {
-                document.getElementById('opt-mode-real-gps').classList.add('active');
-                document.getElementById('current-mode-label').textContent = "GPS REAL";
+                const opt = document.getElementById('opt-mode-real-gps');
+                if (opt) opt.classList.add('active');
+                if (lbl) lbl.textContent = "GPS REAL";
             }
             closeModeModal();
             refreshPOIsList();

@@ -216,8 +216,9 @@
         .medic-slots-container {
             display: flex;
             gap: 6px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
             align-items: center;
+            flex-shrink: 0;
         }
 
         .medic-slot-item {
@@ -231,6 +232,7 @@
             font-size: 0.95rem;
             font-weight: bold;
             transition: all 0.2s ease;
+            box-sizing: border-box;
         }
         .medic-slot-item.filled {
             background: rgba(46, 204, 113, 0.2);
@@ -238,10 +240,39 @@
             color: #2ecc71;
             box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
         }
+        .medic-slot-item.warn, .medic-digit-box.warn {
+            background: rgba(243, 156, 18, 0.2);
+            border-color: #f39c12;
+            color: #f39c12;
+            box-shadow: 0 0 8px rgba(243, 156, 18, 0.3);
+        }
+        .medic-slot-item.danger, .medic-digit-box.danger {
+            background: rgba(255, 51, 68, 0.2);
+            border-color: #ff3344;
+            color: #ff3344;
+            box-shadow: 0 0 8px rgba(255, 51, 68, 0.3);
+        }
         .medic-slot-item.empty {
             background: rgba(255, 255, 255, 0.02);
             border-color: rgba(255, 255, 255, 0.1);
             color: #555;
+        }
+
+        .medic-digit-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border: 1px solid #2ecc71;
+            background: rgba(46, 204, 113, 0.18);
+            color: #2ecc71;
+            font-family: 'Orbitron', 'Share Tech Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 800;
+            box-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
+            transition: all 0.2s ease;
+            box-sizing: border-box;
         }
 
         /* Banner de Alerta cuando Kits = 0 */
@@ -1587,16 +1618,40 @@
                 }
             }
 
-            // Renderizar slots de botiquines visuales
+            // Renderizar slots de botiquines visuales:
+            // Si son 3 o menos (habitual o dotación reducida), 3 cuadraditos tácticos.
+            // Si son más de 3, formato táctico digital [✚] [ D1 ] [ D2 ] (ej: [✚] [0] [8], [✚] [1] [0])
             if (slotsContainer) {
                 slotsContainer.innerHTML = '';
-                const maxSlots = Math.max(3, Math.min(16, Math.max(val, nominal)));
-                for (let i = 0; i < maxSlots; i++) {
-                    const slot = document.createElement('div');
-                    slot.className = 'medic-slot-item ' + (i < val ? 'filled' : 'empty');
-                    slot.innerHTML = (i < val) ? '✚' : '•';
-                    slot.title = (i < val) ? `Botiquín #${i + 1} operativo` : `Botiquín no disponible`;
-                    slotsContainer.appendChild(slot);
+                if (val <= 3 && nominal <= 3) {
+                    const maxSlots = Math.max(1, Math.min(3, nominal));
+                    for (let i = 0; i < maxSlots; i++) {
+                        const slot = document.createElement('div');
+                        const isFilled = i < val;
+                        slot.className = 'medic-slot-item ' + (isFilled ? (val === 1 ? 'warn' : 'filled') : 'empty');
+                        slot.innerHTML = isFilled ? '✚' : '•';
+                        slot.title = isFilled ? `Botiquín #${i + 1} operativo` : `Botiquín no disponible`;
+                        slotsContainer.appendChild(slot);
+                    }
+                } else {
+                    // Formato compacto militar: exactamente 3 cajas [✚] [ D1 ] [ D2 ]
+                    const stateClass = val > 1 ? 'filled' : (val === 1 ? 'warn' : 'danger');
+                    const numClass = val > 1 ? '' : (val === 1 ? 'warn' : 'danger');
+
+                    const iconBox = document.createElement('div');
+                    iconBox.className = `medic-slot-item ${stateClass}`;
+                    iconBox.innerHTML = '✚';
+                    iconBox.title = `${val} botiquines disponibles de ${nominal}`;
+                    slotsContainer.appendChild(iconBox);
+
+                    const paddedStr = String(Math.max(0, val)).padStart(2, '0');
+                    for (let d of paddedStr) {
+                        const digitBox = document.createElement('div');
+                        digitBox.className = `medic-digit-box ${numClass}`.trim();
+                        digitBox.textContent = d;
+                        digitBox.title = `${val} botiquines disponibles`;
+                        slotsContainer.appendChild(digitBox);
+                    }
                 }
             }
 
