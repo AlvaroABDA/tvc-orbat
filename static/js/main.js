@@ -1253,6 +1253,18 @@ function initModal() {
             });
         }
 
+        // Validación de nicks únicos dentro de la escuadra
+        const nicksSeenInSquad = new Set();
+        for (const m of payload.miembros) {
+            const cleanNick = (m.nombre_jugador || '').trim().toLowerCase();
+            if (!cleanNick) continue;
+            if (nicksSeenInSquad.has(cleanNick)) {
+                alert(`Nick duplicado en la escuadra: "${m.nombre_jugador}". Dos combatientes no pueden tener el mismo indicativo.`);
+                return;
+            }
+            nicksSeenInSquad.add(cleanNick);
+        }
+
         if (window.userRole !== 'admin') {
             const medCount = payload.miembros.filter(m => (m.rol || '').toLowerCase().includes('medico') || (m.rol || '').toLowerCase().includes('sanitario')).length;
             const totM = payload.miembros.length;
@@ -1623,15 +1635,20 @@ function addMiembroRow(m = null) {
     
     const iceBtn = (m && m.id) ? `<button type="button" title="Ficha Médica Real (I.C.E.)" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(231, 76, 60, 0.12); border: 1px solid rgba(231, 76, 60, 0.35); color: #ff6b7a;" onclick="verIceMiembro(${m.id})"><span class="material-symbols-outlined" style="font-size: 16px;">emergency</span></button>` : '';
 
-    const placeholderGuardar = (!m || !m.id) ? `<span style="font-size: 0.68rem; color: #64748b; font-family: monospace;">(guardar)</span>` : '';
+    const isAdmin = (window.userRole === 'admin');
+    const isExistingMember = Boolean(m && m.id);
 
-    const delBtn = `<button type="button" class="btn-del-miembro" title="Eliminar operador" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #888;" onmouseover="this.style.color='#ff5566'; this.style.borderColor='rgba(255,85,102,0.4)';" onmouseout="this.style.color='#888'; this.style.borderColor='rgba(255,255,255,0.12)';"><span class="material-symbols-outlined" style="font-size: 15px;">close</span></button>`;
+    const placeholderGuardar = (!isExistingMember) ? `<span style="font-size: 0.68rem; color: #64748b; font-family: monospace;">(guardar)</span>` : '';
+
+    const delBtn = (isExistingMember && !isAdmin) ?
+        `<span title="Baja definitiva restringida a Administradores. Para este evento puedes desmarcar 'Activo'." style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); color: #64748b; cursor: not-allowed;"><span class="material-symbols-outlined" style="font-size: 15px;">lock</span></span>` :
+        `<button type="button" class="btn-del-miembro" title="${isExistingMember ? 'Eliminar operador del censo militar' : 'Descartar fila'}" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #888;" onmouseover="this.style.color='#ff5566'; this.style.borderColor='rgba(255,85,102,0.4)';" onmouseout="this.style.color='#888'; this.style.borderColor='rgba(255,255,255,0.12)';"><span class="material-symbols-outlined" style="font-size: 15px;">close</span></button>`;
 
     const nvgBadge = (m && m.tiene_nvg) ? `<span title="NVG: ${m.nvg_categoria || 'Visión Nocturna'}" style="font-size: 0.68rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); color: #00f0ff; padding: 1px 5px; border-radius: 3px; font-weight: 600; cursor: help; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 11px;">visibility</span> NVG</span>` : '';
     const dronBadge = (m && m.tiene_dron) ? `<span title="Dron: ${m.dron_modelo || 'Reconocimiento'}" style="font-size: 0.68rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); color: #00f0ff; padding: 1px 5px; border-radius: 3px; font-weight: 600; cursor: help; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 11px;">flight</span> Dron</span>` : '';
 
     tr.innerHTML = `
-        <td style="padding: 0.25rem; text-align: center;"><input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} style="transform: scale(1.3); cursor: pointer;"></td>
+        <td style="padding: 0.25rem; text-align: center;"><input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} style="transform: scale(1.3); cursor: pointer;" title="Marcar/desmarcar para activar o inactivar del despliegue"></td>
         <td style="padding: 0.25rem;">
             <div style="display: flex; align-items: center; gap: 4px;">
                 <input type="text" class="miembro-nombre" placeholder="Nick" value="${nombre}" style="flex: 1; min-width: 80px; padding: 0.25rem;">
@@ -1663,11 +1680,84 @@ function addMiembroRow(m = null) {
         <td style="padding: 0.25rem; text-align: center;">${delBtn}</td>
     `;
     
+    function applyActivoStyle(isAct) {
+        if (isAct) {
+            tr.style.opacity = '1';
+            tr.style.filter = 'none';
+            if (isListo) {
+                tr.style.background = 'rgba(0, 240, 255, 0.08)';
+                tr.style.boxShadow = 'inset 3px 0 0 #00f0ff';
+            } else {
+                tr.style.background = 'transparent';
+                tr.style.boxShadow = 'none';
+            }
+        } else {
+            tr.style.opacity = '0.52';
+            tr.style.filter = 'grayscale(0.65)';
+            tr.style.background = 'rgba(0, 0, 0, 0.22)';
+            tr.style.boxShadow = 'none';
+        }
+    }
+    applyActivoStyle(activo);
+
     const inputNombre = tr.querySelector('.miembro-nombre');
     inputNombre.addEventListener('input', updateJugadoresCount);
     
+    async function checkNickUniqueness(inputEl) {
+        const val = inputEl.value.trim();
+        if (!val) {
+            inputEl.style.borderColor = '';
+            inputEl.style.boxShadow = '';
+            inputEl.removeAttribute('title');
+            return true;
+        }
+
+        // 1. Validar duplicado local dentro del formulario
+        const otherRows = Array.from(container.querySelectorAll('.miembro-row')).filter(r => r !== tr);
+        const localDup = otherRows.find(r => {
+            const oVal = (r.querySelector('.miembro-nombre')?.value || '').trim();
+            return oVal.toLowerCase() === val.toLowerCase();
+        });
+        if (localDup) {
+            inputEl.style.borderColor = '#ff4444';
+            inputEl.style.boxShadow = '0 0 6px rgba(255, 68, 68, 0.5)';
+            inputEl.title = `Nick duplicado en la escuadra actual: "${val}"`;
+            return false;
+        }
+
+        // 2. Validar disponibilidad global en el servidor
+        try {
+            const mId = tr.dataset.id;
+            const url = `/api/miembros/check_nick?nick=${encodeURIComponent(val)}${mId ? `&exclude_id=${mId}` : ''}`;
+            const res = await fetch(url);
+            if (res.ok) {
+                const data = await res.json();
+                if (!data.available) {
+                    inputEl.style.borderColor = '#ff4444';
+                    inputEl.style.boxShadow = '0 0 6px rgba(255, 68, 68, 0.5)';
+                    inputEl.title = `El nick "${val}" ya está en uso por otro combatiente de la unidad "${data.equipo_nombre}".`;
+                    return false;
+                }
+            }
+        } catch (e) {
+            console.error('Error al comprobar nick:', e);
+        }
+
+        inputEl.style.borderColor = '';
+        inputEl.style.boxShadow = '';
+        inputEl.removeAttribute('title');
+        return true;
+    }
+
+    inputNombre.addEventListener('blur', () => checkNickUniqueness(inputNombre));
+
     const cbActivo = tr.querySelector('.miembro-activo');
-    if (cbActivo) cbActivo.addEventListener('change', updateJugadoresCount);
+    if (cbActivo) {
+        cbActivo.addEventListener('change', () => {
+            applyActivoStyle(cbActivo.checked);
+            updateJugadoresCount();
+        });
+    }
 
     const selRol = tr.querySelector('.miembro-rol');
     if (selRol) {
@@ -1730,10 +1820,19 @@ function addMiembroRow(m = null) {
         });
     }
     
-    tr.querySelector('.btn-del-miembro').addEventListener('click', () => {
-        tr.remove();
-        updateJugadoresCount();
-    });
+    const delBtnEl = tr.querySelector('.btn-del-miembro');
+    if (delBtnEl) {
+        delBtnEl.addEventListener('click', () => {
+            if (isExistingMember) {
+                const curNick = (tr.querySelector('.miembro-nombre')?.value || '').trim() || 'este operador';
+                if (!confirm(`¿Eliminar definitivamente a "${curNick}" del censo militar? Esta acción borrará permanentemente sus credenciales y ficha médica.`)) {
+                    return;
+                }
+            }
+            tr.remove();
+            updateJugadoresCount();
+        });
+    }
     
     container.appendChild(tr);
     updateJugadoresCount();

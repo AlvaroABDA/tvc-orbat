@@ -175,20 +175,31 @@ ADMIN_USERS = {
 }
 
 def get_db_connection():
-    if 'db' not in g:
-        g.db = sqlite3.connect(DB_PATH, timeout=20)
+    db = getattr(g, 'db', None)
+    if db is not None:
         try:
-            g.db.execute('PRAGMA journal_mode=WAL;')
-        except sqlite3.OperationalError:
-            pass # Ignore if locked during PRAGMA
-        g.db.row_factory = sqlite3.Row
+            db.total_changes
+            return db
+        except (sqlite3.ProgrammingError, sqlite3.OperationalError):
+            g.pop('db', None)
+            
+    g.db = sqlite3.connect(DB_PATH, timeout=20)
+    try:
+        g.db.execute('PRAGMA journal_mode=WAL;')
+    except sqlite3.OperationalError:
+        pass # Ignore if locked during PRAGMA
+    g.db.row_factory = sqlite3.Row
     return g.db
 
 @app.teardown_appcontext
 def close_connection(exception):
     db = getattr(g, 'db', None)
     if db is not None:
-        db.close()
+        try:
+            db.close()
+        except Exception:
+            pass
+        g.pop('db', None)
 
 @app.after_request
 def add_header(response):
@@ -535,6 +546,46 @@ def upload_faccion_opord(id):
     conn.close()
     return jsonify({'status': 'success'})
 
+def check_nick_duplicado(conn, nick, exclude_id=None):
+    """
+    Comprueba si ya existe un combatiente en el censo con el mismo nick (insensible a mayúsculas/espacios).
+    Retorna (existe: bool, info_duplicado: dict o None)
+    """
+    if not nick or not str(nick).strip():
+        return False, None
+    clean_nick = str(nick).strip().lower()
+    query = '''
+        SELECT m.id, m.nombre_jugador, m.equipo_id, e.nombre as equipo_nombre
+        FROM Miembro m
+        JOIN Equipo e ON m.equipo_id = e.id
+        WHERE LOWER(TRIM(m.nombre_jugador)) = ?
+    '''
+    params = [clean_nick]
+    if exclude_id:
+        query += ' AND m.id != ?'
+        params.append(exclude_id)
+    row = conn.execute(query, params).fetchone()
+    if row:
+        return True, dict(row)
+    return False, None
+
+@app.route('/api/miembros/check_nick', methods=['GET'])
+def api_check_miembro_nick():
+    nick = request.args.get('nick', '').strip()
+    exclude_id = request.args.get('exclude_id', type=int)
+    if not nick:
+        return jsonify({'available': True})
+    conn = get_db_connection()
+    is_dup, dup = check_nick_duplicado(conn, nick, exclude_id=exclude_id)
+    conn.close()
+    if is_dup:
+        return jsonify({
+            'available': False,
+            'nombre_jugador': dup['nombre_jugador'],
+            'equipo_nombre': dup['equipo_nombre']
+        })
+    return jsonify({'available': True})
+
 @app.route('/api/equipos', methods=['GET', 'POST'])
 def manage_equipos():
     conn = get_db_connection()
@@ -584,6 +635,25 @@ def manage_equipos():
                     return jsonify({'error': f'Doctrina TVC: Una escuadra de {tot_m} efectivos solo puede tener como máximo {max_permitidos} médico(s). Has asignado {med_count}.'}), 400
                 alerta_doctrina_medicos = f"Doctrina TVC: La escuadra tiene {tot_m} efectivos y {med_count} médicos. El máximo reglamentario para el jefe de unidad es de {max_permitidos} médico(s)."
 
+            # Validar nicks únicos tanto dentro de la escuadra como a nivel global
+            nicks_seen = {}
+            for m in data['miembros']:
+                nick = str(m.get('nombre_jugador', '')).strip()
+                if not nick:
+                    continue
+                nick_key = nick.lower()
+                if nick_key in nicks_seen:
+                    conn.close()
+                    return jsonify({'error': f'Nick duplicado dentro de la escuadra: "{nick}". Dos combatientes no pueden compartir el mismo indicativo.'}), 400
+                nicks_seen[nick_key] = True
+
+                is_dup, dup_info = check_nick_duplicado(conn, nick)
+                if is_dup:
+                    conn.close()
+                    return jsonify({
+                        'error': f'El nick "{nick}" ya está en uso por otro operador de la unidad "{dup_info["equipo_nombre"]}". Cada combatiente debe tener un indicativo único para el acceso.'
+                    }), 400
+
         raw_password = data.get('password', '').strip()
         if not raw_password:
             raw_password = '1234'
@@ -599,9 +669,10 @@ def manage_equipos():
             import uuid
             for m in data['miembros']:
                 new_uid = str(uuid.uuid4()).split('-')[0].upper()
+                activo_val = 1 if m.get('activo', 1) in [1, '1', True] else 0
                 cursor.execute(
                     'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid, nombre_apellidos, dni, telefono, email, bando_original, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (new_id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1))
+                    (new_id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), activo_val)
                 )
         
         if 'historial' in data and isinstance(data['historial'], list):
@@ -850,6 +921,26 @@ def update_delete_equipo(id):
                     return jsonify({'error': f'Doctrina TVC: Una escuadra de {tot_m} efectivos solo puede tener como máximo {max_permitidos} médico(s). Has asignado {med_count}.'}), 400
                 alerta_doctrina_medicos = f"Doctrina TVC: La escuadra tiene {tot_m} efectivos y {med_count} médicos. El máximo reglamentario para el jefe de unidad es de {max_permitidos} médico(s)."
 
+            # Validar nicks únicos tanto dentro de la escuadra como a nivel global
+            nicks_seen = {}
+            for m in data['miembros']:
+                nick = str(m.get('nombre_jugador', '')).strip()
+                if not nick:
+                    continue
+                nick_key = nick.lower()
+                if nick_key in nicks_seen:
+                    conn.close()
+                    return jsonify({'error': f'Nick duplicado dentro de la escuadra: "{nick}". Dos combatientes no pueden compartir el mismo indicativo.'}), 400
+                nicks_seen[nick_key] = m.get('id')
+
+                m_id = m.get('id')
+                is_dup, dup_info = check_nick_duplicado(conn, nick, exclude_id=m_id)
+                if is_dup:
+                    conn.close()
+                    return jsonify({
+                        'error': f'El nick "{nick}" ya está en uso por otro operador de la unidad "{dup_info["equipo_nombre"]}". Cada combatiente debe tener un indicativo único para el acceso.'
+                    }), 400
+
         if is_admin:
             cursor.execute(
                 'UPDATE Equipo SET nombre = ?, jugadores = ?, jugadores_manual = ?, faccion_id = ?, tipo = ?, valoracion = ?, codigo = ?, misiones_preferidas = ?, tags_comportamiento = ?, estado_medalla = ?, estado_sancion = ? WHERE id = ?',
@@ -874,31 +965,38 @@ def update_delete_equipo(id):
         if 'miembros' in data and isinstance(data['miembros'], list):
             incoming_ids = [m['id'] for m in data['miembros'] if m.get('id')]
             jugadores_dir = os.path.join(app.root_path, 'static', 'imgs', 'fotos_jugadores')
-            if incoming_ids:
-                placeholders = ','.join('?' * len(incoming_ids))
-                # Limpiar fotos en disco de los miembros eliminados
-                del_members = cursor.execute(f'SELECT id FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids).fetchall()
-                for dm in del_members:
-                    clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
-                cursor.execute(f'DELETE FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids)
+            
+            # Solo los administradores pueden eliminar operadores definitivamente del censo militar
+            if is_admin:
+                if incoming_ids:
+                    placeholders = ','.join('?' * len(incoming_ids))
+                    # Limpiar fotos en disco de los miembros eliminados
+                    del_members = cursor.execute(f'SELECT id FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids).fetchall()
+                    for dm in del_members:
+                        clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
+                    cursor.execute(f'DELETE FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids)
+                else:
+                    del_members = cursor.execute('SELECT id FROM Miembro WHERE equipo_id = ?', (id,)).fetchall()
+                    for dm in del_members:
+                        clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
+                    cursor.execute('DELETE FROM Miembro WHERE equipo_id = ?', (id,))
             else:
-                del_members = cursor.execute('SELECT id FROM Miembro WHERE equipo_id = ?', (id,)).fetchall()
-                for dm in del_members:
-                    clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
-                cursor.execute('DELETE FROM Miembro WHERE equipo_id = ?', (id,))
+                # El gestor de unidad NO puede eliminar miembros de la BD; se conservan intactos
+                pass
                 
             import uuid
             for m in data['miembros']:
+                activo_val = 1 if m.get('activo', 1) in [1, '1', True] else 0
                 if m.get('id'):
                     cursor.execute(
                         'UPDATE Miembro SET nombre_jugador = ?, rol = ?, armamento = ?, nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, bando_original = ?, activo = ? WHERE id = ? AND equipo_id = ?',
-                        (m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1), m['id'], id)
+                        (m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), activo_val, m['id'], id)
                     )
                 else:
                     new_uid = str(uuid.uuid4()).split('-')[0].upper()
                     cursor.execute(
                         'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid, nombre_apellidos, dni, telefono, email, bando_original, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), m.get('activo', 1))
+                        (id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), activo_val)
                     )
                 
         # Update historial (only admin can modify team history)
@@ -932,6 +1030,25 @@ def update_delete_equipo(id):
         conn.commit()
         conn.close()
         return jsonify({'status': 'success'})
+
+@app.route('/api/miembros/<int:id>', methods=['DELETE'])
+def delete_miembro(id):
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Solo los administradores pueden eliminar operadores del censo militar. Los gestores de unidad pueden marcarlos como inactivos.'}), 403
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    m = cursor.execute('SELECT id, nombre_jugador FROM Miembro WHERE id = ?', (id,)).fetchone()
+    if not m:
+        conn.close()
+        return jsonify({'error': 'Operador no encontrado'}), 404
+
+    jugadores_dir = os.path.join(app.root_path, 'static', 'imgs', 'fotos_jugadores')
+    clean_old_files(jugadores_dir, f"miembro_{id}.*")
+    cursor.execute('DELETE FROM Miembro WHERE id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'message': f'Operador "{m["nombre_jugador"]}" eliminado del censo militar.'})
 
 @app.route('/api/equipos/<int:id>/readiness', methods=['GET'])
 def get_equipo_readiness(id):
@@ -2984,6 +3101,34 @@ def patch_db():
             ensure_operator_and_ice_tables(conn)
         except Exception as e:
             print("Error inicializando tablas de operador e ICE:", e)
+
+        # Migración: Resolver duplicados históricos de nicks para garantizar unicidad y evitar colisiones de login
+        try:
+            dup_rows = conn.execute('''
+                SELECT LOWER(TRIM(nombre_jugador)) as nick_lower, COUNT(*) as cnt
+                FROM Miembro
+                WHERE nombre_jugador IS NOT NULL AND TRIM(nombre_jugador) != ''
+                GROUP BY LOWER(TRIM(nombre_jugador))
+                HAVING cnt > 1
+            ''').fetchall()
+            for d in dup_rows:
+                m_list = conn.execute('''
+                    SELECT m.id, m.nombre_jugador, e.codigo, e.nombre as eq_nombre
+                    FROM Miembro m
+                    JOIN Equipo e ON m.equipo_id = e.id
+                    WHERE LOWER(TRIM(m.nombre_jugador)) = ?
+                    ORDER BY m.id ASC
+                ''', (d['nick_lower'],)).fetchall()
+                for idx, m in enumerate(m_list[1:], start=2):
+                    tag = (m['codigo'] or m['eq_nombre'][:8]).strip().upper()
+                    new_nick = f"{m['nombre_jugador'].strip()} [{tag}]"
+                    check_exist = conn.execute('SELECT id FROM Miembro WHERE LOWER(TRIM(nombre_jugador)) = ?', (new_nick.lower(),)).fetchone()
+                    if check_exist:
+                        new_nick = f"{m['nombre_jugador'].strip()}-{idx}"
+                    conn.execute('UPDATE Miembro SET nombre_jugador = ? WHERE id = ?', (new_nick, m['id']))
+            conn.commit()
+        except Exception as e:
+            print("Error resolviendo nicks duplicados históricos:", e)
 
         conn.close()
 
