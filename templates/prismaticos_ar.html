@@ -28,12 +28,16 @@
         }
 
         html, body {
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             background-color: var(--bg-color);
             color: #fff;
             font-family: var(--font-tactical);
+            touch-action: none;
+            position: fixed;
+            inset: 0;
         }
 
         /* Video de Cámara Real */
@@ -71,6 +75,7 @@
             height: 100%;
             z-index: 5;
             pointer-events: none;
+            touch-action: none;
         }
 
         /* Capa de Marcadores DOM Interactivos */
@@ -83,6 +88,7 @@
             z-index: 10;
             pointer-events: none;
             overflow: hidden;
+            touch-action: none;
         }
 
         /* Filtros Ópticos y Efectos CRT/NVG */
@@ -99,11 +105,11 @@
 
         /* Modo NVG Fósforo Verde */
         body.mode-nvg #camera-video {
-            filter: brightness(1.3) contrast(1.7) sepia(1) hue-rotate(85deg) saturate(3);
+            filter: brightness(1.25) contrast(1.6) sepia(1) hue-rotate(85deg) saturate(2.8);
         }
         body.mode-nvg .vision-filter-overlay {
-            background: radial-gradient(circle at center, transparent 40%, rgba(0, 40, 0, 0.7) 100%),
-                        repeating-linear-gradient(0deg, rgba(0, 255, 60, 0.08) 0px, rgba(0, 255, 60, 0.08) 1px, transparent 2px, transparent 4px);
+            background: radial-gradient(circle at center, transparent 45%, rgba(0, 30, 0, 0.65) 100%),
+                        repeating-linear-gradient(0deg, rgba(0, 255, 60, 0.06) 0px, rgba(0, 255, 60, 0.06) 1px, transparent 2px, transparent 4px);
         }
         body.mode-nvg {
             --hud-primary: #33ff55;
@@ -112,23 +118,14 @@
 
         /* Modo FLIR White-Hot Térmico */
         body.mode-flir #camera-video {
-            filter: grayscale(1) invert(1) contrast(2.2) brightness(0.9);
+            filter: grayscale(1) invert(1) contrast(2.0) brightness(0.9);
         }
         body.mode-flir .vision-filter-overlay {
-            background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.05) 0px, rgba(255, 255, 255, 0.05) 1px, transparent 2px, transparent 3px);
+            background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0px, rgba(255, 255, 255, 0.04) 1px, transparent 2px, transparent 3px);
         }
         body.mode-flir {
             --hud-primary: #ffffff;
             --hud-dim: rgba(255, 255, 255, 0.4);
-        }
-
-        /* Modo AMBER Contraste Polvo */
-        body.mode-amber #camera-video {
-            filter: sepia(1) saturate(4) hue-rotate(350deg) contrast(1.4);
-        }
-        body.mode-amber {
-            --hud-primary: #ffaa00;
-            --hud-dim: rgba(255, 170, 0, 0.3);
         }
 
         /* Viñeta de Óptica Prismática */
@@ -144,7 +141,7 @@
             border: 1px solid var(--hud-dim);
         }
 
-        /* Controles Superior HUD */
+        /* Controles Superior HUD - SUTILES Y COMPACTOS */
         .top-hud-bar {
             position: absolute;
             top: 0;
@@ -154,60 +151,75 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
-            background: linear-gradient(180deg, rgba(5, 12, 18, 0.92) 0%, rgba(5, 12, 18, 0.4) 70%, transparent 100%);
-            border-bottom: 1px solid var(--hud-dim);
+            padding: 6px 10px;
+            background: linear-gradient(180deg, rgba(3, 8, 14, 0.85) 0%, rgba(3, 8, 14, 0.3) 70%, transparent 100%);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.15);
+            backdrop-filter: blur(4px);
         }
 
         .hud-btn {
-            background: rgba(0, 240, 255, 0.1);
-            border: 1px solid var(--hud-primary);
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid rgba(0, 240, 255, 0.35);
             color: var(--hud-primary);
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: 3px;
             font-family: var(--font-tactical);
-            font-size: 0.72rem;
+            font-size: 0.65rem;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             text-decoration: none;
             text-transform: uppercase;
             transition: all 0.2s;
         }
 
         .hud-btn:active {
-            transform: scale(0.96);
-            background: var(--hud-primary);
-            color: #000;
-        }
-
-        .hud-btn-danger {
-            border-color: var(--hud-danger);
-            color: var(--hud-danger);
-            background: rgba(255, 51, 68, 0.12);
+            transform: scale(0.95);
+            background: rgba(0, 240, 255, 0.25);
         }
 
         .hud-btn-gold {
-            border-color: var(--hud-secondary);
+            border-color: rgba(255, 215, 0, 0.4);
             color: var(--hud-secondary);
-            background: rgba(255, 215, 0, 0.12);
+            background: rgba(255, 215, 0, 0.08);
         }
 
-        /* Cinta de Rumbo de Brújula */
+        /* Botón de Icono Redondo Compacto (NVG, Fullscreen) */
+        .hud-icon-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            color: var(--hud-primary);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            padding: 0;
+        }
+
+        .hud-icon-btn:active {
+            transform: scale(0.9);
+            background: rgba(0, 240, 255, 0.25);
+        }
+
+        /* Cinta de Rumbo de Brújula - MÁS PEQUEÑA Y SUTIL CON TRANSPARENCIA */
         .compass-tape-container {
             position: absolute;
-            top: 48px;
+            top: 42px;
             left: 50%;
             transform: translateX(-50%);
-            width: min(92vw, 420px);
-            height: 38px;
+            width: min(88vw, 360px);
+            height: 22px;
             z-index: 20;
             overflow: hidden;
-            border: 1px solid var(--hud-dim);
-            background: rgba(5, 12, 18, 0.7);
-            border-radius: 4px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            background: rgba(4, 9, 15, 0.4);
+            border-radius: 3px;
+            backdrop-filter: blur(4px);
         }
 
         .compass-needle {
@@ -215,11 +227,11 @@
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 2px;
+            width: 1.5px;
             height: 100%;
             background: var(--hud-secondary);
             z-index: 2;
-            box-shadow: 0 0 8px var(--hud-secondary);
+            box-shadow: 0 0 6px var(--hud-secondary);
         }
 
         .compass-indicator-pip {
@@ -229,18 +241,18 @@
             transform: translateX(-50%);
             width: 0;
             height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 6px solid var(--hud-secondary);
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 5px solid var(--hud-secondary);
             z-index: 3;
         }
 
         .compass-tape-strip {
             display: flex;
             position: absolute;
-            top: 8px;
+            top: 3px;
             left: 50%;
-            height: 24px;
+            height: 16px;
             transition: transform 0.05s linear;
             will-change: transform;
             white-space: nowrap;
@@ -250,22 +262,25 @@
             display: inline-flex;
             flex-direction: column;
             align-items: center;
-            width: 40px;
-            font-size: 0.65rem;
+            width: 32px;
+            font-size: 0.58rem;
             color: var(--hud-primary);
-            font-weight: bold;
+            font-weight: 600;
+            opacity: 0.75;
         }
 
         .compass-mark-tick {
             width: 1px;
-            height: 8px;
+            height: 5px;
             background: var(--hud-primary);
-            margin-top: 2px;
+            margin-top: 1px;
+            opacity: 0.6;
         }
 
         .compass-mark.cardinal {
             color: var(--hud-secondary);
             font-weight: 900;
+            opacity: 1;
         }
 
         /* Centro de Puntería y Retícula Militar */
@@ -283,75 +298,104 @@
         }
 
         .reticle-center-circle {
-            width: 46px;
-            height: 46px;
-            border: 1px solid var(--hud-dim);
+            width: 44px;
+            height: 44px;
+            border: 1px solid rgba(0, 240, 255, 0.35);
             border-radius: 50%;
             position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .reticle-center-circle.locked {
+            border-color: #ffd700;
+            box-shadow: 0 0 12px rgba(255, 215, 0, 0.8), inset 0 0 8px rgba(255, 215, 0, 0.3);
+            animation: pulse-reticle 0.8s infinite alternate;
+        }
+
+        @keyframes pulse-reticle {
+            from { transform: scale(1); }
+            to { transform: scale(1.08); }
         }
 
         .reticle-dot {
-            width: 4px;
-            height: 4px;
+            width: 3px;
+            height: 3px;
             background: var(--hud-primary);
             border-radius: 50%;
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            box-shadow: 0 0 6px var(--hud-primary);
+            box-shadow: 0 0 4px var(--hud-primary);
         }
 
-        /* Tarjeta de Marcador AR en Pantalla */
+        .reticle-lock-tag {
+            margin-top: 6px;
+            font-family: var(--font-tactical);
+            font-size: 0.62rem;
+            color: #ffd700;
+            background: rgba(3, 8, 14, 0.7);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            padding: 1px 6px;
+            border-radius: 2px;
+            letter-spacing: 0.5px;
+            display: none;
+            white-space: nowrap;
+        }
+
+        /* Tarjeta de Marcador AR en Pantalla - SUTIL, PEQUEÑA Y TRANSPARENTE */
         .ar-target-marker {
             position: absolute;
             transform: translate(-50%, -50%);
-            pointer-events: auto;
-            cursor: pointer;
+            pointer-events: none;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
+            gap: 1px;
             transition: transform 0.05s linear, opacity 0.2s;
             will-change: transform;
         }
 
         .ar-target-box {
             position: relative;
-            background: rgba(5, 12, 18, 0.85);
-            border: 1px solid var(--hud-primary);
-            padding: 4px 8px;
-            border-radius: 3px;
+            background: rgba(3, 8, 14, 0.5);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            padding: 2px 6px;
+            border-radius: 2px;
             display: flex;
             flex-direction: column;
-            gap: 2px;
-            min-width: 90px;
+            gap: 1px;
+            max-width: 140px;
             text-align: center;
-            box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
-            backdrop-filter: blur(4px);
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
+            backdrop-filter: blur(2px);
+            transition: all 0.2s;
         }
 
         .ar-target-box.highlight {
-            border-color: var(--hud-secondary);
-            box-shadow: 0 0 16px rgba(255, 215, 0, 0.6);
-            transform: scale(1.08);
+            border-color: #ffd700;
+            background: rgba(30, 25, 5, 0.75);
+            box-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+            transform: scale(1.06);
         }
 
         .ar-target-name {
             font-family: var(--font-heading);
-            font-size: 0.72rem;
+            font-size: 0.60rem;
             font-weight: 700;
-            letter-spacing: 0.5px;
-            color: #fff;
+            letter-spacing: 0.4px;
+            color: #e2e8f0;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .ar-target-meta {
-            font-size: 0.62rem;
-            color: var(--hud-primary);
+            font-size: 0.55rem;
+            color: rgba(0, 240, 255, 0.85);
             display: flex;
             justify-content: space-between;
-            gap: 6px;
+            gap: 4px;
         }
 
         .ar-target-distance {
@@ -360,33 +404,34 @@
         }
 
         .ar-target-pip {
-            width: 8px;
-            height: 8px;
-            border: 2px solid var(--hud-primary);
+            width: 5px;
+            height: 5px;
+            border: 1px solid var(--hud-primary);
             border-radius: 50%;
-            background: rgba(0, 240, 255, 0.4);
-            margin-top: 2px;
+            background: rgba(0, 240, 255, 0.5);
+            margin-top: 1px;
         }
 
-        /* Punteros de Radar Periféricos (Off-Screen Indicators) */
+        /* Punteros de Radar Periféricos (Off-Screen Indicators) - MÁS SUTILES Y PEQUEÑOS */
         .offscreen-pointer {
             position: absolute;
             z-index: 15;
-            background: rgba(5, 12, 18, 0.85);
-            border: 1px solid var(--hud-secondary);
+            background: rgba(3, 8, 14, 0.5);
+            border: 1px solid rgba(255, 215, 0, 0.4);
             color: var(--hud-secondary);
-            padding: 3px 6px;
-            border-radius: 3px;
-            font-size: 0.65rem;
-            font-weight: bold;
+            padding: 2px 5px;
+            border-radius: 2px;
+            font-size: 0.56rem;
+            font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 4px;
-            box-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+            gap: 3px;
+            box-shadow: 0 0 6px rgba(255, 215, 0, 0.25);
             cursor: pointer;
             pointer-events: auto;
             white-space: nowrap;
-            animation: pulse-border 1.5s infinite;
+            opacity: 0.8;
+            backdrop-filter: blur(2px);
         }
 
         @keyframes pulse-border {
@@ -563,23 +608,22 @@
     <!-- Barra Superior -->
     <header class="top-hud-bar">
         <div style="display: flex; align-items: center; gap: 6px;">
-            <button type="button" class="hud-btn" onclick="exitAndReturn('/simulacion')" title="Volver al menú de simulación">
-                <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span> MENÚ
+            <button type="button" class="hud-btn" onclick="exitAndReturn()" title="Salir del visor">
+                <span class="material-symbols-outlined" style="font-size: 14px;">arrow_back</span> SALIR
             </button>
-            <button type="button" class="hud-btn hud-btn-gold" id="btn-mode-toggle" onclick="openModeModal()">
-                <span class="material-symbols-outlined" style="font-size: 14px;">my_location</span>
-                <span id="current-mode-label">DEMO LOCAL (300m)</span>
+            <button type="button" class="hud-btn hud-btn-gold" id="btn-mode-toggle" onclick="openModeModal()" title="Seleccionar modo de localización">
+                <span class="material-symbols-outlined" style="font-size: 13px;">my_location</span>
+                <span id="current-mode-label">DEMO (300m)</span>
             </button>
         </div>
 
         <div style="display: flex; align-items: center; gap: 6px;">
-            <button type="button" class="hud-btn" id="btn-vision-mode" onclick="cycleVisionMode()" title="Cambiar visión: Normal / NVG / FLIR / Ámbar">
-                <span class="material-symbols-outlined" style="font-size: 15px;">night_sight</span>
-                <span id="vision-mode-label">ÓPTICO</span>
+            <button type="button" class="hud-icon-btn" id="btn-fullscreen" onclick="toggleFullscreen()" title="Alternar pantalla completa">
+                <span class="material-symbols-outlined" id="fs-icon" style="font-size: 16px;">fullscreen</span>
             </button>
-            <a href="/simulador_aaa" class="hud-btn hud-btn-danger" style="font-weight: bold; letter-spacing: 0.5px;" title="Acceder a la batería antiaérea AAA">
-                <span class="material-symbols-outlined" style="font-size: 15px;">rocket_launch</span> BATERÍA AAA ➔
-            </a>
+            <button type="button" class="hud-icon-btn" id="btn-vision-mode" onclick="cycleVisionMode()" title="Filtro Óptico: Normal / NVG / FLIR">
+                <span class="material-symbols-outlined" id="vision-mode-icon" style="font-size: 16px;">visibility</span>
+            </button>
         </div>
     </header>
 
@@ -594,9 +638,10 @@
 
     <!-- Centro de la Retícula -->
     <div class="reticle-center">
-        <div class="reticle-center-circle">
+        <div class="reticle-center-circle" id="reticle-circle">
             <div class="reticle-dot"></div>
         </div>
+        <div class="reticle-lock-tag" id="reticle-lock-tag">TARGET LOCKED</div>
     </div>
 
     <!-- Indicador de control táctil de arrastre -->
@@ -690,8 +735,10 @@
         let currentRoll = 0;         // Inclinación lateral (-90° a +90°)
         let headingOffset = 0;       // Calibración manual (0° o 180°)
         let zoomLevel = 1;           // 1x, 2x, 4x, 8x
-        let currentVisionMode = 'optical'; // optical, nvg, flir, amber
+        let currentVisionMode = 'optical'; // optical, nvg, flir (sin ámbar)
         let operatingMode = 'demo';   // 'demo', 'sim_field', 'real_gps'
+        let hasDemoInitialized = false;
+        let hasTriggeredInitialFs = false;
         
         let userLat = 40.4168;       // Coordenadas base (Madrid por defecto o GPS real)
         let userLng = -3.7038;
@@ -722,14 +769,58 @@
             startGPS();
             await startCamera();
             refreshPOIsList();
+            requestFullscreenMode(); // Intento automático al entrar
             requestAnimationFrame(renderLoop);
         });
 
-        function exitAndReturn(targetUrl = '/simulacion') {
+        // Activación de Pantalla Completa y precalentamiento de audio en el primer toque de usuario
+        window.addEventListener('pointerdown', () => {
+            if (!hasTriggeredInitialFs) {
+                hasTriggeredInitialFs = true;
+                requestFullscreenMode();
+                getAudioContext();
+            }
+        });
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                requestFullscreenMode();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(()=>{});
+            }
+        }
+
+        function requestFullscreenMode() {
+            const elem = document.documentElement;
+            const req = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.mozRequestFullScreen || elem.msRequestFullscreen;
+            if (req) {
+                req.call(elem).catch(() => {});
+            }
+        }
+
+        document.addEventListener('fullscreenchange', updateFsIcon);
+        document.addEventListener('webkitfullscreenchange', updateFsIcon);
+        function updateFsIcon() {
+            const icon = document.getElementById('fs-icon');
+            if (!icon) return;
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            icon.textContent = isFs ? 'fullscreen_exit' : 'fullscreen';
+        }
+
+        function exitAndReturn() {
             if (cameraStream) {
                 cameraStream.getTracks().forEach(t => t.stop());
             }
-            window.location.href = targetUrl;
+            if (document.fullscreenElement || document.webkitFullscreenElement) {
+                if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen().catch(()=>{});
+            }
+            if (document.referrer && (document.referrer.includes('/portal') || document.referrer.includes('/operador') || document.referrer.includes('/simulacion'))) {
+                window.location.href = document.referrer;
+            } else {
+                window.location.href = '/portal';
+            }
         }
 
         // ==================== BRÚJULA Y CINTA DE RUMBO ====================
@@ -763,8 +854,8 @@
         function updateCompassTape(heading) {
             const strip = document.getElementById('compass-tape-strip');
             if (!strip) return;
-            // 40px por cada 15 grados => ~2.666px por grado
-            const pxPerDeg = 40.0 / 15.0;
+            // 32px por cada 15 grados => ~2.133px por grado
+            const pxPerDeg = 32.0 / 15.0;
             const normHeading = (heading % 360 + 360) % 360;
             const offsetPx = -normHeading * pxPerDeg;
             strip.style.transform = `translateX(${offsetPx}px)`;
@@ -816,7 +907,6 @@
 
             // Inclinación vertical (pitch)
             if (e.beta !== null && !isNaN(e.beta)) {
-                // Cuando el teléfono se sostiene vertical para mirar la cámara, beta suele ser ~80° - 90°
                 currentPitch = Math.round(e.beta - 90);
                 if (currentPitch < -85) currentPitch = -85;
                 if (currentPitch > 85) currentPitch = 85;
@@ -853,10 +943,8 @@
             }
         }
 
-        // ==================== CONTROL TÁCTIL / DESKTOP FALLBACK ====================
+        // ==================== CONTROL TÁCTIL / DESKTOP SIN BLOQUEOS ====================
         function setupPointerDragControls() {
-            const layer = document.body;
-
             const onPointerDown = (clientX, clientY) => {
                 isDragging = true;
                 dragStartX = clientX;
@@ -874,8 +962,8 @@
                 const deltaX = clientX - dragStartX;
                 const deltaY = clientY - dragStartY;
 
-                // Sensibilidad según zoom
-                const sensitivity = (BASE_FOV_H / zoomLevel) / window.innerWidth;
+                // Sensibilidad adaptada al FOV y resolución
+                const sensitivity = (BASE_FOV_H / zoomLevel) / Math.max(window.innerWidth, 320);
                 currentHeading = (dragStartHeading - deltaX * sensitivity + 360) % 360;
                 currentPitch = Math.max(-85, Math.min(85, dragStartPitch + deltaY * sensitivity));
             };
@@ -885,7 +973,7 @@
             };
 
             window.addEventListener('mousedown', (e) => {
-                if (e.target.closest('button, a, .ar-target-marker, .modal-mode-box')) return;
+                if (e.target.closest('button, a, .modal-mode-box, .offscreen-pointer')) return;
                 onPointerDown(e.clientX, e.clientY);
             });
             window.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY));
@@ -893,18 +981,21 @@
 
             window.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
-                    if (e.target.closest('button, a, .ar-target-marker, .modal-mode-box')) return;
+                    if (e.target.closest('button, a, .modal-mode-box, .offscreen-pointer')) return;
                     onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
                 }
             }, { passive: true });
 
+            // Crucial: { passive: false } y e.preventDefault() evitan que el navegador móvil bloquee el drag como scroll de página
             window.addEventListener('touchmove', (e) => {
                 if (e.touches.length === 1 && isDragging) {
+                    e.preventDefault();
                     onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
                 }
-            }, { passive: true });
+            }, { passive: false });
 
             window.addEventListener('touchend', onPointerUp);
+            window.addEventListener('touchcancel', onPointerUp);
         }
 
         // ==================== CÁMARA TRASERA ====================
@@ -945,26 +1036,38 @@
             playTacticalBeep(980, 0.05);
         }
 
+        // Modos: solo Normal (optical), NVG Fósforo Verde, FLIR White-Hot (se eliminó Ámbar)
         function cycleVisionMode() {
-            const modes = ['optical', 'nvg', 'flir', 'amber'];
+            const modes = ['optical', 'nvg', 'flir'];
             const idx = (modes.indexOf(currentVisionMode) + 1) % modes.length;
             currentVisionMode = modes[idx];
             document.body.className = '';
             if (currentVisionMode !== 'optical') {
                 document.body.classList.add(`mode-${currentVisionMode}`);
             }
-            const labels = {
-                'optical': 'ÓPTICO',
-                'nvg': 'NVG VERDE',
-                'flir': 'FLIR TÉRMICO',
-                'amber': 'ÁMBAR POLVO'
-            };
-            document.getElementById('vision-mode-label').textContent = labels[currentVisionMode];
+            const iconEl = document.getElementById('vision-mode-icon');
+            if (iconEl) {
+                if (currentVisionMode === 'optical') {
+                    iconEl.textContent = 'visibility';
+                    iconEl.style.color = '#00f0ff';
+                } else if (currentVisionMode === 'nvg') {
+                    iconEl.textContent = 'night_sight';
+                    iconEl.style.color = '#33ff55';
+                } else if (currentVisionMode === 'flir') {
+                    iconEl.textContent = 'thermostat';
+                    iconEl.style.color = '#ffffff';
+                }
+            }
             playTacticalBeep(1200, 0.08);
         }
 
         function initVisionMode() {
-            document.getElementById('vision-mode-label').textContent = 'ÓPTICO';
+            currentVisionMode = 'optical';
+            const iconEl = document.getElementById('vision-mode-icon');
+            if (iconEl) {
+                iconEl.textContent = 'visibility';
+                iconEl.style.color = '#00f0ff';
+            }
         }
 
         // ==================== GEOLOCALIZACIÓN Y MODOS ====================
@@ -972,11 +1075,20 @@
             if (!navigator.geolocation) return;
             navigator.geolocation.watchPosition(pos => {
                 hasGpsFix = true;
-                if (operatingMode === 'demo' || operatingMode === 'real_gps') {
+                if (operatingMode === 'real_gps') {
                     userLat = pos.coords.latitude;
                     userLng = pos.coords.longitude;
                     if (pos.coords.altitude) userAlt = pos.coords.altitude;
                     refreshPOIsList();
+                } else if (operatingMode === 'demo') {
+                    // Fijar origen una sola vez en demo para que las balizas no salten
+                    if (!hasDemoInitialized) {
+                        userLat = pos.coords.latitude;
+                        userLng = pos.coords.longitude;
+                        if (pos.coords.altitude) userAlt = pos.coords.altitude;
+                        hasDemoInitialized = true;
+                        refreshPOIsList();
+                    }
                 }
                 const gpsEl = document.getElementById('hud-gps-fix');
                 if (gpsEl) {
@@ -1003,7 +1115,8 @@
             document.querySelectorAll('.mode-option-btn').forEach(b => b.classList.remove('active'));
             if (m === 'demo') {
                 document.getElementById('opt-mode-demo').classList.add('active');
-                document.getElementById('current-mode-label').textContent = "DEMO LOCAL (300m)";
+                document.getElementById('current-mode-label').textContent = "DEMO (300m)";
+                hasDemoInitialized = false;
             } else if (m === 'sim_field') {
                 document.getElementById('opt-mode-sim-field').classList.add('active');
                 document.getElementById('current-mode-label').textContent = "VIRTUAL CAMPO";
@@ -1011,7 +1124,7 @@
                 userLng = -6.258969;
             } else if (m === 'real_gps') {
                 document.getElementById('opt-mode-real-gps').classList.add('active');
-                document.getElementById('current-mode-label').textContent = "GPS REAL CAMPO";
+                document.getElementById('current-mode-label').textContent = "GPS REAL";
             }
             closeModeModal();
             refreshPOIsList();
@@ -1025,11 +1138,11 @@
                 const deltaLat30m = 0.00030;
                 const deltaLng30m = 0.00040;
                 activePOIs = [
-                    { id: 'D1', nombre: 'PUESTO AVANZADO ALPHA', tipo: 'OP', lat: userLat + deltaLat30m * 1.2, lng: userLng + deltaLng30m * 0.8, alt: userAlt + 2, faccion_id: 1, faccion: 'SYL' },
+                    { id: 'D1', nombre: 'PUESTO ALPHA', tipo: 'OP', lat: userLat + deltaLat30m * 1.2, lng: userLng + deltaLng30m * 0.8, alt: userAlt + 2, faccion_id: 1, faccion: 'SYL' },
                     { id: 'D2', nombre: 'REPETIDOR SIERRA', tipo: 'COMMS', lat: userLat - deltaLat30m * 1.5, lng: userLng + deltaLng30m * 2.2, alt: userAlt + 8, faccion_id: 2, faccion: 'VLK' },
-                    { id: 'D3', nombre: 'NIDO DE AMETRALLADORAS', tipo: 'PC', lat: userLat + deltaLat30m * 2.8, lng: userLng - deltaLng30m * 1.1, alt: userAlt - 1, faccion_id: null, faccion: 'NEUTRAL' },
-                    { id: 'D4', nombre: 'PUESTO SANITARIO MEDEVAC', tipo: 'RESPAWN', lat: userLat - deltaLat30m * 2.2, lng: userLng - deltaLng30m * 2.4, alt: userAlt + 0, faccion_id: 1, faccion: 'SYL' },
-                    { id: 'D5', nombre: 'DEPÓSITO MUNICIÓN BRAVO', tipo: 'FOB', lat: userLat + deltaLat30m * 0.3, lng: userLng + deltaLng30m * 3.5, alt: userAlt + 4, faccion_id: 3, faccion: 'KHD' }
+                    { id: 'D3', nombre: 'NIDO AMETRALLADORA', tipo: 'PC', lat: userLat + deltaLat30m * 2.8, lng: userLng - deltaLng30m * 1.1, alt: userAlt - 1, faccion_id: null, faccion: 'NEUTRAL' },
+                    { id: 'D4', nombre: 'PUESTO SANITARIO', tipo: 'RESPAWN', lat: userLat - deltaLat30m * 2.2, lng: userLng - deltaLng30m * 2.4, alt: userAlt + 0, faccion_id: 1, faccion: 'SYL' },
+                    { id: 'D5', nombre: 'DEPÓSITO BRAVO', tipo: 'FOB', lat: userLat + deltaLat30m * 0.3, lng: userLng + deltaLng30m * 3.5, alt: userAlt + 4, faccion_id: 3, faccion: 'KHD' }
                 ];
             } else if (operatingMode === 'sim_field' || operatingMode === 'real_gps') {
                 activePOIs = rawFieldPOIs.map(p => ({
@@ -1113,48 +1226,48 @@
             const pxPerDegY = h / fovV;
 
             ctx.save();
-            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--hud-dim').trim() || 'rgba(0, 240, 255, 0.25)';
+            ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--hud-dim').trim() || 'rgba(0, 240, 255, 0.2)';
             ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--hud-primary').trim() || '#00f0ff';
             ctx.lineWidth = 1;
-            ctx.font = "10px 'Share Tech Mono', monospace";
+            ctx.font = "9px 'Share Tech Mono', monospace";
 
-            // Líneas de Escala de Elevación (Pitch Ladder)
             const cx = w / 2;
             const cy = h / 2;
 
+            // Escala de Elevación (Pitch Ladder) sutil
             for (let p = -80; p <= 80; p += 10) {
-                if (p === 0) continue; // Salto horizonte central
+                if (p === 0) continue;
                 const relPitch = p - currentPitch;
                 const y = cy - (relPitch * pxPerDegY);
-                if (y > 50 && y < h - 70) {
-                    const barLen = p % 20 === 0 ? 36 : 20;
+                if (y > 55 && y < h - 75) {
+                    const barLen = p % 20 === 0 ? 28 : 16;
                     ctx.beginPath();
-                    ctx.moveTo(cx - barLen - 30, y);
-                    ctx.lineTo(cx - 30, y);
-                    ctx.moveTo(cx + 30, y);
-                    ctx.lineTo(cx + barLen + 30, y);
+                    ctx.moveTo(cx - barLen - 28, y);
+                    ctx.lineTo(cx - 28, y);
+                    ctx.moveTo(cx + 28, y);
+                    ctx.lineTo(cx + barLen + 28, y);
                     ctx.stroke();
 
-                    ctx.fillText(`${p > 0 ? '+' : ''}${p}°`, cx + barLen + 34, y + 3);
+                    ctx.fillText(`${p > 0 ? '+' : ''}${p}°`, cx + barLen + 32, y + 3);
                 }
             }
 
-            // Marcadores de Brújula Mil-Dot Central
+            // Marcadores Mil-Dot Centrales compactos
             ctx.beginPath();
-            ctx.moveTo(cx - 60, cy);
-            ctx.lineTo(cx - 15, cy);
-            ctx.moveTo(cx + 15, cy);
-            ctx.lineTo(cx + 60, cy);
-            ctx.moveTo(cx, cy - 60);
-            ctx.lineTo(cx, cy - 15);
-            ctx.moveTo(cx, cy + 15);
-            ctx.lineTo(cx, cy + 60);
+            ctx.moveTo(cx - 45, cy);
+            ctx.lineTo(cx - 12, cy);
+            ctx.moveTo(cx + 12, cy);
+            ctx.lineTo(cx + 45, cy);
+            ctx.moveTo(cx, cy - 45);
+            ctx.lineTo(cx, cy - 12);
+            ctx.moveTo(cx, cy + 12);
+            ctx.lineTo(cx, cy + 45);
             ctx.stroke();
 
             ctx.restore();
         }
 
-        // Renderizado de Marcadores AR y Flechas Fuera de Pantalla
+        // Renderizado de Marcadores AR y Centrado Intuitivo
         function renderARMarkers() {
             const container = document.getElementById('markers-layer');
             if (!container) return;
@@ -1169,6 +1282,9 @@
 
             let visibleCount = 0;
             let currentTargetOnCrosshair = null;
+            let currentTargetDistPx = 9999;
+            let currentTargetDistanceM = 0;
+            let currentTargetBearing = 0;
 
             // Limpiar marcadores anteriores
             container.innerHTML = '';
@@ -1191,17 +1307,22 @@
                 const inFOV_V = Math.abs(deltaEl) <= (fovV / 2);
 
                 if (inFOV_H && inFOV_V) {
-                    // Objetivo Visible Dentro de Pantalla
                     visibleCount++;
                     const screenX = cx + (deltaAz / (fovH / 2)) * (w / 2);
                     const screenY = cy - (deltaEl / (fovV / 2)) * (h / 2);
 
-                    const isCentered = (Math.abs(deltaAz) < 3.5 && Math.abs(deltaEl) < 3.5);
-                    if (isCentered) {
+                    // Centrado real basado en distancia en píxeles a la cruz central (radio retícula ~44px)
+                    const distPx = Math.hypot(screenX - cx, screenY - cy);
+                    const isCentered = distPx < 50;
+
+                    if (isCentered && distPx < currentTargetDistPx) {
                         currentTargetOnCrosshair = poi;
+                        currentTargetDistPx = distPx;
+                        currentTargetDistanceM = distanceM;
+                        currentTargetBearing = bearing;
                     }
 
-                    const distStr = distanceM >= 1000 ? `${(distanceM / 1000).toFixed(2)} km` : `${Math.round(distanceM)} m`;
+                    const distStr = distanceM >= 1000 ? `${(distanceM / 1000).toFixed(2)}km` : `${Math.round(distanceM)}m`;
 
                     const markerEl = document.createElement('div');
                     markerEl.className = 'ar-target-marker';
@@ -1212,22 +1333,21 @@
                             <div class="ar-target-name">${poi.nombre}</div>
                             <div class="ar-target-meta">
                                 <span class="ar-target-distance">${distStr}</span>
-                                <span>AZ: ${String(Math.round(bearing)).padStart(3, '0')}°</span>
+                                <span>AZ:${String(Math.round(bearing)).padStart(3, '0')}°</span>
                             </div>
                         </div>
                         <div class="ar-target-pip"></div>
                     `;
-                    markerEl.onclick = () => onTargetClick(poi, distanceM, bearing);
                     container.appendChild(markerEl);
 
                 } else {
-                    // Objetivo Fuera de Pantalla: Flecha Radar Perimétrica
+                    // Objetivo Fuera de Pantalla: Indicador Periférico Sutil
                     const angleRad = Math.atan2(-deltaEl, deltaAz);
-                    const padding = 45;
+                    const padding = 35;
                     const clampedX = Math.max(padding, Math.min(w - padding, cx + Math.cos(angleRad) * (w / 2 - padding)));
-                    const clampedY = Math.max(70, Math.min(h - 80, cy + Math.sin(angleRad) * (h / 2 - padding)));
+                    const clampedY = Math.max(55, Math.min(h - 65, cy + Math.sin(angleRad) * (h / 2 - padding)));
 
-                    const distStr = distanceM >= 1000 ? `${(distanceM / 1000).toFixed(1)}km` : `${Math.round(distanceM)}m`;
+                    const distStr = distanceM >= 1000 ? `${(distanceM / 1000).toFixed(1)}k` : `${Math.round(distanceM)}m`;
                     const turnDeg = Math.round(deltaAz);
 
                     const pointerEl = document.createElement('div');
@@ -1237,31 +1357,39 @@
                     pointerEl.style.transform = 'translate(-50%, -50%)';
 
                     let chevron = deltaAz > 0 ? '▶' : '◀';
-                    pointerEl.innerHTML = `${chevron} ${poi.nombre.substring(0, 14)} (${distStr} / ${turnDeg > 0 ? '+' : ''}${turnDeg}°)`;
+                    pointerEl.innerHTML = `${chevron} ${poi.nombre.substring(0, 10)} ${distStr}`;
                     pointerEl.onclick = () => {
-                        // Orientar automáticamente hacia el objetivo si estamos en control virtual
+                        // Orientar automáticamente hacia el objetivo en modo arrastre virtual
                         currentHeading = (bearing + 360) % 360;
-                        currentPitch = Math.round(targetElevation);
+                        currentPitch = Math.max(-85, Math.min(85, Math.round(targetElevation)));
                         playTacticalBeep(1100, 0.08);
                     };
                     container.appendChild(pointerEl);
                 }
             });
 
-            // Tono sonoro táctico de adquisición al centrar un objetivo en la retícula
-            if (currentTargetOnCrosshair && currentTargetOnCrosshair.id !== lastHighlightTargetId) {
-                lastHighlightTargetId = currentTargetOnCrosshair.id;
-                playLockTone();
-            } else if (!currentTargetOnCrosshair) {
+            // Actualización visual del centro de puntería y fijación de objetivo
+            const reticleCircle = document.getElementById('reticle-circle');
+            const reticleLockTag = document.getElementById('reticle-lock-tag');
+
+            if (currentTargetOnCrosshair) {
+                if (reticleCircle) reticleCircle.classList.add('locked');
+                if (reticleLockTag) {
+                    reticleLockTag.style.display = 'block';
+                    const dStr = currentTargetDistanceM >= 1000 ? `${(currentTargetDistanceM / 1000).toFixed(2)} km` : `${Math.round(currentTargetDistanceM)} m`;
+                    reticleLockTag.textContent = `TARGET LOCKED: ${currentTargetOnCrosshair.nombre} • ${dStr} • ${Math.round(currentTargetBearing)}°`;
+                }
+                if (currentTargetOnCrosshair.id !== lastHighlightTargetId) {
+                    lastHighlightTargetId = currentTargetOnCrosshair.id;
+                    playLockTone();
+                }
+            } else {
+                if (reticleCircle) reticleCircle.classList.remove('locked');
+                if (reticleLockTag) reticleLockTag.style.display = 'none';
                 lastHighlightTargetId = null;
             }
 
             document.getElementById('hud-targets-count').textContent = `${visibleCount} VISIBLES`;
-        }
-
-        function onTargetClick(poi, dist, bearing) {
-            playTacticalBeep(1400, 0.12);
-            alert(`[TELEMETRÍA TÁCTICA: ${poi.nombre}]\n\n• Tipo: ${poi.tipo}\n• Distancia: ${Math.round(dist)} m\n• Rumbo / Azimut: ${Math.round(bearing)}°\n• Coordenadas: ${poi.lat.toFixed(6)}, ${poi.lng.toFixed(6)}`);
         }
 
         // ==================== GENERADOR DE AUDIO TÁCTICO (WEB AUDIO API) ====================
@@ -1285,7 +1413,7 @@
                 const gain = ctx.createGain();
                 osc.type = type;
                 osc.frequency.setValueAtTime(freq, ctx.currentTime);
-                gain.gain.setValueAtTime(0.06, ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
                 osc.connect(gain);
                 gain.connect(ctx.destination);

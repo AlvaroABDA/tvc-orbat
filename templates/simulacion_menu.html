@@ -1026,8 +1026,9 @@
         </div>
 
         <!-- Card: Defensa Antiaérea / Batería SAM AAA -->
+        {% set aaa_unlocked = (user_role == 'admin') or ('simulador_aaa' in unlocked_minigames) %}
         <div class="card-menu">
-            <div class="card-header-row" onclick="handleCardClick('simulador_aaa', true, '/simulador_aaa')">
+            <div class="card-header-row" onclick="handleCardClick('simulador_aaa', {{ 'true' if aaa_unlocked else 'false' }}, '/simulador_aaa')">
                 <div class="card-icon-title">
                     <div class="card-icon" style="background: rgba(255, 51, 68, 0.12); border: 1px solid var(--accent-red); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 6px;">
                         <span class="material-symbols-outlined" style="color: var(--accent-red); font-size: 26px;">flight_takeoff</span>
@@ -1038,7 +1039,11 @@
                     </div>
                 </div>
                 <div>
-                    <span class="card-badge badge-ready" style="border-color: #ff3344; color: #ff5566; background: rgba(255, 51, 68, 0.12); font-weight: bold;">OPERATIVO</span>
+                    {% if aaa_unlocked %}
+                    <span class="card-badge badge-ready">OPERATIVO</span>
+                    {% else %}
+                    <span class="card-badge badge-locked">🔒 REQUIERE PIN</span>
+                    {% endif %}
                 </div>
             </div>
 
@@ -1085,14 +1090,14 @@
             </div>
 
             <div class="card-footer">
-                <span>ESTADO: OPERATIVO // ACCESO LIBRE</span>
+                <span>ESTADO: {{ 'AUTORIZADO' if aaa_unlocked else 'ENCRIPTADO' }}</span>
                 <div class="card-footer-btns">
                     <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('aaa')" title="Desplegar protocolo de tiro antiaéreo">
                         <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
                         INSTRUCCIONES
                     </button>
-                    <button type="button" class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.12);" onclick="handleCardClick('simulador_aaa', true, '/simulador_aaa')">
-                        ACCEDER A BATERÍA AAA ➔
+                    <button type="button" class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.12);" onclick="handleCardClick('simulador_aaa', {{ 'true' if aaa_unlocked else 'false' }}, '/simulador_aaa')">
+                        {{ 'ACCEDER' if aaa_unlocked else 'DESBLOQUEAR' }} ➔
                     </button>
                 </div>
             </div>
@@ -1404,9 +1409,11 @@
             if (isUnlocked) {
                 window.location.href = redirectUrl;
             } else {
-                currentMinigame = minigame;
-                currentRedirectUrl = redirectUrl;
-                document.getElementById('modal-minigame-title').textContent = minigame === 'telemetro_recon' ? 'PIN: TELÉMETRO RECON' : 'PIN: ARTILLERÍA / MORTERO';
+                let pinTitle = 'PIN: ACCESO RESTRINGIDO';
+                if (minigame === 'telemetro_recon') pinTitle = 'PIN: TELÉMETRO RECON';
+                else if (minigame === 'mortero') pinTitle = 'PIN: ARTILLERÍA / MORTERO';
+                else if (minigame === 'simulador_aaa') pinTitle = 'PIN: BATERÍA ANTIAÉREA (AAA)';
+                document.getElementById('modal-minigame-title').textContent = pinTitle;
                 document.getElementById('input-pin-value').value = '';
                 document.getElementById('pin-error').style.display = 'none';
                 document.getElementById('modal-pin').style.display = 'flex';

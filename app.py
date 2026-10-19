@@ -155,11 +155,18 @@ DB_PATH = os.path.join(os.path.dirname(__file__), 'data', 'orbat.db')
 MINIGAME_PASSWORDS = {
     'mortero': {
         'Syldavia': 'fuego-syl',
-        'Volkovia': 'fuego-vol'
+        'Volkovia': 'fuego-vol',
+        'Khemed': 'fuego-khd'
     },
     'telemetro_recon': {
         'Syldavia': 'recon-syl',
-        'Volkovia': 'recon-vol'
+        'Volkovia': 'recon-vol',
+        'Khemed': 'recon-khd'
+    },
+    'simulador_aaa': {
+        'Syldavia': 'aaa-syl',
+        'Volkovia': 'aaa-vol',
+        'Khemed': 'aaa-khd'
     }
 }
 
@@ -426,6 +433,10 @@ def simulador_aaa():
     user_role = session.get('role', 'player')
     user_faction = session.get('faction')
     equipo_id = session.get('equipo_id')
+
+    unlocked = ('simulador_aaa' in session.get('unlocked_minigames', [])) or (user_role == 'admin')
+    if not unlocked:
+        return redirect(url_for('simulacion_menu'))
 
     return render_template('simulador_aaa.html',
                            user_role=user_role,
@@ -3014,6 +3025,7 @@ def delete_doc(id):
 
 @app.route('/portal')
 @app.route('/operador')
+@app.route('/perfil')
 def operador_portal():
     if 'role' not in session:
         return redirect(url_for('login'))

@@ -114,6 +114,28 @@
             color: #fff;
         }
 
+        .btn-ar-nav {
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid rgba(0, 240, 255, 0.45);
+            color: #00f0ff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+
+        .btn-ar-nav:hover {
+            background: rgba(0, 240, 255, 0.28);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.35);
+            color: #fff;
+        }
+
         /* Container */
         .container {
             max-width: 640px;
@@ -579,10 +601,16 @@
                 <span class="brand-sub">PORTAL OPERADOR // {{ miembro.faccion_nombre | upper }}</span>
             </div>
         </div>
-        <a href="/logout" class="btn-logout" title="Cerrar Sesión">
-            <span class="material-symbols-outlined" style="font-size: 16px;">logout</span>
-            SALIR
-        </a>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <a href="/prismaticos" class="btn-ar-nav" title="Prismáticos Tácticos AR">
+                <span class="material-symbols-outlined" style="font-size: 16px;">view_in_ar</span>
+                <span>AR OPTICS</span>
+            </a>
+            <a href="/logout" class="btn-logout" title="Cerrar Sesión">
+                <span class="material-symbols-outlined" style="font-size: 16px;">logout</span>
+                SALIR
+            </a>
+        </div>
     </nav>
 
     <!-- MAIN CONTAINER -->
@@ -668,6 +696,22 @@
                 </div>
                 <div style="font-family:var(--font-tech); font-size:0.72rem; color:#f1c40f;">
                     RADAR DE CAMPO 🡥
+                </div>
+            </a>
+
+            <!-- Card: Prismáticos Tácticos AR -->
+            <a href="/prismaticos" class="hub-card" style="border: 1px solid rgba(0, 240, 255, 0.4); background: linear-gradient(135deg, rgba(0, 240, 255, 0.08) 0%, rgba(13, 20, 34, 0.85) 100%);">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span class="material-symbols-outlined hub-card-icon" style="color:#00f0ff;">view_in_ar</span>
+                        <span class="badge" style="background:rgba(0,240,255,0.15); border:1px solid #00f0ff; color:#00f0ff;">HUD OPTICS</span>
+                    </div>
+                    <h2 class="hub-card-title" style="color:#00f0ff; margin-top:4px;">PRISMÁTICOS TÁCTICOS AR</h2>
+                    <p class="hub-card-desc">Visor de realidad aumentada sobre la cámara: marcas baliza de objetivos, cálculo de acimut, elevación, telémetro láser y filtros de visión nocturna y térmica.</p>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-family:var(--font-tech); font-size:0.72rem; color:#00f0ff; border-top:1px dashed rgba(0,240,255,0.25); padding-top:6px;">
+                    <span>CÁMARA + BRÚJULA HUD</span>
+                    <span style="font-weight:bold; letter-spacing:1px;">ACTIVAR VISOR 🡥</span>
                 </div>
             </a>
 

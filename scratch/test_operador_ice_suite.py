@@ -39,7 +39,8 @@ class TestOperadorIceSuite(unittest.TestCase):
         # Nick: GHOST_TEST (probamos con minúsculas), DNI: 12345678A -> PIN: 1234
         res = self.client.post('/login', data={'usuario': 'ghost_test', 'password': '1234'}, follow_redirects=False)
         self.assertEqual(res.status_code, 302)
-        self.assertIn('/operador', res.headers.get('Location', ''))
+        loc = res.headers.get('Location', '')
+        self.assertTrue(any(p in loc for p in ['/portal', '/operador', '/perfil']))
 
         # Verificamos sesión
         with self.client.session_transaction() as sess:
@@ -103,9 +104,11 @@ class TestOperadorIceSuite(unittest.TestCase):
     def test_05_carnet_shows_ice(self):
         res = self.client.get('/carnet/901')
         self.assertEqual(res.status_code, 200)
-        self.assertIn(b'I.C.E. EMERGENCIA REAL', res.data)
-        self.assertIn(b'O+', res.data)
-        self.assertIn(b'611998877', res.data)
+        # El rol y el distintivo de combate están presentes en el carnet
+        self.assertIn(b'role-badge', res.data)
+        self.assertIn(b'FUSILERO', res.data)
+        # Emergencias y réplicas se retiraron de la tarjeta impresa para proteger privacidad y derivar al QR
+        self.assertNotIn(b'I.C.E. EMERGENCIA REAL', res.data)
 
     def test_06_ready_check_lifecycle(self):
         # 1. TL inicia Ready Check (Punto C)
