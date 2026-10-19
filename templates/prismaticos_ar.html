@@ -287,6 +287,15 @@
             opacity: 1;
         }
 
+        #compass-tape-pois {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
         /* Iconos de POI en la Cinta de Azimut estilo Skyrim */
         .compass-poi-icon {
             position: absolute;
@@ -742,14 +751,14 @@
         let dragStartPitch = 0;
 
         // ==================== INICIALIZACIÓN ====================
-        window.addEventListener('DOMContentLoaded', async () => {
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshPOIsList();
             initCompassTape();
             initVisionMode();
             setupPointerDragControls();
             setupSensors();
             startGPS();
-            await startCamera();
-            refreshPOIsList();
+            startCamera(); // Asíncrono, no bloquea el ciclo de renderizado ni la carga de POIs
             requestFullscreenMode(); // Intento automático al entrar
             requestAnimationFrame(renderLoop);
         });
@@ -1291,16 +1300,20 @@
         let lastLockedTimestamp = 0;
         let lastAudioLockedPOIId = null;
 
-        const ENTER_TOLERANCE_DEG = 11.0;   // Umbral de adquisición del objetivo (~11°)
-        const EXIT_TOLERANCE_DEG = 17.0;    // Umbral de tolerancia de pérdida (histéresis anti-temblor)
-        const PERSISTENCE_MS = 1400;        // Ventana de persistencia: no desaparece al mover "media micra"
-        const VERTICAL_TOLERANCE_DEG = 32.0; // Tolerancia vertical generosa
+        const ENTER_TOLERANCE_DEG = 14.0;   // Umbral de adquisición del objetivo (~14°)
+        const EXIT_TOLERANCE_DEG = 22.0;    // Umbral de tolerancia de pérdida (histéresis anti-temblor)
+        const PERSISTENCE_MS = 1600;        // Ventana de persistencia: no desaparece al mover "media micra"
 
         function updateTargetAlignment() {
             const markersLayer = document.getElementById('markers-layer');
             if (markersLayer) markersLayer.innerHTML = ''; // Vista de cámara 100% limpia sin cajitas flotantes
 
             const now = performance.now();
+
+            if (!activePOIs || activePOIs.length === 0) {
+                refreshPOIsList();
+            }
+
             let candidates = [];
 
             activePOIs.forEach(poi => {
@@ -1312,26 +1325,17 @@
                 let deltaAz = ((geo.bearing - currentHeading + 540) % 360) - 180;
                 let absAz = Math.abs(deltaAz);
 
-                // Elevación vertical estimada
-                const deltaAlt = (poi.alt || userAlt) - userAlt;
-                const targetElevation = Math.atan2(deltaAlt, Math.max(geo.distance, 1)) * (180 / Math.PI);
-                let deltaEl = targetElevation - currentPitch;
-                let absEl = Math.abs(deltaEl);
-
                 poi._deltaAz = deltaAz;
                 poi._absAz = absAz;
-                poi._deltaEl = deltaEl;
-                poi._absEl = absEl;
 
-                if (absEl <= VERTICAL_TOLERANCE_DEG) {
-                    candidates.push(poi);
-                }
+                // En brújula estilo Skyrim, todo objetivo en el azimut correspondiente es candidato
+                candidates.push(poi);
             });
 
             // Evaluar retención del objetivo actual con histéresis y persistencia temporal
             if (currentlyLockedPOI) {
-                const currentStillActive = activePOIs.find(p => p.id === currentlyLockedPOI.id);
-                if (currentStillActive && currentStillActive._absAz <= EXIT_TOLERANCE_DEG && currentStillActive._absEl <= VERTICAL_TOLERANCE_DEG) {
+                const currentStillActive = activePOIs.find(p => p.id == currentlyLockedPOI.id);
+                if (currentStillActive && currentStillActive._absAz <= EXIT_TOLERANCE_DEG) {
                     // Sigue dentro del umbral de salida extendido
                     currentlyLockedPOI = currentStillActive;
                     lastLockedTimestamp = now;
@@ -1351,7 +1355,7 @@
 
             if (validAcquisitionCandidates.length > 0) {
                 const bestCandidate = validAcquisitionCandidates[0];
-                if (!currentlyLockedPOI || (bestCandidate.id !== currentlyLockedPOI.id && bestCandidate._absAz < (currentlyLockedPOI._absAz - 3.0))) {
+                if (!currentlyLockedPOI || (bestCandidate.id != currentlyLockedPOI.id && bestCandidate._absAz < (currentlyLockedPOI._absAz - 3.0))) {
                     currentlyLockedPOI = bestCandidate;
                     lastLockedTimestamp = now;
                 }
@@ -1394,7 +1398,7 @@
                 }
 
                 // Reproducir tono táctil una sola vez al fijar objetivo
-                if (currentlyLockedPOI.id !== lastAudioLockedPOIId) {
+                if (currentlyLockedPOI.id != lastAudioLockedPOIId) {
                     lastAudioLockedPOIId = currentlyLockedPOI.id;
                     playLockTone();
                 }
