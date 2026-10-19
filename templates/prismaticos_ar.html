@@ -206,20 +206,21 @@
             background: rgba(0, 240, 255, 0.25);
         }
 
-        /* Cinta de Rumbo de Brújula - MÁS PEQUEÑA Y SUTIL CON TRANSPARENCIA */
+        /* Cinta de Rumbo de Brújula estilo Videojuego (Skyrim / RPG) */
         .compass-tape-container {
             position: absolute;
             top: 42px;
             left: 50%;
             transform: translateX(-50%);
-            width: min(88vw, 360px);
-            height: 22px;
+            width: min(90vw, 420px);
+            height: 34px;
             z-index: 20;
             overflow: hidden;
-            border: 1px solid rgba(0, 240, 255, 0.2);
-            background: rgba(4, 9, 15, 0.4);
-            border-radius: 3px;
-            backdrop-filter: blur(4px);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            background: rgba(4, 9, 15, 0.65);
+            border-radius: 4px;
+            backdrop-filter: blur(6px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
 
         .compass-needle {
@@ -227,11 +228,11 @@
             top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 1.5px;
+            width: 2px;
             height: 100%;
-            background: var(--hud-secondary);
-            z-index: 2;
-            box-shadow: 0 0 6px var(--hud-secondary);
+            background: #ffd700;
+            z-index: 4;
+            box-shadow: 0 0 8px #ffd700;
         }
 
         .compass-indicator-pip {
@@ -243,47 +244,80 @@
             height: 0;
             border-left: 4px solid transparent;
             border-right: 4px solid transparent;
-            border-top: 5px solid var(--hud-secondary);
-            z-index: 3;
+            border-top: 5px solid #ffd700;
+            z-index: 5;
         }
 
         .compass-tape-strip {
-            display: flex;
             position: absolute;
-            top: 3px;
+            top: 0;
             left: 50%;
-            height: 16px;
+            width: 1536px;
+            height: 100%;
             transition: transform 0.05s linear;
             will-change: transform;
-            white-space: nowrap;
+            pointer-events: none;
         }
 
         .compass-mark {
-            display: inline-flex;
+            position: absolute;
+            top: 2px;
+            transform: translateX(-50%);
+            display: flex;
             flex-direction: column;
             align-items: center;
-            width: 32px;
-            font-size: 0.58rem;
+            font-size: 0.52rem;
             color: var(--hud-primary);
             font-weight: 600;
-            opacity: 0.75;
+            opacity: 0.65;
+            pointer-events: none;
         }
 
         .compass-mark-tick {
             width: 1px;
-            height: 5px;
+            height: 4px;
             background: var(--hud-primary);
             margin-top: 1px;
-            opacity: 0.6;
+            opacity: 0.5;
         }
 
         .compass-mark.cardinal {
-            color: var(--hud-secondary);
+            color: #ffd700;
             font-weight: 900;
             opacity: 1;
         }
 
-        /* Centro de Puntería y Retícula Militar */
+        /* Iconos de POI en la Cinta de Azimut estilo Skyrim */
+        .compass-poi-icon {
+            position: absolute;
+            bottom: 2px;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 16px;
+            color: #00f0ff;
+            transition: color 0.15s, transform 0.15s, filter 0.15s;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .compass-poi-icon span {
+            font-size: 14px;
+            filter: drop-shadow(0 0 3px rgba(0, 240, 255, 0.7));
+        }
+
+        .compass-poi-icon.aligned {
+            color: #ffd700;
+            transform: translateX(-50%) scale(1.35);
+        }
+
+        .compass-poi-icon.aligned span {
+            filter: drop-shadow(0 0 7px #ffd700);
+        }
+
+        /* Centro de Puntería Minimalista (Mil-Dot) */
         .reticle-center {
             position: absolute;
             top: 50%;
@@ -292,29 +326,16 @@
             z-index: 12;
             pointer-events: none;
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
         }
 
         .reticle-center-circle {
-            width: 44px;
-            height: 44px;
-            border: 1px solid rgba(0, 240, 255, 0.35);
+            width: 24px;
+            height: 24px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
             border-radius: 50%;
             position: relative;
-            transition: all 0.2s ease;
-        }
-
-        .reticle-center-circle.locked {
-            border-color: #ffd700;
-            box-shadow: 0 0 12px rgba(255, 215, 0, 0.8), inset 0 0 8px rgba(255, 215, 0, 0.3);
-            animation: pulse-reticle 0.8s infinite alternate;
-        }
-
-        @keyframes pulse-reticle {
-            from { transform: scale(1); }
-            to { transform: scale(1.08); }
         }
 
         .reticle-dot {
@@ -327,116 +348,6 @@
             left: 50%;
             transform: translate(-50%, -50%);
             box-shadow: 0 0 4px var(--hud-primary);
-        }
-
-        .reticle-lock-tag {
-            margin-top: 6px;
-            font-family: var(--font-tactical);
-            font-size: 0.62rem;
-            color: #ffd700;
-            background: rgba(3, 8, 14, 0.7);
-            border: 1px solid rgba(255, 215, 0, 0.5);
-            padding: 1px 6px;
-            border-radius: 2px;
-            letter-spacing: 0.5px;
-            display: none;
-            white-space: nowrap;
-        }
-
-        /* Tarjeta de Marcador AR en Pantalla - SUTIL, PEQUEÑA Y TRANSPARENTE */
-        .ar-target-marker {
-            position: absolute;
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1px;
-            transition: transform 0.05s linear, opacity 0.2s;
-            will-change: transform;
-        }
-
-        .ar-target-box {
-            position: relative;
-            background: rgba(3, 8, 14, 0.5);
-            border: 1px solid rgba(0, 240, 255, 0.35);
-            padding: 2px 6px;
-            border-radius: 2px;
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-            max-width: 140px;
-            text-align: center;
-            box-shadow: 0 0 8px rgba(0, 240, 255, 0.15);
-            backdrop-filter: blur(2px);
-            transition: all 0.2s;
-        }
-
-        .ar-target-box.highlight {
-            border-color: #ffd700;
-            background: rgba(30, 25, 5, 0.75);
-            box-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
-            transform: scale(1.06);
-        }
-
-        .ar-target-name {
-            font-family: var(--font-heading);
-            font-size: 0.60rem;
-            font-weight: 700;
-            letter-spacing: 0.4px;
-            color: #e2e8f0;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .ar-target-meta {
-            font-size: 0.55rem;
-            color: rgba(0, 240, 255, 0.85);
-            display: flex;
-            justify-content: space-between;
-            gap: 4px;
-        }
-
-        .ar-target-distance {
-            font-weight: bold;
-            color: var(--hud-secondary);
-        }
-
-        .ar-target-pip {
-            width: 5px;
-            height: 5px;
-            border: 1px solid var(--hud-primary);
-            border-radius: 50%;
-            background: rgba(0, 240, 255, 0.5);
-            margin-top: 1px;
-        }
-
-        /* Punteros de Radar Periféricos (Off-Screen Indicators) - MÁS SUTILES Y PEQUEÑOS */
-        .offscreen-pointer {
-            position: absolute;
-            z-index: 15;
-            background: rgba(3, 8, 14, 0.5);
-            border: 1px solid rgba(255, 215, 0, 0.4);
-            color: var(--hud-secondary);
-            padding: 2px 5px;
-            border-radius: 2px;
-            font-size: 0.56rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-            box-shadow: 0 0 6px rgba(255, 215, 0, 0.25);
-            cursor: pointer;
-            pointer-events: auto;
-            white-space: nowrap;
-            opacity: 0.8;
-            backdrop-filter: blur(2px);
-        }
-
-        @keyframes pulse-border {
-            0%, 100% { border-color: var(--hud-secondary); opacity: 0.9; }
-            50% { border-color: var(--hud-primary); opacity: 0.5; }
         }
 
         /* Barra Inferior de Telemetría Táctica */
@@ -452,6 +363,92 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+        }
+
+        /* Ficha de Objetivo / Contacto Alineado (Skyrim HUD) */
+        .target-contact-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 12px;
+            background: rgba(4, 12, 22, 0.88);
+            border: 1px solid rgba(255, 215, 0, 0.55);
+            border-radius: 4px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 16px rgba(255, 215, 0, 0.25);
+            animation: fadeInTarget 0.2s ease-out;
+        }
+
+        @keyframes fadeInTarget {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .target-contact-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .target-contact-icon-box {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid rgba(255, 215, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffd700;
+            flex-shrink: 0;
+        }
+
+        .target-contact-texts {
+            min-width: 0;
+        }
+
+        .target-contact-name {
+            font-family: var(--font-heading);
+            font-size: 0.82rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #ffd700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .target-contact-meta {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            margin-top: 1px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .target-contact-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+
+        .target-contact-dist {
+            font-family: var(--font-heading);
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
+        }
+
+        .target-contact-az {
+            font-size: 0.64rem;
+            color: var(--hud-primary);
+            font-weight: bold;
+            letter-spacing: 0.5px;
         }
 
         .telemetry-row {
@@ -472,32 +469,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 6px;
-            overflow-x: auto;
             padding-bottom: 2px;
-        }
-
-        /* Botón de Zoom */
-        .zoom-group {
-            display: flex;
-            gap: 3px;
-        }
-
-        .btn-zoom {
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid var(--hud-dim);
-            color: #fff;
-            padding: 4px 8px;
-            font-family: var(--font-heading);
-            font-size: 0.65rem;
-            border-radius: 3px;
-            cursor: pointer;
-        }
-
-        .btn-zoom.active {
-            border-color: var(--hud-secondary);
-            color: var(--hud-secondary);
-            background: rgba(255, 215, 0, 0.15);
-            font-weight: bold;
         }
 
         /* Panel Desplegable de Selección de Modo */
@@ -636,12 +608,11 @@
         </div>
     </div>
 
-    <!-- Centro de la Retícula -->
+    <!-- Centro de la Retícula Minimalista -->
     <div class="reticle-center">
         <div class="reticle-center-circle" id="reticle-circle">
             <div class="reticle-dot"></div>
         </div>
-        <div class="reticle-lock-tag" id="reticle-lock-tag">TARGET LOCKED</div>
     </div>
 
     <!-- Indicador de control táctil de arrastre -->
@@ -649,25 +620,36 @@
         🕹️ MODO VIRTUAL ACTIVO: ARRASTRA LA PANTALLA O MUEVE EL RATÓN PARA APUNTAR
     </div>
 
-    <!-- Barra Inferior de Telemetría -->
+    <!-- Barra Inferior de Telemetría Táctica (Skyrim RPG HUD) -->
     <footer class="bottom-hud-bar">
-        <div class="telemetry-row">
+        <!-- Ficha de Contacto cuando se alinea con un Objetivo -->
+        <div id="target-contact-card" class="target-contact-card" style="display: none;">
+            <div class="target-contact-left">
+                <div class="target-contact-icon-box">
+                    <span class="material-symbols-outlined" id="contact-icon" style="font-size: 18px;">flag</span>
+                </div>
+                <div class="target-contact-texts">
+                    <div class="target-contact-name" id="contact-name">OBJETIVO</div>
+                    <div class="target-contact-meta" id="contact-meta">TIPO: CONTROL • BANDO: NEUTRAL</div>
+                </div>
+            </div>
+            <div class="target-contact-right">
+                <div class="target-contact-dist" id="contact-dist">0 m</div>
+                <div class="target-contact-az" id="contact-az">RUMBO 000°</div>
+            </div>
+        </div>
+
+        <!-- Telemetría por Defecto (cuando no hay objetivo alineado) -->
+        <div class="telemetry-row" id="default-telemetry-row">
             <div>RUMBO: <span class="telemetry-tag" id="hud-heading-val">000° N</span> • ELEV: <span class="telemetry-tag" id="hud-pitch-val">+0°</span></div>
-            <div>OBJETIVOS: <span class="telemetry-tag" id="hud-targets-count">0 VISIBLES</span></div>
+            <div>BALIZAS: <span class="telemetry-tag" id="hud-targets-count">0 ACTIVAS</span></div>
             <div>GPS: <span class="telemetry-tag" id="hud-gps-fix">FIJANDO...</span></div>
         </div>
 
         <div class="controls-row">
-            <!-- Zoom Digital -->
-            <div class="zoom-group">
-                <span style="font-size: 0.65rem; color: var(--hud-dim); display: flex; align-items: center; margin-right: 2px;">ZOOM:</span>
-                <button type="button" class="btn-zoom active" onclick="setZoom(1)">1X</button>
-                <button type="button" class="btn-zoom" onclick="setZoom(2)">2X</button>
-                <button type="button" class="btn-zoom" onclick="setZoom(4)">4X</button>
-                <button type="button" class="btn-zoom" onclick="setZoom(8)">8X</button>
+            <div style="font-size: 0.65rem; color: var(--hud-dim); font-family: var(--font-tactical); letter-spacing: 0.5px;">
+                HUD BRÚJULA // MODO VIDEOJUEGO
             </div>
-
-            <!-- Filtros de Distancia -->
             <div style="display: flex; gap: 4px;">
                 <button type="button" class="hud-btn" id="btn-calib-heading" onclick="toggleHeadingInvert()" title="Invertir brújula 180° si el sensor apunta hacia atrás">
                     ⚙️ CALIB 180°
@@ -734,7 +716,6 @@
         let currentPitch = 0;        // Inclinación vertical (-90° a +90°)
         let currentRoll = 0;         // Inclinación lateral (-90° a +90°)
         let headingOffset = 0;       // Calibración manual (0° o 180°)
-        let zoomLevel = 1;           // 1x, 2x, 4x, 8x
         let currentVisionMode = 'optical'; // optical, nvg, flir (sin ámbar)
         let operatingMode = 'demo';   // 'demo', 'sim_field', 'real_gps'
         let hasDemoInitialized = false;
@@ -827,10 +808,12 @@
         function initCompassTape() {
             const strip = document.getElementById('compass-tape-strip');
             if (!strip) return;
-            let html = '';
+            const pxPerDeg = 32.0 / 15.0;
+            let marksHtml = '';
             // Crear cinta doble (0 a 720) para scroll infinito
             for (let loop = 0; loop < 2; loop++) {
                 for (let deg = 0; deg < 360; deg += 15) {
+                    const totalDeg = deg + (loop * 360);
                     let label = `${deg}°`;
                     let isCard = false;
                     if (deg === 0) { label = 'N'; isCard = true; }
@@ -842,13 +825,15 @@
                     else if (deg === 270) { label = 'W'; isCard = true; }
                     else if (deg === 315) { label = 'NW'; isCard = true; }
 
-                    html += `<div class="compass-mark ${isCard ? 'cardinal' : ''}">
+                    const leftPx = totalDeg * pxPerDeg;
+                    marksHtml += `<div class="compass-mark ${isCard ? 'cardinal' : ''}" style="left: ${leftPx}px;">
                         <span>${label}</span>
                         <div class="compass-mark-tick"></div>
                     </div>`;
                 }
             }
-            strip.innerHTML = html;
+            strip.innerHTML = marksHtml + '<div id="compass-tape-pois"></div>';
+            updateCompassPOIIcons();
         }
 
         function updateCompassTape(heading) {
@@ -859,6 +844,48 @@
             const normHeading = (heading % 360 + 360) % 360;
             const offsetPx = -normHeading * pxPerDeg;
             strip.style.transform = `translateX(${offsetPx}px)`;
+        }
+
+        function getPOIIcon(tipo) {
+            if (!tipo) return 'flag';
+            const t = String(tipo).toUpperCase();
+            if (t.includes('COMMS') || t.includes('RADIO') || t.includes('REPETIDOR')) return 'cell_tower';
+            if (t.includes('RESPAWN') || t.includes('SANIT') || t.includes('MEDIC')) return 'medical_services';
+            if (t.includes('FOB') || t.includes('BASE')) return 'fort';
+            if (t.includes('OP') || t.includes('OBSERV')) return 'visibility';
+            return 'flag';
+        }
+
+        function getPOIFactionColor(faccion) {
+            if (!faccion) return '#ffd700';
+            const f = String(faccion).toUpperCase();
+            if (f.includes('SYL') || f.includes('AMARILLO')) return '#ffd700';
+            if (f.includes('VLK') || f.includes('VOLK') || f.includes('AZUL')) return '#00f0ff';
+            if (f.includes('KHD') || f.includes('KHAN') || f.includes('ROJO')) return '#ff3344';
+            return '#2ecc71';
+        }
+
+        function updateCompassPOIIcons() {
+            const poiContainer = document.getElementById('compass-tape-pois');
+            if (!poiContainer) return;
+            const pxPerDeg = 32.0 / 15.0;
+            let html = '';
+            activePOIs.forEach(poi => {
+                const geo = computeBearingAndDistance(userLat, userLng, poi.lat, poi.lng);
+                poi._bearing = geo.bearing;
+                poi._distance = geo.distance;
+                const iconName = getPOIIcon(poi.tipo);
+                const color = getPOIFactionColor(poi.faccion);
+
+                for (let loop = 0; loop < 2; loop++) {
+                    const posDeg = (geo.bearing % 360) + (loop * 360);
+                    const leftPx = posDeg * pxPerDeg;
+                    html += `<div class="compass-poi-icon" data-poi-id="${poi.id}" data-loop="${loop}" style="left: ${leftPx}px; color: ${color};" title="${poi.nombre}">
+                        <span class="material-symbols-outlined">${iconName}</span>
+                    </div>`;
+                }
+            });
+            poiContainer.innerHTML = html;
         }
 
         // ==================== SENSORES DE DISPOSITIVO ====================
@@ -963,7 +990,7 @@
                 const deltaY = clientY - dragStartY;
 
                 // Sensibilidad adaptada al FOV y resolución
-                const sensitivity = (BASE_FOV_H / zoomLevel) / Math.max(window.innerWidth, 320);
+                const sensitivity = BASE_FOV_H / Math.max(window.innerWidth, 320);
                 currentHeading = (dragStartHeading - deltaX * sensitivity + 360) % 360;
                 currentPitch = Math.max(-85, Math.min(85, dragStartPitch + deltaY * sensitivity));
             };
@@ -973,7 +1000,7 @@
             };
 
             window.addEventListener('mousedown', (e) => {
-                if (e.target.closest('button, a, .modal-mode-box, .offscreen-pointer')) return;
+                if (e.target.closest('button, a, .modal-mode-box, .compass-tape-container')) return;
                 onPointerDown(e.clientX, e.clientY);
             });
             window.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY));
@@ -981,7 +1008,7 @@
 
             window.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 1) {
-                    if (e.target.closest('button, a, .modal-mode-box, .offscreen-pointer')) return;
+                    if (e.target.closest('button, a, .modal-mode-box, .compass-tape-container')) return;
                     onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
                 }
             }, { passive: true });
@@ -1028,14 +1055,7 @@
             }
         }
 
-        // ==================== ZOOM Y MODOS ÓPTICOS ====================
-        function setZoom(lvl) {
-            zoomLevel = lvl;
-            document.querySelectorAll('.btn-zoom').forEach(b => b.classList.remove('active'));
-            event.target.classList.add('active');
-            playTacticalBeep(980, 0.05);
-        }
-
+        // ==================== MODOS ÓPTICOS ====================
         // Modos: solo Normal (optical), NVG Fósforo Verde, FLIR White-Hot (se eliminó Ámbar)
         function cycleVisionMode() {
             const modes = ['optical', 'nvg', 'flir'];
@@ -1156,6 +1176,7 @@
                     faccion: p.faccion_id === 1 ? 'SYL' : (p.faccion_id === 2 ? 'VLK' : 'NEUTRAL')
                 }));
             }
+            updateCompassPOIIcons();
         }
 
         // ==================== CÁLCULOS TRIGONOMÉTRICOS AR ====================
@@ -1182,12 +1203,10 @@
         }
 
         // ==================== LOOP DE RENDERIZADO 60 FPS ====================
-        let lastHighlightTargetId = null;
-
         function renderLoop() {
             updateCompassTape(currentHeading);
             renderHUDCanvas();
-            renderARMarkers();
+            updateTargetAlignment();
 
             // Telemetría en la barra inferior
             const headingStr = `${String(Math.round(currentHeading)).padStart(3, '0')}°`;
@@ -1221,8 +1240,8 @@
             const h = canvas.height;
             ctx.clearRect(0, 0, w, h);
 
-            const fovH = BASE_FOV_H / zoomLevel;
-            const fovV = BASE_FOV_V / zoomLevel;
+            const fovH = BASE_FOV_H;
+            const fovV = BASE_FOV_V;
             const pxPerDegY = h / fovV;
 
             ctx.save();
@@ -1267,129 +1286,138 @@
             ctx.restore();
         }
 
-        // Renderizado de Marcadores AR y Centrado Intuitivo
-        function renderARMarkers() {
-            const container = document.getElementById('markers-layer');
-            if (!container) return;
+        // ==================== ALINEACIÓN Y HUD DE CONTACTO (SKYRIM STYLE) ====================
+        let currentlyLockedPOI = null;
+        let lastLockedTimestamp = 0;
+        let lastAudioLockedPOIId = null;
 
-            const w = window.innerWidth;
-            const h = window.innerHeight;
-            const cx = w / 2;
-            const cy = h / 2;
+        const ENTER_TOLERANCE_DEG = 11.0;   // Umbral de adquisición del objetivo (~11°)
+        const EXIT_TOLERANCE_DEG = 17.0;    // Umbral de tolerancia de pérdida (histéresis anti-temblor)
+        const PERSISTENCE_MS = 1400;        // Ventana de persistencia: no desaparece al mover "media micra"
+        const VERTICAL_TOLERANCE_DEG = 32.0; // Tolerancia vertical generosa
 
-            const fovH = BASE_FOV_H / zoomLevel;
-            const fovV = BASE_FOV_V / zoomLevel;
+        function updateTargetAlignment() {
+            const markersLayer = document.getElementById('markers-layer');
+            if (markersLayer) markersLayer.innerHTML = ''; // Vista de cámara 100% limpia sin cajitas flotantes
 
-            let visibleCount = 0;
-            let currentTargetOnCrosshair = null;
-            let currentTargetDistPx = 9999;
-            let currentTargetDistanceM = 0;
-            let currentTargetBearing = 0;
-
-            // Limpiar marcadores anteriores
-            container.innerHTML = '';
+            const now = performance.now();
+            let candidates = [];
 
             activePOIs.forEach(poi => {
                 const geo = computeBearingAndDistance(userLat, userLng, poi.lat, poi.lng);
-                const distanceM = geo.distance;
-                const bearing = geo.bearing;
+                poi._bearing = geo.bearing;
+                poi._distance = geo.distance;
 
-                // Diferencia de azimut respecto a donde apunta la cámara (-180° a +180°)
-                let deltaAz = ((bearing - currentHeading + 540) % 360) - 180;
+                // Diferencia angular respecto a donde apunta la cámara (-180° a +180°)
+                let deltaAz = ((geo.bearing - currentHeading + 540) % 360) - 180;
+                let absAz = Math.abs(deltaAz);
 
-                // Elevación vertical hacia el objetivo
+                // Elevación vertical estimada
                 const deltaAlt = (poi.alt || userAlt) - userAlt;
-                const targetElevation = Math.atan2(deltaAlt, Math.max(distanceM, 1)) * (180 / Math.PI);
-                const deltaEl = targetElevation - currentPitch;
+                const targetElevation = Math.atan2(deltaAlt, Math.max(geo.distance, 1)) * (180 / Math.PI);
+                let deltaEl = targetElevation - currentPitch;
+                let absEl = Math.abs(deltaEl);
 
-                // ¿Está dentro del FOV de la pantalla?
-                const inFOV_H = Math.abs(deltaAz) <= (fovH / 2);
-                const inFOV_V = Math.abs(deltaEl) <= (fovV / 2);
+                poi._deltaAz = deltaAz;
+                poi._absAz = absAz;
+                poi._deltaEl = deltaEl;
+                poi._absEl = absEl;
 
-                if (inFOV_H && inFOV_V) {
-                    visibleCount++;
-                    const screenX = cx + (deltaAz / (fovH / 2)) * (w / 2);
-                    const screenY = cy - (deltaEl / (fovV / 2)) * (h / 2);
-
-                    // Centrado real basado en distancia en píxeles a la cruz central (radio retícula ~44px)
-                    const distPx = Math.hypot(screenX - cx, screenY - cy);
-                    const isCentered = distPx < 50;
-
-                    if (isCentered && distPx < currentTargetDistPx) {
-                        currentTargetOnCrosshair = poi;
-                        currentTargetDistPx = distPx;
-                        currentTargetDistanceM = distanceM;
-                        currentTargetBearing = bearing;
-                    }
-
-                    const distStr = distanceM >= 1000 ? `${(distanceM / 1000).toFixed(2)}km` : `${Math.round(distanceM)}m`;
-
-                    const markerEl = document.createElement('div');
-                    markerEl.className = 'ar-target-marker';
-                    markerEl.style.left = `${screenX}px`;
-                    markerEl.style.top = `${screenY}px`;
-                    markerEl.innerHTML = `
-                        <div class="ar-target-box ${isCentered ? 'highlight' : ''}">
-                            <div class="ar-target-name">${poi.nombre}</div>
-                            <div class="ar-target-meta">
-                                <span class="ar-target-distance">${distStr}</span>
-                                <span>AZ:${String(Math.round(bearing)).padStart(3, '0')}°</span>
-                            </div>
-                        </div>
-                        <div class="ar-target-pip"></div>
-                    `;
-                    container.appendChild(markerEl);
-
-                } else {
-                    // Objetivo Fuera de Pantalla: Indicador Periférico Sutil
-                    const angleRad = Math.atan2(-deltaEl, deltaAz);
-                    const padding = 35;
-                    const clampedX = Math.max(padding, Math.min(w - padding, cx + Math.cos(angleRad) * (w / 2 - padding)));
-                    const clampedY = Math.max(55, Math.min(h - 65, cy + Math.sin(angleRad) * (h / 2 - padding)));
-
-                    const distStr = distanceM >= 1000 ? `${(distanceM / 1000).toFixed(1)}k` : `${Math.round(distanceM)}m`;
-                    const turnDeg = Math.round(deltaAz);
-
-                    const pointerEl = document.createElement('div');
-                    pointerEl.className = 'offscreen-pointer';
-                    pointerEl.style.left = `${clampedX}px`;
-                    pointerEl.style.top = `${clampedY}px`;
-                    pointerEl.style.transform = 'translate(-50%, -50%)';
-
-                    let chevron = deltaAz > 0 ? '▶' : '◀';
-                    pointerEl.innerHTML = `${chevron} ${poi.nombre.substring(0, 10)} ${distStr}`;
-                    pointerEl.onclick = () => {
-                        // Orientar automáticamente hacia el objetivo en modo arrastre virtual
-                        currentHeading = (bearing + 360) % 360;
-                        currentPitch = Math.max(-85, Math.min(85, Math.round(targetElevation)));
-                        playTacticalBeep(1100, 0.08);
-                    };
-                    container.appendChild(pointerEl);
+                if (absEl <= VERTICAL_TOLERANCE_DEG) {
+                    candidates.push(poi);
                 }
             });
 
-            // Actualización visual del centro de puntería y fijación de objetivo
-            const reticleCircle = document.getElementById('reticle-circle');
-            const reticleLockTag = document.getElementById('reticle-lock-tag');
-
-            if (currentTargetOnCrosshair) {
-                if (reticleCircle) reticleCircle.classList.add('locked');
-                if (reticleLockTag) {
-                    reticleLockTag.style.display = 'block';
-                    const dStr = currentTargetDistanceM >= 1000 ? `${(currentTargetDistanceM / 1000).toFixed(2)} km` : `${Math.round(currentTargetDistanceM)} m`;
-                    reticleLockTag.textContent = `TARGET LOCKED: ${currentTargetOnCrosshair.nombre} • ${dStr} • ${Math.round(currentTargetBearing)}°`;
+            // Evaluar retención del objetivo actual con histéresis y persistencia temporal
+            if (currentlyLockedPOI) {
+                const currentStillActive = activePOIs.find(p => p.id === currentlyLockedPOI.id);
+                if (currentStillActive && currentStillActive._absAz <= EXIT_TOLERANCE_DEG && currentStillActive._absEl <= VERTICAL_TOLERANCE_DEG) {
+                    // Sigue dentro del umbral de salida extendido
+                    currentlyLockedPOI = currentStillActive;
+                    lastLockedTimestamp = now;
+                } else if (currentStillActive && (now - lastLockedTimestamp < PERSISTENCE_MS)) {
+                    // Se movió temporalmente por temblor de pulso: MANTENER gracias a la ventana de persistencia
+                    currentlyLockedPOI = currentStillActive;
+                } else {
+                    // Se superó el tiempo de persistencia
+                    currentlyLockedPOI = null;
                 }
-                if (currentTargetOnCrosshair.id !== lastHighlightTargetId) {
-                    lastHighlightTargetId = currentTargetOnCrosshair.id;
-                    playLockTone();
-                }
-            } else {
-                if (reticleCircle) reticleCircle.classList.remove('locked');
-                if (reticleLockTag) reticleLockTag.style.display = 'none';
-                lastHighlightTargetId = null;
             }
 
-            document.getElementById('hud-targets-count').textContent = `${visibleCount} VISIBLES`;
+            // Buscar si hay un mejor candidato para adquirir en el centro de puntería
+            const validAcquisitionCandidates = candidates
+                .filter(p => p._absAz <= ENTER_TOLERANCE_DEG)
+                .sort((a, b) => a._absAz - b._absAz);
+
+            if (validAcquisitionCandidates.length > 0) {
+                const bestCandidate = validAcquisitionCandidates[0];
+                if (!currentlyLockedPOI || (bestCandidate.id !== currentlyLockedPOI.id && bestCandidate._absAz < (currentlyLockedPOI._absAz - 3.0))) {
+                    currentlyLockedPOI = bestCandidate;
+                    lastLockedTimestamp = now;
+                }
+            }
+
+            // Actualizar tarjeta inferior y cinta de azimut
+            const contactCard = document.getElementById('target-contact-card');
+            const defaultTelemetry = document.getElementById('default-telemetry-row');
+            const poiIcons = document.querySelectorAll('.compass-poi-icon');
+
+            if (currentlyLockedPOI) {
+                if (contactCard) contactCard.style.display = 'flex';
+                if (defaultTelemetry) defaultTelemetry.style.display = 'none';
+
+                const iconName = getPOIIcon(currentlyLockedPOI.tipo);
+                const factionColor = getPOIFactionColor(currentlyLockedPOI.faccion);
+
+                const iconEl = document.getElementById('contact-icon');
+                if (iconEl) {
+                    iconEl.textContent = iconName;
+                    iconEl.style.color = factionColor;
+                }
+                const nameEl = document.getElementById('contact-name');
+                if (nameEl) nameEl.textContent = currentlyLockedPOI.nombre;
+
+                const metaEl = document.getElementById('contact-meta');
+                if (metaEl) {
+                    metaEl.textContent = `TIPO: ${currentlyLockedPOI.tipo || 'PUNTO'} • BANDO: ${currentlyLockedPOI.faccion || 'NEUTRAL'}`;
+                }
+
+                const distEl = document.getElementById('contact-dist');
+                if (distEl) {
+                    const d = currentlyLockedPOI._distance;
+                    distEl.textContent = d >= 1000 ? `${(d / 1000).toFixed(2)} km` : `${Math.round(d)} m`;
+                }
+
+                const azEl = document.getElementById('contact-az');
+                if (azEl) {
+                    azEl.textContent = `RUMBO ${String(Math.round(currentlyLockedPOI._bearing)).padStart(3, '0')}°`;
+                }
+
+                // Reproducir tono táctil una sola vez al fijar objetivo
+                if (currentlyLockedPOI.id !== lastAudioLockedPOIId) {
+                    lastAudioLockedPOIId = currentlyLockedPOI.id;
+                    playLockTone();
+                }
+
+                // Resaltar icono en la cinta de brújula
+                poiIcons.forEach(el => {
+                    if (el.getAttribute('data-poi-id') == currentlyLockedPOI.id) {
+                        el.classList.add('aligned');
+                    } else {
+                        el.classList.remove('aligned');
+                    }
+                });
+            } else {
+                if (contactCard) contactCard.style.display = 'none';
+                if (defaultTelemetry) defaultTelemetry.style.display = 'flex';
+                lastAudioLockedPOIId = null;
+                poiIcons.forEach(el => el.classList.remove('aligned'));
+            }
+
+            const targetsCountEl = document.getElementById('hud-targets-count');
+            if (targetsCountEl) {
+                targetsCountEl.textContent = `${activePOIs.length} ACTIVAS`;
+            }
         }
 
         // ==================== GENERADOR DE AUDIO TÁCTICO (WEB AUDIO API) ====================

@@ -44,9 +44,14 @@ class TestPrismaticosAndAAA(unittest.TestCase):
         self.assertIn('requestFullscreenMode', html)
         self.assertIn('toggleFullscreen', html)
         self.assertIn('hud-icon-btn', html)
-        self.assertIn('distPx < 50', html)
+        self.assertIn('target-contact-card', html)
+        self.assertIn('compass-poi-icon', html)
+        self.assertIn('ENTER_TOLERANCE_DEG', html)
+        self.assertIn('PERSISTENCE_MS', html)
 
-        # AAA y Ámbar no deben estar presentes en el visor de prismáticos
+        # Sin botones de zoom ni AAA ni Ámbar
+        self.assertNotIn('btn-zoom', html)
+        self.assertNotIn('zoom-group', html)
         self.assertNotIn('BATERÍA AAA', html)
         self.assertNotIn('mode-amber', html)
         self.assertNotIn('amber', html)
