@@ -3209,26 +3209,39 @@ def operador_portal():
         return "Operador no encontrado", 404
         
     # Cargar ICE
-    ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (miembro_id,)).fetchone()
+    try:
+        ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (miembro_id,)).fetchone()
+    except Exception:
+        ensure_operator_and_ice_tables(conn)
+        try:
+            ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (miembro_id,)).fetchone()
+        except Exception:
+            ice = None
     
     # Cargar Armas
-    armas = conn.execute('SELECT * FROM Miembro_Arma WHERE miembro_id = ? ORDER BY id ASC', (miembro_id,)).fetchall()
+    try:
+        armas = conn.execute('SELECT * FROM Miembro_Arma WHERE miembro_id = ? ORDER BY id ASC', (miembro_id,)).fetchall()
+    except Exception:
+        armas = []
     
     # Cargar Ready Check activo para el equipo
-    ready_check = conn.execute('''
-        SELECT rc.*, mrc.estado as mi_estado, mrc.nota as mi_nota, mrc.respondido_en
-        FROM Equipo_ReadyCheck rc
-        LEFT JOIN Miembro_ReadyCheck mrc ON rc.id = mrc.ready_check_id AND mrc.miembro_id = ?
-        WHERE rc.equipo_id = ? AND rc.activo = 1
-        ORDER BY rc.id DESC LIMIT 1
-    ''', (miembro_id, miembro['equipo_id'])).fetchone()
+    try:
+        ready_check = conn.execute('''
+            SELECT rc.*, mrc.estado as mi_estado, mrc.nota as mi_nota, mrc.respondido_en
+            FROM Equipo_ReadyCheck rc
+            LEFT JOIN Miembro_ReadyCheck mrc ON rc.id = mrc.ready_check_id AND mrc.miembro_id = ?
+            WHERE rc.equipo_id = ? AND rc.activo = 1
+            ORDER BY rc.id DESC LIMIT 1
+        ''', (miembro_id, miembro['equipo_id'])).fetchone()
+    except Exception:
+        ready_check = None
     
     conn.close()
     
     rol_lower = (miembro['rol'] or '').lower()
     is_medic = any(w in rol_lower for w in ['medico', 'médico', 'sanitario', 'medic']) or session.get('is_medic', False)
     session['is_medic'] = is_medic
-    if is_medic and miembro.get('uid'):
+    if is_medic and miembro['uid']:
         session['sanitario_id'] = miembro['uid']
     
     color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
