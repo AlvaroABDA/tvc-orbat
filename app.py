@@ -3227,6 +3227,9 @@ def operador_portal():
     
     rol_lower = (miembro['rol'] or '').lower()
     is_medic = any(w in rol_lower for w in ['medico', 'médico', 'sanitario', 'medic']) or session.get('is_medic', False)
+    session['is_medic'] = is_medic
+    if is_medic and miembro.get('uid'):
+        session['sanitario_id'] = miembro['uid']
     
     color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
     hex_color = color_map.get(miembro['faccion_color'], '#00d2ff')
@@ -3999,10 +4002,18 @@ def view_medic():
     equipo_id = session.get('equipo_id')
     equipo_nombre = session.get('equipo_nombre') or session.get('user') or ''
     
-    # Si es operador pero no es médico ni tiene el juego desbloqueado ni viene por QR, redirigir a simulación
-    if user_role == 'operador' and not session.get('is_medic') and 'medic' not in session.get('unlocked_minigames', []) and not request.args.get('token'):
-        conn.close()
-        return redirect(url_for('simulacion_menu'))
+    # Sincronizar dinámicamente si el operador es médico consultando la base de datos
+    if user_role == 'operador' and session.get('miembro_id'):
+        try:
+            m_row = conn.execute('SELECT rol, uid FROM Miembro WHERE id = ?', (session['miembro_id'],)).fetchone()
+            if m_row:
+                rol_l = (m_row['rol'] or '').lower()
+                is_med = any(w in rol_l for w in ['medico', 'médico', 'sanitario', 'medic'])
+                session['is_medic'] = is_med
+                if is_med:
+                    session['sanitario_id'] = m_row['uid']
+        except Exception:
+            pass
     
     # Lista de sanitarios de la escuadra actual si la sesión pertenece a un equipo
     squad_medics = []

@@ -750,6 +750,41 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertEqual(status_sync, 200)
         self.assertEqual(res_sync["status"], "success")
 
+    def test_33_operator_medic_dynamic_sync_and_no_loop(self):
+        # 1. Crear miembro con rol Medico en BD
+        with flask_module.app.app_context():
+            conn = flask_module.get_db_connection()
+            cur = conn.cursor()
+            cur.execute("INSERT INTO Equipo (nombre, jugadores, faccion_id) VALUES ('TEST_MEDIC_EQ', 1, 1)")
+            eq_id = cur.lastrowid
+            cur.execute("INSERT INTO Miembro (equipo_id, nombre_jugador, rol, uid, activo) VALUES (?, 'OpMedDynamic', 'Medico', 'UIDMED99', 1)", (eq_id,))
+            m_id = cur.lastrowid
+            conn.commit()
+
+        # 2. Simular sesión que tenía is_medic=False (desfasada)
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'operador'
+            sess['miembro_id'] = m_id
+            sess['miembro_uid'] = 'UIDMED99'
+            sess['equipo_id'] = eq_id
+            sess['faction'] = 'Syldavia'
+            sess['is_medic'] = False
+
+        # 3. Al solicitar /medic no debe haber redirect 302 a /simulacion y debe actualizar is_medic a True
+        res = self.client.get('/medic')
+        self.assertEqual(res.status_code, 200)
+
+        with self.client.session_transaction() as sess:
+            self.assertTrue(sess.get('is_medic'))
+            self.assertEqual(sess.get('sanitario_id'), 'UIDMED99')
+
+        # Cleanup
+        with flask_module.app.app_context():
+            conn = flask_module.get_db_connection()
+            conn.execute("DELETE FROM Miembro WHERE id = ?", (m_id,))
+            conn.execute("DELETE FROM Equipo WHERE id = ?", (eq_id,))
+            conn.commit()
+
 if __name__ == '__main__':
     unittest.main()
 
