@@ -65,57 +65,46 @@ class TestCarnetButtonsDocs(unittest.TestCase):
         self.assertEqual(res_fail.status_code, 400)
         self.assertIn('PDF', res_fail.get_json().get('error', ''))
 
-        # 3. Subir PDF válido de Seguro
-        pdf_seguro_content = b"%PDF-1.4 Mock Insurance Policy Content"
+        # 3. Subir PDF válido consolidado de Seguro / Exención
+        pdf_seguro_content = b"%PDF-1.4 Mock Insurance and Waiver Content"
         pdf_data = {
-            'tipo': 'SEGURO',
-            'file': (BytesIO(pdf_seguro_content), 'Poliza_Seguro_2026.pdf')
+            'tipo': 'SEGURO_EXENCION',
+            'file': (BytesIO(pdf_seguro_content), 'Seguro_Y_Exencion_2026.pdf')
         }
         res_upload = self.client.post(f'/api/equipos/{equipo_id}/documentos', data=pdf_data, content_type='multipart/form-data')
         self.assertEqual(res_upload.status_code, 200)
         data_upload = res_upload.get_json()
         self.assertEqual(data_upload.get('status'), 'success')
         doc_seguro = data_upload.get('documento')
-        self.assertEqual(doc_seguro['tipo'], 'SEGURO')
-        self.assertEqual(doc_seguro['nombre_original'], 'Poliza_Seguro_2026.pdf')
+        self.assertEqual(doc_seguro['tipo'], 'SEGURO_EXENCION')
+        self.assertEqual(doc_seguro['nombre_original'], 'Seguro_Y_Exencion_2026.pdf')
         self.assertTrue(os.path.isfile(doc_seguro['archivo_path']), "El archivo debe guardarse físicamente en disco")
 
-        # 4. Subir PDF válido de Exención
-        pdf_exencion_content = b"%PDF-1.4 Mock Safety Waiver Content"
-        pdf_ex_data = {
-            'tipo': 'EXENCION',
-            'file': (BytesIO(pdf_exencion_content), 'Exencion_Seguridad_Firmada.pdf')
-        }
-        res_ex = self.client.post(f'/api/equipos/{equipo_id}/documentos', data=pdf_ex_data, content_type='multipart/form-data')
-        self.assertEqual(res_ex.status_code, 200)
-
-        # 5. Consultar GET /api/equipos/<id>/documentos
+        # 4. Consultar GET /api/equipos/<id>/documentos
         res_list = self.client.get(f'/api/equipos/{equipo_id}/documentos')
         self.assertEqual(res_list.status_code, 200)
         docs_list = res_list.get_json()
-        self.assertEqual(len(docs_list), 2)
-        tipos = [d['tipo'] for d in docs_list]
-        self.assertIn('SEGURO', tipos)
-        self.assertIn('EXENCION', tipos)
+        self.assertEqual(len(docs_list), 1)
+        self.assertEqual(docs_list[0]['tipo'], 'SEGURO_EXENCION')
 
-        # 6. Consultar GET /api/equipos y verificar que incluya el listado de documentos
+        # 5. Consultar GET /api/equipos y verificar que incluya el listado de documentos
         res_equipos = self.client.get('/api/equipos')
         self.assertEqual(res_equipos.status_code, 200)
         eq_found = next((e for e in res_equipos.get_json() if e['id'] == equipo_id), None)
         self.assertIsNotNone(eq_found)
         self.assertIn('documentos', eq_found)
-        self.assertEqual(len(eq_found['documentos']), 2)
+        self.assertEqual(len(eq_found['documentos']), 1)
 
-        # 7. Eliminar un documento vía DELETE /api/documentos_equipo/<doc_id>
+        # 6. Eliminar un documento vía DELETE /api/documentos_equipo/<doc_id>
         doc_id_to_del = doc_seguro['id']
         path_to_del = doc_seguro['archivo_path']
         res_del = self.client.delete(f'/api/documentos_equipo/{doc_id_to_del}')
         self.assertEqual(res_del.status_code, 200)
         self.assertFalse(os.path.isfile(path_to_del), "El archivo en disco debe haberse eliminado")
 
-        # 8. Verificar que ahora solo queda 1 documento
+        # 7. Verificar que ahora no queda ningún documento
         res_list_after = self.client.get(f'/api/equipos/{equipo_id}/documentos')
-        self.assertEqual(len(res_list_after.get_json()), 1)
+        self.assertEqual(len(res_list_after.get_json()), 0)
 
 if __name__ == '__main__':
     unittest.main()

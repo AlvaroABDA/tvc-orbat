@@ -1586,56 +1586,34 @@
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 8px;">
                         <h3 style="font-size: 0.95rem; margin: 0; color: #00f0ff; font-weight: bold; display: flex; align-items: center; gap: 6px;">
                             <span class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span>
-                            [1.1] Documentación Oficial (PDF) // Seguro y Exención
+                            [1.1] Documentación Oficial (PDF) // Seguro / Exención
                         </h3>
-                        <span style="font-size: 0.75rem; color: #94a3b8;">Formatos admitidos: <b>PDF</b> (Máx 10 MB)</span>
+                        <span style="font-size: 0.75rem; color: #94a3b8;">Formato: <b>PDF Único</b> (Máx 10 MB)</span>
                     </div>
 
                     <div id="docs-equipo-notice" style="display: none; font-size: 0.8rem; color: #ffaa00; background: rgba(255,170,0,0.1); border: 1px solid rgba(255,170,0,0.3); padding: 8px 12px; border-radius: 4px; margin-bottom: 10px;">
                         ⚠️ Guarda los datos de la unidad primero para habilitar la subida de documentación PDF.
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
-                        <!-- Slot Seguro -->
-                        <div id="slot-doc-seguro" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px;">
+                    <div>
+                        <!-- Slot Único: Seguro / Exención de Responsabilidad -->
+                        <div id="slot-doc-seguro_exencion" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                                 <div>
                                     <div style="font-weight: bold; font-size: 0.85rem; color: #fff; display: flex; align-items: center; gap: 6px;">
-                                        <span class="material-symbols-outlined" style="color: #2ecc71; font-size: 18px;">verified_user</span>
-                                        PÓLIZA DE SEGURO
+                                        <span class="material-symbols-outlined" style="color: #00f0ff; font-size: 18px;">verified_user</span>
+                                        SEGURO / EXENCIÓN DE RESPONSABILIDAD
                                     </div>
-                                    <div id="seguro-doc-status" style="font-size: 0.75rem; color: #e2b938; margin-top: 4px;">
+                                    <div id="seguro_exencion-doc-status" style="font-size: 0.75rem; color: #e2b938; margin-top: 4px;">
                                         🟡 Pendiente de adjuntar
                                     </div>
                                 </div>
                                 <span style="font-size: 0.68rem; padding: 2px 6px; border-radius: 3px; background: rgba(0,240,255,0.1); color: #00f0ff; font-weight: bold;">PDF</span>
                             </div>
-                            <div id="seguro-doc-actions" style="display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap;">
+                            <div id="seguro_exencion-doc-actions" style="display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap;">
                                 <label class="btn outline btn-sm" style="cursor: pointer; margin: 0;">
-                                    <span class="material-symbols-outlined" style="font-size: 14px;">upload_file</span> Subir Seguro (PDF)
-                                    <input type="file" id="input-pdf-seguro" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('SEGURO', this)">
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Slot Exención de Seguridad -->
-                        <div id="slot-doc-exencion" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; gap: 8px;">
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                <div>
-                                    <div style="font-weight: bold; font-size: 0.85rem; color: #fff; display: flex; align-items: center; gap: 6px;">
-                                        <span class="material-symbols-outlined" style="color: #00f0ff; font-size: 18px;">gavel</span>
-                                        EXENCIÓN DE RESPONSABILIDAD
-                                    </div>
-                                    <div id="exencion-doc-status" style="font-size: 0.75rem; color: #e2b938; margin-top: 4px;">
-                                        🟡 Pendiente de adjuntar
-                                    </div>
-                                </div>
-                                <span style="font-size: 0.68rem; padding: 2px 6px; border-radius: 3px; background: rgba(0,240,255,0.1); color: #00f0ff; font-weight: bold;">PDF</span>
-                            </div>
-                            <div id="exencion-doc-actions" style="display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap;">
-                                <label class="btn outline btn-sm" style="cursor: pointer; margin: 0;">
-                                    <span class="material-symbols-outlined" style="font-size: 14px;">upload_file</span> Subir Exención (PDF)
-                                    <input type="file" id="input-pdf-exencion" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('EXENCION', this)">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">upload_file</span> Subir Seguro / Exención (PDF)
+                                    <input type="file" id="input-pdf-seguro_exencion" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('SEGURO_EXENCION', this)">
                                 </label>
                             </div>
                         </div>

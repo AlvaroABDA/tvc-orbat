@@ -1126,25 +1126,28 @@
                 <i>Nota doctrinal:</i> El cumplimiento de la estabilización no habilita al operador de forma automática para el combate. Respete las normas de evacuación o respawn establecidas por la organización.
             </p>
 
-            <!-- Bloque de Sellado y Firma con Carnet de Sanitario -->
-            <div id="medic-seal-prompt-card" style="background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.4); padding: 16px; margin-top: 15px; text-align: center;">
-                <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #2ecc71; margin-bottom: 6px;">
-                    PASO FINAL: AUTORIZACIÓN Y SELLO MÉDICO
+            <!-- Bloque de Cierre y Registro: Re-escaneo del Carnet del Paciente -->
+            <div id="medic-seal-prompt-card" style="background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.4); padding: 18px; margin-top: 15px; text-align: center;">
+                <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #00f0ff; margin-bottom: 8px; letter-spacing: 1px;">
+                    PASO FINAL: CIERRE Y REGISTRO DE INCIDENCIA
                 </div>
-                <div id="seal-bound-medic-info" style="font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 12px; background: rgba(0,0,0,0.4); padding: 8px; border: 1px solid rgba(255,255,255,0.1);">
-                    SANITARIO ASIGNADO: <b id="seal-bound-medic-name" style="color: #00f0ff;">--</b>
+                <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 12px; background: rgba(0,0,0,0.45); padding: 10px; border: 1px solid rgba(255,255,255,0.12); text-align: left; line-height: 1.6;">
+                    <div>JUGADOR ATENDIDO: <b id="sum-req-patient-name" style="color: #00f0ff;">--</b></div>
+                    <div>SANITARIO ACTUANTE: <b id="seal-bound-medic-name" style="color: #2ecc71;">--</b></div>
                 </div>
-                <p style="font-size: 0.82rem; color: #ccc; margin: 0 0 14px 0; line-height: 1.4;">
-                    El terminal está vinculado a tu credencial de combate. Pulsa para certificar el alta médica del herido o escanea otra credencial si asistes como apoyo.
+                <p style="font-size: 0.82rem; color: #e2e8f0; margin: 0 0 14px 0; line-height: 1.45;">
+                    Para certificar el alta médica y registrar la intervención en el ORBAT, <b>vuelva a escanear el carnet QR del jugador atendido</b>.
                 </p>
-                <button type="button" class="btn-action-large" onclick="completeEpisodeWithBoundMedic()" style="background: #2ecc71; color: #000; font-weight: 800; border: none; margin: 0 0 10px 0; box-shadow: 0 0 15px rgba(46,204,113,0.3);">
-                    ✅ FIRMAR ALTA Y SELLAR ATENCIÓN (1 TAP)
+                <button type="button" class="btn-action-large btn-cyan" onclick="openQRScannerForPatientClosing()" style="font-weight: 800; margin: 0 0 10px 0; box-shadow: 0 0 20px rgba(0,240,255,0.35);">
+                    📷 ESCANEAR QR DEL JUGADOR PARA CERRAR
                 </button>
-                <div style="display: flex; gap: 8px;">
-                    <button type="button" class="btn-header" onclick="openQRScannerForMedicSeal()" style="flex: 1; justify-content: center; padding: 9px; border-color: #00f0ff; color: #00f0ff; font-size: 0.75rem;">
-                        📷 ESCANEAR OTRO SANITARIO
+                <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    {% if user_role == 'admin' %}
+                    <button type="button" class="btn-header" onclick="adminFastCloseEpisode()" style="flex: 1; min-width: 150px; justify-content: center; padding: 9px; border-color: #e2b938; color: #e2b938; font-size: 0.75rem;" title="Bypass de cierre para administración y pruebas de banco">
+                        ⚡ [ADMIN] CERRAR SIN RE-ESCANEO
                     </button>
-                    <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="flex: 1; justify-content: center; padding: 9px; border-color: #555; color: #aaa; font-size: 0.75rem;">
+                    {% endif %}
+                    <button type="button" class="btn-header" onclick="abortEpisodeToScan()" style="flex: 1; min-width: 120px; justify-content: center; padding: 9px; border-color: #555; color: #aaa; font-size: 0.75rem;">
                         CANCELAR ASISTENCIA
                     </button>
                 </div>
@@ -1739,7 +1742,12 @@
             const banner = document.getElementById('scanner-mode-banner');
             
             if (banner) {
-                if (mode === 'MEDIC_SEAL') {
+                if (mode === 'CLOSE_PATIENT') {
+                    const pacNom = (activeEpisode && (activeEpisode.paciente_nombre || activeEpisode.operador_nombre)) || "JUGADOR";
+                    banner.textContent = `2. ESCANEE EL QR DE ${pacNom.toUpperCase()} PARA CERRAR`;
+                    banner.style.borderColor = "var(--accent-cyan)";
+                    banner.style.color = "#00f0ff";
+                } else if (mode === 'MEDIC_SEAL') {
                     banner.textContent = "2. ESCANEE SU CARNET DE SANITARIO PARA FIRMAR";
                     banner.style.borderColor = "var(--accent-green)";
                     banner.style.color = "#2ecc71";
@@ -1767,7 +1775,9 @@
             
             qrScanner = new MedicQRScanner(vid, (token) => {
                 modal.style.display = 'none';
-                if (scannerTargetMode === 'MEDIC_SEAL') {
+                if (scannerTargetMode === 'CLOSE_PATIENT') {
+                    completeEpisodeWithPatientToken(token);
+                } else if (scannerTargetMode === 'MEDIC_SEAL') {
                     completeEpisodeWithMedicToken(token);
                 } else if (scannerTargetMode === 'BINDING') {
                     handleScannedBindingToken(token);
@@ -1783,6 +1793,10 @@
                 modal.style.display = 'none';
             });
             qrScanner.start();
+        }
+
+        function openQRScannerForPatientClosing() {
+            openQRScanner('CLOSE_PATIENT');
         }
 
         function openQRScannerForMedicSeal() {
@@ -2280,6 +2294,18 @@
             const sumInjuryEl = document.getElementById('sum-injury-name');
             if (sumInjuryEl) sumInjuryEl.textContent = `${f1Name} + ${f2Name}`;
 
+            // Datos de paciente y sanitario en la tarjeta de cierre
+            const sumReqPacEl = document.getElementById('sum-req-patient-name');
+            if (sumReqPacEl) {
+                sumReqPacEl.textContent = `${activeEpisode.operador_nombre || activeEpisode.paciente_nombre} [${activeEpisode.operador_uid || activeEpisode.paciente_uid}]`;
+            }
+            const boundName = localStorage.getItem('tvc_medic_bound_name') || localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId;
+            const boundUid = localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId;
+            const sealBoundNameEl = document.getElementById('seal-bound-medic-name');
+            if (sealBoundNameEl) {
+                sealBoundNameEl.textContent = `${boundName} [${boundUid}]`;
+            }
+
             // Resetear tarjetas de sellado
             const promptCard = document.getElementById('medic-seal-prompt-card');
             const successCard = document.getElementById('medic-seal-success-card');
@@ -2287,7 +2313,132 @@
             if (successCard) successCard.style.display = 'none';
         }
 
-        // ==================== FASE 3: SELLO Y FIRMA DEL MÉDICO ====================
+        // ==================== FASE 3: CIERRE DE INCIDENCIA RE-ESCANEANDO EL CARNET DEL PACIENTE ====================
+        function completeEpisodeWithPatientToken(token) {
+            if (!activeEpisode) {
+                alert("No hay ninguna intervención médica activa para cerrar.");
+                return;
+            }
+
+            const scannedRaw = (token || '').trim();
+            const scannedUpper = scannedRaw.toUpperCase();
+            const patientUid = (activeEpisode.paciente_uid || activeEpisode.operador_uid || '').trim();
+            const patientUpper = patientUid.toUpperCase();
+            const patientName = activeEpisode.paciente_nombre || activeEpisode.operador_nombre || patientUid;
+
+            // 1. Validar que el token escaneado coincida con el paciente atendido
+            let isMatch = false;
+
+            // Coincidencia directa de token
+            if (scannedUpper === patientUpper && scannedUpper !== '') {
+                isMatch = true;
+            }
+
+            // Coincidencia mediante búsqueda en el roster offline
+            if (!isMatch) {
+                const scannedMember = storage.lookupMember(scannedRaw);
+                const patientMember = storage.lookupMember(patientUid);
+
+                if (scannedMember && patientMember) {
+                    if (scannedMember.id === patientMember.id || 
+                        (scannedMember.uid && scannedMember.uid.toUpperCase() === patientMember.uid.toUpperCase()) ||
+                        (scannedMember.nombre && scannedMember.nombre.toLowerCase() === patientMember.nombre.toLowerCase())) {
+                        isMatch = true;
+                    }
+                } else if (scannedMember) {
+                    if (String(scannedMember.id) === patientUpper || 
+                        (scannedMember.uid && scannedMember.uid.toUpperCase() === patientUpper) ||
+                        (scannedMember.nombre && scannedMember.nombre.toLowerCase() === patientName.toLowerCase())) {
+                        isMatch = true;
+                    }
+                }
+            }
+
+            // Coincidencia flexible de subcadena (ej. URLs de carnet tipo /carnet/<id>)
+            if (!isMatch && scannedUpper && patientUpper) {
+                if (scannedUpper.includes(patientUpper) || patientUpper.includes(scannedUpper)) {
+                    isMatch = true;
+                }
+            }
+
+            if (!isMatch) {
+                const otherMember = storage.lookupMember(scannedRaw);
+                const otherName = otherMember ? otherMember.nombre : scannedRaw;
+                alert(`🚫 CARNET NO COINCIDE // CIERRE DENEGADO\n\nEl carnet escaneado pertenece a: ${otherName}\n\nPara cerrar y registrar esta intervención debe escanear el carnet QR de ${patientName}.`);
+                return;
+            }
+
+            // 2. Sanitario militar que certifica el alta
+            const boundUid = localStorage.getItem('tvc_medic_bound_uid') || localStorage.getItem('tvc_medic_active_sanitario_id') || storage.currentSessionId || sanitarioId;
+            const medMember = storage.lookupMember(boundUid);
+            const medicoNombre = localStorage.getItem('tvc_medic_bound_name') || (medMember ? medMember.nombre : boundUid);
+            const medicoFaccion = localStorage.getItem('tvc_medic_bound_faction') || (medMember ? medMember.faccion : '');
+
+            // 3. Descontar 1 botiquín de reanimación al sanitario tratante
+            const remaining = storage.decrementMedicReanimation(boundUid);
+            storage.currentSessionId = boundUid;
+            localStorage.setItem('tvc_medic_active_sanitario_id', boundUid);
+
+            // Guardar aviso de consumo para que sea visible en el menú principal
+            const noticeData = {
+                pacienteNombre: patientName,
+                pacienteUid: patientUid,
+                medicoNombre: medicoNombre,
+                consumidos: 1,
+                restantes: remaining,
+                timestamp: Date.now()
+            };
+            sessionStorage.setItem('tvc_medic_last_consumption', JSON.stringify(noticeData));
+            updateReanimUI();
+
+            // 4. Sellar y registrar el episodio
+            activeEpisode.medico_uid = boundUid;
+            activeEpisode.medico_nombre = medicoNombre;
+            activeEpisode.medico_faccion = medicoFaccion;
+            activeEpisode.sanitario_id = boundUid;
+            activeEpisode.cierre_verificado_qr = true;
+            activeEpisode.hora_cierre = new Date().toISOString();
+            activeEpisode.resultado_final = "EXITO";
+            activeEpisode.duracion_total_segundos = activeEpisode.duration_total_segundos || Math.round((Date.now() - activeEpisode.start_time) / 1000);
+            activeEpisode.duration_total_segundos = activeEpisode.duracion_total_segundos;
+
+            // 5. Encolar en almacenamiento local offline
+            storage.enqueueForSync(activeEpisode);
+            storage.clearCurrentEpisode();
+
+            // 6. Actualizar tarjeta de éxito en la interfaz
+            const promptCard = document.getElementById('medic-seal-prompt-card');
+            const successCard = document.getElementById('medic-seal-success-card');
+            if (promptCard) promptCard.style.display = 'none';
+            if (successCard) {
+                document.getElementById('seal-medic-name').textContent = `${medicoNombre} [${boundUid}]`;
+                document.getElementById('seal-patient-name').textContent = `${patientName} [${patientUid}]`;
+                document.getElementById('seal-medic-remaining').textContent = `${remaining} BOTIQUINES RESTANTES`;
+                successCard.style.display = 'block';
+            }
+
+            // 7. Sincronización en segundo plano si hay red
+            storage.flushSyncQueue();
+
+            // 8. Regresar a la pantalla de espera tras 2.5 segundos de confirmación
+            setTimeout(() => {
+                activeEpisode = null;
+                hideAllViews();
+                document.getElementById('view-scan-patient').style.display = 'block';
+                updateHeaderNav();
+                updateReanimUI();
+                if (promptCard) promptCard.style.display = 'block';
+                if (successCard) successCard.style.display = 'none';
+            }, 2500);
+        }
+
+        function adminFastCloseEpisode() {
+            if (!activeEpisode) return;
+            const pacUid = activeEpisode.paciente_uid || activeEpisode.operador_uid;
+            completeEpisodeWithPatientToken(pacUid);
+        }
+
+        // ==================== FASE 3 (LEGACY / FALLBACK): SELLO Y FIRMA CON CARNET DE MÉDICO ====================
         function completeEpisodeWithMedicToken(token) {
             if (!activeEpisode) return;
             const cleanToken = (token || '').trim();
@@ -2523,8 +2674,11 @@
                     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
                         <b style="color:#fff;">3. Fase 2 - Estabilización:</b> Monitoriza el pulso y sincroniza el ritmo cardíaco o secuencia de constantes hasta completar el 100%.
                     </div>
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
+                        <b style="color:#00f0ff;">4. Cierre y Registro (Re-escaneo QR):</b> Al finalizar el tratamiento, <b>vuelve a escanear el carnet QR del jugador atendido</b>. Esto certifica presencialmente el alta médica y registra la incidencia.
+                    </div>
                     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px;">
-                        <b style="color:#fff;">4. Cupo de Botiquines:</b> Cada rescate consume 1 botiquín. Al agotarse, acude a un punto de RESPAWN para reaprovisionar tu equipo médico.
+                        <b style="color:#fff;">5. Cupo de Botiquines:</b> Cada rescate validado consume 1 botiquín. Al agotarse, acude a un punto de RESPAWN de tu bando para reaprovisionar tu equipo médico.
                     </div>
                 </div>
 

@@ -712,6 +712,44 @@ class TestFieldMedicSuite(unittest.TestCase):
             last_r = app_conn.execute("SELECT * FROM respawn ORDER BY id DESC LIMIT 1").fetchone()
             self.assertEqual(last_r['poi_id'], respawn_syl['id'])
 
+    def test_23_medic_closing_with_patient_qr(self):
+        """
+        Verifica que la app médica requiera volver a escanear el carnet QR
+        del paciente para el cierre y registro de la incidencia.
+        """
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'player'
+            sess['sanitario_id'] = 'MED-01'
+
+        res = self.client.get('/medic')
+        self.assertEqual(res.status_code, 200)
+        html = res.get_data(as_text=True)
+
+        self.assertIn('openQRScannerForPatientClosing()', html)
+        self.assertIn('completeEpisodeWithPatientToken', html)
+        self.assertIn('sum-req-patient-name', html)
+        self.assertIn('adminFastCloseEpisode', html)
+        self.assertIn('vuelva a escanear el carnet QR del jugador atendido', html)
+
+        # Verificar sync con bandera de cierre verificado
+        ep_id = "EP-VERIFY-QR-" + str(uuid.uuid4())
+        payload = {
+            "episode_id": ep_id,
+            "sanitario_id": "MED-TEST-01",
+            "medico_uid": "MED-TEST-01",
+            "paciente_uid": "SYL-042",
+            "paciente_nombre": "Kowalski",
+            "cierre_verificado_qr": True,
+            "fase_actual": "completed",
+            "hemorragia_controlada": True,
+            "estabilizacion_completada": True,
+            "resultado_final": "EXITO",
+            "duracion_total_segundos": 28.0
+        }
+        res_sync, status_sync = medic_engine.sync_episodio_medico(self.conn, payload)
+        self.assertEqual(status_sync, 200)
+        self.assertEqual(res_sync["status"], "success")
+
 if __name__ == '__main__':
     unittest.main()
 

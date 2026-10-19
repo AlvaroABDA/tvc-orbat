@@ -171,14 +171,12 @@ class TestArmasCronoSuite(unittest.TestCase):
             ''')
             conn.commit()
 
-        # View Carnet
+        # View Carnet: el carnet omite réplicas en la tarjeta física (se consultan vía QR) pero renderiza correctamente
         res_carnet = self.client.get('/carnet/8801')
         self.assertEqual(res_carnet.status_code, 200)
         html_carnet = res_carnet.get_data(as_text=True)
-        self.assertIn('CONTROL CRONO & EQUIPAMIENTO', html_carnet)
-        self.assertIn('HK416 A5', html_carnet)
-        self.assertIn('329.5 FPS', html_carnet)
-        self.assertIn('NVG: Gen 3', html_carnet)
+        self.assertIn('back-cover', html_carnet)
+        self.assertNotIn('CONTROL CRONO & EQUIPAMIENTO', html_carnet)
 
         # View Portal Operador
         with self.client.session_transaction() as sess:

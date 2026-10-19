@@ -746,9 +746,9 @@ def upload_equipo_documento(id):
     if file.filename == '':
         return jsonify({'error': 'Ningún archivo seleccionado'}), 400
 
-    tipo = request.form.get('tipo', 'SEGURO').strip().upper()
-    if tipo not in ['SEGURO', 'EXENCION']:
-        return jsonify({'error': 'Tipo de documento inválido. Debe ser SEGURO o EXENCION'}), 400
+    tipo = request.form.get('tipo', 'SEGURO_EXENCION').strip().upper()
+    if tipo not in ['SEGURO_EXENCION', 'SEGURO', 'EXENCION']:
+        return jsonify({'error': 'Tipo de documento inválido. Debe ser SEGURO_EXENCION, SEGURO o EXENCION'}), 400
 
     ext = os.path.splitext(file.filename)[1].lower()
     if ext != '.pdf':
@@ -760,8 +760,11 @@ def upload_equipo_documento(id):
         conn.close()
         return jsonify({'error': 'Equipo no encontrado'}), 404
 
-    # Limpiar archivo anterior del mismo tipo en disco si existía
-    old_docs = conn.execute('SELECT id, archivo_path FROM Equipo_Documento WHERE equipo_id = ? AND tipo = ?', (id, tipo)).fetchall()
+    # Limpiar archivo anterior del mismo tipo o cualquier previo si se sube el documento unificado SEGURO_EXENCION
+    if tipo == 'SEGURO_EXENCION':
+        old_docs = conn.execute('SELECT id, archivo_path FROM Equipo_Documento WHERE equipo_id = ?', (id,)).fetchall()
+    else:
+        old_docs = conn.execute('SELECT id, archivo_path FROM Equipo_Documento WHERE equipo_id = ? AND (tipo = ? OR tipo = "SEGURO_EXENCION")', (id, tipo)).fetchall()
     for od in old_docs:
         try:
             if od['archivo_path'] and os.path.isfile(od['archivo_path']):

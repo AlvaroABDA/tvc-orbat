@@ -1082,12 +1082,10 @@ function renderEquiposTable(equipos) {
         const logoHtml = eq.logo_url ? `<img src="${eq.logo_url}" style="width:30px; height:30px; object-fit:contain; vertical-align:middle; margin-right:10px;">` : '';
         const userCode = eq.codigo ? `<span style="color:#ffcc00; font-family:var(--font-mono); font-weight:bold;">${eq.codigo}</span>` : `<span style="color:#888;">--</span>`;
         const docs = eq.documentos || [];
-        const hasSeguro = docs.some(d => d.tipo === 'SEGURO');
-        const hasExencion = docs.some(d => d.tipo === 'EXENCION');
+        const hasDoc = docs.some(d => d.tipo === 'SEGURO_EXENCION' || d.tipo === 'EXENCION' || d.tipo === 'SEGURO');
         const docsBadges = `
             <div style="font-size: 0.68rem; margin-top: 3px; display: flex; gap: 4px; flex-wrap: wrap;">
-                ${hasSeguro ? '<span style="color:#2ecc71; background:rgba(46,204,113,0.1); border:1px solid rgba(46,204,113,0.3); padding:1px 5px; border-radius:3px; display:inline-flex; align-items:center; gap:2px;" title="Póliza de seguro subida"><span class="material-symbols-outlined" style="font-size:11px;">verified</span> Seguro OK</span>' : '<span style="color:#e2b938; background:rgba(226,185,56,0.08); border:1px solid rgba(226,185,56,0.25); padding:1px 5px; border-radius:3px;" title="Seguro pendiente de adjuntar">Sin Seguro</span>'}
-                ${hasExencion ? '<span style="color:#00f0ff; background:rgba(0,240,255,0.1); border:1px solid rgba(0,240,255,0.3); padding:1px 5px; border-radius:3px; display:inline-flex; align-items:center; gap:2px;" title="Exención de seguridad subida"><span class="material-symbols-outlined" style="font-size:11px;">gavel</span> Exención OK</span>' : ''}
+                ${hasDoc ? '<span style="color:#00f0ff; background:rgba(0,240,255,0.1); border:1px solid rgba(0,240,255,0.3); padding:1px 5px; border-radius:3px; display:inline-flex; align-items:center; gap:2px;" title="Seguro / Exención de responsabilidad subido"><span class="material-symbols-outlined" style="font-size:11px;">verified_user</span> Seguro/Exención OK</span>' : '<span style="color:#e2b938; background:rgba(226,185,56,0.08); border:1px solid rgba(226,185,56,0.25); padding:1px 5px; border-radius:3px;" title="Seguro / Exención pendiente de adjuntar">Sin Seguro/Exención</span>'}
             </div>
         `;
         tbody.innerHTML += `
@@ -1820,8 +1818,7 @@ async function cargarEquipoDocumentos(equipoId, docsPreloaded = null) {
     const noticeEl = document.getElementById('docs-equipo-notice');
     if (!equipoId) {
         if (noticeEl) noticeEl.style.display = 'block';
-        renderDocSlot('SEGURO', null, false);
-        renderDocSlot('EXENCION', null, false);
+        renderDocSlot('SEGURO_EXENCION', null, false);
         return;
     }
 
@@ -1840,11 +1837,9 @@ async function cargarEquipoDocumentos(equipoId, docsPreloaded = null) {
     }
 
     docs = docs || [];
-    const docSeguro = docs.find(d => d.tipo === 'SEGURO');
-    const docExencion = docs.find(d => d.tipo === 'EXENCION');
+    const docSeguroExencion = docs.find(d => d.tipo === 'SEGURO_EXENCION') || docs.find(d => d.tipo === 'EXENCION') || docs.find(d => d.tipo === 'SEGURO');
 
-    renderDocSlot('SEGURO', docSeguro, true, equipoId);
-    renderDocSlot('EXENCION', docExencion, true, equipoId);
+    renderDocSlot('SEGURO_EXENCION', docSeguroExencion, true, equipoId);
 }
 
 function formatBytes(bytes, decimals = 1) {
@@ -1895,7 +1890,7 @@ function renderDocSlot(tipo, doc, canUpload, equipoId = null) {
         statusEl.innerHTML = `<span style="color: #e2b938;">🟡 Pendiente de adjuntar</span>`;
         actionsEl.innerHTML = `
             <label class="btn outline btn-sm" style="cursor: pointer; margin: 0;">
-                <span class="material-symbols-outlined" style="font-size: 14px;">upload_file</span> Subir ${tipo === 'SEGURO' ? 'Seguro' : 'Exención'} (PDF)
+                <span class="material-symbols-outlined" style="font-size: 14px;">upload_file</span> Subir Seguro / Exención (PDF)
                 <input type="file" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('${tipo}', this)">
             </label>
         `;
@@ -1955,7 +1950,7 @@ async function uploadEquipoDoc(tipo, inputEl) {
 }
 
 async function deleteEquipoDoc(docId, tipo) {
-    const tipoLabel = tipo === 'SEGURO' ? 'la póliza de seguro' : 'la exención de seguridad';
+    const tipoLabel = 'el documento de Seguro / Exención';
     if (!confirm(`¿Eliminar ${tipoLabel} de esta unidad?`)) return;
 
     const eqId = document.getElementById('eq-id').value;
