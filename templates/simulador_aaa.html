@@ -46,6 +46,12 @@
             object-fit: cover;
             z-index: 1;
             background-color: #000;
+            transition: filter 0.3s ease;
+        }
+
+        /* Modo Visión IR / FLIR Térmico para Alto Contraste en el Cielo */
+        body.ir-mode #camera-video {
+            filter: invert(0.92) contrast(1.7) grayscale(0.85) brightness(1.15);
         }
 
         /* Cúpula de Cielo Simulado si no hay cámara activa */
@@ -58,6 +64,11 @@
             z-index: 0;
             background: radial-gradient(circle at 50% 30%, #0c1a2e 0%, #03060a 100%);
             overflow: hidden;
+            transition: background 0.3s ease;
+        }
+
+        body.ir-mode #simulated-sky-dome {
+            background: radial-gradient(circle at 50% 30%, #020408 0%, #000000 100%);
         }
 
         .star-point {
@@ -67,7 +78,7 @@
             opacity: 0.6;
         }
 
-        /* Máscara de Prismáticos Militares con viñeteado óptico (como telemetro_recon) */
+        /* Máscara de Prismáticos Militares con viñeteado óptico */
         .binocular-mask {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -132,6 +143,17 @@
             pointer-events: none;
         }
 
+        /* Capa de Flechas Perimétricas */
+        #edge-indicators-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 15;
+            pointer-events: none;
+        }
+
         /* ==================== BARRA SUPERIOR HUD ESTILO PRISMÁTICOS ==================== */
         .top-hud-bar {
             position: absolute;
@@ -185,10 +207,18 @@
             background: rgba(255, 215, 0, 0.12);
         }
 
-        .hud-btn-cyan {
-            border-color: var(--sam-cyan);
-            color: var(--sam-cyan);
-            background: rgba(0, 240, 255, 0.15);
+        .hud-btn-ir {
+            border-color: #ffffff;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.15);
+            font-weight: bold;
+        }
+
+        .hud-btn-ir.active {
+            border-color: var(--sam-gold);
+            color: #000000;
+            background: var(--sam-gold);
+            box-shadow: 0 0 12px var(--sam-gold);
         }
 
         .hud-btn-fullscreen {
@@ -205,7 +235,7 @@
             align-items: center;
             gap: 3px;
             width: 100%;
-            max-width: 500px;
+            max-width: 520px;
             margin: 0 auto;
         }
 
@@ -230,7 +260,7 @@
             overflow: hidden;
             border-top: 1px solid rgba(0, 240, 255, 0.3);
             border-bottom: 1px solid rgba(0, 240, 255, 0.3);
-            background: rgba(0, 0, 0, 0.55);
+            background: rgba(0, 0, 0, 0.65);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -441,10 +471,10 @@
             color: var(--sam-cyan);
             white-space: nowrap;
             text-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
-            background: rgba(3, 7, 13, 0.7);
-            padding: 2px 8px;
+            background: rgba(3, 7, 13, 0.75);
+            padding: 3px 10px;
             border-radius: 3px;
-            border: 1px solid rgba(0, 240, 255, 0.2);
+            border: 1px solid rgba(0, 240, 255, 0.25);
         }
 
         .seeker-status-text.locked {
@@ -491,6 +521,42 @@
             background: var(--sam-green);
         }
 
+        /* ==================== ESTILOS DEL LOCALIZADOR EN NEGRO (IR MODE) ==================== */
+        body.ir-mode .seeker-outer-ring {
+            border-color: #000000 !important;
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.85), 0 0 25px rgba(0, 0, 0, 0.9) !important;
+        }
+
+        body.ir-mode .seeker-inner-diamond {
+            border-color: #000000 !important;
+            background: rgba(0, 0, 0, 0.45) !important;
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
+        }
+
+        body.ir-mode .guidance-cross-h,
+        body.ir-mode .guidance-cross-v {
+            background: rgba(0, 0, 0, 0.85) !important;
+        }
+
+        body.ir-mode .seeker-status-text {
+            background: #000000 !important;
+            color: #ffffff !important;
+            border: 2px solid rgba(255, 255, 255, 0.7) !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.9);
+        }
+
+        body.ir-mode .air-contact-box {
+            background: rgba(0, 0, 0, 0.92) !important;
+            border: 2px solid #000000 !important;
+            box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.8), 0 4px 20px rgba(0, 0, 0, 0.9) !important;
+        }
+
+        body.ir-mode .compass-tape-container {
+            background: rgba(0, 0, 0, 0.85) !important;
+            border-color: #000000 !important;
+            box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.5) !important;
+        }
+
         /* Tarjeta de Contacto Aéreo en Vuelo */
         .air-contact-target {
             position: absolute;
@@ -501,7 +567,6 @@
             gap: 2px;
             will-change: transform;
             pointer-events: auto;
-            cursor: crosshair;
         }
 
         .air-contact-box {
@@ -558,6 +623,36 @@
             margin-top: 1px;
         }
 
+        /* Flechas Perimétricas en los Bordes de Pantalla */
+        .edge-indicator {
+            position: absolute;
+            z-index: 22;
+            pointer-events: none;
+            font-family: var(--font-heading);
+            font-size: 0.70rem;
+            font-weight: 800;
+            padding: 5px 8px;
+            border-radius: 4px;
+            background: rgba(3, 7, 13, 0.9);
+            border: 1.5px solid;
+            box-shadow: 0 0 16px rgba(0, 0, 0, 0.85);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            letter-spacing: 1px;
+            animation: edge-pulse 0.9s infinite alternate;
+        }
+
+        .edge-indicator.hostile { border-color: var(--sam-red); color: #ff5566; box-shadow: 0 0 16px rgba(255, 51, 68, 0.6); }
+        .edge-indicator.friendly { border-color: var(--sam-green); color: #2ecc71; box-shadow: 0 0 16px rgba(46, 204, 113, 0.6); }
+        .edge-indicator.civilian { border-color: var(--sam-gold); color: #ffd700; box-shadow: 0 0 16px rgba(255, 215, 0, 0.6); }
+
+        @keyframes edge-pulse {
+            from { transform: scale(0.96); }
+            to { transform: scale(1.04); }
+        }
+
         /* Banner de Derribo / Impacto Splash One */
         #splash-banner {
             position: absolute;
@@ -598,7 +693,7 @@
             color: #cbd5e1;
         }
 
-        /* Barra Inferior de Disparo y Misiles */
+        /* ==================== BARRA INFERIOR DE FUEGO TÁCTICA ==================== */
         .bottom-fire-bar {
             position: absolute;
             bottom: 0;
@@ -606,52 +701,68 @@
             width: 100%;
             z-index: 25;
             padding: 10px 14px;
-            background: linear-gradient(0deg, rgba(3, 7, 13, 0.98) 0%, rgba(3, 7, 13, 0.7) 80%, transparent 100%);
+            background: linear-gradient(0deg, rgba(3, 7, 13, 0.98) 0%, rgba(3, 7, 13, 0.75) 80%, transparent 100%);
             border-top: 1px solid var(--sam-dim);
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
         .fire-btn-container {
             flex: 1;
-            max-width: 320px;
+            max-width: 340px;
         }
 
+        /* Botón de fuego con estilo HUD Táctico CSS */
         .btn-launch-missile {
             width: 100%;
-            background: linear-gradient(180deg, #ff3344 0%, #aa1122 100%);
-            border: 2px solid #ff6677;
-            color: #fff;
-            padding: 12px;
-            border-radius: 6px;
+            background: rgba(10, 16, 24, 0.92);
+            border: 1.5px solid var(--sam-cyan);
+            color: #ffffff;
+            padding: 11px 16px;
+            border-radius: 4px;
             font-family: var(--font-heading);
-            font-size: 0.95rem;
-            font-weight: 900;
-            letter-spacing: 2px;
+            font-size: 0.88rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            box-shadow: 0 0 20px rgba(255, 51, 68, 0.5);
-            transition: all 0.15s;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), inset 0 0 15px rgba(0, 240, 255, 0.15);
+            transition: all 0.2s ease;
+            text-transform: uppercase;
         }
 
-        .btn-launch-missile:active {
-            transform: scale(0.97);
-            background: #ff1122;
-            box-shadow: 0 0 35px rgba(255, 51, 68, 0.9);
+        .btn-launch-missile:hover, .btn-launch-missile:active {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(0, 150, 220, 0.35) 100%);
+            border-color: #00f0ff;
+            color: #ffffff;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.6), inset 0 0 15px rgba(0, 240, 255, 0.3);
+            transform: scale(0.98);
         }
 
         .btn-launch-missile.disabled {
-            background: #2a3340;
-            border-color: #475569;
-            color: #94a3b8;
+            background: #1a222d;
+            border-color: #334155;
+            color: #64748b;
             box-shadow: none;
             cursor: not-allowed;
             opacity: 0.6;
+        }
+
+        .fire-btn-badge {
+            font-size: 0.65rem;
+            color: var(--sam-cyan);
+            font-family: var(--font-tactical);
+            border: 1px solid var(--sam-cyan);
+            padding: 1px 5px;
+            border-radius: 2px;
+            letter-spacing: 1px;
         }
 
         /* Puntuación y Munición */
@@ -742,26 +853,9 @@
         .badge-hostile { background: rgba(255, 51, 68, 0.2); color: var(--sam-red); border: 1px solid var(--sam-red); }
         .badge-friendly { background: rgba(46, 204, 113, 0.2); color: var(--sam-green); border: 1px solid var(--sam-green); }
         .badge-civilian { background: rgba(255, 215, 0, 0.2); color: var(--sam-gold); border: 1px solid var(--sam-gold); }
-
-        /* Controles Virtuales Touch / Desktop */
-        #virtual-touch-hint {
-            position: absolute;
-            bottom: 75px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 18;
-            background: rgba(3, 7, 13, 0.85);
-            border: 1px dashed var(--sam-dim);
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.65rem;
-            color: #cbd5e1;
-            pointer-events: none;
-            display: none;
-        }
     </style>
 </head>
-<body>
+<body class="ir-mode">
 
     <!-- Stream de Cámara Real -->
     <video id="camera-video" playsinline autoplay muted></video>
@@ -785,6 +879,9 @@
     <!-- Capa de Contactos Aéreos -->
     <div id="contacts-layer"></div>
 
+    <!-- Capa de Flechas Perimétricas -->
+    <div id="edge-indicators-layer"></div>
+
     <!-- Escala Lateral de Clinómetro / Elevación (Prismáticos) -->
     <div class="hud-side-elevation">
         <div class="elev-label">ELEV</div>
@@ -795,7 +892,7 @@
         <div class="elev-horizon">CIELO</div>
     </div>
 
-    <!-- Retícula Central SACLOS / Círculo de Guiado Óptico -->
+    <!-- Retícula Central SACLOS / Círculo de Guiado Óptico en Negro -->
     <div class="seeker-reticle">
         <div class="lock-meter-container">
             <div class="lock-meter-fill" id="lock-meter-fill"></div>
@@ -814,17 +911,15 @@
         <div class="splash-sub" id="splash-sub">SQUAWK SQ-4021 [SU-25] DESTRUIDO (+100 PTS)</div>
     </div>
 
-    <!-- Aviso de Control Táctil / Desktop -->
-    <div id="virtual-touch-hint">
-        🕹️ MODO VIRTUAL ACTIVO: ARRASTRA PARA SEGUIR EL BLANCO EN EL CIELO
-    </div>
-
-    <!-- Barra Superior Táctica con Cinta de Rumbo Digital y Pantalla Completa -->
+    <!-- Barra Superior Táctica con Cinta de Rumbo Digital y Controles -->
     <header class="top-hud-bar">
         <div class="top-hud-controls">
             <div style="display: flex; align-items: center; gap: 6px;">
                 <button type="button" class="hud-btn" onclick="exitAndReturn('/simulacion')" title="Volver al menú de simulación">
                     <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span> MENÚ
+                </button>
+                <button type="button" class="hud-btn" onclick="exitAndReturn('/radar_aaa')" style="border-color: var(--sam-cyan); color: var(--sam-cyan);" title="Ir al Puesto Radar Director">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">radar</span> RADAR
                 </button>
                 <button type="button" class="hud-btn hud-btn-gold" onclick="toggleIffModal()" title="Abrir tabla de transpondedores IFF">
                     <span class="material-symbols-outlined" style="font-size: 15px;">menu_book</span> TABLA INTEL IFF
@@ -834,6 +929,9 @@
             <div style="display: flex; align-items: center; gap: 6px;">
                 <button type="button" class="hud-btn" id="btn-camera-toggle" onclick="toggleCameraDevice()">
                     📷 CÁMARA
+                </button>
+                <button type="button" class="hud-btn hud-btn-ir active" id="btn-ir-toggle" onclick="toggleIRMode()" title="Alternar filtro térmico IR para contraste en cielo">
+                    👁️ VISIÓN IR
                 </button>
                 <button type="button" class="hud-btn hud-btn-fullscreen" id="btn-fullscreen-toggle" onclick="toggleFullscreen()" title="Alternar pantalla completa">
                     <span class="material-symbols-outlined" style="font-size: 15px;" id="fs-icon">fullscreen</span> <span id="fs-text">PANTALLA COMPLETA</span>
@@ -848,7 +946,7 @@
                 <span class="telemetry-sep">|</span>
                 <span id="telemetry-el">ELEV: +45°</span>
                 <span class="telemetry-sep">|</span>
-                <span id="telemetry-mode" style="color: var(--sam-cyan);">SISTEMA SACLOS</span>
+                <span id="telemetry-mode" style="color: var(--sam-cyan);">SISTEMA SACLOS // IR ACTIVO</span>
             </div>
             <div class="compass-tape-container">
                 <div class="compass-tape-center-mark"></div>
@@ -859,7 +957,7 @@
         </div>
     </header>
 
-    <!-- Barra Inferior de Fuego -->
+    <!-- Barra Inferior de Fuego Táctica -->
     <footer class="bottom-fire-bar">
         <div class="score-board">
             <div>DERRIBOS: <span class="score-val" id="score-kills" style="color: var(--sam-green);">0</span></div>
@@ -869,8 +967,9 @@
 
         <div class="fire-btn-container">
             <button type="button" class="btn-launch-missile" id="btn-launch" onclick="launchMissile()">
-                <span class="material-symbols-outlined" style="font-size: 20px;">rocket_launch</span>
-                DISPARAR: FOX-1
+                <span class="material-symbols-outlined" style="font-size: 20px; color: var(--sam-cyan);">rocket_launch</span>
+                <span>DISPARAR: FOX-1</span>
+                <span class="fire-btn-badge">[SACLOS READY]</span>
             </button>
         </div>
     </footer>
@@ -969,12 +1068,9 @@
         let currentHeading = 0;       // 0° a 360°
         let currentPitch = 45;        // Elevación inicial mirando hacia arriba al cielo (+45°)
         let headingOffset = 0;
-        let isVirtualControl = false;
-        let isDragging = false;
-        let dragStartX = 0, dragStartY = 0;
-        let dragStartHeading = 0, dragStartPitch = 45;
 
         let cameraStream = null;
+        let isIRMode = true;          // Activo por defecto para alto contraste
         let scoreKills = 0;
         let scorePoints = 0;
         let missilesAvailable = 4;
@@ -1003,7 +1099,6 @@
         window.addEventListener('DOMContentLoaded', async () => {
             initStarSky();
             setupSensors();
-            setupPointerDragControls();
             await startCamera();
             initAirspaceContacts();
             requestAnimationFrame(simLoop);
@@ -1016,8 +1111,34 @@
             window.location.href = targetUrl;
         }
 
+        // ==================== MODO VISIÓN IR / TÉRMICA ====================
+        function toggleIRMode() {
+            isIRMode = !isIRMode;
+            const btn = document.getElementById('btn-ir-toggle');
+            const telemMode = document.getElementById('telemetry-mode');
+
+            if (isIRMode) {
+                document.body.classList.add('ir-mode');
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.textContent = '👁️ VISIÓN IR: ON';
+                }
+                if (telemMode) telemMode.textContent = 'SISTEMA SACLOS // IR ACTIVO';
+            } else {
+                document.body.classList.remove('ir-mode');
+                if (btn) {
+                    btn.classList.remove('active');
+                    btn.textContent = '👁️ VISIÓN IR: OFF';
+                }
+                if (telemMode) telemMode.textContent = 'SISTEMA SACLOS // ÓPTICO REAL';
+            }
+        }
+
         // ==================== PANTALLA COMPLETA ====================
         function toggleFullscreen() {
+            // Solicitar permisos de giroscopio en iOS si aún no se han concedido
+            requestSensorPermission();
+
             const icon = document.getElementById('fs-icon');
             const txt = document.getElementById('fs-text');
             if (!document.fullscreenElement) {
@@ -1049,6 +1170,16 @@
             }
         });
 
+        function requestSensorPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(state => {
+                    if (state === 'granted') {
+                        setupSensors();
+                    }
+                }).catch(console.error);
+            }
+        }
+
         function initStarSky() {
             const dome = document.getElementById('simulated-sky-dome');
             if (!dome) return;
@@ -1070,19 +1201,79 @@
             const squawks = Object.keys(INTEL_DB);
             airContacts = [];
 
+            // Spawn inicial de 4 bogeys en sectores distribuidos (cada 90°)
             for (let i = 0; i < 4; i++) {
-                spawnBogey(squawks[i % squawks.length], (i * 90 + 30) % 360);
+                spawnBogey(squawks[i % squawks.length], (i * 90 + 35) % 360);
+            }
+
+            // Sincronizar inmediatamente y periódicamente con el Director de Tiro / Radar AAA
+            syncAirspaceFromServer();
+            setInterval(syncAirspaceFromServer, 2200);
+        }
+
+        async function syncAirspaceFromServer() {
+            try {
+                const res = await fetch('/api/aaa/airspace');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.success || !Array.isArray(data.contacts)) return;
+
+                const serverMap = new Map();
+                data.contacts.forEach(sc => {
+                    serverMap.set(sc.id, sc);
+                    serverMap.set(sc.squawk, sc);
+                });
+
+                data.contacts.forEach(sc => {
+                    let local = airContacts.find(lc => lc.id === sc.id || lc.squawk === sc.squawk);
+                    if (!local) {
+                        const intel = INTEL_DB[sc.squawk] || { name: sc.name, type: sc.type, pts: sc.pts };
+                        airContacts.push({
+                            id: sc.id,
+                            squawk: sc.squawk,
+                            name: sc.name,
+                            type: sc.type,
+                            pts: sc.pts,
+                            azimuth: sc.azimuth,
+                            elevation: sc.elevation,
+                            distance: sc.distance,
+                            altitude: sc.altitude,
+                            speed: sc.speed_kmh ? (sc.speed_kmh * 0.4) : 180,
+                            flightHeading: sc.heading_flight || ((sc.azimuth + 90) % 360),
+                            destroyed: sc.destroyed
+                        });
+                    } else {
+                        if (sc.destroyed && !local.destroyed) {
+                            local.destroyed = true;
+                        } else if (!local.destroyed) {
+                            // Suave convergencia hacia la posición del servidor
+                            let diffAz = (sc.azimuth - local.azimuth + 540) % 360 - 180;
+                            local.azimuth = (local.azimuth + diffAz * 0.4 + 360) % 360;
+                            local.elevation = local.elevation + (sc.elevation - local.elevation) * 0.4;
+                            local.distance = sc.distance;
+                            local.altitude = sc.altitude;
+                        }
+                    }
+                });
+
+                // Eliminar contactos que ya no estén en el servidor
+                airContacts = airContacts.filter(lc => {
+                    const match = serverMap.get(lc.id) || serverMap.get(lc.squawk);
+                    return match !== undefined;
+                });
+            } catch (e) {
+                // Modo autónomo si no hay conexión
             }
         }
 
         function spawnBogey(squawkCode, initialAzimuth = null) {
             const az = initialAzimuth !== null ? initialAzimuth : Math.random() * 360;
-            // Elevación antiaérea alta realista: entre 38° y 54° (centrado en ~45°)
-            const el = 38 + Math.random() * 16;
-            const dist = 1600 + Math.random() * 1600; // Distancia entre 1600m y 3200m
-            const alt = 1400 + Math.random() * 1800; // Altitud de crucero
-            const speed = 180 + Math.random() * 240; // Velocidad moderada para permitir lectura y rastreo
-            const headingFlight = (az + 90 + (Math.random() * 40 - 20)) % 360;
+            // Elevación antiaérea alta y realista: siempre en el cielo entre 38° y 52° (centrado en ~45°)
+            const el = 38 + Math.random() * 14;
+            const dist = 1800 + Math.random() * 1400; // Distancia 1800m a 3200m
+            const alt = 1600 + Math.random() * 1800; // Altitud
+            const speed = 140 + Math.random() * 180; // Velocidad pausada para permitir rastreo duradero
+            const headingFlight = (az + 90 + (Math.random() * 30 - 15)) % 360;
             const intel = INTEL_DB[squawkCode] || { name: 'Desconocido', type: 'HOSTILE', pts: 100 };
 
             airContacts.push({
@@ -1104,25 +1295,25 @@
         function updateContactsPhysics(dt) {
             airContacts.forEach(c => {
                 if (c.destroyed) return;
-                // Velocidad angular aparente mucho más pausada y rastreable (~1.2° - 1.8°/s, dura 35-50s en pantalla)
-                const speedDegPerSec = (c.speed / (c.distance * 0.16)) * dt;
+                // Velocidad angular aparente muy lenta (~0.7° - 1.1°/s, permitiendo recorridos de 60-90 segundos)
+                const speedDegPerSec = (c.speed / (c.distance * 0.28)) * dt;
                 c.azimuth = (c.azimuth + speedDegPerSec + 360) % 360;
-                // Suave oscilación de altitud manteniéndose siempre en el cielo (+32° a +65°, nunca en el suelo)
-                c.elevation += Math.sin(Date.now() * 0.0006 + c.azimuth) * 0.015;
+
+                // Suave ondulación de altitud manteniéndose SIEMPRE en el cielo (+32° a +65°, NUNCA en el suelo)
+                c.elevation += Math.sin(Date.now() * 0.0004 + c.azimuth) * 0.012;
                 if (c.elevation < 32) c.elevation = 32;
                 if (c.elevation > 65) c.elevation = 65;
             });
         }
 
-        // ==================== SENSORES Y CONTROL TÁCTIL ====================
+        // ==================== SENSORES GIROSCÓPICOS REALES (SIN ARRASTRE VIRTUAL) ====================
         function setupSensors() {
             window.addEventListener('deviceorientationabsolute', handleOrientation, true);
             window.addEventListener('deviceorientation', handleOrientation, true);
         }
 
         function handleOrientation(e) {
-            if (isVirtualControl) return;
-
+            // 1. Rumbo (Heading / Azimut):
             let heading = null;
             if (typeof e.webkitCompassHeading !== 'undefined' && e.webkitCompassHeading !== null) {
                 heading = e.webkitCompassHeading;
@@ -1134,61 +1325,19 @@
                 currentHeading = (Math.round(heading) + headingOffset + 360) % 360;
             }
 
+            // 2. Elevación Matemática Corregida:
+            // En smartphone en posición vertical (portrait):
+            // beta = 90° con la pantalla vertical y la cámara trasera apuntando al horizonte (pitch = 0°).
+            // Al levantar el móvil apuntando hacia el cielo, la parte superior retrocede y beta DISMINUYE hacia 0°.
+            // A 45° de elevación en el cielo: beta = 45° -> (90 - beta) = +45°!
+            // En el cenit (90° arriba): beta = 0° -> (90 - beta) = +90°!
+            // Al apuntar al suelo: beta crece a 130° -> (90 - beta) = -40° (bloqueado a +15° horizonte).
             if (e.beta !== null && !isNaN(e.beta)) {
-                // Calibración para postura antiaérea natural:
-                // Sosteniendo el teléfono mirando al cielo, la elevación se centra en torno a +45°
-                currentPitch = Math.round(e.beta - 45);
-                if (currentPitch < 15) currentPitch = 15; // Bloqueo para no apuntar al suelo
-                if (currentPitch > 85) currentPitch = 85;
+                let pitchCalc = 90 - e.beta;
+                // Asegurar elevación positiva hacia el cielo (+15° a +85°), impidiendo mirar al suelo
+                pitchCalc = Math.max(15, Math.min(85, pitchCalc));
+                currentPitch = Math.round(pitchCalc);
             }
-        }
-
-        function setupPointerDragControls() {
-            const onPointerDown = (clientX, clientY) => {
-                isDragging = true;
-                dragStartX = clientX;
-                dragStartY = clientY;
-                dragStartHeading = currentHeading;
-                dragStartPitch = currentPitch;
-            };
-
-            const onPointerMove = (clientX, clientY) => {
-                if (!isDragging) return;
-                isVirtualControl = true;
-                const hint = document.getElementById('virtual-touch-hint');
-                if (hint) hint.style.display = 'block';
-
-                const deltaX = clientX - dragStartX;
-                const deltaY = clientY - dragStartY;
-
-                const sensitivity = FOV_H / window.innerWidth;
-                currentHeading = (dragStartHeading - deltaX * sensitivity + 360) % 360;
-                currentPitch = Math.max(15, Math.min(85, dragStartPitch + deltaY * sensitivity));
-            };
-
-            const onPointerUp = () => { isDragging = false; };
-
-            window.addEventListener('mousedown', (e) => {
-                if (e.target.closest('button, a, .modal-iff-box')) return;
-                onPointerDown(e.clientX, e.clientY);
-            });
-            window.addEventListener('mousemove', (e) => onPointerMove(e.clientX, e.clientY));
-            window.addEventListener('mouseup', onPointerUp);
-
-            window.addEventListener('touchstart', (e) => {
-                if (e.touches.length === 1) {
-                    if (e.target.closest('button, a, .modal-iff-box')) return;
-                    onPointerDown(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            }, { passive: true });
-
-            window.addEventListener('touchmove', (e) => {
-                if (e.touches.length === 1 && isDragging) {
-                    onPointerMove(e.touches[0].clientX, e.touches[0].clientY);
-                }
-            }, { passive: true });
-
-            window.addEventListener('touchend', onPointerUp);
         }
 
         // ==================== CÁMARA ====================
@@ -1223,7 +1372,6 @@
             const tapeTrack = document.getElementById('compass-tape-track');
             if (tapeTrack) {
                 const normHeading = (currentHeading % 360 + 360) % 360;
-                // Cada grado son aproximadamente 3.5 píxeles de desplazamiento
                 const pxPerDegree = 3.5;
                 const offset = -(normHeading * pxPerDegree);
                 tapeTrack.style.transform = `translateX(${offset}px)`;
@@ -1264,10 +1412,11 @@
             requestAnimationFrame(simLoop);
         }
 
-        // ==================== RENDERIZADO DE CONTACTOS Y LOCK-ON PREVIO ====================
+        // ==================== RENDERIZADO DE CONTACTOS, FLECHAS Y LOCK-ON ====================
         function renderContactsAndSeeker(now) {
             const layer = document.getElementById('contacts-layer');
-            if (!layer) return;
+            const edgeLayer = document.getElementById('edge-indicators-layer');
+            if (!layer || !edgeLayer) return;
 
             const w = window.innerWidth;
             const h = window.innerHeight;
@@ -1275,6 +1424,8 @@
             const cy = h / 2;
 
             layer.innerHTML = '';
+            edgeLayer.innerHTML = '';
+
             let bestTarget = null;
             let bestAngularDist = 999;
 
@@ -1321,9 +1472,29 @@
                                 <span>AZ: ${String(Math.round(contact.azimuth)).padStart(3,'0')}°</span>
                             </div>
                         </div>
-                        <div class="air-icon-pip" style="border-color:${isLocked ? '#2ecc71' : (isTracked ? '#ffd700' : '#00f0ff')}"></div>
+                        <div class="air-icon-pip" style="border-color:${isLocked ? '#2ecc71' : (isTracked ? '#ffd700' : '#000')}"></div>
                     `;
                     layer.appendChild(el);
+                } else {
+                    // Objetivo FUERA del campo de visión: Mostrar flecha perimétrica en borde
+                    const edgeEl = document.createElement('div');
+                    const isLeft = deltaAz < 0;
+                    const edgeClass = isLeft ? 'edge-left' : 'edge-right';
+                    const typeClass = contact.type === 'HOSTILE' ? 'hostile' : (contact.type === 'FRIENDLY' ? 'friendly' : 'civilian');
+                    
+                    // Posición vertical aproximada
+                    const clampedY = Math.max(80, Math.min(h - 100, cy - (deltaEl / (FOV_V / 2)) * (h / 3)));
+                    
+                    edgeEl.className = `edge-indicator ${typeClass} ${edgeClass}`;
+                    edgeEl.style.top = `${clampedY}px`;
+                    
+                    const degDiff = Math.abs(Math.round(deltaAz));
+                    if (isLeft) {
+                        edgeEl.innerHTML = `◀ ${contact.squawk} (${degDiff}°)`;
+                    } else {
+                        edgeEl.innerHTML = `(${degDiff}°) ${contact.squawk} ▶`;
+                    }
+                    edgeLayer.appendChild(edgeEl);
                 }
             });
 
@@ -1408,7 +1579,7 @@
                 y: h - 30,
                 target: target,
                 flightTime: 0,
-                totalDuration: 3.8, // 3.8 segundos para un rastreo tensado y emocionante
+                totalDuration: 3.8, // 3.8 segundos para un rastreo activo tenso
                 isGuided: true,
                 lastGuidedX: cx,
                 lastGuidedY: cy - 60,
@@ -1417,7 +1588,6 @@
 
             activeMissiles.push(missile);
 
-            // Detener el tono de enganche previo e iniciar sonido de lanzamiento
             stopSolidLockTone();
             playRocketLaunchSound();
 
@@ -1561,6 +1731,13 @@
             createExplosionEffect(x, y, true);
             playExplosionSound();
 
+            // Notificar al servidor y al Puesto Director de Radar AAA
+            fetch('/api/aaa/splash', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: target.id, squawk: target.squawk })
+            }).catch(err => console.warn("Splash notify API error:", err));
+
             const intel = INTEL_DB[target.squawk] || { name: 'Aparato', type: 'HOSTILE', pts: 100 };
             const pts = intel.pts;
             scorePoints += pts;
@@ -1592,12 +1769,10 @@
             banner.style.display = 'block';
             setTimeout(() => { banner.style.display = 'none'; }, 3200);
 
-            // Reemplazar objetivo tras 4 segundos
+            // Reemplazar objetivo tras 4.5 segundos sincronizando con el servidor
             setTimeout(() => {
-                const squawks = Object.keys(INTEL_DB);
-                const nextSq = squawks[Math.floor(Math.random() * squawks.length)];
-                spawnBogey(nextSq);
-            }, 4000);
+                syncAirspaceFromServer();
+            }, 4500);
         }
 
         function createExplosionEffect(x, y, isTargetHit) {
@@ -1642,7 +1817,6 @@
 
             // 1. Dibujar proyectiles FOX-1 y haz de guiado láser
             activeMissiles.forEach(m => {
-                // Haz óptico láser conectando el centro de la mira con el misil si está guiado
                 if (m.isGuided) {
                     ctx.save();
                     ctx.strokeStyle = 'rgba(46, 204, 113, 0.45)';

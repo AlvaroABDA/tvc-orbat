@@ -1398,10 +1398,11 @@
             
             if (!authorized && pin) {
                 try {
+                    const boundUid = localStorage.getItem('tvc_medic_bound_uid') || '';
                     const res = await fetch('/api/medic/admin_unlock', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ pin: pin })
+                        body: JSON.stringify({ pin: pin, sanitario_id: boundUid })
                     });
                     if (res.ok) {
                         const data = await res.json();
@@ -1415,10 +1416,10 @@
                 performTerminalUnbind();
             } else {
                 if (errEl) {
-                    errEl.textContent = "PIN DE DIRECCIÓN INCORRECTO. ACCESO DENEGADO.";
+                    errEl.textContent = "PIN INCORRECTO. Puede usar sus 4 dígitos de DNI/PIN de operador o autorización de Dirección.";
                     errEl.style.display = 'block';
                 } else {
-                    alert("🚫 ACCESO DENEGADO: PIN DE DIRECCIÓN INCORRECTO");
+                    alert("🚫 ACCESO DENEGADO: PIN INCORRECTO (Use sus 4 dígitos de DNI/PIN personal o autorización de Dirección)");
                 }
             }
         }
@@ -1434,8 +1435,9 @@
             storage.clearCurrentEpisode();
             activeEpisode = null;
             checkTerminalBinding();
-            alert("🔓 TERMINAL DESVINCULADO POR DIRECCIÓN\n\nEl terminal ha sido liberado. Realice el Check-in con el nuevo Sanitario Militar.");
+            alert("🔓 TERMINAL DESVINCULADO\n\nEl terminal ha sido liberado. Realice el Check-in con el nuevo Sanitario Militar.");
         }
+        window.performTerminalUnbind = performTerminalUnbind;
 
         function completeEpisodeWithBoundMedic() {
             const boundUid = localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId;
@@ -2823,11 +2825,11 @@
             </div>
 
             <p style="font-size: 0.82rem; color: #ccc; line-height: 1.5; margin: 0 0 16px 0;">
-                Por normativa doctrinal TVC, los combatientes <b>no pueden desvincular o cambiar de médico</b> por su cuenta. Ingrese el PIN de Dirección o escanee la credencial de un Oficial de Mando para autorizar la liberación de este terminal.
+                Para liberar este terminal e iniciar sesión con otro sanitario, ingrese los <b>4 primeros dígitos de su DNI o PIN de operador</b>, el código de contingencia de Dirección o escanee la credencial de un Oficial de Mando.
             </p>
 
             <div style="margin-bottom: 16px;">
-                <label style="font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; color: #e2b938; display: block; margin-bottom: 6px;">PIN DE MANDO / DIRECCIÓN (4 DÍGITOS):</label>
+                <label style="font-family: 'Share Tech Mono', monospace; font-size: 0.75rem; color: #e2b938; display: block; margin-bottom: 6px;">PIN DE OPERADOR (DNI) O CÓDIGO DE DIRECCIÓN:</label>
                 <input type="password" id="input-admin-unlock-pin" maxlength="6" placeholder="••••" style="width: 100%; padding: 12px; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; font-size: 1.3rem; font-family: 'Share Tech Mono', monospace; text-align: center; letter-spacing: 6px;">
                 <div id="admin-unlock-error" style="display: none; color: #ff3344; font-size: 0.76rem; font-family: 'Share Tech Mono', monospace; margin-top: 6px;"></div>
             </div>

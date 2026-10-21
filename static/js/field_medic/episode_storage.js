@@ -31,6 +31,20 @@ class EpisodeStorage {
                         }
                     }
                 }
+                // Comprobar si Dirección ha emitido orden de desvinculación remota para este terminal
+                if (data.unbound_medics && Array.isArray(data.unbound_medics)) {
+                    const bound = (localStorage.getItem('tvc_medic_bound_uid') || '').toUpperCase();
+                    if (bound) {
+                        const unbounds = data.unbound_medics.map(u => String(u).toUpperCase());
+                        if (unbounds.includes(bound) || unbounds.includes(bound.replace('MED-', ''))) {
+                            if (window.performTerminalUnbind) {
+                                window.performTerminalUnbind();
+                                alert("🔓 TERMINAL DESVINCULADO REMOTAMENTE POR DIRECCIÓN\n\nEl puesto central de mando ha liberado este terminal.");
+                            }
+                        }
+                    }
+                }
+
                 console.log("[Storage] Roster offline actualizado:", data.total_jugadores, "miembros.");
                 if (window.updateReanimUI) window.updateReanimUI();
                 return data;

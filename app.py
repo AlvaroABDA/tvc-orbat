@@ -164,9 +164,9 @@ MINIGAME_PASSWORDS = {
         'Khemed': 'recon-khd'
     },
     'simulador_aaa': {
-        'Syldavia': 'aaa-syl',
-        'Volkovia': 'aaa-vol',
-        'Khemed': 'aaa-khd'
+        'Syldavia': 'aaavolk',
+        'Volkovia': 'aaavolk',
+        'Khemed': 'aaavolk'
     }
 }
 
@@ -327,6 +327,14 @@ def auth_minigame():
     if session['role'] == 'admin':
         return jsonify({'success': True})
         
+    if minigame == 'simulador_aaa' and password.lower() == 'aaavolk':
+        if 'unlocked_minigames' not in session:
+            session['unlocked_minigames'] = []
+        if minigame not in session['unlocked_minigames']:
+            session['unlocked_minigames'].append(minigame)
+            session.modified = True
+        return jsonify({'success': True})
+
     if minigame in MINIGAME_PASSWORDS and faction in MINIGAME_PASSWORDS[minigame]:
         if password.lower() == MINIGAME_PASSWORDS[minigame][faction].lower():
             if 'unlocked_minigames' not in session:
@@ -453,6 +461,187 @@ def simulador_aaa():
                            user_role=user_role,
                            user_faction=user_faction,
                            equipo_id=equipo_id)
+
+# ==================== SISTEMA DE RADAR Y ESPACIO AÉREO COMPARTIDO AAA ====================
+AAA_INTEL_DB = {
+    'SQ-4021': {'name': 'Su-25 Frogfoot', 'type': 'HOSTILE', 'pts': 100, 'desc': 'Reactor de ataque a tierra', 'base_alt': 2200, 'base_dist': 2400, 'speed_kmh': 500, 'ang_spd': 0.85},
+    'SQ-6612': {'name': 'Shahed-136 Drone', 'type': 'HOSTILE', 'pts': 150, 'desc': 'Drone kamikaze merodeador', 'base_alt': 1400, 'base_dist': 2000, 'speed_kmh': 185, 'ang_spd': 0.65},
+    'SQ-8830': {'name': 'Mi-24 Hind', 'type': 'HOSTILE', 'pts': 100, 'desc': 'Helicóptero de asalto y apoyo aéreo', 'base_alt': 1200, 'base_dist': 1800, 'speed_kmh': 220, 'ang_spd': 0.75},
+    'SQ-1104': {'name': 'MQ-9 Reaper', 'type': 'FRIENDLY', 'pts': -500, 'desc': 'UCAV enlace de reconocimiento amigo', 'base_alt': 2800, 'base_dist': 2800, 'speed_kmh': 250, 'ang_spd': 0.70},
+    'SQ-2240': {'name': 'C-130 Hercules', 'type': 'FRIENDLY', 'pts': -500, 'desc': 'Transporte logístico amigo', 'base_alt': 2600, 'base_dist': 3100, 'speed_kmh': 420, 'ang_spd': 0.90},
+    'SQ-7000': {'name': 'Airbus A320 Comercial', 'type': 'CIVILIAN', 'pts': -1000, 'desc': 'Vuelo civil en corredor internacional', 'base_alt': 3500, 'base_dist': 3300, 'speed_kmh': 650, 'ang_spd': 1.10},
+    'SQ-7700': {'name': 'Bell 412 Medevac', 'type': 'CIVILIAN', 'pts': -1000, 'desc': 'Evacuación médica sanitaria urgente', 'base_alt': 1500, 'base_dist': 2100, 'speed_kmh': 210, 'ang_spd': 0.60}
+}
+
+AAA_AIRSPACE = {
+    'contacts': [],
+    'splashes': [],
+    'next_id': 1
+}
+
+def spawn_aaa_bogey(squawk, initial_azimuth=None, initial_elevation=None):
+    now = time.time()
+    intel = AAA_INTEL_DB.get(squawk, {'name': 'Desconocido', 'type': 'HOSTILE', 'pts': 100, 'desc': 'Contacto radar', 'base_alt': 2000, 'base_dist': 2500, 'speed_kmh': 300, 'ang_spd': 0.75})
+    init_az = initial_azimuth if initial_azimuth is not None else float((AAA_AIRSPACE['next_id'] * 85 + 25) % 360)
+    init_el = initial_elevation if initial_elevation is not None else float(38.0 + (AAA_AIRSPACE['next_id'] * 7) % 14)
+    bogey_id = f"BOGEY_{AAA_AIRSPACE['next_id']}"
+    AAA_AIRSPACE['next_id'] += 1
+    return {
+        'id': bogey_id,
+        'squawk': squawk,
+        'name': intel['name'],
+        'type': intel['type'],
+        'pts': intel['pts'],
+        'desc': intel['desc'],
+        'base_alt': intel['base_alt'],
+        'base_dist': intel['base_dist'],
+        'speed_kmh': intel['speed_kmh'],
+        'ang_spd': intel['ang_spd'],
+        'init_azimuth': float(init_az),
+        'init_elevation': float(init_el),
+        'spawn_time': now,
+        'destroyed': False,
+        'splash_time': None
+    }
+
+def get_current_aaa_airspace():
+    now = time.time()
+    AAA_AIRSPACE['splashes'] = [s for s in AAA_AIRSPACE['splashes'] if (now - s.get('timestamp', 0)) < 25.0]
+
+    if not AAA_AIRSPACE['contacts']:
+        squawk_keys = list(AAA_INTEL_DB.keys())
+        initial_sectors = [35.0, 125.0, 215.0, 305.0]
+        for i in range(4):
+            sq = squawk_keys[i % len(squawk_keys)]
+            c = spawn_aaa_bogey(sq, initial_azimuth=initial_sectors[i], initial_elevation=40.0 + (i * 4))
+            AAA_AIRSPACE['contacts'].append(c)
+
+    active_contacts = []
+    squawk_keys = list(AAA_INTEL_DB.keys())
+    used_squawks = set()
+
+    for idx, c in enumerate(AAA_AIRSPACE['contacts']):
+        if c.get('destroyed'):
+            if c.get('splash_time') and (now - c['splash_time']) >= 4.5:
+                available = [k for k in squawk_keys if k not in used_squawks]
+                next_sq = available[idx % len(available)] if available else squawk_keys[(idx + 2) % len(squawk_keys)]
+                new_az = (c.get('init_azimuth', 0) + 140.0 + (idx * 25.0)) % 360.0
+                new_c = spawn_aaa_bogey(next_sq, initial_azimuth=new_az)
+                AAA_AIRSPACE['contacts'][idx] = new_c
+                c = new_c
+
+        used_squawks.add(c['squawk'])
+
+        elapsed = max(0.0, now - c['spawn_time'])
+        current_az = (c['init_azimuth'] + elapsed * c['ang_spd']) % 360.0
+        current_el = c['init_elevation'] + 4.5 * math.sin(elapsed * 0.04 + math.radians(c['init_azimuth']))
+        current_el = max(33.0, min(63.0, current_el))
+
+        dist = c['base_dist'] + int(100 * math.sin(elapsed * 0.025))
+        alt = c['base_alt'] + int(60 * math.cos(elapsed * 0.035))
+        heading_flight = round((current_az + 90.0) % 360.0)
+
+        active_contacts.append({
+            'id': c['id'],
+            'squawk': c['squawk'],
+            'name': c['name'],
+            'type': c['type'],
+            'pts': c['pts'],
+            'desc': c['desc'],
+            'azimuth': round(current_az, 1),
+            'elevation': round(current_el, 1),
+            'distance': dist,
+            'altitude': alt,
+            'speed_kmh': c['speed_kmh'],
+            'heading_flight': heading_flight,
+            'destroyed': bool(c.get('destroyed')),
+            'splash_time': c.get('splash_time')
+        })
+
+    return active_contacts, AAA_AIRSPACE['splashes']
+
+@app.route('/radar_aaa')
+@app.route('/aaa_radar')
+def radar_aaa():
+    if 'role' not in session:
+        return redirect(url_for('login'))
+    user_role = session.get('role', 'player')
+    user_faction = session.get('faction')
+    equipo_id = session.get('equipo_id')
+
+    unlocked = ('simulador_aaa' in session.get('unlocked_minigames', [])) or (user_role == 'admin')
+    if not unlocked:
+        return redirect(url_for('simulacion_menu'))
+
+    return render_template('radar_aaa.html',
+                           user_role=user_role,
+                           user_faction=user_faction,
+                           equipo_id=equipo_id)
+
+@app.route('/api/aaa/airspace')
+def api_aaa_airspace():
+    if 'role' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    user_role = session.get('role', 'player')
+    unlocked = ('simulador_aaa' in session.get('unlocked_minigames', [])) or (user_role == 'admin')
+    if not unlocked:
+        return jsonify({'success': False, 'message': 'Acceso no desbloqueado'}), 403
+
+    contacts, splashes = get_current_aaa_airspace()
+    return jsonify({
+        'success': True,
+        'timestamp': time.time(),
+        'contacts': contacts,
+        'splashes': splashes
+    })
+
+@app.route('/api/aaa/splash', methods=['POST'])
+def api_aaa_splash():
+    if 'role' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    user_role = session.get('role', 'player')
+    unlocked = ('simulador_aaa' in session.get('unlocked_minigames', [])) or (user_role == 'admin')
+    if not unlocked:
+        return jsonify({'success': False, 'message': 'Acceso no desbloqueado'}), 403
+
+    data = request.get_json(silent=True) or {}
+    target_id = data.get('id')
+    squawk = data.get('squawk')
+
+    now = time.time()
+    found = None
+    for c in AAA_AIRSPACE['contacts']:
+        if (target_id and c.get('id') == target_id) or (squawk and c.get('squawk') == squawk):
+            found = c
+            break
+
+    if not found:
+        return jsonify({'success': False, 'message': 'Blanco no encontrado en espacio aéreo'}), 404
+
+    if found.get('destroyed'):
+        return jsonify({'success': False, 'message': 'Blanco ya destruido'}), 200
+
+    found['destroyed'] = True
+    found['splash_time'] = now
+
+    splash_event = {
+        'id': found['id'],
+        'squawk': found['squawk'],
+        'name': found['name'],
+        'type': found['type'],
+        'pts': found['pts'],
+        'timestamp': now,
+        'user': session.get('username', 'Tirador AAA'),
+        'faction': session.get('faction')
+    }
+    AAA_AIRSPACE['splashes'].append(splash_event)
+
+    return jsonify({
+        'success': True,
+        'splash': splash_event,
+        'pts': found['pts'],
+        'type': found['type']
+    })
 
 @app.route('/telemetro_recon')
 def telemetro_recon():
@@ -4092,6 +4281,9 @@ def api_medico_sync():
     result, status_code = medic_engine.sync_episodio_medico(conn, payload)
     return jsonify(result), status_code
 
+# Registro en memoria de órdenes de desvinculación remota emitidas por Dirección
+MEDIC_REMOTE_UNBINDS = set()
+
 @app.route('/api/medic/roster', methods=['GET'])
 def api_medic_roster():
     """
@@ -4100,31 +4292,83 @@ def api_medic_roster():
     """
     conn = get_db_connection()
     roster_data = medic_engine.get_medic_roster_snapshot(conn)
+    roster_data['unbound_medics'] = list(MEDIC_REMOTE_UNBINDS)
     return jsonify(roster_data)
+
+@app.route('/api/admin/medicos/unbind', methods=['POST'])
+def api_admin_medicos_unbind():
+    """
+    Permite al Administrador desvincular de forma remota el terminal de un médico sin
+    necesidad de facilitarle el PIN maestro al jugador.
+    """
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json or {}
+    sanitario_id = str(data.get('sanitario_id', '')).strip().upper()
+    uid = str(data.get('uid', '')).strip().upper()
+    nombre = str(data.get('nombre_medico', '')).strip().upper()
+
+    for t in [sanitario_id, uid, nombre]:
+        if t:
+            MEDIC_REMOTE_UNBINDS.add(t)
+            clean_t = t.replace('MED-', '').strip()
+            if clean_t:
+                MEDIC_REMOTE_UNBINDS.add(clean_t)
+
+    target_label = nombre or uid or sanitario_id
+    return jsonify({
+        'status': 'success',
+        'message': f'Orden de desvinculación remota emitida para {target_label}. El terminal se liberará automáticamente al sincronizar.'
+    })
 
 @app.route('/api/medic/admin_unlock', methods=['POST'])
 def api_medic_admin_unlock():
     """
-    Endpoint de autorización exclusiva de Dirección para desvincular un terminal de médico.
-    Requiere sesión activa de Administrador o el PIN maestro de Dirección (4747).
+    Endpoint de autorización para desvincular un terminal de médico.
+    Permite:
+    1. Sesión activa de Administrador o PIN maestro (4747).
+    2. PIN de contingencia de campo de Dirección (1974).
+    3. Verificación de identidad: Primeros 4 dígitos del DNI o PIN propio del combatiente titular.
     """
     data = request.json or {}
     pin = str(data.get('pin', '')).strip()
+    sanitario_id = str(data.get('sanitario_id', '')).strip()
     is_admin = session.get('role') == 'admin'
-    
-    if is_admin or pin == '4747':
+
+    # 1. Clave maestra de Dirección o sesión admin
+    if is_admin or pin == '4747' or pin == '1974':
         return jsonify({
             'status': 'success',
             'authorized': True,
             'success': True,
             'message': 'Desvinculación del terminal autorizada por Dirección.'
         })
-        
+
+    # 2. Comprobar si coincide con el PIN personal o primeros 4 dígitos del DNI del combatiente asignado
+    if pin and sanitario_id:
+        conn = get_db_connection()
+        clean_sid = sanitario_id.replace('MED-', '').strip().upper()
+        m = conn.execute('''
+            SELECT pin, dni, uid, nombre_jugador FROM Miembro 
+            WHERE UPPER(uid) = ? OR UPPER(nombre_jugador) = ? OR UPPER(uid) = ? OR UPPER(nombre_jugador) = ?
+        ''', (sanitario_id.upper(), sanitario_id.upper(), clean_sid, clean_sid)).fetchone()
+
+        if m:
+            dni_clean = ''.join(c for c in (m['dni'] or '') if c.isdigit())
+            custom_pin = str(m['pin'] or '').strip()
+            if (custom_pin and pin == custom_pin) or (len(dni_clean) >= 4 and pin == dni_clean[:4]):
+                return jsonify({
+                    'status': 'success',
+                    'authorized': True,
+                    'success': True,
+                    'message': 'Desvinculación autorizada mediante credencial personal del operador titular.'
+                })
+
     return jsonify({
         'status': 'error',
         'authorized': False,
         'success': False,
-        'message': 'PIN de Dirección incorrecto o credencial denegada.'
+        'message': 'PIN incorrecto. Puede usar sus 4 dígitos de DNI/PIN personal o autorización de Dirección.'
     }), 403
 
 @app.route('/api/medic/respawn_recharge', methods=['POST'])

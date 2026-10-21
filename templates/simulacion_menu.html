@@ -1067,17 +1067,17 @@
             </div>
         </div>
 
-        <!-- Card: Defensa Antiaérea / Batería SAM AAA -->
+        <!-- Card: Defensa Antiaérea / Batería SAM AAA (Binomio Cooperativo) -->
         {% set aaa_unlocked = (user_role == 'admin') or ('simulador_aaa' in unlocked_minigames) %}
         <div class="card-menu">
-            <div class="card-header-row" onclick="handleCardClick('simulador_aaa', {{ 'true' if aaa_unlocked else 'false' }}, '/simulador_aaa')">
+            <div class="card-header-row" onclick="handleCardClick('simulador_aaa', {{ 'true' if aaa_unlocked else 'false' }}, '/radar_aaa')">
                 <div class="card-icon-title">
                     <div class="card-icon" style="background: rgba(255, 51, 68, 0.12); border: 1px solid var(--accent-red); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 6px;">
-                        <span class="material-symbols-outlined" style="color: var(--accent-red); font-size: 26px;">flight_takeoff</span>
+                        <span class="material-symbols-outlined" style="color: var(--accent-red); font-size: 26px;">radar</span>
                     </div>
                     <div>
                         <h2 class="card-title">Defensa Antiaérea (AAA)</h2>
-                        <div style="font-size: 0.75rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">BATERÍA SAM // MISIL GUIADO FOX-1 // RADAR IFF</div>
+                        <div style="font-size: 0.75rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">BINOMIO TÁCTICO // RADAR DIRECTOR + LANZADOR AR</div>
                     </div>
                 </div>
                 <div>
@@ -1090,56 +1090,59 @@
             </div>
 
             <div class="card-tags">
-                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">radar</span> TRANSPONDEDORES SQUAWK IFF</span>
-                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">track_changes</span> LOCK-ON ACÚSTICO</span>
-                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">rocket_launch</span> MISIL GUIADO FOX-1</span>
-                <span class="card-tag" style="color: var(--accent-green); border-color: rgba(46,204,113,0.3);"><span class="material-symbols-outlined" style="font-size:13px;">check_circle</span> SPLASH ONE CONFIRMED</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">radar</span> RADAR PPI 360°</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">rocket_launch</span> LANZADOR SACLOS FOX-1</span>
+                <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-gold);">group</span> COOPERATIVO 2 JUGADORES</span>
+                <span class="card-tag" style="color: var(--accent-green); border-color: rgba(46,204,113,0.3);"><span class="material-symbols-outlined" style="font-size:13px;">sync</span> ESPACIO AÉREO SINCRONIZADO</span>
             </div>
 
             <p class="card-desc">
-                Simulador de defensa antiaérea y puesto de tiro MANPADS. Rastrea aeronaves y drones en el cielo, verifica su código transpondedor en la tabla IFF para evitar bajas amigas/civiles, fija el blanco con la cámara y dispara misiles guiados FOX-1.
+                Simulador de defensa antiaérea cooperativo: un jugador opera la pantalla de <b>Radar Director de Tiro (360° PPI)</b> para vigilar el tráfico aéreo, clasificar transpondedores IFF y dictar la solución de tiro (azimut y elevación +45°). El segundo jugador, en el <b>Puesto Lanzador AR</b>, apunta el smartphone a dicho vector en el cielo y derriba las amenazas con misiles guiados FOX-1.
             </p>
 
             <!-- INSTRUCCIONES EN LA TARJETA -->
             <div class="card-instructions-panel" onclick="event.stopPropagation()">
                 <div class="card-instructions-header" id="card-inst-header-aaa" onclick="toggleCardInstructions('aaa')">
                     <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">
-                        <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> PROTOCOLO DE TIRO DE DEFENSA AÉREA
+                        <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> PROTOCOLO DE TIRO COOPERATIVO (DIRECTOR + TIRADOR)
                     </div>
                     <span class="card-tag" id="card-arrow-aaa" style="border-color: rgba(255,51,68,0.3); color: #ff5566;">▼ VER INSTRUCCIONES</span>
                 </div>
                 <div class="card-instructions-drawer" id="card-drawer-aaa">
                     <div class="card-inst-box" style="border-left-color: var(--accent-red); background: rgba(255,51,68,0.06);">
-                        <b style="color: var(--accent-red);">OBJETIVO:</b> Proteger el espacio aéreo del teatro de operaciones, identificar aeronaves hostiles mediante Squawk y derribarlas con misiles tierra-aire sin causar fuego amigo.
+                        <b style="color: var(--accent-red);">OBJETIVO:</b> Coordinar el binomio antiaéreo para proteger el espacio aéreo, identificando transpondedores Squawk amigos/civiles frente a hostiles, guiando al tirador con azimut y elevación precisa.
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-cyan);">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">1.</span> Rol Director (Radar): Detección y Clasificación IFF</div>
+                        <div class="card-step-desc">El operador del <b>Radar AAA</b> observa el barrido 360°, hace clic en los ecos para ver su ficha y comprueba el Squawk: Su-25 y Shahed son hostiles (fuego libre); C-130 y Reaper son aliados (alto el fuego); vuelos comerciales y Medevac están protegidos.</div>
+                    </div>
+                    <div class="card-step-item" style="border-left-color: var(--accent-cyan);">
+                        <div class="card-step-title"><span style="color: var(--accent-cyan);">2.</span> Transmisión de Vector de Intercepción</div>
+                        <div class="card-step-desc">El Director dicta por radio la orden exacta al tirador, por ejemplo: <i>«¡Tirador, vector azimut 045, elevación 44, blanco Hostil SQ-4021, fuego libre!»</i>.</div>
                     </div>
                     <div class="card-step-item" style="border-left-color: var(--accent-red);">
-                        <div class="card-step-title"><span style="color: var(--accent-red);">1.</span> Adquisición de Contacto Radar</div>
-                        <div class="card-step-desc">Apunta la cámara del móvil hacia el cielo para localizar los aparatos en vuelo. Cada aeronave mostrará su altitud, distancia, velocidad y código transpondedor (ej: SQ-4021).</div>
+                        <div class="card-step-title"><span style="color: var(--accent-red);">3.</span> Rol Tirador (Lanzador AR): Adquisición Visual en Cielo</div>
+                        <div class="card-step-desc">El tirador levanta el smartphone apuntando al cielo en el azimut y elevación indicados (+45°). En la cinta digital y en la cámara IR aparecerá la aeronave designada.</div>
                     </div>
                     <div class="card-step-item" style="border-left-color: var(--accent-red);">
-                        <div class="card-step-title"><span style="color: var(--accent-red);">2.</span> Verificación en la Tabla Intel IFF</div>
-                        <div class="card-step-desc">Pulsa <b>TABLA INTEL IFF</b> para consultar el código: Su-25 y drones Shahed son hostiles autorizados para derribo. C-130 y Reaper son aliados amigos. Vuelos comerciales y Medevac están estrictamente protegidos.</div>
-                    </div>
-                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
-                        <div class="card-step-title"><span style="color: var(--accent-red);">3.</span> Persecución y Enganche Acústico (Lock-On)</div>
-                        <div class="card-step-desc">Sigue el blanco suavemente manteniendo el rombo central centrado en el avión. El tono sonoro pasará de pitidos rápidos a un <b>tono continuo agudo</b> al alcanzar el 100% de fijación.</div>
-                    </div>
-                    <div class="card-step-item" style="border-left-color: var(--accent-red);">
-                        <div class="card-step-title"><span style="color: var(--accent-red);">4.</span> Disparo FOX-1 y Splash One</div>
-                        <div class="card-step-desc">Presiona <b>DISPARAR: FOX-1</b> para lanzar el misil. El proyectil volará con estela de humo hacia la posición interceptada provocando una detonación masiva y confirmando el derribo.</div>
+                        <div class="card-step-title"><span style="color: var(--accent-red);">4.</span> Fijación SACLOS y Splash One</div>
+                        <div class="card-step-desc">El tirador mantiene el rombo del HUD en el avión, dispara el misil guiado FOX-1 y confirma el derribo. El Radar Director verá la detonación reflejada en tiempo real en su consola.</div>
                     </div>
                 </div>
             </div>
 
             <div class="card-footer">
                 <span>ESTADO: {{ 'AUTORIZADO' if aaa_unlocked else 'ENCRIPTADO' }}</span>
-                <div class="card-footer-btns">
+                <div class="card-footer-btns" style="display: flex; gap: 6px; flex-wrap: wrap;">
                     <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('aaa')" title="Desplegar protocolo de tiro antiaéreo">
                         <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
                         INSTRUCCIONES
                     </button>
+                    <button type="button" class="btn-action" style="border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(0,240,255,0.12);" onclick="handleCardClick('simulador_aaa', {{ 'true' if aaa_unlocked else 'false' }}, '/radar_aaa')">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">radar</span> {{ 'RADAR DIRECTOR' if aaa_unlocked else 'DESBLOQUEAR' }} ➔
+                    </button>
                     <button type="button" class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.12);" onclick="handleCardClick('simulador_aaa', {{ 'true' if aaa_unlocked else 'false' }}, '/simulador_aaa')">
-                        {{ 'ACCEDER' if aaa_unlocked else 'DESBLOQUEAR' }} ➔
+                        <span class="material-symbols-outlined" style="font-size: 15px;">rocket_launch</span> {{ 'LANZADOR AR' if aaa_unlocked else 'DESBLOQUEAR' }} ➔
                     </button>
                 </div>
             </div>

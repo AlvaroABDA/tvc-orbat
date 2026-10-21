@@ -1103,7 +1103,8 @@
                             const curasDoc = m.curas_doctrina !== undefined ? m.curas_doctrina : 3;
                             const btnExtra = m.is_admin 
                                 ? `<button class="btn btn-sm" onclick="asignarAdminRapido(99)" title="Modo Test / Ilimitado" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; color: #00f0ff; border-color: #00f0ff; font-weight: 700; background: rgba(0,240,255,0.1);">99 INF</button>`
-                                : `<button class="btn btn-sm outline" onclick="recargarFullMedico('${m.sanitario_id}', ${curasDoc})" title="Recargar cupo doctrinal (${curasDoc} curas)" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; border-color: #2ecc71; color: #2ecc71; font-weight: 700; background: rgba(46,204,113,0.1);">+AUTO</button>`;
+                                : `<button class="btn btn-sm outline" onclick="recargarFullMedico('${m.sanitario_id}', ${curasDoc})" title="Recargar cupo doctrinal (${curasDoc} curas)" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; border-color: #2ecc71; color: #2ecc71; font-weight: 700; background: rgba(46,204,113,0.1);">+AUTO</button>
+                                   <button class="btn btn-sm outline" onclick="desvincularRemoto('${m.sanitario_id}', '${m.uid || ''}', '${m.nombre_medico}')" title="Desvincular terminal remotamente sin pedir PIN al jugador" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; border-color: #ff3344; color: #ff3344; font-weight: 700; background: rgba(255,51,68,0.1);">🔓 LIBERAR</button>`;
 
                             let doctrinaHtml = '';
                             if (m.is_admin) {
@@ -1213,6 +1214,24 @@
                         alert(data.message || "Recarga masiva completada.");
                         cargarAdminMedicos();
                     } catch(e) { alert("Error en la recarga masiva."); }
+                }
+
+                async function desvincularRemoto(sanitarioId, uid, nombre) {
+                    if (!confirm(`¿Confirmas la desvinculación remota del terminal de "${nombre || sanitarioId}"?\n\nEl teléfono quedará liberado automáticamente en su próxima sincronización sin pedir el PIN de Dirección al jugador.`)) return;
+                    try {
+                        const res = await fetch('/api/admin/medicos/unbind', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ sanitario_id: sanitarioId, uid: uid, nombre_medico: nombre })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            alert(`✅ ${data.message}`);
+                            cargarAdminMedicos();
+                        } else {
+                            alert(data.message || "Error al solicitar desvinculación.");
+                        }
+                    } catch(e) { alert("Error de conexión al emitir desvinculación."); }
                 }
 
                 // ==========================================
