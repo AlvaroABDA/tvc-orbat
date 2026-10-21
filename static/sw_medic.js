@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tvc-medic-v15';
+const CACHE_NAME = 'tvc-medic-v16';
 const ASSETS_TO_CACHE = [
   '/medic',
   '/medico',
@@ -19,6 +19,7 @@ const ASSETS_TO_CACHE = [
   '/static/js/field_medic/dual_vitals_game.js',
   '/static/js/field_medic/memory_sequence_game.js',
   '/static/js/field_medic/line_correction_game.js',
+  'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js',
   '/static/js/field_medic/qr_scanner.js',
   'https://fonts.googleapis.com/css2?family=Orbitron:wght@600;800&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap',
   'https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0'

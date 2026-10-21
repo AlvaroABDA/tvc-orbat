@@ -357,11 +357,179 @@
 
         /* QR */
         .qr-container {
-            background: white;
-            padding: 5px;
-            display: flex;
+            background: #ffffff;
+            padding: 8px;
+            display: inline-flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .qr-container:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 12px var(--theme-color);
+        }
+
+        .qr-container #qrcode canvas,
+        .qr-container #qrcode img {
+            display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
+
+        .qr-zoom-hint {
+            position: absolute;
+            bottom: -15px;
+            font-size: 0.48rem;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            white-space: nowrap;
+            pointer-events: none;
+            transition: color 0.2s ease;
+        }
+
+        .qr-container:hover .qr-zoom-hint {
+            color: var(--theme-color);
+        }
+
+        body.light-mode .qr-zoom-hint {
+            color: rgba(0, 0, 0, 0.55);
+        }
+
+        body.theme-mode .qr-zoom-hint {
+            color: rgba(0, 0, 0, 0.7);
+        }
+
+        /* Modal QR Ampliado */
+        .qr-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 8, 15, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+            box-sizing: border-box;
+            animation: qrFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .qr-modal-overlay.active {
+            display: flex;
+        }
+
+        @keyframes qrFadeIn {
+            from { opacity: 0; transform: scale(0.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .qr-modal-card {
+            background: #0d141e;
+            border: 2px solid var(--theme-color);
+            border-radius: 8px;
+            padding: 20px 24px;
+            max-width: 360px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 0 35px rgba(0, 210, 255, 0.35);
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .qr-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 6px;
+        }
+
+        .qr-modal-tag {
+            font-size: 0.68rem;
+            color: var(--theme-color);
+            letter-spacing: 2px;
+            font-weight: bold;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .qr-modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 26px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 4px;
+            transition: color 0.2s ease;
+        }
+
+        .qr-modal-close:hover {
+            color: #ffffff;
+        }
+
+        .qr-modal-callsign {
+            font-family: 'Teko', sans-serif;
+            font-size: 2.2rem;
+            letter-spacing: 2px;
+            color: #ffffff;
+            margin: 0;
+            line-height: 1.1;
+            text-transform: uppercase;
+        }
+
+        .qr-modal-uid {
+            font-size: 0.8rem;
+            color: var(--theme-color);
+            letter-spacing: 2px;
+            margin-bottom: 14px;
+            font-weight: bold;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .qr-modal-box {
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 8px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            margin-bottom: 12px;
+        }
+
+        .qr-modal-box #qrcode-large canvas,
+        .qr-modal-box #qrcode-large img {
+            display: block;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+            image-rendering: pixelated;
+        }
+
+        .qr-modal-footer {
+            font-size: 0.65rem;
+            color: #888;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        @media print {
+            .qr-modal-overlay { display: none !important; }
+            .qr-zoom-hint { display: none !important; }
+            .qr-container { cursor: default !important; transform: none !important; box-shadow: none !important; }
         }
 
         /* Texto inferior */
@@ -487,8 +655,9 @@
                 </div>
 
                 <!-- QR -->
-                <div class="qr-container">
+                <div class="qr-container" onclick="openQRModal()" title="Pulsar para ampliar QR en pantalla">
                     <div id="qrcode"></div>
+                    <span class="qr-zoom-hint">🔍 TOCAR PARA AMPLIAR</span>
                 </div>
             </div>
 
@@ -545,6 +714,24 @@
         <button onclick="window.print()">Imprimir Carnet</button>
     </div>
 
+    <!-- MODAL QR AMPLIADO PANTALLA COMPLETA -->
+    <div id="qr-modal-overlay" class="qr-modal-overlay" onclick="closeQRModal()">
+        <div class="qr-modal-card" onclick="event.stopPropagation()">
+            <div class="qr-modal-header">
+                <span class="qr-modal-tag">ESCÁNER MILITAR // IDENTIFICACIÓN</span>
+                <button type="button" class="qr-modal-close" onclick="closeQRModal()" aria-label="Cerrar">&times;</button>
+            </div>
+            <div class="qr-modal-callsign" id="modal-qr-callsign">JUGADOR</div>
+            <div class="qr-modal-uid" id="modal-qr-uid">UID: ---</div>
+            <div class="qr-modal-box">
+                <div id="qrcode-large"></div>
+            </div>
+            <div class="qr-modal-footer">
+                Toca en cualquier lugar o presiona ESC para cerrar
+            </div>
+        </div>
+    </div>
+
     <script>
         const playerData = {
             uid: "{{ miembro.uid if miembro and miembro.uid != 'None' else '' }}",
@@ -596,13 +783,49 @@
         const originUrl = (window.location && window.location.origin) ? window.location.origin : "https://tvc-orbat.com";
         const qrContent = originUrl + "/medic?token=" + encodeURIComponent(uid);
 
+        // QR estándar del carnet: Nivel M (menos densidad, módulos más anchos y legibles)
         new QRCode(document.getElementById("qrcode"), {
             text: qrContent,
-            width: 80,
-            height: 80,
-            colorDark : "#0a0e17",
+            width: 85,
+            height: 85,
+            colorDark : "#000000",
             colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.H
+            correctLevel : QRCode.CorrectLevel.M
+        });
+
+        // Control del Modal QR Ampliado en Pantalla
+        let largeQrGenerated = false;
+        function openQRModal() {
+            const overlay = document.getElementById('qr-modal-overlay');
+            if (!overlay) return;
+
+            const modalNick = document.getElementById('modal-qr-callsign');
+            const modalUid = document.getElementById('modal-qr-uid');
+            if (modalNick) modalNick.textContent = playerData.nickname || 'OPERADOR';
+            if (modalUid) modalUid.textContent = 'UID: ' + (playerData.uid || 'S/N');
+
+            if (!largeQrGenerated) {
+                new QRCode(document.getElementById("qrcode-large"), {
+                    text: qrContent,
+                    width: 250,
+                    height: 250,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.M
+                });
+                largeQrGenerated = true;
+            }
+
+            overlay.classList.add('active');
+        }
+
+        function closeQRModal() {
+            const overlay = document.getElementById('qr-modal-overlay');
+            if (overlay) overlay.classList.remove('active');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeQRModal();
         });
         
         // Toggle Theme

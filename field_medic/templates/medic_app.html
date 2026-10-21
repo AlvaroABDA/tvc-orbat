@@ -1232,7 +1232,8 @@
     <script src="{{ url_for('static', filename='js/field_medic/dual_vitals_game.js') }}?v=13"></script>
     <script src="{{ url_for('static', filename='js/field_medic/memory_sequence_game.js') }}?v=13"></script>
     <script src="{{ url_for('static', filename='js/field_medic/line_correction_game.js') }}?v=13"></script>
-    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=13"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script src="{{ url_for('static', filename='js/field_medic/qr_scanner.js') }}?v=14"></script>
 
     <script>
         const sanitarioId = "{{ sanitario_id }}";
