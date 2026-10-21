@@ -36,7 +36,7 @@
             font-family: var(--font-tactical);
         }
 
-        /* Video de Cámara Real */
+        /* Stream de Cámara Real */
         #camera-video {
             position: absolute;
             top: 0;
@@ -67,6 +67,38 @@
             opacity: 0.6;
         }
 
+        /* Máscara de Prismáticos Militares con viñeteado óptico (como telemetro_recon) */
+        .binocular-mask {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 50%, transparent 48%, rgba(2, 6, 10, 0.45) 60%, rgba(2, 5, 8, 0.94) 78%, #000 95%);
+            box-shadow: inset 0 0 120px rgba(0,0,0,0.95);
+        }
+
+        /* Efecto scanline CRT militar táctico sutil */
+        .hud-scanlines {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 3;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(0, 240, 255, 0.02), rgba(0, 0, 0, 0.01), rgba(0, 240, 255, 0.02));
+            background-size: 100% 3px, 6px 100%;
+            opacity: 0.65;
+        }
+
+        .sam-vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 4;
+            pointer-events: none;
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(0, 240, 255, 0.12);
+        }
+
         /* Canvas de Capa de Fuego y Proyectiles */
         #missile-canvas {
             position: absolute;
@@ -78,7 +110,7 @@
             pointer-events: none;
         }
 
-        /* Canvas de Retícula HUD y Telemetría */
+        /* Canvas de Retícula HUD */
         #hud-canvas {
             position: absolute;
             top: 0;
@@ -100,19 +132,7 @@
             pointer-events: none;
         }
 
-        /* Viñeta de Óptica Antiaérea */
-        .sam-vignette {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 4;
-            pointer-events: none;
-            box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.9), inset 0 0 40px rgba(0, 240, 255, 0.15);
-        }
-
-        /* Barra Superior HUD */
+        /* ==================== BARRA SUPERIOR HUD ESTILO PRISMÁTICOS ==================== */
         .top-hud-bar {
             position: absolute;
             top: 0;
@@ -120,11 +140,20 @@
             width: 100%;
             z-index: 25;
             display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 8px 12px;
+            background: linear-gradient(180deg, rgba(3, 7, 13, 0.95) 0%, rgba(3, 7, 13, 0.7) 75%, transparent 100%);
+            border-bottom: 1px solid var(--sam-dim);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .top-hud-controls {
+            display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 8px 12px;
-            background: linear-gradient(180deg, rgba(3, 7, 13, 0.95) 0%, rgba(3, 7, 13, 0.5) 70%, transparent 100%);
-            border-bottom: 1px solid var(--sam-dim);
+            width: 100%;
         }
 
         .hud-btn {
@@ -156,13 +185,145 @@
             background: rgba(255, 215, 0, 0.12);
         }
 
-        .hud-btn-red {
-            border-color: var(--sam-red);
-            color: var(--sam-red);
-            background: rgba(255, 51, 68, 0.15);
+        .hud-btn-cyan {
+            border-color: var(--sam-cyan);
+            color: var(--sam-cyan);
+            background: rgba(0, 240, 255, 0.15);
         }
 
-        /* Indicador Central de Seeker y Lock-On */
+        .hud-btn-fullscreen {
+            border-color: var(--sam-cyan);
+            color: #fff;
+            background: rgba(0, 240, 255, 0.2);
+            font-weight: bold;
+        }
+
+        /* Cinta de Rumbo Digital (Compass Tape de Prismáticos) */
+        .compass-tape-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .compass-telemetry-badge {
+            font-size: 0.75rem;
+            color: #ffffff;
+            letter-spacing: 1.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+        }
+
+        .telemetry-sep {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        .compass-tape-container {
+            width: 100%;
+            height: 22px;
+            position: relative;
+            overflow: hidden;
+            border-top: 1px solid rgba(0, 240, 255, 0.3);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+            background: rgba(0, 0, 0, 0.55);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 2px;
+        }
+
+        .compass-tape-center-mark {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 6px solid #ffcc00;
+            top: 0;
+            z-index: 2;
+        }
+
+        .compass-tape-track {
+            display: flex;
+            align-items: center;
+            position: absolute;
+            white-space: nowrap;
+            transition: transform 0.08s linear;
+            font-family: var(--font-tactical);
+            font-size: 0.72rem;
+            color: rgba(0, 240, 255, 0.85);
+            letter-spacing: 2px;
+        }
+
+        /* Escala Lateral de Clinómetro / Elevación */
+        .hud-side-elevation {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 20;
+            font-family: var(--font-tactical);
+            font-size: 0.72rem;
+            color: rgba(0, 240, 255, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            background: rgba(6, 12, 18, 0.75);
+            padding: 10px 8px;
+            border-left: 2px solid var(--sam-cyan);
+            border-radius: 4px;
+            backdrop-filter: blur(6px);
+            pointer-events: none;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .elev-label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            letter-spacing: 1px;
+        }
+
+        .elev-value {
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--sam-gold);
+        }
+
+        .elev-bar-track {
+            width: 6px;
+            height: 90px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+            margin: 4px 0;
+        }
+
+        .elev-bar-indicator {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--sam-cyan);
+            box-shadow: 0 0 8px var(--sam-cyan);
+            border-radius: 2px;
+            transition: bottom 0.1s ease-out;
+        }
+
+        .elev-horizon {
+            font-size: 0.55rem;
+            color: #64748b;
+            letter-spacing: 0.5px;
+        }
+
+        /* ==================== RETÍCULA SACLOS // CÍRCULO DE GUIADO ÓPTICO ==================== */
         .seeker-reticle {
             position: absolute;
             top: 50%;
@@ -177,17 +338,18 @@
         }
 
         .seeker-outer-ring {
-            width: 110px;
-            height: 110px;
+            width: 160px;
+            height: 160px;
             border: 2px dashed var(--sam-dim);
             border-radius: 50%;
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: border-color 0.15s, transform 0.1s;
+            transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s;
         }
 
+        /* Estado: Apuntando blanco previo al disparo */
         .seeker-outer-ring.tracking {
             border-color: var(--sam-gold);
             border-style: solid;
@@ -195,47 +357,111 @@
         }
 
         .seeker-outer-ring.locked {
-            border-color: var(--sam-red);
-            border-width: 3px;
+            border-color: var(--sam-cyan);
+            border-width: 2.5px;
             border-style: solid;
-            box-shadow: 0 0 25px rgba(255, 51, 68, 0.8);
-            transform: scale(0.95);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.6);
+            transform: scale(0.97);
+        }
+
+        /* Estado SACLOS: Misil en vuelo con el blanco DENTRO del círculo */
+        .seeker-outer-ring.guiding {
+            border-color: var(--sam-green) !important;
+            border-width: 3px !important;
+            border-style: solid !important;
+            box-shadow: 0 0 30px rgba(46, 204, 113, 0.85), inset 0 0 25px rgba(46, 204, 113, 0.25) !important;
+            animation: ring-pulse-green 0.7s infinite alternate !important;
+        }
+
+        /* Estado SACLOS: Misil en vuelo con el blanco FUERA del círculo (pérdida de haz) */
+        .seeker-outer-ring.beam-lost {
+            border-color: var(--sam-red) !important;
+            border-width: 3px !important;
+            border-style: dashed !important;
+            box-shadow: 0 0 35px rgba(255, 51, 68, 0.9), inset 0 0 30px rgba(255, 51, 68, 0.3) !important;
+            animation: ring-blink-red 0.22s infinite !important;
         }
 
         @keyframes ring-pulse {
             from { transform: scale(1); }
-            to { transform: scale(1.06); }
+            to { transform: scale(1.05); }
+        }
+
+        @keyframes ring-pulse-green {
+            from { transform: scale(1); }
+            to { transform: scale(1.03); }
+        }
+
+        @keyframes ring-blink-red {
+            0%, 100% { opacity: 1; transform: scale(1.02); }
+            50% { opacity: 0.3; transform: scale(0.98); }
         }
 
         .seeker-inner-diamond {
-            width: 24px;
-            height: 24px;
+            width: 22px;
+            height: 22px;
             border: 2px solid var(--sam-cyan);
             transform: rotate(45deg);
             position: absolute;
             transition: border-color 0.15s;
         }
 
-        .seeker-outer-ring.locked .seeker-inner-diamond {
+        .seeker-outer-ring.guiding .seeker-inner-diamond {
+            border-color: var(--sam-green);
+            background: rgba(46, 204, 113, 0.25);
+        }
+
+        .seeker-outer-ring.beam-lost .seeker-inner-diamond {
             border-color: var(--sam-red);
-            background: rgba(255, 51, 68, 0.25);
+            background: rgba(255, 51, 68, 0.3);
+        }
+
+        /* Cruces de alineación de mira */
+        .guidance-cross-h {
+            position: absolute;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(0, 240, 255, 0.3) 25%, transparent 45%, transparent 55%, rgba(0, 240, 255, 0.3) 75%, transparent 100%);
+        }
+
+        .guidance-cross-v {
+            position: absolute;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 240, 255, 0.3) 25%, transparent 45%, transparent 55%, rgba(0, 240, 255, 0.3) 75%, transparent 100%);
         }
 
         .seeker-status-text {
             position: absolute;
-            bottom: -32px;
+            bottom: -36px;
             font-family: var(--font-heading);
-            font-size: 0.75rem;
+            font-size: 0.74rem;
             letter-spacing: 1.5px;
             font-weight: 800;
             color: var(--sam-cyan);
             white-space: nowrap;
-            text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+            text-shadow: 0 0 8px rgba(0, 0, 0, 0.85);
+            background: rgba(3, 7, 13, 0.7);
+            padding: 2px 8px;
+            border-radius: 3px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
         }
 
         .seeker-status-text.locked {
-            color: var(--sam-red);
-            animation: blink 0.3s infinite;
+            color: var(--sam-cyan);
+        }
+
+        .seeker-status-text.guiding {
+            color: var(--sam-green) !important;
+            border-color: var(--sam-green) !important;
+            text-shadow: 0 0 10px rgba(46, 204, 113, 0.8);
+        }
+
+        .seeker-status-text.beam-lost {
+            color: var(--sam-red) !important;
+            border-color: var(--sam-red) !important;
+            animation: blink 0.22s infinite;
+            text-shadow: 0 0 10px rgba(255, 51, 68, 0.9);
         }
 
         @keyframes blink {
@@ -245,8 +471,8 @@
         /* Barra de Progreso de Fijación (Lock Meter) */
         .lock-meter-container {
             position: absolute;
-            top: -18px;
-            width: 90px;
+            top: -20px;
+            width: 100px;
             height: 5px;
             background: rgba(0, 0, 0, 0.6);
             border: 1px solid var(--sam-dim);
@@ -262,7 +488,7 @@
         }
 
         .lock-meter-fill.locked {
-            background: var(--sam-red);
+            background: var(--sam-green);
         }
 
         /* Tarjeta de Contacto Aéreo en Vuelo */
@@ -283,7 +509,7 @@
             border: 1px solid var(--sam-cyan);
             padding: 4px 8px;
             border-radius: 3px;
-            min-width: 110px;
+            min-width: 115px;
             box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
             display: flex;
             flex-direction: column;
@@ -297,9 +523,9 @@
         }
 
         .air-contact-box.locked {
-            border-color: var(--sam-red);
-            box-shadow: 0 0 20px rgba(255, 51, 68, 0.8);
-            background: rgba(255, 51, 68, 0.15);
+            border-color: var(--sam-green);
+            box-shadow: 0 0 20px rgba(46, 204, 113, 0.8);
+            background: rgba(46, 204, 113, 0.12);
         }
 
         .air-squawk-header {
@@ -545,6 +771,9 @@
         <!-- Puntos estelares generados por JS -->
     </div>
 
+    <!-- Máscara de Prismáticos Militares y Scanlines Tácticas -->
+    <div class="binocular-mask"></div>
+    <div class="hud-scanlines"></div>
     <div class="sam-vignette"></div>
 
     <!-- Canvas de Misiles y Efectos Balísticos -->
@@ -556,12 +785,24 @@
     <!-- Capa de Contactos Aéreos -->
     <div id="contacts-layer"></div>
 
-    <!-- Retícula Central del Seeker Óptico -->
+    <!-- Escala Lateral de Clinómetro / Elevación (Prismáticos) -->
+    <div class="hud-side-elevation">
+        <div class="elev-label">ELEV</div>
+        <div class="elev-value" id="hud-elev-display">+45°</div>
+        <div class="elev-bar-track">
+            <div class="elev-bar-indicator" id="elev-bar-indicator" style="bottom: 50%;"></div>
+        </div>
+        <div class="elev-horizon">CIELO</div>
+    </div>
+
+    <!-- Retícula Central SACLOS / Círculo de Guiado Óptico -->
     <div class="seeker-reticle">
         <div class="lock-meter-container">
             <div class="lock-meter-fill" id="lock-meter-fill"></div>
         </div>
         <div class="seeker-outer-ring" id="seeker-outer-ring">
+            <div class="guidance-cross-h"></div>
+            <div class="guidance-cross-v"></div>
             <div class="seeker-inner-diamond"></div>
         </div>
         <div class="seeker-status-text" id="seeker-status-text">BÚSQUEDA AUTÓNOMA</div>
@@ -578,21 +819,43 @@
         🕹️ MODO VIRTUAL ACTIVO: ARRASTRA PARA SEGUIR EL BLANCO EN EL CIELO
     </div>
 
-    <!-- Barra Superior -->
+    <!-- Barra Superior Táctica con Cinta de Rumbo Digital y Pantalla Completa -->
     <header class="top-hud-bar">
-        <div style="display: flex; align-items: center; gap: 6px;">
-            <button type="button" class="hud-btn" onclick="exitAndReturn('/simulacion')" title="Volver al menú de simulación">
-                <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span> MENÚ
-            </button>
-            <button type="button" class="hud-btn hud-btn-gold" onclick="toggleIffModal()" title="Abrir tabla de transpondedores IFF">
-                <span class="material-symbols-outlined" style="font-size: 15px;">menu_book</span> TABLA INTEL IFF
-            </button>
+        <div class="top-hud-controls">
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <button type="button" class="hud-btn" onclick="exitAndReturn('/simulacion')" title="Volver al menú de simulación">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span> MENÚ
+                </button>
+                <button type="button" class="hud-btn hud-btn-gold" onclick="toggleIffModal()" title="Abrir tabla de transpondedores IFF">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">menu_book</span> TABLA INTEL IFF
+                </button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <button type="button" class="hud-btn" id="btn-camera-toggle" onclick="toggleCameraDevice()">
+                    📷 CÁMARA
+                </button>
+                <button type="button" class="hud-btn hud-btn-fullscreen" id="btn-fullscreen-toggle" onclick="toggleFullscreen()" title="Alternar pantalla completa">
+                    <span class="material-symbols-outlined" style="font-size: 15px;" id="fs-icon">fullscreen</span> <span id="fs-text">PANTALLA COMPLETA</span>
+                </button>
+            </div>
         </div>
 
-        <div style="display: flex; align-items: center; gap: 6px;">
-            <button type="button" class="hud-btn" id="btn-camera-toggle" onclick="toggleCameraDevice()">
-                📷 CÁMARA
-            </button>
+        <!-- Cinta de Rumbo Digital (Azimuts) con marcador central y telemetría en tiempo real -->
+        <div class="compass-tape-wrap">
+            <div class="compass-telemetry-badge">
+                <span id="telemetry-az">AZ: 000°</span>
+                <span class="telemetry-sep">|</span>
+                <span id="telemetry-el">ELEV: +45°</span>
+                <span class="telemetry-sep">|</span>
+                <span id="telemetry-mode" style="color: var(--sam-cyan);">SISTEMA SACLOS</span>
+            </div>
+            <div class="compass-tape-container">
+                <div class="compass-tape-center-mark"></div>
+                <div class="compass-tape-track" id="compass-tape-track">
+                    N · · · 030 · · · 060 · · · E · · · 120 · · · 150 · · · S · · · 210 · · · 240 · · · W · · · 300 · · · 330 · · · N · · · 030 · · · 060 · · · E
+                </div>
+            </div>
         </div>
     </header>
 
@@ -632,7 +895,7 @@
                 <div class="iff-card hostile">
                     <div>
                         <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-4021 • Su-25 "Frogfoot"</div>
-                        <div style="color: #cbd5e1; font-size: 0.70rem;">Reactor de ataque a tierra • 750 km/h • 1,400m altitud</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Reactor de ataque a tierra • 500 km/h • 2,200m altitud</div>
                     </div>
                     <span class="iff-badge badge-hostile">HOSTIL • FUEGO</span>
                 </div>
@@ -640,7 +903,7 @@
                 <div class="iff-card hostile">
                     <div>
                         <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-6612 • Shahed-136</div>
-                        <div style="color: #cbd5e1; font-size: 0.70rem;">Drone kamikaze merodeador • 185 km/h • 600m altitud</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Drone kamikaze merodeador • 185 km/h • 1,400m altitud</div>
                     </div>
                     <span class="iff-badge badge-hostile">HOSTIL • ALTA PRIORIDAD</span>
                 </div>
@@ -648,7 +911,7 @@
                 <div class="iff-card hostile">
                     <div>
                         <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-8830 • Mi-24 "Hind"</div>
-                        <div style="color: #cbd5e1; font-size: 0.70rem;">Helicóptero de asalto y apoyo aéreo • 260 km/h • 400m altitud</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Helicóptero de asalto y apoyo aéreo • 220 km/h • 1,200m altitud</div>
                     </div>
                     <span class="iff-badge badge-hostile">HOSTIL • FUEGO</span>
                 </div>
@@ -657,7 +920,7 @@
                 <div class="iff-card friendly">
                     <div>
                         <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-1104 • MQ-9 Reaper Aliado</div>
-                        <div style="color: #cbd5e1; font-size: 0.70rem;">UCAV enlace de reconocimiento amigo • 280 km/h • 2,800m altitud</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">UCAV enlace de reconocimiento amigo • 250 km/h • 2,800m altitud</div>
                     </div>
                     <span class="iff-badge badge-friendly">ALIADO • ALTO EL FUEGO</span>
                 </div>
@@ -665,7 +928,7 @@
                 <div class="iff-card friendly">
                     <div>
                         <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-2240 • C-130 Hercules</div>
-                        <div style="color: #cbd5e1; font-size: 0.70rem;">Transporte logístico amigo • 520 km/h • 2,400m altitud</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Transporte logístico amigo • 420 km/h • 2,600m altitud</div>
                     </div>
                     <span class="iff-badge badge-friendly">ALIADO • PROHIBIDO DISPARAR</span>
                 </div>
@@ -674,7 +937,7 @@
                 <div class="iff-card civilian">
                     <div>
                         <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-7000 • Airbus A320 Comercial</div>
-                        <div style="color: #cbd5e1; font-size: 0.70rem;">Vuelo de línea civil en corredor internacional • 840 km/h • 3,200m</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Vuelo de línea civil en corredor internacional • 650 km/h • 3,500m</div>
                     </div>
                     <span class="iff-badge badge-civilian">CIVIL • CORTE MARCIAL</span>
                 </div>
@@ -682,7 +945,7 @@
                 <div class="iff-card civilian">
                     <div>
                         <div style="font-weight: bold; color: #fff; font-family: var(--font-heading);">SQ-7700 • Bell 412 Medevac</div>
-                        <div style="color: #cbd5e1; font-size: 0.70rem;">Evacuación médica sanitaria urgente • 220 km/h • 450m altitud</div>
+                        <div style="color: #cbd5e1; font-size: 0.70rem;">Evacuación médica sanitaria urgente • 210 km/h • 1,500m altitud</div>
                     </div>
                     <span class="iff-badge badge-civilian">SANITARIO • PROTEGIDO</span>
                 </div>
@@ -704,12 +967,12 @@
 
         // ==================== ESTADO DEL SIMULADOR ====================
         let currentHeading = 0;       // 0° a 360°
-        let currentPitch = 25;        // Elevación inicial mirando hacia arriba
+        let currentPitch = 45;        // Elevación inicial mirando hacia arriba al cielo (+45°)
         let headingOffset = 0;
         let isVirtualControl = false;
         let isDragging = false;
         let dragStartX = 0, dragStartY = 0;
-        let dragStartHeading = 0, dragStartPitch = 0;
+        let dragStartHeading = 0, dragStartPitch = 45;
 
         let cameraStream = null;
         let scoreKills = 0;
@@ -721,6 +984,9 @@
         let trackingTarget = null;
         let lockProgress = 0.0;       // 0.0 a 1.0 (100%)
         let isSolidLock = false;
+
+        // Radio en píxeles del círculo de guiado óptico SACLOS del HUD
+        const GUIDANCE_RADIUS = 80;
 
         // Proyectiles y Explosiones
         let activeMissiles = [];
@@ -750,10 +1016,44 @@
             window.location.href = targetUrl;
         }
 
+        // ==================== PANTALLA COMPLETA ====================
+        function toggleFullscreen() {
+            const icon = document.getElementById('fs-icon');
+            const txt = document.getElementById('fs-text');
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().then(() => {
+                    if (icon) icon.textContent = 'fullscreen_exit';
+                    if (txt) txt.textContent = 'SALIR';
+                }).catch(err => {
+                    console.warn("Fullscreen request error:", err);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen().then(() => {
+                        if (icon) icon.textContent = 'fullscreen';
+                        if (txt) txt.textContent = 'PANTALLA COMPLETA';
+                    });
+                }
+            }
+        }
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fs-icon');
+            const txt = document.getElementById('fs-text');
+            if (document.fullscreenElement) {
+                if (icon) icon.textContent = 'fullscreen_exit';
+                if (txt) txt.textContent = 'SALIR';
+            } else {
+                if (icon) icon.textContent = 'fullscreen';
+                if (txt) txt.textContent = 'PANTALLA COMPLETA';
+            }
+        });
+
         function initStarSky() {
             const dome = document.getElementById('simulated-sky-dome');
             if (!dome) return;
-            for (let i = 0; i < 60; i++) {
+            dome.innerHTML = '';
+            for (let i = 0; i < 75; i++) {
                 const star = document.createElement('div');
                 star.className = 'star-point';
                 star.style.width = `${Math.random() * 2 + 1}px`;
@@ -777,11 +1077,12 @@
 
         function spawnBogey(squawkCode, initialAzimuth = null) {
             const az = initialAzimuth !== null ? initialAzimuth : Math.random() * 360;
-            const el = 15 + Math.random() * 45; // Elevación entre 15° y 60°
-            const dist = 1200 + Math.random() * 1800; // Distancia entre 1200m y 3000m
-            const alt = 600 + Math.random() * 2000;
-            const speed = 180 + Math.random() * 450; // km/h
-            const headingFlight = (az + 90 + (Math.random() * 60 - 30)) % 360; // Vuelo transversal
+            // Elevación antiaérea alta realista: entre 38° y 54° (centrado en ~45°)
+            const el = 38 + Math.random() * 16;
+            const dist = 1600 + Math.random() * 1600; // Distancia entre 1600m y 3200m
+            const alt = 1400 + Math.random() * 1800; // Altitud de crucero
+            const speed = 180 + Math.random() * 240; // Velocidad moderada para permitir lectura y rastreo
+            const headingFlight = (az + 90 + (Math.random() * 40 - 20)) % 360;
             const intel = INTEL_DB[squawkCode] || { name: 'Desconocido', type: 'HOSTILE', pts: 100 };
 
             airContacts.push({
@@ -803,13 +1104,13 @@
         function updateContactsPhysics(dt) {
             airContacts.forEach(c => {
                 if (c.destroyed) return;
-                // Movimiento angular aparente en la cúpula del cielo
-                const speedDegPerSec = (c.speed / (c.distance * 0.05)) * dt;
+                // Velocidad angular aparente mucho más pausada y rastreable (~1.2° - 1.8°/s, dura 35-50s en pantalla)
+                const speedDegPerSec = (c.speed / (c.distance * 0.16)) * dt;
                 c.azimuth = (c.azimuth + speedDegPerSec + 360) % 360;
-                // Ligera oscilación de altitud
-                c.elevation += Math.sin(Date.now() * 0.001 + c.azimuth) * 0.02;
-                if (c.elevation < 10) c.elevation = 10;
-                if (c.elevation > 75) c.elevation = 75;
+                // Suave oscilación de altitud manteniéndose siempre en el cielo (+32° a +65°, nunca en el suelo)
+                c.elevation += Math.sin(Date.now() * 0.0006 + c.azimuth) * 0.015;
+                if (c.elevation < 32) c.elevation = 32;
+                if (c.elevation > 65) c.elevation = 65;
             });
         }
 
@@ -834,8 +1135,10 @@
             }
 
             if (e.beta !== null && !isNaN(e.beta)) {
-                currentPitch = Math.round(e.beta - 90);
-                if (currentPitch < -10) currentPitch = -10;
+                // Calibración para postura antiaérea natural:
+                // Sosteniendo el teléfono mirando al cielo, la elevación se centra en torno a +45°
+                currentPitch = Math.round(e.beta - 45);
+                if (currentPitch < 15) currentPitch = 15; // Bloqueo para no apuntar al suelo
                 if (currentPitch > 85) currentPitch = 85;
             }
         }
@@ -860,7 +1163,7 @@
 
                 const sensitivity = FOV_H / window.innerWidth;
                 currentHeading = (dragStartHeading - deltaX * sensitivity + 360) % 360;
-                currentPitch = Math.max(-10, Math.min(85, dragStartPitch + deltaY * sensitivity));
+                currentPitch = Math.max(15, Math.min(85, dragStartPitch + deltaY * sensitivity));
             };
 
             const onPointerUp = () => { isDragging = false; };
@@ -915,15 +1218,45 @@
             }
         }
 
+        // ==================== CINTA DE RUMBO DIGITAL Y CLINÓMETRO ====================
+        function updateCompassTape() {
+            const tapeTrack = document.getElementById('compass-tape-track');
+            if (tapeTrack) {
+                const normHeading = (currentHeading % 360 + 360) % 360;
+                // Cada grado son aproximadamente 3.5 píxeles de desplazamiento
+                const pxPerDegree = 3.5;
+                const offset = -(normHeading * pxPerDegree);
+                tapeTrack.style.transform = `translateX(${offset}px)`;
+            }
+
+            const azEl = document.getElementById('telemetry-az');
+            if (azEl) azEl.textContent = `AZ: ${String(Math.round(currentHeading)).padStart(3, '0')}°`;
+
+            const elevEl = document.getElementById('telemetry-el');
+            if (elevEl) elevEl.textContent = `ELEV: ${currentPitch >= 0 ? '+' : ''}${Math.round(currentPitch)}°`;
+
+            const sideElevDisplay = document.getElementById('hud-elev-display');
+            if (sideElevDisplay) sideElevDisplay.textContent = `${currentPitch >= 0 ? '+' : ''}${Math.round(currentPitch)}°`;
+
+            const sideBarIndicator = document.getElementById('elev-bar-indicator');
+            if (sideBarIndicator) {
+                // Mapear de 15° a 85° a porcentaje (0% a 100%)
+                const pct = Math.max(0, Math.min(100, ((currentPitch - 15) / 70) * 100));
+                sideBarIndicator.style.bottom = `${pct}%`;
+            }
+        }
+
         // ==================== LOOP PRINCIPAL DE SIMULACIÓN ====================
         let lastFrameTime = performance.now();
         let lastBeepTime = 0;
+        let lastLostAlertTime = 0;
 
         function simLoop(now) {
             const dt = (now - lastFrameTime) / 1000;
             lastFrameTime = now;
 
             updateContactsPhysics(dt);
+            updateCompassTape();
             renderContactsAndSeeker(now);
             updateMissilesPhysics(dt);
             renderMissilesAndExplosions();
@@ -931,7 +1264,7 @@
             requestAnimationFrame(simLoop);
         }
 
-        // ==================== RENDERIZADO DE CONTACTOS Y LOCK-ON ====================
+        // ==================== RENDERIZADO DE CONTACTOS Y LOCK-ON PREVIO ====================
         function renderContactsAndSeeker(now) {
             const layer = document.getElementById('contacts-layer');
             if (!layer) return;
@@ -988,44 +1321,44 @@
                                 <span>AZ: ${String(Math.round(contact.azimuth)).padStart(3,'0')}°</span>
                             </div>
                         </div>
-                        <div class="air-icon-pip" style="border-color:${isLocked ? '#ff3344' : (isTracked ? '#ffd700' : '#00f0ff')}"></div>
+                        <div class="air-icon-pip" style="border-color:${isLocked ? '#2ecc71' : (isTracked ? '#ffd700' : '#00f0ff')}"></div>
                     `;
                     layer.appendChild(el);
                 }
             });
 
-            // Lógica de enganche (Seeker Lock-On)
+            // Si hay misiles en vuelo, el estado del seeker lo gestiona updateMissilesPhysics
+            if (activeMissiles.length > 0) return;
+
+            // Lógica de enganche previo al disparo (Seeker Lock-On)
             const seekerRing = document.getElementById('seeker-outer-ring');
             const statusText = document.getElementById('seeker-status-text');
             const lockFill = document.getElementById('lock-meter-fill');
 
-            // Tolerancia angular para centrar el blanco (4.5 grados)
-            if (bestTarget && bestAngularDist < 4.8) {
+            // Tolerancia angular para centrar el blanco previo (5.2 grados)
+            if (bestTarget && bestAngularDist < 5.2) {
                 trackingTarget = bestTarget;
-                // Incrementar progreso de fijación
-                lockProgress = Math.min(1.0, lockProgress + 0.022);
+                lockProgress = Math.min(1.0, lockProgress + 0.024);
 
                 if (lockProgress >= 1.0) {
                     isSolidLock = true;
                     lockedTarget = bestTarget;
                     seekerRing.className = 'seeker-outer-ring locked';
                     statusText.className = 'seeker-status-text locked';
-                    statusText.textContent = `★ LOCK-ON CONFIRMADO: ${bestTarget.squawk} ★`;
+                    statusText.textContent = `★ ENGANCHE SACLOS: ${bestTarget.squawk} ★`;
                     lockFill.className = 'lock-meter-fill locked';
                     lockFill.style.width = '100%';
 
-                    // Tono continuo agudo de fijación
                     playSolidLockTone();
                 } else {
                     isSolidLock = false;
                     lockedTarget = null;
                     seekerRing.className = 'seeker-outer-ring tracking';
                     statusText.className = 'seeker-status-text';
-                    statusText.textContent = `ENGANCHANDO: ${Math.round(lockProgress * 100)}%`;
+                    statusText.textContent = `ADQUIRIENDO HAZ: ${Math.round(lockProgress * 100)}%`;
                     lockFill.className = 'lock-meter-fill';
                     lockFill.style.width = `${Math.round(lockProgress * 100)}%`;
 
-                    // Pitidos modulados en frecuencia creciente
                     const beepInterval = 320 - (lockProgress * 230);
                     if (now - lastBeepTime > beepInterval) {
                         lastBeepTime = now;
@@ -1033,7 +1366,6 @@
                     }
                 }
             } else {
-                // Pérdida de objetivo
                 lockProgress = Math.max(0.0, lockProgress - 0.035);
                 trackingTarget = null;
                 lockedTarget = null;
@@ -1049,7 +1381,7 @@
             }
         }
 
-        // ==================== DISPARO Y BALÍSTICA FOX-1 ====================
+        // ==================== DISPARO Y GUIADO SACLOS (BEAM-RIDING) ====================
         function launchMissile() {
             if (missilesAvailable <= 0) {
                 playTacticalBeep(300, 0.15, 'sawtooth');
@@ -1062,23 +1394,31 @@
 
             const w = window.innerWidth;
             const h = window.innerHeight;
+            const cx = w / 2;
+            const cy = h / 2;
 
-            // Iniciar entidad misil desde la parte inferior central de la pantalla
+            // Seleccionar el objetivo actualmente enganchado o el primer contacto disponible
+            const target = lockedTarget || trackingTarget || (airContacts.find(c => !c.destroyed) || null);
+
             const missile = {
                 id: 'M_' + Date.now(),
-                startX: w / 2,
+                startX: cx,
                 startY: h - 30,
-                x: w / 2,
+                x: cx,
                 y: h - 30,
-                target: lockedTarget || trackingTarget || (airContacts.find(c => !c.destroyed) || null),
+                target: target,
                 flightTime: 0,
-                totalDuration: 2.8, // 2.8 segundos de vuelo a velocidad supersónica
+                totalDuration: 3.8, // 3.8 segundos para un rastreo tensado y emocionante
+                isGuided: true,
+                lastGuidedX: cx,
+                lastGuidedY: cy - 60,
                 smokeTrail: []
             };
 
             activeMissiles.push(missile);
 
-            // Audio de lanzamiento del cohete
+            // Detener el tono de enganche previo e iniciar sonido de lanzamiento
+            stopSolidLockTone();
             playRocketLaunchSound();
 
             if (missilesAvailable === 0) {
@@ -1092,6 +1432,9 @@
             const cx = w / 2;
             const cy = h / 2;
 
+            let anyMissileGuided = false;
+            let anyMissileLost = false;
+
             for (let i = activeMissiles.length - 1; i >= 0; i--) {
                 const m = activeMissiles[i];
                 m.flightTime += dt;
@@ -1100,33 +1443,85 @@
                 // Añadir partícula de humo
                 m.smokeTrail.push({ x: m.x, y: m.y, life: 1.0 });
 
-                let destX = cx;
-                let destY = cy - 80;
+                let targetScreenX = cx;
+                let targetScreenY = cy - 80;
+                let targetInFOV = false;
 
                 if (m.target && !m.target.destroyed) {
                     let deltaAz = ((m.target.azimuth - currentHeading + 540) % 360) - 180;
                     let deltaEl = m.target.elevation - currentPitch;
-                    destX = cx + (deltaAz / (FOV_H / 2)) * (w / 2);
-                    destY = cy - (deltaEl / (FOV_V / 2)) * (h / 2);
+                    targetScreenX = cx + (deltaAz / (FOV_H / 2)) * (w / 2);
+                    targetScreenY = cy - (deltaEl / (FOV_V / 2)) * (h / 2);
+                    targetInFOV = Math.abs(deltaAz) <= (FOV_H / 2) && Math.abs(deltaEl) <= (FOV_V / 2);
                 }
 
-                // Interpolación curva hacia el blanco con guiado
+                // ==================== REGLA SACLOS: BLANCO DENTRO DEL CÍRCULO ====================
+                const distToCenter = Math.hypot(targetScreenX - cx, targetScreenY - cy);
+                const insideGuidanceCircle = targetInFOV && (distToCenter <= GUIDANCE_RADIUS);
+
+                m.isGuided = insideGuidanceCircle;
+
+                if (insideGuidanceCircle) {
+                    anyMissileGuided = true;
+                    m.lastGuidedX = targetScreenX;
+                    m.lastGuidedY = targetScreenY;
+                } else {
+                    anyMissileLost = true;
+                }
+
+                // Interpolación de vuelo hacia el punto apuntado
                 const t = Math.min(1.0, progress);
-                m.x = m.startX + (destX - m.startX) * (t * t);
-                m.y = m.startY + (destY - m.startY) * (t);
+                let aimX = insideGuidanceCircle ? targetScreenX : m.lastGuidedX;
+                let aimY = insideGuidanceCircle ? targetScreenY : m.lastGuidedY;
+
+                // Si se perdió el guiado, el misil deriva erráticamente
+                if (!insideGuidanceCircle) {
+                    aimX += Math.sin(m.flightTime * 4.5) * 45;
+                    aimY += Math.cos(m.flightTime * 3.5) * 45;
+                }
+
+                m.x = m.startX + (aimX - m.startX) * (t * t);
+                m.y = m.startY + (aimY - m.startY) * t;
 
                 // Disipación de humo
                 m.smokeTrail.forEach(p => p.life -= dt * 1.5);
                 m.smokeTrail = m.smokeTrail.filter(p => p.life > 0);
 
-                // Impacto o final de trayectoria
+                // Fin de vuelo o detonación
                 if (progress >= 1.0) {
                     activeMissiles.splice(i, 1);
                     if (m.target && !m.target.destroyed) {
-                        detonateTarget(m.target, destX, destY);
+                        const finalDistToTarget = Math.hypot(m.x - targetScreenX, m.y - targetScreenY);
+                        // El impacto es letal si el blanco estuvo dentro del círculo o en proximidad (< 65px)
+                        if (insideGuidanceCircle || finalDistToTarget < 65) {
+                            detonateTarget(m.target, m.x, m.y);
+                        } else {
+                            createExplosionEffect(m.x, m.y, false);
+                            showMissWarning("¡IMPACTO FALLIDO! BLANCO FUERA DEL HAZ DE GUIADO");
+                        }
                     } else {
-                        // Detonación en vacío si no había blanco fijado
-                        createExplosionEffect(destX, destY, false);
+                        createExplosionEffect(m.x, m.y, false);
+                    }
+                }
+            }
+
+            // Actualizar interfaz del Seeker según el guiado SACLOS
+            const seekerRing = document.getElementById('seeker-outer-ring');
+            const statusText = document.getElementById('seeker-status-text');
+            if (activeMissiles.length > 0) {
+                if (anyMissileGuided) {
+                    seekerRing.className = 'seeker-outer-ring guiding';
+                    statusText.className = 'seeker-status-text guiding';
+                    statusText.textContent = '🟢 HAZ SACLOS CONECTADO // MANTÉN EL BLANCO EN EL CÍRCULO';
+                } else if (anyMissileLost) {
+                    seekerRing.className = 'seeker-outer-ring beam-lost';
+                    statusText.className = 'seeker-status-text beam-lost';
+                    statusText.textContent = '⚠️ ¡HAZ PERDIDO! RE-CENTRA EL BLANCO EN EL CÍRCULO';
+
+                    const now = performance.now();
+                    if (now - lastLostAlertTime > 260) {
+                        lastLostAlertTime = now;
+                        playTacticalBeep(420, 0.08, 'sawtooth');
                     }
                 }
             }
@@ -1144,6 +1539,20 @@
                 if (exp.life <= 0) {
                     activeExplosions.splice(j, 1);
                 }
+            }
+        }
+
+        function showMissWarning(msg) {
+            const banner = document.getElementById('splash-banner');
+            const titleEl = document.getElementById('splash-title');
+            const subEl = document.getElementById('splash-sub');
+            if (banner && titleEl && subEl) {
+                banner.className = 'penalty';
+                titleEl.style.color = '#ffd700';
+                titleEl.textContent = '⚠️ MISIL DESVIADO';
+                subEl.textContent = msg;
+                banner.style.display = 'block';
+                setTimeout(() => { banner.style.display = 'none'; }, 2600);
             }
         }
 
@@ -1183,12 +1592,12 @@
             banner.style.display = 'block';
             setTimeout(() => { banner.style.display = 'none'; }, 3200);
 
-            // Reemplazar objetivo tras 5 segundos
+            // Reemplazar objetivo tras 4 segundos
             setTimeout(() => {
                 const squawks = Object.keys(INTEL_DB);
                 const nextSq = squawks[Math.floor(Math.random() * squawks.length)];
                 spawnBogey(nextSq);
-            }, 5000);
+            }, 4000);
         }
 
         function createExplosionEffect(x, y, isTargetHit) {
@@ -1228,9 +1637,25 @@
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. Dibujar estelas y proyectiles FOX-1
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // 1. Dibujar proyectiles FOX-1 y haz de guiado láser
             activeMissiles.forEach(m => {
-                // Estela de humo blanco
+                // Haz óptico láser conectando el centro de la mira con el misil si está guiado
+                if (m.isGuided) {
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(46, 204, 113, 0.45)';
+                    ctx.lineWidth = 1.5;
+                    ctx.setLineDash([6, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, cy);
+                    ctx.lineTo(m.x, m.y);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Estela de humo
                 m.smokeTrail.forEach(p => {
                     ctx.fillStyle = `rgba(220, 230, 242, ${p.life * 0.45})`;
                     ctx.beginPath();
@@ -1238,11 +1663,11 @@
                     ctx.fill();
                 });
 
-                // Caja del Misil FOX-1
+                // Caja del Misil FOX-1 / SACLOS
                 ctx.save();
-                ctx.strokeStyle = '#ffd700';
+                ctx.strokeStyle = m.isGuided ? '#2ecc71' : '#ffd700';
                 ctx.lineWidth = 1.5;
-                ctx.fillStyle = 'rgba(255, 215, 0, 0.2)';
+                ctx.fillStyle = m.isGuided ? 'rgba(46, 204, 113, 0.25)' : 'rgba(255, 215, 0, 0.2)';
                 ctx.strokeRect(m.x - 12, m.y - 12, 24, 24);
                 ctx.fillRect(m.x - 12, m.y - 12, 24, 24);
 
@@ -1252,16 +1677,15 @@
                 ctx.arc(m.x, m.y + 14, 5, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Etiqueta FOX-1
+                // Etiqueta FOX-1 // SACLOS
                 ctx.fillStyle = '#fff';
                 ctx.font = "10px 'Orbitron', monospace";
-                ctx.fillText("FOX-1", m.x + 16, m.y + 4);
+                ctx.fillText(m.isGuided ? "SACLOS [LOCK]" : "FOX-1 [DRIFT]", m.x + 16, m.y + 4);
                 ctx.restore();
             });
 
             // 2. Dibujar Explosiones
             activeExplosions.forEach(exp => {
-                // Onda expansiva
                 ctx.save();
                 ctx.strokeStyle = `rgba(255, 215, 0, ${exp.life})`;
                 ctx.lineWidth = 2;
@@ -1269,7 +1693,6 @@
                 ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Partículas incandescentes
                 exp.particles.forEach(p => {
                     if (p.alpha <= 0) return;
                     ctx.fillStyle = p.color;
@@ -1333,7 +1756,7 @@
                     solidGain = ctx.createGain();
                     solidOsc.type = 'sawtooth';
                     solidOsc.frequency.setValueAtTime(1450, ctx.currentTime);
-                    solidGain.gain.setValueAtTime(0.07, ctx.currentTime);
+                    solidGain.gain.setValueAtTime(0.06, ctx.currentTime);
                     solidOsc.connect(solidGain);
                     solidGain.connect(ctx.destination);
                     solidOsc.start();
@@ -1356,8 +1779,7 @@
             try {
                 const ctx = getAudioContext();
                 if (!ctx) return;
-                // Buffer de ruido blanco con filtro paso bajo que barre frecuencias
-                const bufferSize = ctx.sampleRate * 0.8;
+                const bufferSize = ctx.sampleRate * 0.9;
                 const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
                 const data = buffer.getChannelData(0);
                 for (let i = 0; i < bufferSize; i++) {
@@ -1370,11 +1792,11 @@
                 const filter = ctx.createBiquadFilter();
                 filter.type = 'bandpass';
                 filter.frequency.setValueAtTime(1200, ctx.currentTime);
-                filter.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.8);
+                filter.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.9);
 
                 const gain = ctx.createGain();
                 gain.gain.setValueAtTime(0.25, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
 
                 noise.connect(filter);
                 filter.connect(gain);
