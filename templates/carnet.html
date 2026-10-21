@@ -141,7 +141,8 @@
         @media print {
             .controls,
             .qr-modal-overlay,
-            .qr-zoom-hint { 
+            .qr-zoom-hint,
+            .carnet-notice-banner { 
                 display: none !important; 
             }
             html {
@@ -550,6 +551,7 @@
             .qr-modal-overlay { display: none !important; }
             .qr-zoom-hint { display: none !important; }
             .qr-container { cursor: default !important; transform: none !important; box-shadow: none !important; }
+            .carnet-notice-banner { display: none !important; }
         }
 
         /* Texto inferior */
@@ -576,10 +578,249 @@
             text-transform: uppercase;
         }
 
-        /* Eliminado bloque @media print duplicado */
+        /* Banner de Notificación de Lectura QR */
+        .carnet-notice-banner {
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto 16px auto;
+            background: rgba(17, 26, 36, 0.95);
+            border: 1px solid rgba(0, 210, 255, 0.35);
+            border-left: 4px solid var(--theme-color, #00d2ff);
+            border-radius: 6px;
+            padding: 12px 14px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            font-family: 'Share Tech Mono', monospace;
+            position: relative;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            animation: bannerSlideDown 0.3s ease-out;
+            z-index: 10;
+        }
+
+        @keyframes bannerSlideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .carnet-notice-banner .notice-icon-col {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(0, 210, 255, 0.12);
+            border: 1px solid rgba(0, 210, 255, 0.35);
+            color: var(--theme-color, #00d2ff);
+            margin-top: 2px;
+        }
+
+        .carnet-notice-banner .notice-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        .carnet-notice-banner .notice-content-col {
+            flex-grow: 1;
+            font-size: 0.8rem;
+            line-height: 1.45;
+        }
+
+        .carnet-notice-banner .notice-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+            flex-wrap: wrap;
+        }
+
+        .carnet-notice-banner .notice-tag {
+            font-size: 0.65rem;
+            background: rgba(0, 210, 255, 0.18);
+            border: 1px solid var(--theme-color, #00d2ff);
+            color: var(--theme-color, #00d2ff);
+            padding: 2px 7px;
+            border-radius: 3px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .carnet-notice-banner .notice-title {
+            font-size: 0.82rem;
+            font-weight: bold;
+            color: #ffffff;
+            letter-spacing: 0.5px;
+        }
+
+        .carnet-notice-banner .notice-body {
+            color: #cbd5e1;
+            margin-bottom: 5px;
+        }
+
+        .carnet-notice-banner .notice-body strong {
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .carnet-notice-banner .notice-subtext {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            border-top: 1px dashed rgba(255, 255, 255, 0.12);
+            padding-top: 5px;
+            margin-top: 5px;
+            line-height: 1.35;
+        }
+
+        .carnet-notice-banner .notice-subtext u {
+            text-decoration-color: var(--theme-color, #00d2ff);
+            text-underline-offset: 2px;
+        }
+
+        .carnet-notice-banner .notice-close-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 22px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0 4px;
+            margin: -4px -4px 0 0;
+            transition: color 0.2s;
+        }
+
+        .carnet-notice-banner .notice-close-btn:hover {
+            color: #ffffff;
+        }
+
+        /* Modal Tip */
+        .qr-modal-tip {
+            font-size: 0.72rem;
+            color: #cbd5e1;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            background: rgba(0, 210, 255, 0.08);
+            border: 1px solid rgba(0, 210, 255, 0.25);
+            padding: 8px 12px;
+            border-radius: 4px;
+            line-height: 1.4;
+            font-family: 'Share Tech Mono', monospace;
+            text-align: left;
+        }
+
+        .qr-modal-tip strong {
+            color: #ffffff;
+        }
+
+        /* Adaptaciones por tema */
+        body.light-mode .carnet-notice-banner {
+            background: #ffffff;
+            border-color: rgba(0, 0, 0, 0.15);
+            border-left-color: var(--theme-color, #0088cc);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        body.light-mode .carnet-notice-banner .notice-icon-col {
+            background: rgba(0, 136, 204, 0.1);
+            border-color: rgba(0, 136, 204, 0.3);
+            color: #0077aa;
+        }
+
+        body.light-mode .carnet-notice-banner .notice-title,
+        body.light-mode .carnet-notice-banner .notice-body strong {
+            color: #0f172a;
+        }
+
+        body.light-mode .carnet-notice-banner .notice-body {
+            color: #334155;
+        }
+
+        body.light-mode .carnet-notice-banner .notice-subtext {
+            color: #64748b;
+            border-top-color: rgba(0, 0, 0, 0.1);
+        }
+
+        body.light-mode .carnet-notice-banner .notice-close-btn {
+            color: #64748b;
+        }
+        body.light-mode .carnet-notice-banner .notice-close-btn:hover {
+            color: #0f172a;
+        }
+
+        body.theme-mode .carnet-notice-banner {
+            background: rgba(12, 12, 12, 0.95);
+            border-color: rgba(0, 0, 0, 0.5);
+            border-left-color: #000000;
+        }
+
+        body.theme-mode .carnet-notice-banner .notice-icon-col {
+            background: rgba(0, 0, 0, 0.25);
+            border-color: #000000;
+            color: #ffffff;
+        }
+
+        body.theme-mode .carnet-notice-banner .notice-tag {
+            border-color: #000000;
+            color: #000000;
+            background: rgba(255, 255, 255, 0.85);
+        }
+
+        body.theme-mode .carnet-notice-banner .notice-title,
+        body.theme-mode .carnet-notice-banner .notice-body strong {
+            color: #ffffff;
+        }
+
+        body.theme-mode .carnet-notice-banner .notice-body {
+            color: #e2e8f0;
+        }
+
+        body.theme-mode .carnet-notice-banner .notice-subtext {
+            color: #94a3b8;
+            border-top-color: rgba(255, 255, 255, 0.15);
+        }
+
+        @media screen and (max-height: 720px) {
+            body {
+                justify-content: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
+
+    <!-- NOTIFICACIÓN: RECOMENDACIÓN TEMA CLARO EN MÓVIL E IMPRESIÓN -->
+    <div id="carnet-notice-banner" class="carnet-notice-banner">
+        <div class="notice-icon-col">
+            <svg class="notice-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+        </div>
+        <div class="notice-content-col">
+            <div class="notice-header">
+                <span class="notice-tag">AVISO DE ESCANEO</span>
+                <span class="notice-title">LECTURA ÓPTIMA DEL CÓDIGO QR</span>
+            </div>
+            <div class="notice-body">
+                Recomendamos usar <strong>tema claro en la configuración de tu móvil o navegador</strong> y al <strong>imprimir</strong> para asegurar una óptima lectura y máximo contraste del código QR.
+            </div>
+            <div class="notice-subtext">
+                ℹ️ <em>Nota: Esta recomendación se refiere al <u>tema o modo del sistema de tu dispositivo móvil</u> (para evitar que el modo oscuro forzado invierta o atenúe los contrastes del QR), <u>no al estilo o diseño del carnet</u>.</em>
+            </div>
+        </div>
+        <button type="button" class="notice-close-btn" onclick="dismissCarnetNotice()" aria-label="Cerrar notificación" title="Ocultar aviso">&times;</button>
+    </div>
 
     <div class="print-wrapper" style="width: max-content; margin: 0 auto; display: flex;">
         <div class="carnet-container" style="width: 300px; min-width: 300px; max-width: 300px; flex: none;">
@@ -746,6 +987,9 @@
             <div class="qr-modal-uid" id="modal-qr-uid">UID: --- <span id="qr-mode-indicator" style="font-size:0.6rem; opacity:0.85; margin-left:6px; background:rgba(0,210,255,0.15); border:1px solid rgba(0,210,255,0.3); padding:2px 6px; border-radius:3px;"></span></div>
             <div class="qr-modal-box">
                 <div id="qrcode-large"></div>
+            </div>
+            <div class="qr-modal-tip">
+                💡 <strong>Tip de lectura:</strong> Recomendamos mantener el <u>tema claro en los ajustes de tu móvil</u> y brillo alto para facilitar el escaneo del código QR (ajuste del smartphone, no del carnet).
             </div>
             <div class="qr-modal-footer">
                 Toca en cualquier lugar o presiona ESC para cerrar
@@ -927,6 +1171,29 @@
                 }
             });
         }
+
+        // Control de descarte de la notificación del carnet
+        function dismissCarnetNotice() {
+            const banner = document.getElementById('carnet-notice-banner');
+            if (banner) {
+                banner.style.transition = 'opacity 0.2s ease, transform 0.2s ease';
+                banner.style.opacity = '0';
+                banner.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                }, 200);
+                try {
+                    sessionStorage.setItem('tvc_carnet_notice_dismissed', '1');
+                } catch(e) {}
+            }
+        }
+
+        try {
+            if (sessionStorage.getItem('tvc_carnet_notice_dismissed') === '1') {
+                const banner = document.getElementById('carnet-notice-banner');
+                if (banner) banner.style.display = 'none';
+            }
+        } catch(e) {}
     </script>
 </body>
 </html>
