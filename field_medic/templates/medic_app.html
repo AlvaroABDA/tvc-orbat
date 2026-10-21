@@ -761,6 +761,17 @@
             </div>
             {% endif %}
 
+            <!-- Botón táctico explícito para liberar / desvincular terminal -->
+            <div style="margin-top: 20px; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.12); text-align: center;">
+                <button type="button" class="btn-header" onclick="requestAdminUnlock()" style="width: 100%; justify-content: center; padding: 11px; font-size: 0.78rem; border-color: rgba(255,85,102,0.4); color: #ff8896; background: rgba(255,51,68,0.08); font-weight: bold;">
+                    <span class="material-symbols-outlined" style="font-size: 17px; color: #ff5566;">lock_open</span>
+                    DESVINCULAR O CAMBIAR SANITARIO DE ESTE TELÉFONO
+                </button>
+                <div style="font-size: 0.72rem; color: #888; margin-top: 5px; font-family: 'Share Tech Mono', monospace;">
+                    Autorización: 4 primeros dígitos de DNI o PIN propio del médico titular
+                </div>
+            </div>
+
         </section>
 
         <!-- ==================== PANTALLA 1-A: HEMORRAGIA COMPRESIÓN (RIEL) ==================== -->

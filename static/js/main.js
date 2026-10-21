@@ -1635,8 +1635,9 @@ function addMiembroRow(m = null) {
     
     const iceBtn = (m && m.id) ? `<button type="button" title="Ficha Médica Real (I.C.E.)" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(231, 76, 60, 0.12); border: 1px solid rgba(231, 76, 60, 0.35); color: #ff6b7a;" onclick="verIceMiembro(${m.id})"><span class="material-symbols-outlined" style="font-size: 16px;">emergency</span></button>` : '';
 
-    const isAdmin = (window.userRole === 'admin');
-    const isExistingMember = Boolean(m && m.id);
+    const isMedicRole = rol.toLowerCase().includes('medico') || rol.toLowerCase().includes('sanitario');
+    const unbindMedicBtn = (isAdmin && isExistingMember && isMedicRole) ?
+        `<button type="button" class="btn-unbind-medic" title="Desvincular terminal de este médico (Liberar teléfono)" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(255, 51, 68, 0.16); border: 1px solid rgba(255, 51, 68, 0.45); color: #ff5566;" onclick="desvincularRemotoDesdeMiembro('${m.uid || ''}', '${(m.nombre_jugador || '').replace(/'/g, "\\'")}', '${m.id}')"><span class="material-symbols-outlined" style="font-size: 16px;">lock_open</span></button>` : '';
 
     const placeholderGuardar = (!isExistingMember) ? `<span style="font-size: 0.68rem; color: #64748b; font-family: monospace;">(guardar)</span>` : '';
 
@@ -1676,7 +1677,7 @@ function addMiembroRow(m = null) {
         </td>
         <td style="padding: 0.25rem;"><input type="text" class="miembro-telefono" placeholder="Teléfono" value="${tel}" style="width: 100%; padding: 0.25rem;"></td>
         <td style="padding: 0.25rem;"><input type="email" class="miembro-email" placeholder="Email" value="${email}" style="width: 100%; padding: 0.25rem;"></td>
-        <td style="padding: 0.25rem; text-align: center; white-space: nowrap;"><div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">${fotoBtn}${carnetBtn}${iceBtn}${placeholderGuardar}</div></td>
+        <td style="padding: 0.25rem; text-align: center; white-space: nowrap;"><div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">${fotoBtn}${carnetBtn}${iceBtn}${unbindMedicBtn}${placeholderGuardar}</div></td>
         <td style="padding: 0.25rem; text-align: center;">${delBtn}</td>
     `;
     
@@ -4248,6 +4249,28 @@ window.verIceMiembro = async function(id) {
         modal.style.display = 'flex';
     } catch (e) {
         alert('Error al consultar datos ICE');
+    }
+};
+
+window.desvincularRemotoDesdeMiembro = async function(uid, nombre, id) {
+    const ident = nombre || uid || `Operador #${id}`;
+    if (!confirm(`¿Confirmas la desvinculación remota del terminal médico de "${ident}"?\n\nEl dispositivo quedará liberado automáticamente para que el jugador pueda vincular su nuevo teléfono en el campo sin pedirle el PIN de Dirección.`)) {
+        return;
+    }
+    try {
+        const res = await fetch('/api/admin/medicos/unbind', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sanitario_id: uid || nombre, uid: uid, nombre_medico: nombre })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            alert(`✅ ${data.message || 'Orden de desvinculación emitida con éxito.'}`);
+        } else {
+            alert(data.message || 'Error al emitir orden de desvinculación.');
+        }
+    } catch (e) {
+        alert('Error de conexión al solicitar desvinculación.');
     }
 };
 
