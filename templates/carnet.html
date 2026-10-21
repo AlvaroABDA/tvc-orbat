@@ -711,6 +711,7 @@
     
     <div class="controls">
         <button onclick="toggleTheme()">Cambiar Tema</button>
+        <button id="btn-toggle-qr-mode" onclick="toggleQRMode()">Modo QR: Solo UID (Píxeles Gruesos)</button>
         <button onclick="window.print()">Imprimir Carnet</button>
     </div>
 
@@ -722,7 +723,7 @@
                 <button type="button" class="qr-modal-close" onclick="closeQRModal()" aria-label="Cerrar">&times;</button>
             </div>
             <div class="qr-modal-callsign" id="modal-qr-callsign">JUGADOR</div>
-            <div class="qr-modal-uid" id="modal-qr-uid">UID: ---</div>
+            <div class="qr-modal-uid" id="modal-qr-uid">UID: --- <span id="qr-mode-indicator" style="font-size:0.6rem; opacity:0.85; margin-left:6px; background:rgba(0,210,255,0.15); border:1px solid rgba(0,210,255,0.3); padding:2px 6px; border-radius:3px;"></span></div>
             <div class="qr-modal-box">
                 <div id="qrcode-large"></div>
             </div>
@@ -778,23 +779,84 @@
             }
         }
 
-        // Generar QR dinámico adaptado al dominio actual
+        // Contenidos QR disponibles
         const uid = playerData.uid || "TVC-TEST";
         const originUrl = (window.location && window.location.origin) ? window.location.origin : "https://tvc-orbat.com";
-        const qrContent = originUrl + "/medic?token=" + encodeURIComponent(uid);
+        const urlContent = originUrl + "/medic?token=" + encodeURIComponent(uid);
 
-        // QR estándar del carnet: Nivel M (menos densidad, módulos más anchos y legibles)
-        new QRCode(document.getElementById("qrcode"), {
-            text: qrContent,
-            width: 85,
-            height: 85,
-            colorDark : "#000000",
-            colorLight : "#ffffff",
-            correctLevel : QRCode.CorrectLevel.M
-        });
+        // Modo activo por defecto: 'uid' (Píxeles ultra-gruesos, Versión 1/2 con Nivel L)
+        let qrMode = 'uid'; // 'uid' o 'url'
+        let qrcodeInstance = null;
+        let qrcodeLargeInstance = null;
+
+        function getQRConfig() {
+            if (qrMode === 'uid') {
+                return {
+                    text: uid,
+                    correctLevel: QRCode.CorrectLevel.L,
+                    desc: 'SOLO UID // PÍXELES GIGANTES'
+                };
+            } else {
+                return {
+                    text: urlContent,
+                    correctLevel: QRCode.CorrectLevel.M,
+                    desc: 'URL WEB COMPLETA'
+                };
+            }
+        }
+
+        function renderQRCodes() {
+            const config = getQRConfig();
+
+            // 1. QR del carnet impreso/visual
+            const qrEl = document.getElementById("qrcode");
+            if (qrEl) {
+                qrEl.innerHTML = "";
+                qrcodeInstance = new QRCode(qrEl, {
+                    text: config.text,
+                    width: 85,
+                    height: 85,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: config.correctLevel
+                });
+            }
+
+            // 2. QR modal ampliado
+            const qrLargeEl = document.getElementById("qrcode-large");
+            if (qrLargeEl) {
+                qrLargeEl.innerHTML = "";
+                qrcodeLargeInstance = new QRCode(qrLargeEl, {
+                    text: config.text,
+                    width: 250,
+                    height: 250,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: config.correctLevel
+                });
+            }
+
+            // 3. Actualizar textos de UI
+            const modeBadge = document.getElementById("qr-mode-indicator");
+            if (modeBadge) modeBadge.textContent = config.desc;
+
+            const btnToggle = document.getElementById("btn-toggle-qr-mode");
+            if (btnToggle) {
+                btnToggle.textContent = qrMode === 'uid' 
+                    ? "Formato QR: Solo UID (Píxeles Gruesos)" 
+                    : "Formato QR: URL Web Completa";
+            }
+        }
+
+        function toggleQRMode() {
+            qrMode = (qrMode === 'uid') ? 'url' : 'uid';
+            renderQRCodes();
+        }
+
+        // Renderizado inicial
+        renderQRCodes();
 
         // Control del Modal QR Ampliado en Pantalla
-        let largeQrGenerated = false;
         function openQRModal() {
             const overlay = document.getElementById('qr-modal-overlay');
             if (!overlay) return;
@@ -802,18 +864,9 @@
             const modalNick = document.getElementById('modal-qr-callsign');
             const modalUid = document.getElementById('modal-qr-uid');
             if (modalNick) modalNick.textContent = playerData.nickname || 'OPERADOR';
-            if (modalUid) modalUid.textContent = 'UID: ' + (playerData.uid || 'S/N');
-
-            if (!largeQrGenerated) {
-                new QRCode(document.getElementById("qrcode-large"), {
-                    text: qrContent,
-                    width: 250,
-                    height: 250,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.M
-                });
-                largeQrGenerated = true;
+            const modeConfig = getQRConfig();
+            if (modalUid) {
+                modalUid.innerHTML = `UID: ${playerData.uid || 'S/N'} <span id="qr-mode-indicator" style="font-size:0.6rem; opacity:0.85; margin-left:6px; background:rgba(0,210,255,0.15); border:1px solid rgba(0,210,255,0.3); padding:2px 6px; border-radius:3px;">${modeConfig.desc}</span>`;
             }
 
             overlay.classList.add('active');
