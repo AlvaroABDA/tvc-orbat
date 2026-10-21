@@ -4101,33 +4101,82 @@ async function cargarDocs() {
         
         container.innerHTML = '';
         
+        if (!docs || docs.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; color: #94a3b8; padding: 2.5rem 1rem; border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px; font-family: var(--font-mono);">
+                    <span class="material-symbols-outlined" style="font-size: 32px; display: block; margin-bottom: 8px; color: #64748b;">folder_open</span>
+                    No hay reglamentos o normativas publicados actualmente.
+                </div>
+            `;
+            return;
+        }
+
         docs.forEach(doc => {
             const isPdf = doc.pdf_url && doc.pdf_url.trim() !== '';
-            let contentHtml = '';
             
+            // Faction badge
+            let faccionBadge = '<span style="font-size:0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); font-family: var(--font-mono); font-weight: 600;">GLOBAL / TODAS LAS FACCIONES</span>';
+            if (doc.faccion_id === 1) {
+                faccionBadge = '<span style="font-size:0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(0,240,255,0.12); color: #00f0ff; border: 1px solid rgba(0,240,255,0.4); font-family: var(--font-mono); font-weight: 600;">SYLDAVIA</span>';
+            } else if (doc.faccion_id === 2) {
+                faccionBadge = '<span style="font-size:0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.4); font-family: var(--font-mono); font-weight: 600;">VOLKOVIA</span>';
+            } else if (doc.faccion_id === 3) {
+                faccionBadge = '<span style="font-size:0.7rem; padding: 2px 8px; border-radius: 4px; background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.4); font-family: var(--font-mono); font-weight: 600;">KHEMED</span>';
+            }
+
+            let pdfBlock = '';
             if (isPdf) {
-                contentHtml = `<a href="${doc.pdf_url}" target="_blank" class="btn primary" style="display:inline-block; margin-top:10px;">Ver PDF</a>`;
-            } else {
-                contentHtml = `<div class="ql-editor" style="padding:0; min-height:auto;">${doc.contenido}</div>`;
+                pdfBlock = `
+                    <div style="margin-top: 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; background: rgba(0,0,0,0.3); padding: 12px 16px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.06);">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="material-symbols-outlined" style="font-size: 30px; color: #ef4444;">picture_as_pdf</span>
+                            <div>
+                                <div style="font-size: 0.88rem; font-weight: 700; color: #f8fafc;">Documento PDF Adjunto</div>
+                                <div style="font-size: 0.72rem; color: #94a3b8; font-family: var(--font-mono);">Formato Oficial TVC</div>
+                            </div>
+                        </div>
+                        <a href="${doc.pdf_url}" target="_blank" rel="noopener noreferrer" class="btn primary" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; padding: 7px 16px; text-decoration: none; font-weight: 700; box-shadow: 0 0 10px rgba(0,240,255,0.25);">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">visibility</span>
+                            VER / DESCARGAR PDF
+                        </a>
+                    </div>
+                `;
+            }
+
+            let textBlock = '';
+            if (doc.contenido && doc.contenido.trim() !== '' && doc.contenido !== '<p><br></p>') {
+                textBlock = `<div class="ql-editor" style="padding: 10px 0 0 0; min-height: auto; color: #e2e8f0; font-size: 0.9rem; line-height: 1.6;">${doc.contenido}</div>`;
             }
             
             let adminControls = '';
             if (window.userRole === 'admin') {
                 const encodedDoc = encodeURIComponent(JSON.stringify(doc));
                 adminControls = `
-                    <div style="margin-top:15px; border-top:1px solid rgba(255,255,255,0.1); padding-top:10px; display:flex; gap:10px;">
-                        <button class="btn secondary" onclick="editarDoc(decodeURIComponent('${encodedDoc}'))" style="font-size:0.8em; padding:4px 8px;">Editar</button>
-                        <button class="btn danger" onclick="borrarDoc(${doc.id})" style="font-size:0.8em; padding:4px 8px;">Borrar</button>
+                    <div style="margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; display: flex; gap: 10px; justify-content: flex-end;">
+                        <button class="btn secondary" onclick="editarDoc(decodeURIComponent('${encodedDoc}'))" style="font-size: 0.8rem; padding: 5px 12px; display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">edit</span> Editar
+                        </button>
+                        <button class="btn danger" onclick="borrarDoc(${doc.id})" style="font-size: 0.8rem; padding: 5px 12px; display: inline-flex; align-items: center; gap: 4px;">
+                            <span class="material-symbols-outlined" style="font-size: 15px;">delete</span> Borrar
+                        </button>
                     </div>
                 `;
             }
             
             const card = document.createElement('div');
             card.className = 'mision-card';
-            card.style = 'cursor: default; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); padding: 15px;';
+            card.style = 'cursor: default; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);';
             card.innerHTML = `
-                <h3 style="color: var(--theme-color); margin-bottom: 5px; font-family: var(--font-mono);">${doc.titulo}</h3>
-                ${contentHtml}${adminControls}
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+                    <h3 style="color: var(--theme-color); margin: 0; font-family: var(--font-mono); font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">description</span>
+                        <span>${doc.titulo}</span>
+                    </h3>
+                    <div>${faccionBadge}</div>
+                </div>
+                ${textBlock}
+                ${pdfBlock}
+                ${adminControls}
             `;
             container.appendChild(card);
         });
@@ -4136,6 +4185,68 @@ async function cargarDocs() {
         console.error("Error al cargar documentos", e);
     }
 }
+
+window.subirPdfDocDirecto = async function(input) {
+    if (!input.files || input.files.length === 0) return;
+    const file = input.files[0];
+    
+    const statusEl = document.getElementById('doc-pdf-upload-status');
+    const urlInput = document.getElementById('doc-pdf-url');
+    const tituloInput = document.getElementById('doc-titulo');
+    
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+        alert('Por favor selecciona un archivo con extensión .pdf');
+        input.value = '';
+        return;
+    }
+    
+    if (file.size > 10 * 1024 * 1024) {
+        alert('El archivo excede el tamaño máximo permitido de 10 MB');
+        input.value = '';
+        return;
+    }
+    
+    if (statusEl) {
+        statusEl.style.color = '#00f0ff';
+        statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle; animation: spin 1s linear infinite;">sync</span> Subiendo ${file.name}...`;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const res = await fetch('/api/docs/upload_pdf', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        
+        if (res.ok && data.status === 'success') {
+            if (urlInput) urlInput.value = data.pdf_url;
+            if (tituloInput && !tituloInput.value.trim()) {
+                tituloInput.value = data.title_suggested || file.name.replace(/\.pdf$/i, '');
+            }
+            if (statusEl) {
+                statusEl.style.color = '#10b981';
+                statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">check_circle</span> Subido con éxito: ${data.filename}`;
+            }
+        } else {
+            const err = data.error || 'Error al subir el archivo PDF';
+            if (statusEl) {
+                statusEl.style.color = '#ef4444';
+                statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">error</span> ${err}`;
+            }
+            alert(err);
+        }
+    } catch (e) {
+        console.error('Error subiendo PDF:', e);
+        if (statusEl) {
+            statusEl.style.color = '#ef4444';
+            statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">error</span> Error de conexión al subir`;
+        }
+        alert('Error de conexión al subir el documento PDF.');
+    }
+};
 
 async function guardarDoc() {
     const id = document.getElementById('doc-id').value;
@@ -4184,6 +4295,20 @@ function editarDoc(docJsonStr) {
     document.getElementById('doc-pdf-url').value = doc.pdf_url || '';
     document.getElementById('doc-faccion').value = doc.faccion_id || '';
     document.getElementById('doc-orden').value = doc.orden || 0;
+    
+    const fileInput = document.getElementById('doc-pdf-file');
+    if (fileInput) fileInput.value = '';
+    const statusEl = document.getElementById('doc-pdf-upload-status');
+    if (statusEl) {
+        if (doc.pdf_url) {
+            statusEl.style.color = '#38bdf8';
+            statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">description</span> PDF actual asignado`;
+        } else {
+            statusEl.style.color = '#94a3b8';
+            statusEl.innerHTML = 'Ningún PDF seleccionado';
+        }
+    }
+
     if (quillDocEditor) {
         quillDocEditor.root.innerHTML = doc.contenido || '';
     }
@@ -4199,6 +4324,13 @@ function limpiarDocEditor() {
     document.getElementById('doc-pdf-url').value = '';
     document.getElementById('doc-faccion').value = '';
     document.getElementById('doc-orden').value = '';
+    const fileInput = document.getElementById('doc-pdf-file');
+    if (fileInput) fileInput.value = '';
+    const statusEl = document.getElementById('doc-pdf-upload-status');
+    if (statusEl) {
+        statusEl.style.color = '#94a3b8';
+        statusEl.innerHTML = 'Ningún PDF seleccionado';
+    }
     if (quillDocEditor) {
         quillDocEditor.root.innerHTML = '';
     }
@@ -4218,6 +4350,12 @@ async function borrarDoc(id) {
         }
     }
 }
+
+window.cargarDocs = cargarDocs;
+window.guardarDoc = guardarDoc;
+window.editarDoc = editarDoc;
+window.limpiarDocEditor = limpiarDocEditor;
+window.borrarDoc = borrarDoc;
 
 // ==================== ICE VIEWER (Punto B) & READY CHECK TL (Punto C) ====================
 

@@ -671,24 +671,67 @@
             </div>
             
             {% if user_role == 'admin' %}
-            <div style="margin-bottom: 2rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); padding: 1rem; border-radius: 8px;">
-                <h3 style="margin-bottom: 1rem; color: var(--theme-color);">Añadir/Editar Documento</h3>
+            <div style="margin-bottom: 2rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); padding: 1.25rem; border-radius: 8px;">
+                <h3 style="margin-bottom: 1rem; color: var(--theme-color); font-family: var(--font-mono); display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined">post_add</span>
+                    <span>AÑADIR / EDITAR DOCUMENTO O REGLAMENTO</span>
+                </h3>
                 <input type="hidden" id="doc-id">
-                <input type="text" id="doc-titulo" class="form-control" placeholder="Título del Documento" style="width: 100%; margin-bottom: 10px;">
-                <input type="text" id="doc-pdf-url" class="form-control" placeholder="URL de PDF (opcional, si pones url se ignora el texto)" style="width: 100%; margin-bottom: 10px;">
-                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <select id="doc-faccion" class="form-control" style="flex: 1;">
-                        <option value="">Para todas las facciones (Público)</option>
-                        <option value="1">Syldavia</option>
-                        <option value="2">Volkovia</option>
-                        <option value="3">Khemed</option>
-                    </select>
-                    <input type="number" id="doc-orden" class="form-control" placeholder="Orden (ej. 1)" style="width: 100px;">
+                
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 0.8rem; color: #cbd5e1; display: block; margin-bottom: 4px; font-weight: 600;">Título del Documento:</label>
+                    <input type="text" id="doc-titulo" class="form-control" placeholder="Ej: Normativa General de Partida / Guía de Comunicaciones" style="width: 100%;">
                 </div>
-                <div id="doc-editor" style="height: 200px; background: white; color: black; margin-bottom: 10px;"></div>
+
+                <!-- SUBIDA DIRECTA DE ARCHIVO PDF -->
+                <div style="background: rgba(0, 240, 255, 0.04); border: 1px dashed rgba(0, 240, 255, 0.35); border-radius: 6px; padding: 14px; margin-bottom: 14px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                        <span style="font-size: 0.82rem; font-weight: 700; color: #00f0ff; display: flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">picture_as_pdf</span>
+                            ADJUNTAR ARCHIVO PDF DIRECTO (REGLAMENTO / MANUAL)
+                        </span>
+                        <span style="font-size: 0.72rem; color: #94a3b8;">Máximo 10 MB (.pdf)</span>
+                    </div>
+
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <input type="file" id="doc-pdf-file" accept=".pdf,application/pdf" style="display: none;" onchange="subirPdfDocDirecto(this)">
+                        <button type="button" class="btn outline" onclick="document.getElementById('doc-pdf-file').click()" style="border-color: #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.1); font-size: 0.82rem; padding: 7px 14px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                            <span class="material-symbols-outlined" style="font-size: 18px;">upload_file</span>
+                            Seleccionar y Subir PDF Directo
+                        </button>
+                        <span id="doc-pdf-upload-status" style="font-size: 0.82rem; color: #94a3b8; font-family: 'Share Tech Mono', monospace;">Ningún PDF seleccionado</span>
+                    </div>
+
+                    <div style="margin-top: 10px;">
+                        <label style="font-size: 0.75rem; color: #888; display: block; margin-bottom: 3px;">Ruta / Enlace del PDF generado o enlace externo:</label>
+                        <input type="text" id="doc-pdf-url" class="form-control" placeholder="Ruta generada automáticamente al subir el archivo (o URL externa)" style="width: 100%; font-size: 0.82rem; font-family: monospace;">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <label style="font-size: 0.8rem; color: #cbd5e1; display: block; margin-bottom: 4px;">Visibilidad / Facción:</label>
+                        <select id="doc-faccion" class="form-control" style="width: 100%;">
+                            <option value="">Público (Para todas las facciones)</option>
+                            <option value="1">Syldavia (Exclusivo)</option>
+                            <option value="2">Volkovia (Exclusivo)</option>
+                            <option value="3">Khemed (Exclusivo)</option>
+                        </select>
+                    </div>
+                    <div style="width: 120px;">
+                        <label style="font-size: 0.8rem; color: #cbd5e1; display: block; margin-bottom: 4px;">Orden:</label>
+                        <input type="number" id="doc-orden" class="form-control" placeholder="Ej. 1" style="width: 100%;">
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 14px;">
+                    <label style="font-size: 0.8rem; color: #cbd5e1; display: block; margin-bottom: 4px;">Contenido de Texto (opcional si ya adjuntaste un PDF):</label>
+                    <div id="doc-editor" style="height: 180px; background: white; color: black; border-radius: 4px;"></div>
+                </div>
+
                 <div style="display: flex; gap: 10px;">
-                    <button class="btn primary" onclick="guardarDoc()">Guardar Documento</button>
-                    <button class="btn warning" onclick="limpiarDocEditor()">Limpiar Editor</button>
+                    <button class="btn primary" onclick="guardarDoc()" style="padding: 8px 18px; font-weight: 700;">Guardar Documento</button>
+                    <button class="btn warning" onclick="limpiarDocEditor()" style="padding: 8px 14px;">Limpiar / Nuevo</button>
                 </div>
             </div>
             {% endif %}

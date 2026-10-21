@@ -972,6 +972,9 @@ def upload_equipo_foto(id):
 UPLOAD_DOCS_FOLDER = os.path.join(app.root_path, 'static', 'uploads', 'documentos_unidad')
 os.makedirs(UPLOAD_DOCS_FOLDER, exist_ok=True)
 
+UPLOAD_REGLAMENTOS_FOLDER = os.path.join(app.root_path, 'static', 'uploads', 'documentos_reglamentos')
+os.makedirs(UPLOAD_REGLAMENTOS_FOLDER, exist_ok=True)
+
 @app.route('/api/equipos/<int:id>/documentos', methods=['GET'])
 def get_equipo_documentos(id):
     if 'role' not in session:
@@ -3349,10 +3352,55 @@ def save_doc():
     conn.close()
     return jsonify({'status': 'success'})
 
+@app.route('/api/docs/upload_pdf', methods=['POST'])
+def api_docs_upload_pdf():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    if 'file' not in request.files:
+        return jsonify({'error': 'No se ha seleccionado ningún archivo'}), 400
+
+    file = request.files['file']
+    if not file or file.filename == '':
+        return jsonify({'error': 'Ningún archivo seleccionado'}), 400
+
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext != '.pdf':
+        return jsonify({'error': 'Solo se admiten documentos en formato PDF (.pdf)'}), 400
+
+    import secrets
+    raw_name = os.path.splitext(file.filename)[0]
+    safe_name = "".join([c for c in raw_name if c.isalnum() or c in ('_', '-', ' ')]).replace(' ', '_').strip()
+    if not safe_name:
+        safe_name = "reglamento"
+    rand_token = secrets.token_hex(4)
+    filename = f"{safe_name}_{rand_token}.pdf"
+    filepath = os.path.join(UPLOAD_REGLAMENTOS_FOLDER, filename)
+    file.save(filepath)
+
+    pdf_url = f"/static/uploads/documentos_reglamentos/{filename}?v={int(time.time())}"
+    return jsonify({
+        'status': 'success',
+        'pdf_url': pdf_url,
+        'filename': file.filename,
+        'title_suggested': raw_name.replace('_', ' ').replace('-', ' ').strip()
+    })
+
 @app.route('/api/docs/<int:id>', methods=['DELETE'])
 def delete_doc(id):
     if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
     conn = get_db_connection()
+    doc = conn.execute('SELECT pdf_url FROM Documento WHERE id = ?', (id,)).fetchone()
+    if doc and doc['pdf_url']:
+        url = doc['pdf_url'].split('?')[0]
+        if '/static/uploads/documentos_reglamentos/' in url:
+            fname = url.split('/')[-1]
+            fpath = os.path.join(UPLOAD_REGLAMENTOS_FOLDER, fname)
+            if os.path.isfile(fpath):
+                try:
+                    os.remove(fpath)
+                except Exception as e:
+                    print(f"Error borrando PDF de reglamento: {e}")
     conn.execute('DELETE FROM Documento WHERE id = ?', (id,))
     conn.commit()
     conn.close()
