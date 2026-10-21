@@ -133,27 +133,47 @@
             transform: scale(1.05);
         }
 
+        @page {
+            size: auto;
+            margin: 20mm auto;
+        }
+
         @media print {
-            .controls { display: none; }
+            .controls,
+            .qr-modal-overlay,
+            .qr-zoom-hint { 
+                display: none !important; 
+            }
+            html {
+                background: #ffffff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
             body { 
-                background: white; 
-                padding: 0; 
-                margin: 0; 
-                display: block;
+                background: #ffffff !important; 
+                padding: 15mm 0 0 0 !important; 
+                margin: 0 auto !important; 
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: center !important;
+                min-height: 80vh !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
             .print-wrapper {
                 zoom: 0.63;
                 -moz-transform: scale(0.63);
-                -moz-transform-origin: top left;
+                -moz-transform-origin: center center;
                 box-shadow: none !important;
                 gap: 0 !important;
-                margin: 0 auto;
+                margin: 0 auto !important;
+                page-break-inside: avoid;
+                break-inside: avoid;
             }
             .carnet-container { 
                 box-shadow: none !important; 
-                margin: 0;
+                margin: 0 !important;
             }
             .carnet-container.back-cover {
                 border-left: 1px dashed #ccc !important;
@@ -711,7 +731,7 @@
     
     <div class="controls">
         <button onclick="toggleTheme()">Cambiar Tema</button>
-        <button id="btn-toggle-qr-mode" onclick="toggleQRMode()">Modo QR: Solo UID (Píxeles Gruesos)</button>
+        <button id="btn-toggle-qr-mode" onclick="toggleQRMode()" style="display: none;">Modo QR: Solo UID (Píxeles Gruesos)</button>
         <button onclick="window.print()">Imprimir Carnet</button>
     </div>
 
