@@ -176,6 +176,8 @@
             justify-content: space-between;
             align-items: center;
             width: 100%;
+            flex-wrap: wrap;
+            gap: 6px;
         }
 
         .hud-btn {
@@ -631,9 +633,9 @@
             font-family: var(--font-heading);
             font-size: 0.70rem;
             font-weight: 800;
-            padding: 5px 8px;
+            padding: 5px 9px;
             border-radius: 4px;
-            background: rgba(3, 7, 13, 0.9);
+            background: rgba(3, 7, 13, 0.92);
             border: 1.5px solid;
             box-shadow: 0 0 16px rgba(0, 0, 0, 0.85);
             display: flex;
@@ -642,6 +644,29 @@
             white-space: nowrap;
             letter-spacing: 1px;
             animation: edge-pulse 0.9s infinite alternate;
+        }
+
+        .edge-indicator.edge-left {
+            left: 10px;
+        }
+
+        .edge-indicator.edge-right {
+            right: 10px;
+        }
+
+        .edge-indicator.edge-top {
+            top: 75px !important;
+            left: 50%;
+            transform: translateX(-50%);
+            border-top-width: 2.5px;
+        }
+
+        .edge-indicator.edge-bottom {
+            bottom: 80px !important;
+            top: auto !important;
+            left: 50%;
+            transform: translateX(-50%);
+            border-bottom-width: 2.5px;
         }
 
         .edge-indicator.hostile { border-color: var(--sam-red); color: #ff5566; box-shadow: 0 0 16px rgba(255, 51, 68, 0.6); }
@@ -914,7 +939,7 @@
     <!-- Barra Superior Táctica con Cinta de Rumbo Digital y Controles -->
     <header class="top-hud-bar">
         <div class="top-hud-controls">
-            <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                 <button type="button" class="hud-btn" onclick="exitAndReturn('/simulacion')" title="Volver al menú de simulación">
                     <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span> MENÚ
                 </button>
@@ -924,9 +949,15 @@
                 <button type="button" class="hud-btn hud-btn-gold" onclick="toggleIffModal()" title="Abrir tabla de transpondedores IFF">
                     <span class="material-symbols-outlined" style="font-size: 15px;">menu_book</span> TABLA INTEL IFF
                 </button>
+                <button type="button" class="hud-btn" id="btn-auto-center" onclick="autoCenterTarget()" style="border-color: var(--sam-green); color: var(--sam-green);" title="Centrar automáticamente en el blanco hostil más cercano">
+                    🎯 CENTRAR
+                </button>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="hud-btn" id="btn-calib-heading" onclick="toggleHeadingInvert()" title="Invertir rumbo 180° si la brújula apunta al sentido opuesto">
+                    ⚙️ CALIB
+                </button>
                 <button type="button" class="hud-btn" id="btn-camera-toggle" onclick="toggleCameraDevice()">
                     📷 CÁMARA
                 </button>
@@ -934,7 +965,7 @@
                     👁️ VISIÓN IR
                 </button>
                 <button type="button" class="hud-btn hud-btn-fullscreen" id="btn-fullscreen-toggle" onclick="toggleFullscreen()" title="Alternar pantalla completa">
-                    <span class="material-symbols-outlined" style="font-size: 15px;" id="fs-icon">fullscreen</span> <span id="fs-text">PANTALLA COMPLETA</span>
+                    <span class="material-symbols-outlined" style="font-size: 15px;" id="fs-icon">fullscreen</span> <span id="fs-text">PANTALLA</span>
                 </button>
             </div>
         </div>
@@ -1065,9 +1096,19 @@
         };
 
         // ==================== ESTADO DEL SIMULADOR ====================
-        let currentHeading = 0;       // 0° a 360°
-        let currentPitch = 45;        // Elevación inicial mirando hacia arriba al cielo (+45°)
+        let currentHeading = 35;       // Inicializado cerca del primer bogey (Su-25 a 35°)
+        let currentPitch = 42;         // Elevación inicial mirando al cielo (+42°)
+        let targetHeading = 35;
+        let targetPitch = 42;
         let headingOffset = 0;
+
+        let hasAbsoluteSensor = false;
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+        let dragStartHeading = 0;
+        let dragStartPitch = 0;
+        let lastUserTouchTime = 0;
 
         let cameraStream = null;
         let isIRMode = true;          // Activo por defecto para alto contraste
@@ -1088,9 +1129,14 @@
         let activeMissiles = [];
         let activeExplosions = [];
 
-        // FOV angular del visor AAA
-        const FOV_H = 65.0;
-        const FOV_V = 45.0;
+        // FOV angular adaptativo según orientación de pantalla (mayor ventana vertical en móvil)
+        function getFieldOfView() {
+            const isPortrait = window.innerHeight > window.innerWidth;
+            return {
+                fovH: isPortrait ? 55.0 : 68.0,
+                fovV: isPortrait ? 65.0 : 48.0
+            };
+        }
 
         // Contactos aéreos en vuelo cinemático
         let airContacts = [];
@@ -1099,6 +1145,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             initStarSky();
             setupSensors();
+            setupDragControls();
             await startCamera();
             initAirspaceContacts();
             requestAnimationFrame(simLoop);
@@ -1306,38 +1353,144 @@
             });
         }
 
-        // ==================== SENSORES GIROSCÓPICOS REALES (SIN ARRASTRE VIRTUAL) ====================
+        // ==================== SENSORES GIROSCÓPICOS 3D Y CONTROLES TÁCTILES ====================
         function setupSensors() {
-            window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-            window.addEventListener('deviceorientation', handleOrientation, true);
+            // Priorizar deviceorientationabsolute para evitar que eventos relativos y absolutos colisionen en Chrome
+            window.addEventListener('deviceorientationabsolute', (e) => {
+                hasAbsoluteSensor = true;
+                handleOrientation(e);
+            }, true);
+
+            window.addEventListener('deviceorientation', (e) => {
+                if (!hasAbsoluteSensor) {
+                    handleOrientation(e);
+                }
+            }, true);
+        }
+
+        function calculateCompassHeading(alpha, beta, gamma) {
+            const degToRad = Math.PI / 180;
+            const _x = beta ? beta * degToRad : 0;
+            const _y = gamma ? gamma * degToRad : 0;
+            const _z = alpha ? alpha * degToRad : 0;
+
+            const cX = Math.cos(_x), cY = Math.cos(_y), cZ = Math.cos(_z);
+            const sX = Math.sin(_x), sY = Math.sin(_y), sZ = Math.sin(_z);
+
+            // Vector de orientación horizontal del dispositivo
+            const Vx = -cZ * sY - sZ * sX * cY;
+            const Vy = -sZ * sY + cZ * sX * cY;
+
+            let heading = Math.atan2(Vx, Vy) * (180 / Math.PI);
+            if (heading < 0) heading += 360;
+            return heading;
         }
 
         function handleOrientation(e) {
-            // 1. Rumbo (Heading / Azimut):
+            // Si el usuario está interactuando con controles táctiles o acaba de arrastrar, pausar temporalmente los sensores
+            if (isDragging || (performance.now() - lastUserTouchTime < 2500)) return;
+
+            // 1. Rumbo (Heading / Azimut 3D):
             let heading = null;
             if (typeof e.webkitCompassHeading !== 'undefined' && e.webkitCompassHeading !== null) {
                 heading = e.webkitCompassHeading;
             } else if (e.alpha !== null) {
-                heading = (360 - e.alpha) % 360;
+                if (e.beta !== null && e.gamma !== null) {
+                    heading = calculateCompassHeading(e.alpha, e.beta, e.gamma);
+                } else {
+                    heading = (360 - e.alpha) % 360;
+                }
             }
 
             if (heading !== null && !isNaN(heading)) {
-                currentHeading = (Math.round(heading) + headingOffset + 360) % 360;
+                targetHeading = (Math.round(heading) + headingOffset + 360) % 360;
             }
 
-            // 2. Elevación Matemática Corregida:
-            // En smartphone en posición vertical (portrait):
-            // beta = 90° con la pantalla vertical y la cámara trasera apuntando al horizonte (pitch = 0°).
-            // Al levantar el móvil apuntando hacia el cielo, la parte superior retrocede y beta DISMINUYE hacia 0°.
-            // A 45° de elevación en el cielo: beta = 45° -> (90 - beta) = +45°!
-            // En el cenit (90° arriba): beta = 0° -> (90 - beta) = +90°!
-            // Al apuntar al suelo: beta crece a 130° -> (90 - beta) = -40° (bloqueado a +15° horizonte).
+            // 2. Elevación 3D (Pitch hacia el cielo):
+            // En smartphone vertical, el vector de la cámara trasera apunta con componente vertical Wz = -cos(beta)*cos(gamma).
+            // beta = 90° (horizonte) -> Wz = 0 -> pitch = 0°.
+            // beta = 135° (mirando 45° al cielo) -> Wz = +0.707 -> pitch = +45°.
+            // beta = 180° (cenit hacia arriba) -> Wz = +1.0 -> pitch = +90°.
             if (e.beta !== null && !isNaN(e.beta)) {
-                let pitchCalc = 90 - e.beta;
-                // Asegurar elevación positiva hacia el cielo (+15° a +85°), impidiendo mirar al suelo
-                pitchCalc = Math.max(15, Math.min(85, pitchCalc));
-                currentPitch = Math.round(pitchCalc);
+                const degToRad = Math.PI / 180;
+                const b = e.beta * degToRad;
+                const g = (e.gamma !== null && !isNaN(e.gamma)) ? e.gamma * degToRad : 0;
+                const Wz = -Math.cos(b) * Math.cos(g);
+                let calculatedPitch = Math.asin(Math.max(-1, Math.min(1, Wz))) * (180 / Math.PI);
+                calculatedPitch = Math.max(-15, Math.min(88, calculatedPitch));
+                targetPitch = Math.round(calculatedPitch);
             }
+        }
+
+        // ==================== CONTROLES DE ARRASTRE TÁCTIL Y DESKTOP ====================
+        function setupDragControls() {
+            const onStart = (cx, cy) => {
+                isDragging = true;
+                dragStartX = cx;
+                dragStartY = cy;
+                dragStartHeading = currentHeading;
+                dragStartPitch = currentPitch;
+                lastUserTouchTime = performance.now();
+            };
+
+            const onMove = (cx, cy) => {
+                if (!isDragging) return;
+                lastUserTouchTime = performance.now();
+                const deltaX = cx - dragStartX;
+                const deltaY = cy - dragStartY;
+                const { fovH, fovV } = getFieldOfView();
+                const sensX = fovH / Math.max(window.innerWidth, 320);
+                const sensY = fovV / Math.max(window.innerHeight, 480);
+                
+                targetHeading = (dragStartHeading - deltaX * sensX + 360) % 360;
+                targetPitch = Math.max(-15, Math.min(88, dragStartPitch + deltaY * sensY));
+            };
+
+            const onEnd = () => {
+                isDragging = false;
+            };
+
+            window.addEventListener('mousedown', (e) => {
+                if (e.target.closest('button, a, .modal-iff-box, .compass-tape-wrap, .bottom-fire-bar, .air-contact-box')) return;
+                onStart(e.clientX, e.clientY);
+            });
+            window.addEventListener('mousemove', (e) => onMove(e.clientX, e.clientY));
+            window.addEventListener('mouseup', onEnd);
+
+            window.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    if (e.target.closest('button, a, .modal-iff-box, .compass-tape-wrap, .bottom-fire-bar, .air-contact-box')) return;
+                    onStart(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            window.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging) {
+                    e.preventDefault();
+                    onMove(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: false });
+
+            window.addEventListener('touchend', onEnd);
+            window.addEventListener('touchcancel', onEnd);
+        }
+
+        function toggleHeadingInvert() {
+            headingOffset = (headingOffset === 0) ? 180 : 0;
+            const btn = document.getElementById('btn-calib-heading');
+            if (btn) {
+                btn.textContent = headingOffset === 180 ? '🔄 INV 180°' : '⚙️ CALIB';
+                btn.style.color = headingOffset === 180 ? 'var(--sam-gold)' : 'var(--sam-cyan)';
+            }
+        }
+
+        function autoCenterTarget() {
+            const target = airContacts.find(c => !c.destroyed && c.type === 'HOSTILE') || airContacts.find(c => !c.destroyed);
+            if (!target) return;
+            targetHeading = Math.round(target.azimuth);
+            targetPitch = Math.round(target.elevation);
+            lastUserTouchTime = performance.now();
+            playTacticalBeep(880, 0.12, 'sine');
         }
 
         // ==================== CÁMARA ====================
@@ -1388,8 +1541,8 @@
 
             const sideBarIndicator = document.getElementById('elev-bar-indicator');
             if (sideBarIndicator) {
-                // Mapear de 15° a 85° a porcentaje (0% a 100%)
-                const pct = Math.max(0, Math.min(100, ((currentPitch - 15) / 70) * 100));
+                // Mapear de 0° a 80° a porcentaje (0% a 100%)
+                const pct = Math.max(0, Math.min(100, (currentPitch / 80) * 100));
                 sideBarIndicator.style.bottom = `${pct}%`;
             }
         }
@@ -1402,6 +1555,11 @@
         function simLoop(now) {
             const dt = (now - lastFrameTime) / 1000;
             lastFrameTime = now;
+
+            // Filtro paso bajo suave para orientación (elimina temblores y giros erráticos)
+            let diffHeading = ((targetHeading - currentHeading + 540) % 360) - 180;
+            currentHeading = (currentHeading + diffHeading * 0.28 + 360) % 360;
+            currentPitch = currentPitch + (targetPitch - currentPitch) * 0.28;
 
             updateContactsPhysics(dt);
             updateCompassTape();
@@ -1423,6 +1581,8 @@
             const cx = w / 2;
             const cy = h / 2;
 
+            const { fovH, fovV } = getFieldOfView();
+
             layer.innerHTML = '';
             edgeLayer.innerHTML = '';
 
@@ -1435,12 +1595,12 @@
                 let deltaAz = ((contact.azimuth - currentHeading + 540) % 360) - 180;
                 let deltaEl = contact.elevation - currentPitch;
 
-                const inFOV_H = Math.abs(deltaAz) <= (FOV_H / 2);
-                const inFOV_V = Math.abs(deltaEl) <= (FOV_V / 2);
+                const inFOV_H = Math.abs(deltaAz) <= (fovH / 2);
+                const inFOV_V = Math.abs(deltaEl) <= (fovV / 2);
 
                 if (inFOV_H && inFOV_V) {
-                    const screenX = cx + (deltaAz / (FOV_H / 2)) * (w / 2);
-                    const screenY = cy - (deltaEl / (FOV_V / 2)) * (h / 2);
+                    const screenX = cx + (deltaAz / (fovH / 2)) * (w / 2);
+                    const screenY = cy - (deltaEl / (fovV / 2)) * (h / 2);
 
                     const angDist = Math.hypot(deltaAz, deltaEl);
                     if (angDist < bestAngularDist) {
@@ -1476,23 +1636,33 @@
                     `;
                     layer.appendChild(el);
                 } else {
-                    // Objetivo FUERA del campo de visión: Mostrar flecha perimétrica en borde
+                    // Objetivo FUERA del campo de visión: Mostrar flecha perimétrica precisa
                     const edgeEl = document.createElement('div');
-                    const isLeft = deltaAz < 0;
-                    const edgeClass = isLeft ? 'edge-left' : 'edge-right';
                     const typeClass = contact.type === 'HOSTILE' ? 'hostile' : (contact.type === 'FRIENDLY' ? 'friendly' : 'civilian');
-                    
-                    // Posición vertical aproximada
-                    const clampedY = Math.max(80, Math.min(h - 100, cy - (deltaEl / (FOV_V / 2)) * (h / 3)));
-                    
-                    edgeEl.className = `edge-indicator ${typeClass} ${edgeClass}`;
-                    edgeEl.style.top = `${clampedY}px`;
-                    
-                    const degDiff = Math.abs(Math.round(deltaAz));
-                    if (isLeft) {
-                        edgeEl.innerHTML = `◀ ${contact.squawk} (${degDiff}°)`;
+                    const degDiffAz = Math.round(deltaAz);
+                    const degDiffEl = Math.round(deltaEl);
+
+                    // Si está casi alineado en azimut pero fuera en elevación
+                    if (Math.abs(deltaAz) <= (fovH / 2) * 0.85) {
+                        if (deltaEl > 0) {
+                            edgeEl.className = `edge-indicator ${typeClass} edge-top`;
+                            edgeEl.innerHTML = `▲ SUBE (+${Math.abs(degDiffEl)}°) • ${contact.squawk} [${contact.name}]`;
+                        } else {
+                            edgeEl.className = `edge-indicator ${typeClass} edge-bottom`;
+                            edgeEl.innerHTML = `▼ BAJA (-${Math.abs(degDiffEl)}°) • ${contact.squawk} [${contact.name}]`;
+                        }
                     } else {
-                        edgeEl.innerHTML = `(${degDiff}°) ${contact.squawk} ▶`;
+                        const isLeft = deltaAz < 0;
+                        const edgeClass = isLeft ? 'edge-left' : 'edge-right';
+                        const clampedY = Math.max(90, Math.min(h - 110, cy - (deltaEl / (fovV / 2)) * (h / 3)));
+                        edgeEl.className = `edge-indicator ${typeClass} ${edgeClass}`;
+                        edgeEl.style.top = `${clampedY}px`;
+                        
+                        if (isLeft) {
+                            edgeEl.innerHTML = `◀ GIRA IZQ (${Math.abs(degDiffAz)}°) • ${contact.squawk} [EL: ${Math.round(contact.elevation)}°]`;
+                        } else {
+                            edgeEl.innerHTML = `[EL: ${Math.round(contact.elevation)}°] ${contact.squawk} • GIRA DER (${Math.abs(degDiffAz)}°) ▶`;
+                        }
                     }
                     edgeLayer.appendChild(edgeEl);
                 }
@@ -1506,10 +1676,10 @@
             const statusText = document.getElementById('seeker-status-text');
             const lockFill = document.getElementById('lock-meter-fill');
 
-            // Tolerancia angular para centrar el blanco previo (5.2 grados)
-            if (bestTarget && bestAngularDist < 5.2) {
+            // Tolerancia angular para centrar el blanco previo (8.2 grados para alinearse con el círculo)
+            if (bestTarget && bestAngularDist < 8.2) {
                 trackingTarget = bestTarget;
-                lockProgress = Math.min(1.0, lockProgress + 0.024);
+                lockProgress = Math.min(1.0, lockProgress + 0.026);
 
                 if (lockProgress >= 1.0) {
                     isSolidLock = true;
@@ -1620,9 +1790,10 @@
                 if (m.target && !m.target.destroyed) {
                     let deltaAz = ((m.target.azimuth - currentHeading + 540) % 360) - 180;
                     let deltaEl = m.target.elevation - currentPitch;
-                    targetScreenX = cx + (deltaAz / (FOV_H / 2)) * (w / 2);
-                    targetScreenY = cy - (deltaEl / (FOV_V / 2)) * (h / 2);
-                    targetInFOV = Math.abs(deltaAz) <= (FOV_H / 2) && Math.abs(deltaEl) <= (FOV_V / 2);
+                    const { fovH, fovV } = getFieldOfView();
+                    targetScreenX = cx + (deltaAz / (fovH / 2)) * (w / 2);
+                    targetScreenY = cy - (deltaEl / (fovV / 2)) * (h / 2);
+                    targetInFOV = Math.abs(deltaAz) <= (fovH / 2) && Math.abs(deltaEl) <= (fovV / 2);
                 }
 
                 // ==================== REGLA SACLOS: BLANCO DENTRO DEL CÍRCULO ====================
