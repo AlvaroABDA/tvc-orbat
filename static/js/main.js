@@ -5497,5 +5497,445 @@ async function abrirModalArmasPorUid(rawUid) {
     }
 }
 
+// ==================== SISTEMA DE GESTIÓN Y ACTIVACIÓN DE JUEGOS ====================
+let adminJuegosData = [];
+
+async function cargarAdminJuegos() {
+    const grid = document.getElementById('juegos-dashboard-grid');
+    if (!grid) return;
+    
+    try {
+        const res = await fetch('/api/admin/juegos/config');
+        if (!res.ok) throw new Error('Error de servidor al cargar juegos');
+        const data = await res.json();
+        
+        adminJuegosData = data.juegos || [];
+        
+        // Actualizar KPIs
+        const opEl = document.getElementById('juegos-kpi-operativos');
+        const inEl = document.getElementById('juegos-kpi-desactivados');
+        const totEl = document.getElementById('juegos-kpi-total');
+        if (opEl) opEl.textContent = data.activos ?? 0;
+        if (inEl) inEl.textContent = data.inactivos ?? 0;
+        if (totEl) totEl.textContent = data.total ?? adminJuegosData.length;
+        
+        renderizarJuegosDashboard(adminJuegosData);
+    } catch (e) {
+        if (grid) grid.innerHTML = `<div style="text-align: center; padding: 25px; color: #ff5566;">Error al cargar sistemas de juego: ${e.message}</div>`;
+    }
+}
+
+function renderizarJuegosDashboard(juegos) {
+    const grid = document.getElementById('juegos-dashboard-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    
+    if (!juegos || juegos.length === 0) {
+        grid.innerHTML = '<div style="text-align: center; padding: 25px; color: #aaa;">No hay sistemas de juego registrados.</div>';
+        return;
+    }
+    
+    juegos.forEach(j => {
+        const card = document.createElement('div');
+        const isActivo = !!j.activo;
+        
+        card.id = `card-admin-juego-${j.juego_id}`;
+        card.style.cssText = `
+            border-radius: 6px;
+            padding: 16px;
+            transition: all 0.25s ease;
+            ${isActivo 
+                ? 'background: rgba(14, 26, 36, 0.7); border: 1px solid rgba(46, 204, 113, 0.45); box-shadow: 0 0 15px rgba(46, 204, 113, 0.08);' 
+                : 'background: rgba(26, 14, 16, 0.7); border: 1px solid rgba(255, 51, 68, 0.45); box-shadow: 0 0 15px rgba(255, 51, 68, 0.08);'}
+        `;
+        
+        // Parámetros específicos según el juego
+        let paramsHtml = '';
+        const p = j.parametros || {};
+        
+        if (j.juego_id === 'simulador_aaa') {
+            paramsHtml = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Ecos de Clutter / Ruido</label>
+                        <input type="number" id="juego-${j.juego_id}-param-clutter_count" value="${p.clutter_count ?? 5}" min="0" max="20" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Cooldown Disparo Misil (s)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-cooldown_disparo_sec" value="${p.cooldown_disparo_sec ?? 4}" min="1" max="30" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Persistencia Fósforo Radar (s)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-phosphor_decay_sec" value="${p.phosphor_decay_sec ?? 2.2}" step="0.1" min="0.5" max="10" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Apertura Sector Scan (°)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-sector_scan_angle" value="${p.sector_scan_angle ?? 30}" min="10" max="90" step="5" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                </div>
+            `;
+        } else if (j.juego_id === 'mortero') {
+            paramsHtml = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Alcance Máx. a 45º (m)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-alcance_base" value="${p.alcance_base ?? 800}" step="50" min="100" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Radio de Explosión (m)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-radio_explosion" value="${p.radio_explosion ?? 15}" min="1" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Cadencia (Disparos / Min)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-disparos_por_minuto" value="${p.disparos_por_minuto ?? 5}" min="1" max="60" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Duración Radar Mapa (min)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-duracion_radar_minutos" value="${p.duracion_radar_minutos ?? 15}" min="1" max="120" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                </div>
+            `;
+        } else if (j.juego_id === 'telemetro_recon') {
+            paramsHtml = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Tolerancia Captura GPS (m)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-tolerancia_metros" value="${p.tolerancia_metros ?? 25}" min="5" max="200" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Caducidad OP Secundario (min)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-duracion_marca_minutos" value="${p.duracion_marca_minutos ?? 10}" min="1" max="60" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Alcance Láser Máximo (m)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-alcance_max_metros" value="${p.alcance_max_metros ?? 1500}" min="100" max="5000" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                </div>
+            `;
+        } else if (j.juego_id === 'prismaticos_ar') {
+            paramsHtml = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Radio Detección POI (m)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-radio_deteccion_metros" value="${p.radio_deteccion_metros ?? 50}" min="10" max="500" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Tolerancia Azimut (°)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-tolerancia_azimut_grados" value="${p.tolerancia_azimut_grados ?? 15}" min="5" max="45" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Campo Visión FOV (°)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-fov_grados" value="${p.fov_grados ?? 60}" min="30" max="120" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                </div>
+            `;
+        } else if (j.juego_id === 'field_medic') {
+            paramsHtml = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Botiquines Base / Sanitario</label>
+                        <input type="number" id="juego-${j.juego_id}-param-reanimaciones_iniciales" value="${p.reanimaciones_iniciales ?? 3}" min="1" max="20" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Tiempo Mín. Cura / Bypass (s)</label>
+                        <input type="number" id="juego-${j.juego_id}-param-tiempo_minimo_cura_sec" value="${p.tiempo_minimo_cura_sec ?? 25}" min="5" max="120" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">Autocuración</label>
+                        <select id="juego-${j.juego_id}-param-permitir_autocuracion" class="form-control" style="background: #090c12; border: 1px solid #444; color: #fff; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                            <option value="0" ${p.permitir_autocuracion == 0 ? 'selected' : ''}>No (Doctrina TVC)</option>
+                            <option value="1" ${p.permitir_autocuracion == 1 ? 'selected' : ''}>Sí (Permitida)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.73rem; color: #aaa; display: block; margin-bottom: 3px;">PIN Reset Terminales</label>
+                        <input type="text" id="juego-${j.juego_id}-param-pin_reset" value="${p.pin_reset || '4747'}" class="form-control" style="background: #090c12; border: 1px solid #444; color: #00f0ff; font-family: monospace; font-weight: bold; padding: 5px 8px; font-size: 0.82rem; width: 100%;">
+                    </div>
+                </div>
+            `;
+        }
+        
+        card.innerHTML = `
+            <!-- FILA PRINCIPAL: TÍTULO, ESTADO Y BOTÓN DE ACTIVACIÓN/DESACTIVACIÓN -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 42px; height: 42px; border-radius: 6px; background: rgba(0,0,0,0.4); border: 1px solid ${j.color || '#00f0ff'}; display: flex; align-items: center; justify-content: center;">
+                        <span class="material-symbols-outlined" style="color: ${j.color || '#00f0ff'}; font-size: 24px;">${j.icono || 'sports_esports'}</span>
+                    </div>
+                    <div>
+                        <div style="color: #fff; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.3px;">${j.nombre}</div>
+                        <div style="color: #94a3b8; font-size: 0.76rem; font-family: 'Share Tech Mono', monospace;">${j.subtitulo || ''}</div>
+                    </div>
+                </div>
+                
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    ${isActivo 
+                        ? `<span style="background: rgba(46, 204, 113, 0.15); color: #2ecc71; border: 1px solid #2ecc71; padding: 5px 12px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #2ecc71; display: inline-block; box-shadow: 0 0 6px #2ecc71;"></span> OPERATIVO</span>` 
+                        : `<span style="background: rgba(255, 51, 68, 0.15); color: #ff5566; border: 1px solid #ff3344; padding: 5px 12px; border-radius: 4px; font-weight: 700; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #ff5566; display: inline-block;"></span> DESACTIVADO</span>`}
+                    
+                    ${isActivo
+                        ? `<button type="button" class="btn btn-sm" onclick="toggleAdminJuego('${j.juego_id}', false)" style="background: rgba(255, 51, 68, 0.15); border: 1px solid #ff3344; color: #ff5566; font-weight: 700; padding: 6px 14px; font-size: 0.8rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s;">
+                             <span class="material-symbols-outlined" style="font-size: 16px;">power_settings_new</span> DESACTIVAR JUEGO
+                           </button>`
+                        : `<button type="button" class="btn btn-sm" onclick="toggleAdminJuego('${j.juego_id}', true)" style="background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; color: #2ecc71; font-weight: 700; padding: 6px 14px; font-size: 0.8rem; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 10px rgba(46,204,113,0.3);">
+                             <span class="material-symbols-outlined" style="font-size: 16px;">bolt</span> ACTIVAR JUEGO
+                           </button>`}
+                </div>
+            </div>
+
+            <!-- SECCIÓN: CÓDIGOS DE ACTIVACIÓN / CONTRASEÑAS VISIBLES PARA DIRECCIÓN -->
+            <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 5px; padding: 12px 14px; margin-bottom: 10px;">
+                <div style="color: #cbd5e1; font-size: 0.8rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="font-size: 18px; color: #e2b938;">vpn_key</span>
+                        CÓDIGOS DE ACTIVACIÓN (Directamente visibles para Dirección / Dictar o entregar a jugadores):
+                    </span>
+                    <span style="font-size: 0.72rem; color: #94a3b8; font-weight: normal;">* Edita directamente y haz clic en "Guardar Cambios"</span>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px;">
+                    <!-- SYLDAVIA -->
+                    <div style="background: rgba(241,196,15,0.06); border: 1px solid rgba(241,196,15,0.3); border-radius: 4px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                        <span style="font-size: 0.72rem; color: #f1c40f; font-weight: 700; letter-spacing: 0.5px;">SYLDAVIA:</span>
+                        <input type="text" id="juego-${j.juego_id}-pwd-syl" value="${j.passwords.Syldavia || ''}" style="background: #090c12; border: 1px solid #555; color: #f1c40f; font-family: 'Share Tech Mono', monospace; font-weight: bold; font-size: 0.9rem; padding: 4px 8px; width: 110px; border-radius: 3px; text-align: center;">
+                        <button type="button" class="btn btn-sm outline" onclick="copiarCodigoActivacion('juego-${j.juego_id}-pwd-syl', this)" style="padding: 4px 8px; font-size: 0.72rem; border-color: #f1c40f; color: #f1c40f;" title="Copiar código">📋 Copiar</button>
+                    </div>
+
+                    <!-- VOLKOVIA -->
+                    <div style="background: rgba(93,173,226,0.06); border: 1px solid rgba(93,173,226,0.3); border-radius: 4px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                        <span style="font-size: 0.72rem; color: #5dade2; font-weight: 700; letter-spacing: 0.5px;">VOLKOVIA:</span>
+                        <input type="text" id="juego-${j.juego_id}-pwd-vol" value="${j.passwords.Volkovia || ''}" style="background: #090c12; border: 1px solid #555; color: #5dade2; font-family: 'Share Tech Mono', monospace; font-weight: bold; font-size: 0.9rem; padding: 4px 8px; width: 110px; border-radius: 3px; text-align: center;">
+                        <button type="button" class="btn btn-sm outline" onclick="copiarCodigoActivacion('juego-${j.juego_id}-pwd-vol', this)" style="padding: 4px 8px; font-size: 0.72rem; border-color: #5dade2; color: #5dade2;" title="Copiar código">📋 Copiar</button>
+                    </div>
+
+                    <!-- KHEMED -->
+                    <div style="background: rgba(230,126,34,0.06); border: 1px solid rgba(230,126,34,0.3); border-radius: 4px; padding: 6px 10px; display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                        <span style="font-size: 0.72rem; color: #e67e22; font-weight: 700; letter-spacing: 0.5px;">KHEMED:</span>
+                        <input type="text" id="juego-${j.juego_id}-pwd-khd" value="${j.passwords.Khemed || ''}" style="background: #090c12; border: 1px solid #555; color: #e67e22; font-family: 'Share Tech Mono', monospace; font-weight: bold; font-size: 0.9rem; padding: 4px 8px; width: 110px; border-radius: 3px; text-align: center;">
+                        <button type="button" class="btn btn-sm outline" onclick="copiarCodigoActivacion('juego-${j.juego_id}-pwd-khd', this)" style="padding: 4px 8px; font-size: 0.72rem; border-color: #e67e22; color: #e67e22;" title="Copiar código">📋 Copiar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DESPLEGABLE: PARÁMETROS TÁCTICOS Y ACCIONES -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <button type="button" onclick="toggleJuegoDrawer('${j.juego_id}')" style="background: none; border: none; color: #00f0ff; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; padding: 5px 0;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">tune</span>
+                    <span id="drawer-toggle-text-${j.juego_id}">Configurar Parámetros del Sistema ▼</span>
+                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn btn-sm outline" onclick="resetAdminJuegoConfig('${j.juego_id}')" style="font-size: 0.76rem; border-color: #666; color: #aaa; padding: 4px 10px;" title="Restablecer parámetros originales">
+                        Restablecer
+                    </button>
+                    <button type="button" class="btn btn-sm primary" onclick="guardarAdminJuegoConfig('${j.juego_id}')" style="font-size: 0.76rem; font-weight: 700; padding: 4px 14px; background: #00f0ff; color: #000; border-color: #00f0ff;">
+                        Guardar Cambios
+                    </button>
+                </div>
+            </div>
+
+            <!-- DRAWER DE PARÁMETROS ESPECÍFICOS -->
+            <div id="drawer-juego-${j.juego_id}" style="display: none; margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.15); background: rgba(0,0,0,0.25); padding: 12px; border-radius: 4px;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #cbd5e1; margin-bottom: 8px;">PARÁMETROS OPERACIONALES EN MEMORIA:</div>
+                ${paramsHtml}
+            </div>
+        `;
+        
+        grid.appendChild(card);
+    });
+}
+
+async function toggleAdminJuego(juegoId, nuevoEstado) {
+    try {
+        const res = await fetch('/api/admin/juegos/toggle', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ juego_id: juegoId, activo: nuevoEstado })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            await cargarAdminJuegos();
+        } else {
+            alert(data.message || 'Error al cambiar estado del juego');
+        }
+    } catch(e) {
+        alert('Error de conexión al cambiar estado del juego');
+    }
+}
+
+async function toggleTodosJuegos(activarBool) {
+    const accion = activarBool ? 'ACTIVAR' : 'DESACTIVAR';
+    if (!confirm(`¿Confirmas que deseas ${accion} TODOS los sistemas de juego?`)) return;
+    try {
+        const res = await fetch('/api/admin/juegos/toggle_all', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ activo: activarBool })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            await cargarAdminJuegos();
+        } else {
+            alert(data.message || 'Error al cambiar estado global');
+        }
+    } catch(e) {
+        alert('Error de red al actualizar todos los juegos');
+    }
+}
+
+async function guardarAdminJuegoConfig(juegoId) {
+    const cur = adminJuegosData.find(x => x.juego_id === juegoId) || {};
+    
+    // 1. Recoger contraseñas
+    const syl = document.getElementById(`juego-${juegoId}-pwd-syl`)?.value.trim() || '';
+    const vol = document.getElementById(`juego-${juegoId}-pwd-vol`)?.value.trim() || '';
+    const khd = document.getElementById(`juego-${juegoId}-pwd-khd`)?.value.trim() || '';
+    const passwords = { Syldavia: syl, Volkovia: vol, Khemed: khd };
+    
+    // 2. Recoger parámetros según juego
+    const parametros = { ...(cur.parametros || {}) };
+    if (juegoId === 'simulador_aaa') {
+        const cl = document.getElementById(`juego-${juegoId}-param-clutter_count`);
+        const cd = document.getElementById(`juego-${juegoId}-param-cooldown_disparo_sec`);
+        const ph = document.getElementById(`juego-${juegoId}-param-phosphor_decay_sec`);
+        const sc = document.getElementById(`juego-${juegoId}-param-sector_scan_angle`);
+        if (cl) parametros.clutter_count = parseInt(cl.value, 10) || 0;
+        if (cd) parametros.cooldown_disparo_sec = parseFloat(cd.value) || 4;
+        if (ph) parametros.phosphor_decay_sec = parseFloat(ph.value) || 2.2;
+        if (sc) parametros.sector_scan_angle = parseInt(sc.value, 10) || 30;
+    } else if (juegoId === 'mortero') {
+        const al = document.getElementById(`juego-${juegoId}-param-alcance_base`);
+        const rd = document.getElementById(`juego-${juegoId}-param-radio_explosion`);
+        const cd = document.getElementById(`juego-${juegoId}-param-disparos_por_minuto`);
+        const dr = document.getElementById(`juego-${juegoId}-param-duracion_radar_minutos`);
+        if (al) parametros.alcance_base = parseInt(al.value, 10) || 800;
+        if (rd) parametros.radio_explosion = parseInt(rd.value, 10) || 15;
+        if (cd) parametros.disparos_por_minuto = parseInt(cd.value, 10) || 5;
+        if (dr) parametros.duracion_radar_minutos = parseInt(dr.value, 10) || 15;
+    } else if (juegoId === 'telemetro_recon') {
+        const tol = document.getElementById(`juego-${juegoId}-param-tolerancia_metros`);
+        const dur = document.getElementById(`juego-${juegoId}-param-duracion_marca_minutos`);
+        const alc = document.getElementById(`juego-${juegoId}-param-alcance_max_metros`);
+        if (tol) parametros.tolerancia_metros = parseInt(tol.value, 10) || 25;
+        if (dur) parametros.duracion_marca_minutos = parseInt(dur.value, 10) || 10;
+        if (alc) parametros.alcance_max_metros = parseInt(alc.value, 10) || 1500;
+    } else if (juegoId === 'prismaticos_ar') {
+        const rad = document.getElementById(`juego-${juegoId}-param-radio_deteccion_metros`);
+        const tol = document.getElementById(`juego-${juegoId}-param-tolerancia_azimut_grados`);
+        const fov = document.getElementById(`juego-${juegoId}-param-fov_grados`);
+        if (rad) parametros.radio_deteccion_metros = parseInt(rad.value, 10) || 50;
+        if (tol) parametros.tolerancia_azimut_grados = parseInt(tol.value, 10) || 15;
+        if (fov) parametros.fov_grados = parseInt(fov.value, 10) || 60;
+    } else if (juegoId === 'field_medic') {
+        const rea = document.getElementById(`juego-${juegoId}-param-reanimaciones_iniciales`);
+        const tmp = document.getElementById(`juego-${juegoId}-param-tiempo_minimo_cura_sec`);
+        const aut = document.getElementById(`juego-${juegoId}-param-permitir_autocuracion`);
+        const pin = document.getElementById(`juego-${juegoId}-param-pin_reset`);
+        if (rea) parametros.reanimaciones_iniciales = parseInt(rea.value, 10) || 3;
+        if (tmp) parametros.tiempo_minimo_cura_sec = parseInt(tmp.value, 10) || 25;
+        if (aut) parametros.permitir_autocuracion = parseInt(aut.value, 10) || 0;
+        if (pin) parametros.pin_reset = pin.value.trim() || '4747';
+    }
+    
+    try {
+        const res = await fetch('/api/admin/juegos/config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                juego_id: juegoId,
+                nombre: cur.nombre,
+                activo: cur.activo,
+                passwords: passwords,
+                parametros: parametros
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            alert(`Ajustes y códigos de ${cur.nombre || juegoId} guardados correctamente.`);
+            await cargarAdminJuegos();
+        } else {
+            alert(data.message || 'Error al guardar');
+        }
+    } catch(e) {
+        alert('Error de conexión al guardar configuración');
+    }
+}
+
+async function resetAdminJuegoConfig(juegoId) {
+    if (!confirm(`¿Restablecer los parámetros y códigos de este sistema a sus valores por defecto?`)) return;
+    try {
+        const res = await fetch('/api/admin/juegos/reset', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ juego_id: juegoId })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            await cargarAdminJuegos();
+        } else {
+            alert(data.message || 'Error al restablecer');
+        }
+    } catch(e) {
+        alert('Error al conectar con el servidor');
+    }
+}
+
+function copiarCodigoActivacion(inputId, btnEl) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) {
+        alert('No hay código definido para copiar.');
+        return;
+    }
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            mostrarCopiadoExito(btnEl);
+        }).catch(() => {
+            copiarFallback(input, btnEl);
+        });
+    } else {
+        copiarFallback(input, btnEl);
+    }
+}
+
+function copiarFallback(input, btnEl) {
+    input.select();
+    input.setSelectionRange(0, 99999);
+    try {
+        document.execCommand('copy');
+        mostrarCopiadoExito(btnEl);
+    } catch (e) {
+        alert(`Código: ${input.value}`);
+    }
+}
+
+function mostrarCopiadoExito(btnEl) {
+    if (!btnEl) return;
+    const originalText = btnEl.innerHTML;
+    btnEl.innerHTML = '✔ ¡COPIADO!';
+    btnEl.style.borderColor = '#2ecc71';
+    btnEl.style.color = '#2ecc71';
+    setTimeout(() => {
+        btnEl.innerHTML = originalText;
+        btnEl.style.borderColor = '';
+        btnEl.style.color = '';
+    }, 1800);
+}
+
+function toggleJuegoDrawer(juegoId) {
+    const drawer = document.getElementById(`drawer-juego-${juegoId}`);
+    const toggleText = document.getElementById(`drawer-toggle-text-${juegoId}`);
+    if (!drawer) return;
+    
+    if (drawer.style.display === 'none' || !drawer.style.display) {
+        drawer.style.display = 'block';
+        if (toggleText) toggleText.textContent = 'Ocultar Parámetros del Sistema ▲';
+    } else {
+        drawer.style.display = 'none';
+        if (toggleText) toggleText.textContent = 'Configurar Parámetros del Sistema ▼';
+    }
+}
+
 
 

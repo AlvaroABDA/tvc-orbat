@@ -755,76 +755,103 @@
                 <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
                     <button class="btn admin-tab-btn active" data-tab="tab-armas" style="color: #e2b938; border-color: rgba(226,185,56,0.4); padding: 5px 14px; font-size: 0.82rem;">RÉPLICAS</button>
                     <button class="btn admin-tab-btn" data-tab="tab-medicos" style="color: #2ecc71; border-color: rgba(46,204,113,0.4); padding: 5px 14px; font-size: 0.82rem;">✚ MÉDICOS</button>
-                    <button class="btn admin-tab-btn" data-tab="tab-artilleria" style="padding: 5px 14px; font-size: 0.82rem;">ARTILLERÍA</button>
+                    <button class="btn admin-tab-btn" data-tab="tab-juegos" style="color: #00f0ff; border-color: rgba(0,240,255,0.4); padding: 5px 14px; font-size: 0.82rem;">🎮 GESTIÓN DE JUEGOS</button>
                     <button class="btn admin-tab-btn" data-tab="tab-zafarrancho" style="color: var(--danger-color); border-color: var(--danger-color); padding: 5px 14px; font-size: 0.82rem;">ZAFARRANCHO</button>
                 </div>
                 
-                <div id="tab-artilleria" class="admin-tab-content" style="display: none;">
-                    <!-- ADMINISTRACIÓN DE ARTILLERÍA -->
-                    <div class="panel management-panel" id="admin-artilleria-panel">
-                        <h3 style="color: var(--theme-color);">CONFIGURACIÓN DE ARTILLERÍA GLOBAL</h3>
-                        <p style="color: #aaa; margin-bottom: 1rem; font-size: 0.9rem;">
-                            Configura las variables balísticas de los morteros y rehabilita unidades destruidas.
-                        </p>
-                        
-                        <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
-                            <div style="flex: 1; min-width: 300px; border: 1px solid #444; padding: 1rem; background: rgba(0,0,0,0.2);">
-                                <h4>Ajustes Balísticos</h4>
-                                <div class="form-group" style="margin-top: 1rem;">
-                                    <label>Alcance Máx. a 45º (m)</label>
-                                    <input type="number" id="admin-alcance-base" class="form-control" value="800">
-                                </div>
-                                <div class="form-group">
-                                    <label>Radio de Letalidad (m)</label>
-                                    <input type="number" id="admin-radio-explosion" class="form-control" value="15">
-                                </div>
-                                <div class="form-group">
-                                    <label>Cadencia (Disparos / Minuto)</label>
-                                    <input type="number" id="admin-cadencia" class="form-control" value="5">
-                                </div>
-                                <div class="form-group">
-                                    <label>Duración Radar en Mapa (minutos)</label>
-                                    <input type="number" id="admin-duracion-radar" class="form-control" value="15" min="1" max="60">
-                                </div>
-                                <button id="btn-admin-guardar-artilleria" class="btn primary" style="width: 100%;">Guardar Ajustes</button>
-                                <button id="btn-admin-limpiar-impactos" class="btn outline" style="width: 100%; border-color: var(--danger-color); color: var(--danger-color); margin-top: 10px;">Limpiar Impactos</button>
+                <div id="tab-juegos" class="admin-tab-content" style="display: none;">
+                    <!-- ADMINISTRACIÓN Y CONTROL GLOBAL DE JUEGOS Y MINIJUEGOS -->
+                    <div class="panel management-panel" style="border: 1px solid rgba(0, 240, 255, 0.35); background: rgba(9, 14, 22, 0.95); box-shadow: 0 4px 25px rgba(0,0,0,0.5);">
+                        <!-- CABECERA DASHBOARD -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px;">
+                            <div>
+                                <h3 style="color: #00f0ff; margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                                    <span class="material-symbols-outlined" style="color: #00f0ff; font-size: 26px;">sports_esports</span>
+                                    CENTRO DE GESTIÓN Y ACTIVACIÓN DE JUEGOS
+                                </h3>
+                                <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 0.86rem; line-height: 1.4;">
+                                    Habilita o deshabilita los sistemas tácticos para los combatientes en tiempo real. <b>Las contraseñas son códigos de activación directamente visibles</b> para que Dirección y Árbitros puedan dictarlos o asignarlos a las escuadras.
+                                </p>
                             </div>
-                            
-                            <div style="flex: 1; min-width: 300px; border: 1px solid #444; padding: 1rem; background: rgba(0,0,0,0.2);">
-                                <h4>Estado de Baterías</h4>
-                                <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--color-syldavia); border-radius: 5px;">
-                                        <strong style="color: var(--color-syldavia);">SYLDAVIA</strong>
-                                        <div style="display: flex; gap: 5px;">
-                                            <button id="btn-syl-activa" class="btn">ACTIVA</button>
-                                            <button id="btn-syl-inactiva" class="btn">INACTIVA</button>
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; border: 1px solid var(--color-volkovia); border-radius: 5px;">
-                                        <strong style="color: var(--color-volkovia);">VOLKOVIA</strong>
-                                        <div style="display: flex; gap: 5px;">
-                                            <button id="btn-vol-activa" class="btn">ACTIVA</button>
-                                            <button id="btn-vol-inactiva" class="btn">INACTIVA</button>
-                                        </div>
-                                    </div>
-                                </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                                <button type="button" class="btn btn-sm" onclick="toggleTodosJuegos(true)" style="background: rgba(46,204,113,0.15); border: 1px solid #2ecc71; color: #2ecc71; font-weight: 600; padding: 6px 12px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">power</span> Activar Todos
+                                </button>
+                                <button type="button" class="btn btn-sm" onclick="toggleTodosJuegos(false)" style="background: rgba(255,51,68,0.15); border: 1px solid #ff3344; color: #ff5566; font-weight: 600; padding: 6px 12px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">power_off</span> Desactivar Todos
+                                </button>
+                                <button type="button" class="btn outline btn-sm" onclick="cargarAdminJuegos()" style="border-color: #00f0ff; color: #00f0ff; font-weight: 600; padding: 6px 12px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">sync</span> Actualizar Dashboard
+                                </button>
                             </div>
                         </div>
-                        
-                        <div style="margin-top: 2rem; border: 1px solid #444; padding: 1rem; background: rgba(0,0,0,0.2);">
-                            <h4>Registro de Impactos Exitosos (Log)</h4>
-                            <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px;">
-                                <button id="btn-admin-refresh-art-log" class="btn outline btn-sm" style="font-size: 0.8rem;">Actualizar Log</button>
-                                <button id="btn-admin-clear-art-log" class="btn outline btn-sm" style="font-size: 0.8rem; border-color: var(--danger-color); color: var(--danger-color);">Limpiar Log</button>
+
+                        <!-- BARRA KPI DE ESTADO GLOBAL -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 1.5rem;">
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid #2ecc71; padding: 10px 14px; border-radius: 4px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Sistemas Operativos</div>
+                                <div id="juegos-kpi-operativos" style="font-size: 1.5rem; font-weight: 800; color: #2ecc71; font-family: monospace;">--</div>
                             </div>
-                            <div style="overflow-x: auto;">
-                                <table class="table-tactical">
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid #ff3344; padding: 10px 14px; border-radius: 4px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Sistemas Desactivados</div>
+                                <div id="juegos-kpi-desactivados" style="font-size: 1.5rem; font-weight: 800; color: #ff5566; font-family: monospace;">--</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.08); border-left: 4px solid #e2b938; padding: 10px 14px; border-radius: 4px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Total de Sistemas</div>
+                                <div id="juegos-kpi-total" style="font-size: 1.5rem; font-weight: 800; color: #e2b938; font-family: monospace;">5</div>
+                            </div>
+                        </div>
+
+                        <!-- CONTENEDOR DE TARJETAS DE JUEGOS -->
+                        <div id="juegos-dashboard-grid" style="display: flex; flex-direction: column; gap: 16px;">
+                            <!-- Inyectado dinámicamente por cargarAdminJuegos() -->
+                            <div style="text-align: center; padding: 25px; color: #888;">Cargando sistemas tácticos...</div>
+                        </div>
+
+                        <!-- PANEL COMPLEMENTARIO: BATERÍAS DE ARTILLERÍA Y LOG DE IMPACTOS -->
+                        <div style="margin-top: 2.2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;" id="admin-artilleria-panel">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
+                                <h4 style="color: #ff5566; margin: 0; display: flex; align-items: center; gap: 6px; font-size: 1rem;">
+                                    <span class="material-symbols-outlined" style="font-size: 20px;">target</span>
+                                    Baterías de Mortero en Combate y Registro de Impactos
+                                </h4>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="btn-admin-refresh-art-log" class="btn outline btn-sm" style="font-size: 0.8rem;">Actualizar Log</button>
+                                    <button id="btn-admin-clear-art-log" class="btn outline btn-sm" style="font-size: 0.8rem; border-color: var(--danger-color); color: var(--danger-color);">Limpiar Log</button>
+                                </div>
+                            </div>
+
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 1.2rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border: 1px solid var(--color-syldavia); border-radius: 5px; background: rgba(0,0,0,0.3);">
+                                    <div>
+                                        <strong style="color: var(--color-syldavia); font-size: 0.9rem;">BATERÍA SYLDAVIA</strong>
+                                        <div style="font-size: 0.75rem; color: #888;">Operatividad de tubo mortero</div>
+                                    </div>
+                                    <div style="display: flex; gap: 5px;">
+                                        <button id="btn-syl-activa" class="btn btn-sm">ACTIVA</button>
+                                        <button id="btn-syl-inactiva" class="btn btn-sm">INACTIVA</button>
+                                    </div>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 1rem; border: 1px solid var(--color-volkovia); border-radius: 5px; background: rgba(0,0,0,0.3);">
+                                    <div>
+                                        <strong style="color: var(--color-volkovia); font-size: 0.9rem;">BATERÍA VOLKOVIA</strong>
+                                        <div style="font-size: 0.75rem; color: #888;">Operatividad de tubo mortero</div>
+                                    </div>
+                                    <div style="display: flex; gap: 5px;">
+                                        <button id="btn-vol-activa" class="btn btn-sm">ACTIVA</button>
+                                        <button id="btn-vol-inactiva" class="btn btn-sm">INACTIVA</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="overflow-x: auto; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;">
+                                <table class="table-tactical" style="width: 100%; min-width: 700px;">
                                     <thead>
                                         <tr>
-                                            <th>FECHA/HORA</th>
-                                            <th>FACCIÓN</th>
-                                            <th>TIPO OBJETIVO</th>
-                                            <th>ID OBJETIVO</th>
+                                            <th style="width: 160px;">FECHA/HORA</th>
+                                            <th style="width: 140px;">FACCIÓN</th>
+                                            <th style="width: 140px;">TIPO OBJETIVO</th>
+                                            <th style="width: 140px;">ID OBJETIVO</th>
                                             <th>DESCRIPCIÓN</th>
                                         </tr>
                                     </thead>
@@ -833,9 +860,22 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            <!-- Campos ocultos de apoyo para compatibilidad -->
+                            <div style="display: none;">
+                                <input type="number" id="admin-alcance-base" value="800">
+                                <input type="number" id="admin-radio-explosion" value="15">
+                                <input type="number" id="admin-cadencia" value="5">
+                                <input type="number" id="admin-duracion-radar" value="15">
+                                <button id="btn-admin-guardar-artilleria"></button>
+                                <button id="btn-admin-limpiar-impactos"></button>
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Alias id para tab-artilleria si algún script legacy lo consulta -->
+                <div id="tab-artilleria" style="display: none;"></div>
 
                 <div id="tab-armas" class="admin-tab-content" style="display: block;">
                     <!-- CONTROL DE RÉPLICAS Y CAPACIDADES OPERACIONALES -->
@@ -1090,6 +1130,9 @@
                             cargarAuditoriaMedica();
                         } else if (targetId === 'tab-armas') {
                             if (typeof cargarArmasDashboard === 'function') cargarArmasDashboard();
+                        } else if (targetId === 'tab-juegos' || targetId === 'tab-artilleria') {
+                            if (typeof cargarAdminJuegos === 'function') cargarAdminJuegos();
+                            if (typeof loadAdminArtilleria === 'function') loadAdminArtilleria();
                         }
                     });
                 });

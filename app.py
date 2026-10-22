@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, g, send_from_directory, make_response
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, g, send_from_directory, make_response, has_app_context
 import sqlite3
 import os
 import glob
@@ -11,6 +11,7 @@ import imint_engine
 import op_dinamico_engine
 from field_medic import medic_engine
 import math
+import json
 
 def calculate_azimuth(lat_origin, lng_origin, lat_target, lng_target):
     dy = float(lat_target) - float(lat_origin)
@@ -170,11 +171,262 @@ MINIGAME_PASSWORDS = {
     }
 }
 
+DEFAULT_JUEGOS_CONFIG = {
+    'simulador_aaa': {
+        'nombre': 'Defensa Antiaérea (AAA / Radar & Cañón)',
+        'subtitulo': 'Binomio Radar PPI 360° + Lanzador AR FOX-1',
+        'icono': 'radar',
+        'color': '#ff4444',
+        'activo': 1,
+        'passwords': {
+            'Syldavia': 'aaa-syl',
+            'Volkovia': 'aaa-vol',
+            'Khemed': 'aaa-khd'
+        },
+        'parametros': {
+            'clutter_count': 5,
+            'cooldown_disparo_sec': 4,
+            'phosphor_decay_sec': 2.2,
+            'sector_scan_angle': 30
+        }
+    },
+    'mortero': {
+        'nombre': 'Batería de Artillería (Mortero Balístico)',
+        'subtitulo': 'Cálculo Balístico de Fuego Indirecto (45°-85°)',
+        'icono': 'rocket_launch',
+        'color': '#ff5566',
+        'activo': 1,
+        'passwords': {
+            'Syldavia': 'fuego-syl',
+            'Volkovia': 'fuego-vol',
+            'Khemed': 'fuego-khd'
+        },
+        'parametros': {
+            'alcance_base': 800,
+            'radio_explosion': 15,
+            'disparos_por_minuto': 5,
+            'duracion_radar_minutos': 15
+        }
+    },
+    'telemetro_recon': {
+        'nombre': 'Telémetro Recon (Designación Láser)',
+        'subtitulo': 'Exploración IMINT, Puntos OP y Marcación GPS',
+        'icono': 'location_searching',
+        'color': '#00f0ff',
+        'activo': 1,
+        'passwords': {
+            'Syldavia': 'recon-syl',
+            'Volkovia': 'recon-vol',
+            'Khemed': 'recon-khd'
+        },
+        'parametros': {
+            'tolerancia_metros': 25,
+            'duracion_marca_minutos': 10,
+            'alcance_max_metros': 1500
+        }
+    },
+    'prismaticos_ar': {
+        'nombre': 'Prismáticos Tácticos AR (Visor Realidad Aumentada)',
+        'subtitulo': 'Visor Holográfico AR de Puntos de Interés (POI)',
+        'icono': 'view_in_ar',
+        'color': '#2ecc71',
+        'activo': 1,
+        'passwords': {
+            'Syldavia': 'ar-syl',
+            'Volkovia': 'ar-vol',
+            'Khemed': 'ar-khd'
+        },
+        'parametros': {
+            'radio_deteccion_metros': 50,
+            'tolerancia_azimut_grados': 15,
+            'fov_grados': 60
+        }
+    },
+    'field_medic': {
+        'nombre': 'Field Medic (Sanitario de Combate PWA)',
+        'subtitulo': 'Suite Médica Offline, Triage QR y Reanimaciones',
+        'icono': 'medical_services',
+        'color': '#2ecc71',
+        'activo': 1,
+        'passwords': {
+            'Syldavia': 'med-syl',
+            'Volkovia': 'med-vol',
+            'Khemed': 'med-khd'
+        },
+        'parametros': {
+            'reanimaciones_iniciales': 3,
+            'tiempo_minimo_cura_sec': 25,
+            'permitir_autocuracion': 0,
+            'pin_reset': '4747'
+        }
+    }
+}
+
+def ensure_juego_config_tables(conn):
+    try:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS juego_config (
+                juego_id TEXT PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                subtitulo TEXT DEFAULT '',
+                icono TEXT DEFAULT 'sports_esports',
+                color TEXT DEFAULT '#00f0ff',
+                activo INTEGER DEFAULT 1,
+                passwords_json TEXT NOT NULL,
+                parametros_json TEXT NOT NULL,
+                actualizado_en DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        for jid, d_cfg in DEFAULT_JUEGOS_CONFIG.items():
+            row = conn.execute('SELECT juego_id FROM juego_config WHERE juego_id = ?', (jid,)).fetchone()
+            if not row:
+                conn.execute('''
+                    INSERT INTO juego_config (juego_id, nombre, subtitulo, icono, color, activo, passwords_json, parametros_json)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (
+                    jid,
+                    d_cfg['nombre'],
+                    d_cfg.get('subtitulo', ''),
+                    d_cfg.get('icono', 'sports_esports'),
+                    d_cfg.get('color', '#00f0ff'),
+                    d_cfg['activo'],
+                    json.dumps(d_cfg['passwords']),
+                    json.dumps(d_cfg['parametros'])
+                ))
+        conn.commit()
+    except Exception as e:
+        print("Error en ensure_juego_config_tables:", e)
+
+def get_all_juegos_config(conn=None):
+    close_at_end = False
+    if conn is None:
+        conn = get_db_connection()
+        close_at_end = not has_app_context()
+    try:
+        ensure_juego_config_tables(conn)
+        rows = conn.execute('SELECT * FROM juego_config ORDER BY rowid ASC').fetchall()
+        result = {}
+        for r in rows:
+            jid = r['juego_id']
+            d_fallback = DEFAULT_JUEGOS_CONFIG.get(jid, {})
+            try:
+                pwds = json.loads(r['passwords_json']) if r['passwords_json'] else {}
+            except Exception:
+                pwds = d_fallback.get('passwords', {})
+            try:
+                params = json.loads(r['parametros_json']) if r['parametros_json'] else {}
+            except Exception:
+                params = d_fallback.get('parametros', {})
+            result[jid] = {
+                'juego_id': jid,
+                'nombre': r['nombre'],
+                'subtitulo': r['subtitulo'] or d_fallback.get('subtitulo', ''),
+                'icono': r['icono'] or d_fallback.get('icono', 'sports_esports'),
+                'color': r['color'] or d_fallback.get('color', '#00f0ff'),
+                'activo': bool(r['activo']),
+                'passwords': pwds,
+                'parametros': params,
+                'actualizado_en': r['actualizado_en']
+            }
+        return result
+    finally:
+        if close_at_end:
+            conn.close()
+
+def get_juego_config(juego_id, conn=None):
+    all_cfg = get_all_juegos_config(conn)
+    if juego_id in all_cfg:
+        return all_cfg[juego_id]
+    d = DEFAULT_JUEGOS_CONFIG.get(juego_id, {})
+    return {
+        'juego_id': juego_id,
+        'nombre': d.get('nombre', juego_id),
+        'subtitulo': d.get('subtitulo', ''),
+        'icono': d.get('icono', 'sports_esports'),
+        'color': d.get('color', '#00f0ff'),
+        'activo': bool(d.get('activo', 1)),
+        'passwords': d.get('passwords', {}),
+        'parametros': d.get('parametros', {})
+    }
+
+def is_juego_activo(juego_id, conn=None):
+    cfg = get_juego_config(juego_id, conn)
+    return bool(cfg.get('activo', True))
+
+def get_juego_param(juego_id, param_name, default=None):
+    cfg = get_juego_config(juego_id)
+    return cfg.get('parametros', {}).get(param_name, default)
+
+def set_juego_status(juego_id, activo, conn=None):
+    close_at_end = False
+    if conn is None:
+        conn = get_db_connection()
+        close_at_end = not has_app_context()
+    try:
+        ensure_juego_config_tables(conn)
+        val = 1 if activo else 0
+        conn.execute('UPDATE juego_config SET activo = ?, actualizado_en = CURRENT_TIMESTAMP WHERE juego_id = ?', (val, juego_id))
+        conn.commit()
+        return val
+    finally:
+        if close_at_end:
+            conn.close()
+
+def save_juego_full_config(juego_id, data, conn=None):
+    close_at_end = False
+    if conn is None:
+        conn = get_db_connection()
+        close_at_end = not has_app_context()
+    try:
+        ensure_juego_config_tables(conn)
+        cur = get_juego_config(juego_id, conn)
+        nombre = data.get('nombre', cur['nombre'])
+        activo = 1 if data.get('activo', cur['activo']) else 0
+        passwords = data.get('passwords', cur['passwords'])
+        parametros = data.get('parametros', cur['parametros'])
+
+        conn.execute('''
+            UPDATE juego_config
+            SET nombre = ?, activo = ?, passwords_json = ?, parametros_json = ?, actualizado_en = CURRENT_TIMESTAMP
+            WHERE juego_id = ?
+        ''', (nombre, activo, json.dumps(passwords), json.dumps(parametros), juego_id))
+        conn.commit()
+
+        if juego_id == 'mortero':
+            try:
+                ensure_artilleria_tables(conn)
+                conn.execute('''
+                    UPDATE Mortero_Config
+                    SET alcance_base = ?, radio_explosion = ?, disparos_por_minuto = ?, duracion_radar_minutos = ?
+                    WHERE id = 1
+                ''', (
+                    int(parametros.get('alcance_base', 800)),
+                    int(parametros.get('radio_explosion', 15)),
+                    int(parametros.get('disparos_por_minuto', 5)),
+                    int(parametros.get('duracion_radar_minutos', 15))
+                ))
+                conn.commit()
+            except Exception as e:
+                print("Error sincronizando Mortero_Config:", e)
+        return True
+    finally:
+        if close_at_end:
+            conn.close()
+
 ADMIN_USERS = {
     'admin': {'password': '4747', 'role': 'admin', 'faction': 'All'}
 }
 
 def get_db_connection():
+    if not has_app_context():
+        conn = sqlite3.connect(DB_PATH, timeout=20)
+        try:
+            conn.execute('PRAGMA journal_mode=WAL;')
+        except sqlite3.OperationalError:
+            pass
+        conn.row_factory = sqlite3.Row
+        return conn
+
     db = getattr(g, 'db', None)
     if db is not None:
         try:
@@ -319,33 +571,37 @@ def auth_minigame():
     if 'role' not in session or 'faction' not in session:
         return jsonify({'success': False, 'message': 'No autorizado'}), 403
         
-    data = request.json
+    data = request.json or {}
     minigame = data.get('minigame')
     password = data.get('password', '').strip()
     faction = session['faction']
     
-    if session['role'] == 'admin':
+    if session.get('role') == 'admin':
         return jsonify({'success': True})
         
-    if minigame == 'simulador_aaa':
-        faction_passwords = MINIGAME_PASSWORDS.get('simulador_aaa', {})
-        expected_pwd = faction_passwords.get(faction, '').lower()
-        if password.lower() in [expected_pwd, 'aaavolk', 'aaa-syl', 'aaa-vol', 'aaa-khd', 'aaa']:
-            if 'unlocked_minigames' not in session:
-                session['unlocked_minigames'] = []
-            if minigame not in session['unlocked_minigames']:
-                session['unlocked_minigames'].append(minigame)
-                session.modified = True
-            return jsonify({'success': True})
+    if not is_juego_activo(minigame):
+        return jsonify({'success': False, 'message': 'JUEGO DESACTIVADO: Este sistema táctico está temporalmente fuera de servicio por Dirección de Operaciones.'}), 403
 
-    if minigame in MINIGAME_PASSWORDS and faction in MINIGAME_PASSWORDS[minigame]:
+    cfg = get_juego_config(minigame)
+    dyn_passwords = cfg.get('passwords', {})
+    expected_pwd = dyn_passwords.get(faction, '').strip().lower()
+    
+    is_valid = False
+    if expected_pwd and password.lower() == expected_pwd:
+        is_valid = True
+    elif minigame == 'simulador_aaa' and password.lower() in [expected_pwd, 'aaavolk', 'aaa-syl', 'aaa-vol', 'aaa-khd', 'aaa']:
+        is_valid = True
+    elif minigame in MINIGAME_PASSWORDS and faction in MINIGAME_PASSWORDS[minigame]:
         if password.lower() == MINIGAME_PASSWORDS[minigame][faction].lower():
-            if 'unlocked_minigames' not in session:
-                session['unlocked_minigames'] = []
-            if minigame not in session['unlocked_minigames']:
-                session['unlocked_minigames'].append(minigame)
-                session.modified = True
-            return jsonify({'success': True})
+            is_valid = True
+
+    if is_valid:
+        if 'unlocked_minigames' not in session:
+            session['unlocked_minigames'] = []
+        if minigame not in session['unlocked_minigames']:
+            session['unlocked_minigames'].append(minigame)
+            session.modified = True
+        return jsonify({'success': True})
             
     return jsonify({'success': False, 'message': 'Código incorrecto'}), 401
 
@@ -387,6 +643,8 @@ def update_operacion():
 def mortero_app():
     if 'role' not in session:
         return redirect(url_for('login'))
+    if not is_juego_activo('mortero') and session.get('role') != 'admin':
+        return redirect(url_for('simulacion_menu'))
     conn = get_db_connection()
     config = conn.execute('SELECT alcance_base FROM Mortero_Config WHERE id=1').fetchone()
     alcance_base = config['alcance_base'] if config else 800
@@ -412,6 +670,8 @@ def simulacion_menu():
         unlocked = list(session.get('unlocked_minigames', []))
         if session.get('is_medic') and 'medic' not in unlocked:
             unlocked.append('medic')
+        all_juegos = get_all_juegos_config(conn)
+        juegos_estado = {jid: cfg['activo'] for jid, cfg in all_juegos.items()}
     finally:
         conn.close()
     return render_template('simulacion_menu.html',
@@ -420,7 +680,8 @@ def simulacion_menu():
                            unlocked_minigames=unlocked,
                            reanimaciones_disponibles=reanim_disp,
                            sanitario_id=sanitario_id,
-                           is_medic=session.get('is_medic', False))
+                           is_medic=session.get('is_medic', False),
+                           juegos_estado=juegos_estado)
 
 @app.route('/prismaticos')
 @app.route('/prismaticos_ar')
@@ -431,6 +692,9 @@ def prismaticos_ar():
     user_role = session.get('role', 'player')
     user_faction = session.get('faction')
     equipo_id = session.get('equipo_id')
+
+    if not is_juego_activo('prismaticos_ar') and user_role != 'admin':
+        return redirect(url_for('simulacion_menu'))
 
     conn = get_db_connection()
     f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
@@ -458,6 +722,9 @@ def simulador_aaa():
     user_role = session.get('role', 'player')
     user_faction = session.get('faction')
     equipo_id = session.get('equipo_id')
+
+    if not is_juego_activo('simulador_aaa') and user_role != 'admin':
+        return redirect(url_for('simulacion_menu'))
 
     unlocked = ('simulador_aaa' in session.get('unlocked_minigames', [])) or (user_role == 'admin')
     if not unlocked:
@@ -580,13 +847,18 @@ def get_current_aaa_airspace():
             'splash_time': c.get('splash_time')
         })
 
-    # Generar ecos de ruido ambiental / clutter (intensidad reducida a la mitad)
+    # Generar ecos de ruido ambiental / clutter
     clutter_blips = []
+    max_clutter = int(get_juego_param('simulador_aaa', 'clutter_count', 2) or 2)
     clutter_seeds = [
         (1, 70.0, 1500, 0.20, 0.04),
         (2, 220.0, 2600, 0.18, 0.03),
+        (3, 140.0, 1900, 0.22, 0.05),
+        (4, 310.0, 2800, 0.15, 0.02),
+        (5, 45.0, 1200, 0.25, 0.06),
+        (6, 180.0, 2400, 0.19, 0.03),
     ]
-    for cid, base_az, base_dist, base_int, drift in clutter_seeds:
+    for cid, base_az, base_dist, base_int, drift in clutter_seeds[:max(0, max_clutter)]:
         c_az = (base_az + math.sin(now * drift) * 15.0 + 360.0) % 360.0
         c_dist = base_dist + math.cos(now * drift * 1.4) * 150
         intensity = max(0.08, min(0.32, base_int + math.sin(now * 0.25 + cid) * 0.08))
@@ -610,6 +882,9 @@ def radar_aaa():
     user_role = session.get('role', 'player')
     user_faction = session.get('faction')
     equipo_id = session.get('equipo_id')
+
+    if not is_juego_activo('simulador_aaa') and user_role != 'admin':
+        return redirect(url_for('simulacion_menu'))
 
     unlocked = ('simulador_aaa' in session.get('unlocked_minigames', [])) or (user_role == 'admin')
     if not unlocked:
@@ -703,6 +978,10 @@ def telemetro_recon():
     user_role = session.get('role', 'player')
     user_faction = session.get('faction')
     equipo_id = session.get('equipo_id')
+
+    if not is_juego_activo('telemetro_recon') and user_role != 'admin':
+        return redirect(url_for('simulacion_menu'))
+
     unlocked = ('telemetro_recon' in session.get('unlocked_minigames', [])) or (user_role == 'admin')
 
     conn = get_db_connection()
@@ -3347,6 +3626,12 @@ def patch_db():
         except Exception as e:
             print("Error inicializando tablas de operador e ICE:", e)
 
+        # Inicializar tablas y configuración global de juegos y minijuegos
+        try:
+            ensure_juego_config_tables(conn)
+        except Exception as e:
+            print("Error inicializando tablas juego_config:", e)
+
         # Migración: Resolver duplicados históricos de nicks para garantizar unicidad y evitar colisiones de login
         try:
             dup_rows = conn.execute('''
@@ -4703,6 +4988,108 @@ def api_admin_medicos_refill_all():
             
     medic_engine.update_sanitario_recursos(conn, 'ADMIN', 99)
     return jsonify({'status': 'success', 'message': f'Recargados {count} sanitarios según doctrina TVC (miembros // médicos).', 'total_actualizados': count})
+
+# ==================== ADMIN GESTIÓN GLOBAL DE JUEGOS ====================
+@app.route('/api/admin/juegos/config', methods=['GET'])
+def api_admin_juegos_config_get():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    conn = get_db_connection()
+    try:
+        ensure_juego_config_tables(conn)
+        configs = get_all_juegos_config(conn)
+        juegos_list = list(configs.values())
+        return jsonify({
+            'status': 'success',
+            'juegos': juegos_list,
+            'total': len(juegos_list),
+            'activos': sum(1 for j in juegos_list if j['activo']),
+            'inactivos': sum(1 for j in juegos_list if not j['activo'])
+        })
+    finally:
+        conn.close()
+
+@app.route('/api/admin/juegos/toggle', methods=['POST'])
+def api_admin_juegos_toggle():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json or {}
+    juego_id = data.get('juego_id')
+    if not juego_id:
+        return jsonify({'status': 'error', 'message': 'ID de juego requerido'}), 400
+        
+    conn = get_db_connection()
+    try:
+        cur_cfg = get_juego_config(juego_id, conn)
+        if 'activo' in data:
+            nuevo_estado = 1 if data['activo'] else 0
+        else:
+            nuevo_estado = 0 if cur_cfg['activo'] else 1
+            
+        set_juego_status(juego_id, nuevo_estado, conn)
+        estado_label = "OPERATIVO" if nuevo_estado else "DESACTIVADO"
+        return jsonify({
+            'status': 'success',
+            'juego_id': juego_id,
+            'activo': bool(nuevo_estado),
+            'message': f"{cur_cfg['nombre']}: {estado_label}"
+        })
+    finally:
+        conn.close()
+
+@app.route('/api/admin/juegos/config', methods=['POST'])
+def api_admin_juegos_config_post():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json or {}
+    juego_id = data.get('juego_id')
+    if not juego_id:
+        return jsonify({'status': 'error', 'message': 'ID de juego requerido'}), 400
+        
+    conn = get_db_connection()
+    try:
+        save_juego_full_config(juego_id, data, conn)
+        return jsonify({
+            'status': 'success',
+            'message': f"Configuración y códigos de {juego_id} guardados correctamente."
+        })
+    finally:
+        conn.close()
+
+@app.route('/api/admin/juegos/reset', methods=['POST'])
+def api_admin_juegos_reset():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json or {}
+    juego_id = data.get('juego_id')
+    if not juego_id or juego_id not in DEFAULT_JUEGOS_CONFIG:
+        return jsonify({'status': 'error', 'message': 'ID de juego inválido'}), 400
+        
+    d_cfg = DEFAULT_JUEGOS_CONFIG[juego_id]
+    conn = get_db_connection()
+    try:
+        save_juego_full_config(juego_id, d_cfg, conn)
+        return jsonify({
+            'status': 'success',
+            'message': f"Parámetros de {d_cfg['nombre']} restablecidos por defecto."
+        })
+    finally:
+        conn.close()
+
+@app.route('/api/admin/juegos/toggle_all', methods=['POST'])
+def api_admin_juegos_toggle_all():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json or {}
+    activo = 1 if data.get('activo', True) else 0
+    conn = get_db_connection()
+    try:
+        conn.execute('UPDATE juego_config SET activo = ?, actualizado_en = CURRENT_TIMESTAMP', (activo,))
+        conn.commit()
+        msg = "Todos los juegos ACTIVADOS" if activo else "Todos los juegos DESACTIVADOS"
+        return jsonify({'status': 'success', 'message': msg, 'activo': bool(activo)})
+    finally:
+        conn.close()
 
 patch_db()
 

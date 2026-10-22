@@ -716,7 +716,9 @@
                     </div>
                 </div>
                 <div>
-                    {% if recon_unlocked %}
+                    {% if not (juegos_estado.get('telemetro_recon', True) if juegos_estado is defined else True) %}
+                    <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
+                    {% elif recon_unlocked %}
                     <span class="card-badge badge-ready">OPERATIVO</span>
                     {% else %}
                     <span class="card-badge badge-locked">🔒 PIN</span>
@@ -797,7 +799,9 @@
                     </div>
                 </div>
                 <div>
-                    {% if mortero_unlocked %}
+                    {% if not (juegos_estado.get('mortero', True) if juegos_estado is defined else True) %}
+                    <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
+                    {% elif mortero_unlocked %}
                     <span class="card-badge badge-ready">OPERATIVO</span>
                     {% else %}
                     <span class="card-badge badge-locked">🔒 PIN</span>
@@ -877,7 +881,9 @@
                     </div>
                 </div>
                 <div>
-                    {% if is_medic %}
+                    {% if not (juegos_estado.get('field_medic', True) if juegos_estado is defined else True) %}
+                        <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
+                    {% elif is_medic %}
                         <span class="card-badge badge-ready" style="border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.15); font-weight: bold;">🩺 SANITARIO</span>
                     {% else %}
                         <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">📱 PWA</span>
@@ -1005,7 +1011,11 @@
                     </div>
                 </div>
                 <div>
+                    {% if not (juegos_estado.get('prismaticos_ar', True) if juegos_estado is defined else True) %}
+                    <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
+                    {% else %}
                     <span class="card-badge badge-ready" style="border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.12); font-weight: bold;">ACCESO LIBRE</span>
+                    {% endif %}
                 </div>
             </div>
 
@@ -1081,7 +1091,9 @@
                     </div>
                 </div>
                 <div>
-                    {% if aaa_unlocked %}
+                    {% if not (juegos_estado.get('simulador_aaa', True) if juegos_estado is defined else True) %}
+                    <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
+                    {% elif aaa_unlocked %}
                     <span class="card-badge badge-ready">OPERATIVO</span>
                     {% else %}
                     <span class="card-badge badge-locked">🔒 PIN</span>
@@ -1441,7 +1453,15 @@
             document.getElementById('modal-instrucciones').style.display = 'none';
         }
 
+        const JUEGOS_ESTADO = {{ juegos_estado | tojson | safe if juegos_estado is defined else '{}' }};
+
         function handleCardClick(minigame, isUnlocked, redirectUrl) {
+            const canonicalKey = (minigame === 'prismaticos' ? 'prismaticos_ar' : minigame);
+            if (JUEGOS_ESTADO && JUEGOS_ESTADO[canonicalKey] === false && '{{ user_role }}' !== 'admin') {
+                alert("⛔ SISTEMA TÁCTICO FUERA DE SERVICIO\n\nEste minijuego ha sido desactivado temporalmente por Dirección de Operaciones.");
+                return;
+            }
+
             // Intentar activar pantalla completa en el gesto de pulsación
             try {
                 let elem = document.documentElement;
