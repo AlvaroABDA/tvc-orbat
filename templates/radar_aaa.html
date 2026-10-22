@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ORBAT - Director de Tiro // Radar AAA</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700;800;900&family=Roboto:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <style>
+        :root {
+            --bg-radar: #02060c;
+            --radar-green: #2ecc71;
+            --radar-cyan: #00f0ff;
+            --radar-gold: #ffd700;
+            --radar-red: #ff3344;
+            --radar-grid: rgba(0, 240, 255, 0.18);
+            --radar-grid-strong: rgba(0, 240, 255, 0.38);
+            --radar-sweep: rgba(0, 240, 255, 0.22);
+            --radar-panel-bg: rgba(3, 10, 20, 0.88);
+            --radar-border: rgba(0, 240, 255, 0.35);
+            --font-tactical: 'Share Tech Mono', monospace;
+            --font-heading: 'Orbitron', sans-serif;
+        }
+
+        body.phosphor-green {
+            --radar-cyan: #00ff66;
+            --radar-grid: rgba(0, 255, 102, 0.18);
+            --radar-grid-strong: rgba(0, 255, 102, 0.4);
+            --radar-sweep: rgba(0, 255, 102, 0.25);
+            --radar-border: rgba(0, 255, 102, 0.38);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden;
+            background-color: var(--bg-radar);
+            color: #e2e8f0;
+            font-family: var(--font-tactical);
+        }
+
+        /* Scanlines CRT Militar */
+        .radar-scanlines {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 99;
+            pointer-events: none;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.28) 50%),
+                        linear-gradient(90deg, rgba(0, 240, 255, 0.02), rgba(0, 0, 0, 0.02), rgba(0, 240, 255, 0.02));
+            background-size: 100% 3px, 6px 100%;
+            opacity: 0.75;
+        }
+
+        .radar-vignette {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 98;
+            pointer-events: none;
+            box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.85), inset 0 0 40px rgba(0, 240, 255, 0.1);
+        }
+
+        /* Encabezado Táctico */
+        .radar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 18px;
+            background: rgba(3, 8, 16, 0.95);
+            border-bottom: 1px solid var(--radar-border);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .header-title-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .radar-icon-pulse {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid var(--radar-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--radar-cyan);
+            animation: radarIconPulse 2s infinite ease-in-out;
+        }
+
+        @keyframes radarIconPulse {
+            0%, 100% { box-shadow: 0 0 5px var(--radar-cyan); }
+            50% { box-shadow: 0 0 18px var(--radar-cyan); }
+        }
+
+        .header-titles h1 {
+            font-family: var(--font-heading);
+            font-size: 1.05rem;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+
+        .header-titles .sub {
+            font-size: 0.72rem;
+            color: var(--radar-cyan);
+            letter-spacing: 0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .radar-btn {
+            background: rgba(0, 240, 255, 0.08);
+            border: 1px solid var(--radar-border);
+            color: var(--radar-cyan);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: var(--font-tactical);
+            font-size: 0.75rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .radar-btn:hover, .radar-btn:active {
+            background: var(--radar-cyan);
+            color: #000;
+            box-shadow: 0 0 12px var(--radar-cyan);
+        }
+
+        .radar-btn-red {
+            border-color: var(--radar-red);
+            color: var(--radar-red);
+            background: rgba(255, 51, 68, 0.1);
+        }
+
+        .radar-btn-red:hover, .radar-btn-red:active {
+            background: var(--radar-red);
+            color: #fff;
+            box-shadow: 0 0 12px var(--radar-red);
+        }
+
+        /* Banner de Splash Alert */
+        #splash-alert-banner {
+            display: none;
+            background: linear-gradient(90deg, rgba(255, 51, 68, 0.25), rgba(46, 204, 113, 0.35), rgba(255, 51, 68, 0.25));
+            border-bottom: 2px solid var(--radar-green);
+            padding: 8px 16px;
+            text-align: center;
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            color: #fff;
+            animation: splashFlash 0.5s infinite alternate;
+        }
+
+        @keyframes splashFlash {
+            from { background-color: rgba(46, 204, 113, 0.25); }
+            to { background-color: rgba(46, 204, 113, 0.55); }
+        }
+
+        /* Contenedor Principal de la Consola */
+        .radar-layout {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 16px;
+            padding: 16px;
+            max-width: 1400px;
+            margin: 0 auto;
+            min-height: calc(100vh - 65px);
+        }
+
+        @media (max-width: 980px) {
+            .radar-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Panel PPI Radar Scope */
+        .radar-scope-card {
+            background: var(--radar-panel-bg);
+            border: 1px solid var(--radar-border);
+            border-radius: 8px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
+            overflow: hidden;
+        }
+
+        .scope-header-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.75rem;
+            color: var(--radar-cyan);
+            border-bottom: 1px dashed var(--radar-grid);
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .scope-container {
+            position: relative;
+            width: 100%;
+            max-width: 560px;
+            aspect-ratio: 1 / 1;
+            margin: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #radar-canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: radial-gradient(circle at 50% 50%, #031422 0%, #020810 65%, #010408 100%);
+            border: 2px solid var(--radar-cyan);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.35), inset 0 0 40px rgba(0, 240, 255, 0.15);
+            cursor: crosshair;
+        }
+
+        /* Capa de marcadores interactivos sobre el radar */
+        #radar-blips-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .radar-blip-marker {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            transition: transform 0.1s linear;
+        }
+
+        .blip-icon {
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 2px;
+            font-size: 10px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .blip-icon.hostile {
+            background: rgba(255, 51, 68, 0.25);
+            border: 2px solid var(--radar-red);
+            color: var(--radar-red);
+            box-shadow: 0 0 8px var(--radar-red);
+            transform: rotate(45deg);
+        }
+
+        .blip-icon.friendly {
+            background: rgba(46, 204, 113, 0.25);
+            border: 2px solid var(--radar-green);
+            color: var(--radar-green);
+            box-shadow: 0 0 8px var(--radar-green);
+            border-radius: 50%;
+        }
+
+        .blip-icon.civilian {
+            background: rgba(255, 215, 0, 0.25);
+            border: 2px solid var(--radar-gold);
+            color: var(--radar-gold);
+            box-shadow: 0 0 8px var(--radar-gold);
+        }
+
+        .blip-tag {
+            background: rgba(3, 7, 13, 0.9);
+            border: 1px solid var(--radar-cyan);
+            border-radius: 2px;
+            padding: 1px 4px;
+            font-size: 0.65rem;
+            color: #fff;
+            white-space: nowrap;
+            margin-top: 2px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+        }
+
+        .radar-blip-marker.selected .blip-tag {
+            border-color: #fff;
+            background: var(--radar-cyan);
+            color: #000;
+            font-weight: bold;
+        }
+
+        .radar-blip-marker.selected .blip-icon {
+            transform: scale(1.4) rotate(45deg);
+            box-shadow: 0 0 16px #fff;
+        }
+
+        /* Leyenda y controles del Radar */
+        .scope-legend {
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding-top: 10px;
+            font-size: 0.72rem;
+            border-top: 1px dashed var(--radar-grid);
+            margin-top: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        /* Columna Derecha: Tarjeta de Vector de Tiro e Intercepción */
+        .radar-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .sidebar-card {
+            background: var(--radar-panel-bg);
+            border: 1px solid var(--radar-border);
+            border-radius: 8px;
+            padding: 14px;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.7);
+        }
+
+        .card-title-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--radar-border);
+        }
+
+        .card-title-row h2 {
+            font-family: var(--font-heading);
+            font-size: 0.88rem;
+            color: #fff;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Tarjeta de Fuego Táctico para el Tirador */
+        .firing-solution-card {
+            background: linear-gradient(180deg, rgba(0, 240, 255, 0.05) 0%, rgba(3, 10, 20, 0.95) 100%);
+            border: 1px solid var(--radar-cyan);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .target-squawk-hero {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 1px dashed var(--radar-grid-strong);
+            padding-bottom: 8px;
+        }
+
+        .squawk-code-lg {
+            font-family: var(--font-heading);
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px var(--radar-cyan);
+        }
+
+        .iff-badge-lg {
+            font-size: 0.7rem;
+            font-weight: bold;
+            padding: 3px 8px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-hostile {
+            background: rgba(255, 51, 68, 0.2);
+            border: 1px solid var(--radar-red);
+            color: var(--radar-red);
+            box-shadow: 0 0 8px rgba(255, 51, 68, 0.4);
+        }
+
+        .badge-friendly {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid var(--radar-green);
+            color: var(--radar-green);
+        }
+
+        .badge-civilian {
+            background: rgba(255, 215, 0, 0.2);
+            border: 1px solid var(--radar-gold);
+            color: var(--radar-gold);
+        }
+
+        /* Rejilla de Telemetría para Dictar por Radio */
+        .vector-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .vector-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--radar-grid);
+            border-radius: 4px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .vector-box.hero {
+            border-color: var(--radar-cyan);
+            background: rgba(0, 240, 255, 0.08);
+        }
+
+        .vector-label {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .vector-val {
+            font-family: var(--font-heading);
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--radar-cyan);
+        }
+
+        .vector-box.hero .vector-val {
+            color: #fff;
+            text-shadow: 0 0 10px var(--radar-cyan);
+        }
+
+        /* Plantilla de Voz para Radio */
+        .radio-voice-box {
+            background: rgba(255, 215, 0, 0.07);
+            border: 1px solid rgba(255, 215, 0, 0.35);
+            border-radius: 4px;
+            padding: 8px 10px;
+            font-size: 0.73rem;
+            color: #fef08a;
+            line-height: 1.4;
+        }
+
+        .radio-voice-header {
+            font-weight: bold;
+            color: var(--radar-gold);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 4px;
+        }
+
+        /* Tabla de Contactos Aéreos Activos */
+        .contacts-table-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--radar-grid);
+            border-radius: 4px;
+        }
+
+        .contacts-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.70rem;
+            text-align: left;
+        }
+
+        .contacts-table th {
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--radar-cyan);
+            padding: 6px 8px;
+            position: sticky;
+            top: 0;
+            font-weight: 700;
+        }
+
+        .contacts-table td {
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.08);
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+
+        .contacts-table tr:hover td {
+            background: rgba(0, 240, 255, 0.12);
+            color: #fff;
+        }
+
+        .contacts-table tr.selected td {
+            background: rgba(0, 240, 255, 0.25);
+            color: var(--radar-cyan);
+            font-weight: bold;
+        }
+
+        /* Registro de Derribos en Vivo */
+        .kill-log-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 140px;
+            overflow-y: auto;
+            font-size: 0.70rem;
+        }
+
+        .kill-log-entry {
+            background: rgba(46, 204, 113, 0.08);
+            border-left: 3px solid var(--radar-green);
+            padding: 4px 8px;
+            border-radius: 2px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #e2e8f0;
+        }
+
+        .kill-log-entry.penalty {
+            background: rgba(255, 51, 68, 0.08);
+            border-left-color: var(--radar-red);
+        }
+
+        /* Scrollbars Tácticas */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.4);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--radar-cyan);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="radar-scanlines"></div>
+    <div class="radar-vignette"></div>
+
+    <!-- Encabezado Táctico -->
+    <header class="radar-header">
+        <div class="header-title-box">
+            <div class="radar-icon-pulse">
+                <span class="material-symbols-outlined" style="font-size: 20px;">radar</span>
+            </div>
+            <div class="header-titles">
+                <h1>RADAR AAA // PUESTO DIRECTOR DE TIRO</h1>
+                <div class="sub">COOPERACIÓN CON LANZADOR AR • BANDA-X 360° PPI • SQUAWK IFF</div>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <button type="button" class="radar-btn" id="btn-sound-toggle" onclick="toggleAudioMute()">
+                <span class="material-symbols-outlined" style="font-size: 16px;" id="audio-icon">volume_up</span>
+                <span id="audio-text">SONIDO: ON</span>
+            </button>
+            <button type="button" class="radar-btn" onclick="togglePhosphorColor()">
+                <span class="material-symbols-outlined" style="font-size: 16px;">palette</span>
+                TEMA
+            </button>
+            <a href="/simulador_aaa" class="radar-btn radar-btn-red" title="Pasar al Puesto de Tiro Antiaéreo AR">
+                <span class="material-symbols-outlined" style="font-size: 16px;">rocket_launch</span>
+                PUESTO LANZADOR AR ➔
+            </a>
+            <a href="/simulacion" class="radar-btn" title="Volver al menú de simulación">
+                <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+                MENÚ
+            </a>
+        </div>
+    </header>
+
+    <!-- Banner Alerta de Splash One -->
+    <div id="splash-alert-banner">
+        💥 ¡SPLASH ONE CONFIRMED! OBJETIVO NEUTRALIZADO EN ESPACIO AÉREO
+    </div>
+
+    <!-- Layout Principal -->
+    <main class="radar-layout">
+        <!-- Columna Izquierda: Pantalla PPI de Radar Táctico -->
+        <section class="radar-scope-card">
+            <div class="scope-header-bar">
+                <span>ESTADO: <b style="color: var(--radar-green);">RASTREO ACTIVO</b></span>
+                <span>COBERTURA: <b>360° // ALCANCE 4.0 KM</b></span>
+                <span>BARRIDO: <b id="sweep-az-readout">000°</b></span>
+            </div>
+
+            <div class="scope-container" id="scope-container">
+                <canvas id="radar-canvas" width="560" height="560"></canvas>
+                <div id="radar-blips-layer"></div>
+            </div>
+
+            <div class="scope-legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--radar-red); transform: rotate(45deg);"></div>
+                    <span>HOSTIL (Fuego libre)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--radar-green); border-radius: 50%;"></div>
+                    <span>ALIADO (Alto el fuego)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--radar-gold);"></div>
+                    <span>CIVIL (No combatiente)</span>
+                </div>
+                <div class="legend-item" style="color: var(--radar-cyan);">
+                    <span>✛ PUESTO DE TIRO (0,0)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Columna Derecha: Tarjeta de Solución de Tiro para el Tirador -->
+        <aside class="radar-sidebar">
+            <!-- Tarjeta de Fuego / Intercepción -->
+            <div class="sidebar-card">
+                <div class="card-title-row">
+                    <h2><span class="material-symbols-outlined" style="color: var(--radar-cyan); font-size: 18px;">track_changes</span> FICHA DE TIRO VECTORIAL</h2>
+                    <span style="font-size: 0.65rem; color: var(--radar-cyan); border: 1px solid var(--radar-border); padding: 2px 5px; border-radius: 3px;">DIRECTOR</span>
+                </div>
+
+                <div class="firing-solution-card" id="firing-card">
+                    <div class="target-squawk-hero">
+                        <div>
+                            <div style="font-size: 0.65rem; color: #94a3b8;">CÓDIGO TRANSPONDEDOR</div>
+                            <div class="squawk-code-lg" id="card-squawk">SQ-4021</div>
+                        </div>
+                        <span class="iff-badge-lg badge-hostile" id="card-iff-badge">HOSTIL • FUEGO</span>
+                    </div>
+
+                    <div>
+                        <div style="font-size: 0.85rem; font-weight: bold; color: #fff;" id="card-name">Su-25 Frogfoot</div>
+                        <div style="font-size: 0.70rem; color: #cbd5e1;" id="card-desc">Reactor de ataque a tierra</div>
+                    </div>
+
+                    <!-- Datos Críticos para Cantar por Radio al Tirador -->
+                    <div class="vector-grid">
+                        <div class="vector-box hero">
+                            <span class="vector-label">ORIENTACIÓN (AZIMUT)</span>
+                            <span class="vector-val" id="card-az">045°</span>
+                        </div>
+                        <div class="vector-box hero">
+                            <span class="vector-label">ELEVACIÓN AR (+45°)</span>
+                            <span class="vector-val" id="card-el">+44°</span>
+                        </div>
+                        <div class="vector-box">
+                            <span class="vector-label">DISTANCIA</span>
+                            <span class="vector-val" style="font-size: 1.05rem;" id="card-dist">2,400 m</span>
+                        </div>
+                        <div class="vector-box">
+                            <span class="vector-label">ALTITUD</span>
+                            <span class="vector-val" style="font-size: 1.05rem;" id="card-alt">2,200 m</span>
+                        </div>
+                        <div class="vector-box">
+                            <span class="vector-label">VELOCIDAD</span>
+                            <span class="vector-val" style="font-size: 1.05rem;" id="card-spd">500 km/h</span>
+                        </div>
+                        <div class="vector-box">
+                            <span class="vector-label">RUMBO VUELO</span>
+                            <span class="vector-val" style="font-size: 1.05rem;" id="card-hdg">135°</span>
+                        </div>
+                    </div>
+
+                    <!-- Cuadro con Instrucción Vocal Lista para Transmitir -->
+                    <div class="radio-voice-box" id="radio-box">
+                        <div class="radio-voice-header">
+                            <span class="material-symbols-outlined" style="font-size: 14px;">mic</span>
+                            CANTAR POR RADIO AL TIRADOR:
+                        </div>
+                        <span id="radio-voice-text">«Tirador, vector 045, elevación 44. Blanco Hostil SQ-4021. ¡Fuego libre!»</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla de Contactos Aéreos Activos -->
+            <div class="sidebar-card">
+                <div class="card-title-row">
+                    <h2><span class="material-symbols-outlined" style="color: var(--radar-gold); font-size: 18px;">flight</span> TRÁFICO AÉREO ACTIVO (<span id="contacts-count">0</span>)</h2>
+                    <span style="font-size: 0.65rem; color: #94a3b8;">SELECCIONAR BLANCO</span>
+                </div>
+
+                <div class="contacts-table-container">
+                    <table class="contacts-table">
+                        <thead>
+                            <tr>
+                                <th>SQUAWK</th>
+                                <th>MODELO</th>
+                                <th>AZ</th>
+                                <th>ELEV</th>
+                                <th>IFF</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contacts-table-body">
+                            <!-- Filas dinámicas -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Registro de Derribos / Splash Log -->
+            <div class="sidebar-card">
+                <div class="card-title-row">
+                    <h2><span class="material-symbols-outlined" style="color: var(--radar-green); font-size: 18px;">military_tech</span> REGISTRO DE DERRIBOS</h2>
+                    <span style="font-size: 0.65rem; color: var(--radar-green);">TIEMPO REAL</span>
+                </div>
+
+                <div class="kill-log-list" id="kill-log-list">
+                    <div style="font-size: 0.70rem; color: #64748b; font-style: italic;">Sin derribos recientes en este sector...</div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // ==================== AUDIO SINTETIZADO MILITAR ====================
+        let audioCtx = null;
+        let isAudioMuted = false;
+
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioClass) audioCtx = new AudioClass();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            return audioCtx;
+        }
+
+        function playSweepTone(freq = 1200, duration = 0.04) {
+            if (isAudioMuted) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.02, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        function playBlipPing() {
+            if (isAudioMuted) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.06, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.12);
+            } catch(e) {}
+        }
+
+        function playSplashSiren() {
+            if (isAudioMuted) return;
+            try {
+                const ctx = getAudioContext();
+                if (!ctx) return;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(400, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(900, ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.6);
+            } catch(e) {}
+        }
+
+        function toggleAudioMute() {
+            isAudioMuted = !isAudioMuted;
+            const icon = document.getElementById('audio-icon');
+            const text = document.getElementById('audio-text');
+            if (isAudioMuted) {
+                icon.textContent = 'volume_off';
+                text.textContent = 'SONIDO: OFF';
+            } else {
+                icon.textContent = 'volume_up';
+                text.textContent = 'SONIDO: ON';
+                playBlipPing();
+            }
+        }
+
+        function togglePhosphorColor() {
+            document.body.classList.toggle('phosphor-green');
+        }
+
+        // ==================== ESTADO DEL RADAR PPI ====================
+        let sweepAngle = 0; // 0° a 360° (0 = Norte)
+        const SWEEP_SPEED_DEG = 72; // 5 segundos por revolución completa (72°/s)
+        const MAX_RANGE_METERS = 4000;
+
+        let activeContacts = [];
+        let selectedContactId = null;
+        let lastSeenSplashes = new Set();
+        let lastSweepBeepAngle = 0;
+
+        // ==================== RENDERIZADO DEL RADAR PPI ====================
+        function drawRadarScope() {
+            const canvas = document.getElementById('radar-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const maxR = (w / 2) - 20;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const isGreen = document.body.classList.contains('phosphor-green');
+            const mainColor = isGreen ? '#00ff66' : '#00f0ff';
+            const dimColor = isGreen ? 'rgba(0, 255, 102, 0.18)' : 'rgba(0, 240, 255, 0.18)';
+            const strongColor = isGreen ? 'rgba(0, 255, 102, 0.45)' : 'rgba(0, 240, 255, 0.45)';
+
+            // 1. Anillos de Alcance Concéntricos (1, 2, 3, 4 km)
+            const ringCount = 4;
+            for (let i = 1; i <= ringCount; i++) {
+                const r = (maxR / ringCount) * i;
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.strokeStyle = (i === ringCount) ? strongColor : dimColor;
+                ctx.lineWidth = (i === ringCount) ? 1.5 : 1;
+                ctx.stroke();
+
+                // Etiquetas de Distancia
+                ctx.fillStyle = mainColor;
+                ctx.font = "9px 'Share Tech Mono', monospace";
+                ctx.fillText(`${i} KM`, cx + 4, cy - r + 11);
+            }
+
+            // 2. Ejes Cardinales y Diagonales
+            ctx.strokeStyle = dimColor;
+            ctx.lineWidth = 1;
+
+            // N-S
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - maxR);
+            ctx.lineTo(cx, cy + maxR);
+            ctx.stroke();
+
+            // E-W
+            ctx.beginPath();
+            ctx.moveTo(cx - maxR, cy);
+            ctx.lineTo(cx + maxR, cy);
+            ctx.stroke();
+
+            // Diagonales a 45°
+            ctx.save();
+            ctx.setLineDash([3, 5]);
+            for (let angle of [45, 135, 225, 315]) {
+                const rad = (angle - 90) * Math.PI / 180;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(rad) * maxR, cy + Math.sin(rad) * maxR);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 3. Marcas de Grados en el Aro Perimetral
+            for (let deg = 0; deg < 360; deg += 10) {
+                const rad = (deg - 90) * Math.PI / 180;
+                const isMajor = (deg % 30 === 0);
+                const len = isMajor ? 8 : 4;
+                const x1 = cx + Math.cos(rad) * (maxR - len);
+                const y1 = cy + Math.sin(rad) * (maxR - len);
+                const x2 = cx + Math.cos(rad) * maxR;
+                const y2 = cy + Math.sin(rad) * maxR;
+
+                ctx.strokeStyle = isMajor ? mainColor : dimColor;
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+
+                if (isMajor) {
+                    let label = String(deg).padStart(3, '0');
+                    if (deg === 0) label = 'N';
+                    else if (deg === 90) label = 'E';
+                    else if (deg === 180) label = 'S';
+                    else if (deg === 270) label = 'W';
+
+                    const tx = cx + Math.cos(rad) * (maxR + 12);
+                    const ty = cy + Math.sin(rad) * (maxR + 12);
+                    ctx.fillStyle = mainColor;
+                    ctx.font = "bold 9px 'Share Tech Mono', monospace";
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(label, tx, ty);
+                }
+            }
+
+            // 4. Haz de Barrido Giratorio (Sweep Line + Cola Fosforescente)
+            const sweepRad = (sweepAngle - 90) * Math.PI / 180;
+            const tailAngle = 45 * (Math.PI / 180); // 45° de estela fosforescente
+
+            // Gradiente cónico para la estela
+            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+            grad.addColorStop(0, isGreen ? 'rgba(0, 255, 102, 0.4)' : 'rgba(0, 240, 255, 0.4)');
+            grad.addColorStop(1, 'transparent');
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, maxR, sweepRad - tailAngle, sweepRad, false);
+            ctx.closePath();
+            ctx.fillStyle = isGreen ? 'rgba(0, 255, 102, 0.12)' : 'rgba(0, 240, 255, 0.12)';
+            ctx.fill();
+
+            // Línea brillante principal del barrido
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + Math.cos(sweepRad) * maxR, cy + Math.sin(sweepRad) * maxR);
+            ctx.strokeStyle = isGreen ? '#88ffaa' : '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = mainColor;
+            ctx.shadowBlur = 8;
+            ctx.stroke();
+            ctx.restore();
+
+            // 5. Cruz del Emplazamiento Central
+            ctx.strokeStyle = mainColor;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        // ==================== POSICIONAMIENTO DE CONTACTOS BLIPS ====================
+        function updateBlipElements() {
+            const container = document.getElementById('scope-container');
+            const blipsLayer = document.getElementById('radar-blips-layer');
+            if (!container || !blipsLayer) return;
+
+            const rect = container.getBoundingClientRect();
+            const w = rect.width;
+            const h = rect.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const maxR = (w / 2) - 20;
+
+            blipsLayer.innerHTML = '';
+
+            activeContacts.forEach(c => {
+                if (c.destroyed) return;
+
+                // Coordenadas polares:
+                // 0° es Norte (arriba: y = cy - r), 90° es Este (derecha: x = cx + r)
+                const azRad = c.azimuth * (Math.PI / 180);
+                const rRatio = Math.min(1.0, c.distance / MAX_RANGE_METERS);
+                const r = rRatio * maxR;
+
+                const bx = cx + Math.sin(azRad) * r;
+                const by = cy - Math.cos(azRad) * r;
+
+                const isSelected = (c.id === selectedContactId);
+
+                const marker = document.createElement('div');
+                marker.className = `radar-blip-marker ${isSelected ? 'selected' : ''}`;
+                marker.style.left = `${bx}px`;
+                marker.style.top = `${by}px`;
+                marker.title = `${c.squawk} [${c.name}] - AZ: ${c.azimuth}° | ELEV: ${c.elevation}°`;
+
+                let iconClass = 'hostile';
+                let iconSymbol = '◆';
+                if (c.type === 'FRIENDLY') {
+                    iconClass = 'friendly';
+                    iconSymbol = '■';
+                } else if (c.type === 'CIVILIAN') {
+                    iconClass = 'civilian';
+                    iconSymbol = '●';
+                }
+
+                marker.innerHTML = `
+                    <div class="blip-icon ${iconClass}">${iconSymbol}</div>
+                    <div class="blip-tag">${c.squawk}</div>
+                `;
+
+                marker.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectContact(c.id);
+                    playBlipPing();
+                });
+
+                blipsLayer.appendChild(marker);
+            });
+        }
+
+        // ==================== SELECCIÓN Y FICHA DE TIRO ====================
+        function selectContact(contactId) {
+            selectedContactId = contactId;
+            const contact = activeContacts.find(c => c.id === contactId);
+            if (!contact) return;
+
+            const squawkEl = document.getElementById('card-squawk');
+            const nameEl = document.getElementById('card-name');
+            const descEl = document.getElementById('card-desc');
+            const badgeEl = document.getElementById('card-iff-badge');
+            const azEl = document.getElementById('card-az');
+            const elEl = document.getElementById('card-el');
+            const distEl = document.getElementById('card-dist');
+            const altEl = document.getElementById('card-alt');
+            const spdEl = document.getElementById('card-spd');
+            const hdgEl = document.getElementById('card-hdg');
+            const voiceEl = document.getElementById('radio-voice-text');
+
+            if (squawkEl) squawkEl.textContent = contact.squawk;
+            if (nameEl) nameEl.textContent = contact.name;
+            if (descEl) descEl.textContent = contact.desc || 'Aparato en vuelo';
+
+            if (badgeEl) {
+                if (contact.type === 'HOSTILE') {
+                    badgeEl.className = 'iff-badge-lg badge-hostile';
+                    badgeEl.textContent = 'HOSTIL • FUEGO LIBRE';
+                } else if (contact.type === 'FRIENDLY') {
+                    badgeEl.className = 'iff-badge-lg badge-friendly';
+                    badgeEl.textContent = 'ALIADO • ALTO EL FUEGO';
+                } else {
+                    badgeEl.className = 'iff-badge-lg badge-civilian';
+                    badgeEl.textContent = 'CIVIL • NO DISPARAR';
+                }
+            }
+
+            const azStr = String(Math.round(contact.azimuth)).padStart(3, '0') + '°';
+            const elStr = (contact.elevation >= 0 ? '+' : '') + Math.round(contact.elevation) + '°';
+
+            if (azEl) azEl.textContent = azStr;
+            if (elEl) elEl.textContent = elStr;
+            if (distEl) distEl.textContent = `${contact.distance.toLocaleString()} m`;
+            if (altEl) altEl.textContent = `${contact.altitude.toLocaleString()} m`;
+            if (spdEl) spdEl.textContent = `${contact.speed_kmh} km/h`;
+            if (hdgEl) hdgEl.textContent = `${String(contact.heading_flight).padStart(3, '0')}°`;
+
+            // Plantilla de frase para radio al tirador
+            if (voiceEl) {
+                if (contact.type === 'HOSTILE') {
+                    voiceEl.textContent = `«¡Tirador, vector azimut ${String(Math.round(contact.azimuth)).padStart(3, '0')}, elevación ${Math.round(contact.elevation)}! Blanco Hostil ${contact.squawk} [${contact.name}]. ¡Fuego a discreción!»`;
+                } else if (contact.type === 'FRIENDLY') {
+                    voiceEl.textContent = `«¡Tirador, sector ${String(Math.round(contact.azimuth)).padStart(3, '0')}, elevación ${Math.round(contact.elevation)}! Contacto ${contact.squawk} es ALIADO AMIGO. ¡ALTO EL FUEGO!»`;
+                } else {
+                    voiceEl.textContent = `«¡Atención puesto de tiro! Contacto ${contact.squawk} en sector ${String(Math.round(contact.azimuth)).padStart(3, '0')} es VUELO CIVIL. ¡PROHIBIDO ENGANCHAR!»`;
+                }
+            }
+
+            updateTableSelection();
+        }
+
+        function updateTableSelection() {
+            const rows = document.querySelectorAll('#contacts-table-body tr');
+            rows.forEach(tr => {
+                if (tr.dataset.id === selectedContactId) {
+                    tr.classList.add('selected');
+                } else {
+                    tr.classList.remove('selected');
+                }
+            });
+        }
+
+        // ==================== ACTUALIZACIÓN DE TABLA ====================
+        function renderContactsTable() {
+            const tbody = document.getElementById('contacts-table-body');
+            const countEl = document.getElementById('contacts-count');
+            if (!tbody) return;
+
+            const alive = activeContacts.filter(c => !c.destroyed);
+            if (countEl) countEl.textContent = alive.length;
+
+            tbody.innerHTML = '';
+            alive.forEach(c => {
+                const tr = document.createElement('tr');
+                tr.dataset.id = c.id;
+                if (c.id === selectedContactId) tr.className = 'selected';
+
+                let iffColor = 'var(--radar-red)';
+                let iffLabel = 'HOSTIL';
+                if (c.type === 'FRIENDLY') {
+                    iffColor = 'var(--radar-green)';
+                    iffLabel = 'ALIADO';
+                } else if (c.type === 'CIVILIAN') {
+                    iffColor = 'var(--radar-gold)';
+                    iffLabel = 'CIVIL';
+                }
+
+                tr.innerHTML = `
+                    <td style="font-weight: bold; color: #fff;">${c.squawk}</td>
+                    <td>${c.name}</td>
+                    <td style="color: var(--radar-cyan); font-weight: bold;">${String(Math.round(c.azimuth)).padStart(3, '0')}°</td>
+                    <td style="color: var(--radar-gold); font-weight: bold;">+${Math.round(c.elevation)}°</td>
+                    <td style="color: ${iffColor}; font-weight: bold;">${iffLabel}</td>
+                `;
+
+                tr.addEventListener('click', () => {
+                    selectContact(c.id);
+                    playBlipPing();
+                });
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ==================== POLLING DEL ESPACIO AÉREO / API ====================
+        async function fetchAirspace() {
+            try {
+                const res = await fetch('/api/aaa/airspace');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.success) return;
+
+                activeContacts = data.contacts || [];
+
+                // Seleccionar primer blanco hostile si no hay ninguno seleccionado
+                if (!selectedContactId || !activeContacts.find(c => c.id === selectedContactId && !c.destroyed)) {
+                    const firstHostile = activeContacts.find(c => c.type === 'HOSTILE' && !c.destroyed);
+                    if (firstHostile) {
+                        selectContact(firstHostile.id);
+                    } else if (activeContacts.length > 0) {
+                        selectContact(activeContacts[0].id);
+                    }
+                } else {
+                    // Refrescar datos del seleccionado
+                    selectContact(selectedContactId);
+                }
+
+                renderContactsTable();
+                updateBlipElements();
+
+                // Procesar eventos de Splash One / Derribos
+                if (data.splashes && Array.isArray(data.splashes)) {
+                    data.splashes.forEach(s => {
+                        const sKey = `${s.id}_${s.timestamp}`;
+                        if (!lastSeenSplashes.has(sKey)) {
+                            lastSeenSplashes.add(sKey);
+                            handleSplashEvent(s);
+                        }
+                    });
+                }
+            } catch (err) {
+                console.warn("Error consultando /api/aaa/airspace:", err);
+            }
+        }
+
+        function handleSplashEvent(splash) {
+            playSplashSiren();
+
+            const banner = document.getElementById('splash-alert-banner');
+            if (banner) {
+                const isHostile = (splash.type === 'HOSTILE');
+                banner.style.display = 'block';
+                if (isHostile) {
+                    banner.style.borderBottomColor = 'var(--radar-green)';
+                    banner.innerHTML = `💥 ¡SPLASH ONE CONFIRMED! BLANCO ${splash.squawk} [${splash.name}] DESTRUIDO (+${splash.pts} PTS)`;
+                } else {
+                    banner.style.borderBottomColor = 'var(--radar-red)';
+                    banner.innerHTML = `🚨 ¡ALERTA! BLANCO NO HOSTIL ${splash.squawk} DESTRUIDO (${splash.pts} PTS)`;
+                }
+                setTimeout(() => { banner.style.display = 'none'; }, 4000);
+            }
+
+            // Añadir al Registro de Derribos
+            const killList = document.getElementById('kill-log-list');
+            if (killList) {
+                const emptyMsg = killList.querySelector('div[style*="italic"]');
+                if (emptyMsg) emptyMsg.remove();
+
+                const item = document.createElement('div');
+                item.className = `kill-log-entry ${splash.type !== 'HOSTILE' ? 'penalty' : ''}`;
+                const timeStr = new Date(splash.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                item.innerHTML = `
+                    <div><b>💥 ${splash.squawk}</b> [${splash.name}]</div>
+                    <div style="font-size: 0.65rem; color: #94a3b8;">${timeStr} (${splash.pts > 0 ? '+' : ''}${splash.pts} pts)</div>
+                `;
+                killList.prepend(item);
+            }
+        }
+
+        // ==================== BUCLE DE ANIMACIÓN DEL RADAR ====================
+        let lastTime = performance.now();
+
+        function radarAnimationLoop(now) {
+            const dt = (now - lastTime) / 1000;
+            lastTime = now;
+
+            // Avanzar barrido
+            sweepAngle = (sweepAngle + SWEEP_SPEED_DEG * dt) % 360;
+
+            const azEl = document.getElementById('sweep-az-readout');
+            if (azEl) azEl.textContent = `${String(Math.round(sweepAngle)).padStart(3, '0')}°`;
+
+            // Pitido táctico suave cada 90° (cuadrante)
+            if (Math.floor(sweepAngle / 90) !== Math.floor(lastSweepBeepAngle / 90)) {
+                playSweepTone(1400, 0.03);
+            }
+            lastSweepBeepAngle = sweepAngle;
+
+            drawRadarScope();
+
+            requestAnimationFrame(radarAnimationLoop);
+        }
+
+        // ==================== INICIALIZACIÓN ====================
+        window.addEventListener('DOMContentLoaded', () => {
+            fetchAirspace();
+            setInterval(fetchAirspace, 1200); // Polling cada 1.2 segundos
+            requestAnimationFrame(radarAnimationLoop);
+
+            window.addEventListener('resize', () => {
+                updateBlipElements();
+            });
+        });
+    </script>
+</body>
+</html>

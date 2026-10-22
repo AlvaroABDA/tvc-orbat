@@ -399,15 +399,18 @@ def simulacion_menu():
     if 'role' not in session:
         return redirect(url_for('login'))
     conn = get_db_connection()
-    user_role = session.get('role', 'player')
-    user_faction = session.get('faction')
-    equipo_id = session.get('equipo_id')
-    sanitario_id = 'ADMIN' if user_role == 'admin' else (session.get('sanitario_id') or session.get('user') or (f"MED-{equipo_id}" if equipo_id else "MED-ALFA"))
-    recursos = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id)
-    reanim_disp = recursos.get('reanimaciones_disponibles', 3)
-    unlocked = list(session.get('unlocked_minigames', []))
-    if session.get('is_medic') and 'medic' not in unlocked:
-        unlocked.append('medic')
+    try:
+        user_role = session.get('role', 'player')
+        user_faction = session.get('faction')
+        equipo_id = session.get('equipo_id')
+        sanitario_id = 'ADMIN' if user_role == 'admin' else (session.get('sanitario_id') or session.get('user') or (f"MED-{equipo_id}" if equipo_id else "MED-ALFA"))
+        recursos = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id)
+        reanim_disp = recursos.get('reanimaciones_disponibles', 3)
+        unlocked = list(session.get('unlocked_minigames', []))
+        if session.get('is_medic') and 'medic' not in unlocked:
+            unlocked.append('medic')
+    finally:
+        conn.close()
     return render_template('simulacion_menu.html',
                            user_role=user_role,
                            user_faction=user_faction,
@@ -561,6 +564,9 @@ def get_current_aaa_airspace():
     return active_contacts, AAA_AIRSPACE['splashes']
 
 @app.route('/radar_aaa')
+@app.route('/radar-aaa')
+@app.route('/radar_director')
+@app.route('/radar-director')
 @app.route('/aaa_radar')
 def radar_aaa():
     if 'role' not in session:
