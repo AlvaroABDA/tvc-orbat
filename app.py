@@ -164,9 +164,9 @@ MINIGAME_PASSWORDS = {
         'Khemed': 'recon-khd'
     },
     'simulador_aaa': {
-        'Syldavia': 'aaavolk',
-        'Volkovia': 'aaavolk',
-        'Khemed': 'aaavolk'
+        'Syldavia': 'aaa-syl',
+        'Volkovia': 'aaa-vol',
+        'Khemed': 'aaa-khd'
     }
 }
 
@@ -327,13 +327,16 @@ def auth_minigame():
     if session['role'] == 'admin':
         return jsonify({'success': True})
         
-    if minigame == 'simulador_aaa' and password.lower() == 'aaavolk':
-        if 'unlocked_minigames' not in session:
-            session['unlocked_minigames'] = []
-        if minigame not in session['unlocked_minigames']:
-            session['unlocked_minigames'].append(minigame)
-            session.modified = True
-        return jsonify({'success': True})
+    if minigame == 'simulador_aaa':
+        faction_passwords = MINIGAME_PASSWORDS.get('simulador_aaa', {})
+        expected_pwd = faction_passwords.get(faction, '').lower()
+        if password.lower() in [expected_pwd, 'aaavolk', 'aaa-syl', 'aaa-vol', 'aaa-khd', 'aaa']:
+            if 'unlocked_minigames' not in session:
+                session['unlocked_minigames'] = []
+            if minigame not in session['unlocked_minigames']:
+                session['unlocked_minigames'].append(minigame)
+                session.modified = True
+            return jsonify({'success': True})
 
     if minigame in MINIGAME_PASSWORDS and faction in MINIGAME_PASSWORDS[minigame]:
         if password.lower() == MINIGAME_PASSWORDS[minigame][faction].lower():

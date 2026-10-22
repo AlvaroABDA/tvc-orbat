@@ -669,9 +669,11 @@
             border-bottom-width: 2.5px;
         }
 
-        .edge-indicator.hostile { border-color: var(--sam-red); color: #ff5566; box-shadow: 0 0 16px rgba(255, 51, 68, 0.6); }
-        .edge-indicator.friendly { border-color: var(--sam-green); color: #2ecc71; box-shadow: 0 0 16px rgba(46, 204, 113, 0.6); }
-        .edge-indicator.civilian { border-color: var(--sam-gold); color: #ffd700; box-shadow: 0 0 16px rgba(255, 215, 0, 0.6); }
+        .edge-indicator.hostile, .edge-indicator.friendly, .edge-indicator.civilian {
+            border-color: var(--sam-cyan);
+            color: #fff;
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+        }
 
         @keyframes edge-pulse {
             from { transform: scale(0.96); }
@@ -949,7 +951,7 @@
                 <button type="button" class="hud-btn hud-btn-gold" onclick="toggleIffModal()" title="Abrir tabla de transpondedores IFF">
                     <span class="material-symbols-outlined" style="font-size: 15px;">menu_book</span> TABLA INTEL IFF
                 </button>
-                <button type="button" class="hud-btn" id="btn-auto-center" onclick="autoCenterTarget()" style="border-color: var(--sam-green); color: var(--sam-green);" title="Centrar automáticamente en el blanco hostil más cercano">
+                <button type="button" class="hud-btn" id="btn-auto-center" onclick="autoCenterTarget()" style="border-color: var(--sam-cyan); color: var(--sam-cyan);" title="Centrar automáticamente en el contacto aéreo más cercano">
                     🎯 CENTRAR
                 </button>
             </div>
@@ -1086,13 +1088,18 @@
     <script>
         // ==================== BASE DE DATOS DE INTELIGENCIA ====================
         const INTEL_DB = {
-            'SQ-4021': { name: 'Su-25 Frogfoot', type: 'HOSTILE', pts: 100, desc: 'Reactor Ataque' },
-            'SQ-6612': { name: 'Shahed-136 Drone', type: 'HOSTILE', pts: 150, desc: 'Drone Kamikaze' },
-            'SQ-8830': { name: 'Mi-24 Hind', type: 'HOSTILE', pts: 100, desc: 'Helicóptero Ataque' },
-            'SQ-1104': { name: 'MQ-9 Reaper', type: 'FRIENDLY', pts: -500, desc: 'UCAV Amigo' },
-            'SQ-2240': { name: 'C-130 Hercules', type: 'FRIENDLY', pts: -500, desc: 'Transporte Amigo' },
-            'SQ-7000': { name: 'Airbus A320', type: 'CIVILIAN', pts: -1000, desc: 'Vuelo Comercial' },
-            'SQ-7700': { name: 'Bell 412 Medevac', type: 'CIVILIAN', pts: -1000, desc: 'Sanitario Urgente' }
+            'SQ-4021': { name: 'Su-25 Frogfoot', type: 'HOSTILE', pts: 100, desc: 'Reactor Ataque 30mm' },
+            'SQ-6612': { name: 'Shahed-136 Drone', type: 'HOSTILE', pts: 150, desc: 'Drone Kamikaze Merodeador' },
+            'SQ-8830': { name: 'Mi-24 Hind', type: 'HOSTILE', pts: 100, desc: 'Helicóptero Asalto Blindado' },
+            'SQ-5510': { name: 'Orlan-10 UAV', type: 'HOSTILE', pts: 120, desc: 'Dron Reconocimiento Artillero' },
+            'SQ-1104': { name: 'MQ-9 Reaper', type: 'FRIENDLY', pts: -500, desc: 'UCAV Aliado Reconocimiento' },
+            'SQ-2240': { name: 'C-130 Hercules', type: 'FRIENDLY', pts: -500, desc: 'Transporte Logístico Aliado' },
+            'SQ-2310': { name: 'CH-47 Chinook', type: 'FRIENDLY', pts: -500, desc: 'Helicóptero Transporte Táctico' },
+            'SQ-7000': { name: 'Airbus A320', type: 'CIVILIAN', pts: -1000, desc: 'Vuelo Civil Internacional' },
+            'SQ-7140': { name: 'Boeing 737 Pasajeros', type: 'CIVILIAN', pts: -1000, desc: 'Vuelo Comercial Regular' },
+            'SQ-7320': { name: 'ATR-72 Regional', type: 'CIVILIAN', pts: -1000, desc: 'Enlace Regional Civil' },
+            'SQ-7500': { name: 'Cessna 172 Skyhawk', type: 'CIVILIAN', pts: -1000, desc: 'Avioneta Civil Ligera' },
+            'SQ-7700': { name: 'Bell 412 Medevac', type: 'CIVILIAN', pts: -1000, desc: 'Sanitario Urgente Medevac' }
         };
 
         // ==================== ESTADO DEL SIMULADOR ====================
@@ -1485,7 +1492,7 @@
         }
 
         function autoCenterTarget() {
-            const target = airContacts.find(c => !c.destroyed && c.type === 'HOSTILE') || airContacts.find(c => !c.destroyed);
+            const target = airContacts.find(c => !c.destroyed);
             if (!target) return;
             targetHeading = Math.round(target.azimuth);
             targetPitch = Math.round(target.elevation);
@@ -1619,8 +1626,8 @@
                         <div class="air-contact-box ${isLocked ? 'locked' : (isTracked ? 'tracked' : '')}">
                             <div class="air-squawk-header">
                                 <span class="air-squawk-code">${contact.squawk}</span>
-                                <span style="font-size:0.60rem; color:${contact.type === 'HOSTILE' ? '#ff5566' : (contact.type === 'FRIENDLY' ? '#2ecc71' : '#ffd700')}">
-                                    [IFF]
+                                <span style="font-size:0.60rem; color:var(--sam-cyan);">
+                                    [SQUAWK]
                                 </span>
                             </div>
                             <div class="air-telemetry-row">
@@ -1632,30 +1639,29 @@
                                 <span>AZ: ${String(Math.round(contact.azimuth)).padStart(3,'0')}°</span>
                             </div>
                         </div>
-                        <div class="air-icon-pip" style="border-color:${isLocked ? '#2ecc71' : (isTracked ? '#ffd700' : '#000')}"></div>
+                        <div class="air-icon-pip" style="border-color:${isLocked ? '#2ecc71' : (isTracked ? '#ffd700' : 'var(--sam-cyan)')}"></div>
                     `;
                     layer.appendChild(el);
                 } else {
-                    // Objetivo FUERA del campo de visión: Mostrar flecha perimétrica precisa
+                    // Objetivo FUERA del campo de visión: Mostrar flecha perimétrica precisa y neutral
                     const edgeEl = document.createElement('div');
-                    const typeClass = contact.type === 'HOSTILE' ? 'hostile' : (contact.type === 'FRIENDLY' ? 'friendly' : 'civilian');
                     const degDiffAz = Math.round(deltaAz);
                     const degDiffEl = Math.round(deltaEl);
 
                     // Si está casi alineado en azimut pero fuera en elevación
                     if (Math.abs(deltaAz) <= (fovH / 2) * 0.85) {
                         if (deltaEl > 0) {
-                            edgeEl.className = `edge-indicator ${typeClass} edge-top`;
-                            edgeEl.innerHTML = `▲ SUBE (+${Math.abs(degDiffEl)}°) • ${contact.squawk} [${contact.name}]`;
+                            edgeEl.className = 'edge-indicator edge-top';
+                            edgeEl.innerHTML = `▲ SUBE (+${Math.abs(degDiffEl)}°) • ${contact.squawk}`;
                         } else {
-                            edgeEl.className = `edge-indicator ${typeClass} edge-bottom`;
-                            edgeEl.innerHTML = `▼ BAJA (-${Math.abs(degDiffEl)}°) • ${contact.squawk} [${contact.name}]`;
+                            edgeEl.className = 'edge-indicator edge-bottom';
+                            edgeEl.innerHTML = `▼ BAJA (-${Math.abs(degDiffEl)}°) • ${contact.squawk}`;
                         }
                     } else {
                         const isLeft = deltaAz < 0;
                         const edgeClass = isLeft ? 'edge-left' : 'edge-right';
                         const clampedY = Math.max(90, Math.min(h - 110, cy - (deltaEl / (fovV / 2)) * (h / 3)));
-                        edgeEl.className = `edge-indicator ${typeClass} ${edgeClass}`;
+                        edgeEl.className = `edge-indicator ${edgeClass}`;
                         edgeEl.style.top = `${clampedY}px`;
                         
                         if (isLeft) {

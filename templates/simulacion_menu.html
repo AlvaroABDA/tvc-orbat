@@ -1454,6 +1454,8 @@
             if (isUnlocked) {
                 window.location.href = redirectUrl;
             } else {
+                currentMinigame = minigame;
+                currentRedirectUrl = redirectUrl;
                 let pinTitle = 'PIN: ACCESO RESTRINGIDO';
                 if (minigame === 'telemetro_recon') pinTitle = 'PIN: TELÉMETRO RECON';
                 else if (minigame === 'mortero') pinTitle = 'PIN: ARTILLERÍA / MORTERO';
