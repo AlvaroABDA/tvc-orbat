@@ -467,12 +467,22 @@ def simulador_aaa():
 
 # ==================== SISTEMA DE RADAR Y ESPACIO AÉREO COMPARTIDO AAA ====================
 AAA_INTEL_DB = {
-    'SQ-4021': {'name': 'Su-25 Frogfoot', 'type': 'HOSTILE', 'pts': 100, 'desc': 'Reactor de ataque a tierra', 'base_alt': 2200, 'base_dist': 2400, 'speed_kmh': 500, 'ang_spd': 0.85},
-    'SQ-6612': {'name': 'Shahed-136 Drone', 'type': 'HOSTILE', 'pts': 150, 'desc': 'Drone kamikaze merodeador', 'base_alt': 1400, 'base_dist': 2000, 'speed_kmh': 185, 'ang_spd': 0.65},
-    'SQ-8830': {'name': 'Mi-24 Hind', 'type': 'HOSTILE', 'pts': 100, 'desc': 'Helicóptero de asalto y apoyo aéreo', 'base_alt': 1200, 'base_dist': 1800, 'speed_kmh': 220, 'ang_spd': 0.75},
+    # HOSTILES (Amenazas de ataque y drones de reconocimiento)
+    'SQ-4021': {'name': 'Su-25 Frogfoot', 'type': 'HOSTILE', 'pts': 100, 'desc': 'Reactor de ataque a tierra con cañón 30mm', 'base_alt': 2200, 'base_dist': 2400, 'speed_kmh': 500, 'ang_spd': 0.85},
+    'SQ-6612': {'name': 'Shahed-136 Drone', 'type': 'HOSTILE', 'pts': 150, 'desc': 'Drone kamikaze merodeador ala delta', 'base_alt': 1400, 'base_dist': 2000, 'speed_kmh': 185, 'ang_spd': 0.65},
+    'SQ-8830': {'name': 'Mi-24 Hind', 'type': 'HOSTILE', 'pts': 100, 'desc': 'Helicóptero de asalto blindado y apoyo', 'base_alt': 1200, 'base_dist': 1800, 'speed_kmh': 220, 'ang_spd': 0.75},
+    'SQ-5510': {'name': 'Orlan-10 UAV', 'type': 'HOSTILE', 'pts': 120, 'desc': 'Dron táctico de reconocimiento artillero', 'base_alt': 1600, 'base_dist': 2200, 'speed_kmh': 130, 'ang_spd': 0.55},
+
+    # ALIADOS (Fuerzas amigas en tránsito - Alto el fuego)
     'SQ-1104': {'name': 'MQ-9 Reaper', 'type': 'FRIENDLY', 'pts': -500, 'desc': 'UCAV enlace de reconocimiento amigo', 'base_alt': 2800, 'base_dist': 2800, 'speed_kmh': 250, 'ang_spd': 0.70},
-    'SQ-2240': {'name': 'C-130 Hercules', 'type': 'FRIENDLY', 'pts': -500, 'desc': 'Transporte logístico amigo', 'base_alt': 2600, 'base_dist': 3100, 'speed_kmh': 420, 'ang_spd': 0.90},
-    'SQ-7000': {'name': 'Airbus A320 Comercial', 'type': 'CIVILIAN', 'pts': -1000, 'desc': 'Vuelo civil en corredor internacional', 'base_alt': 3500, 'base_dist': 3300, 'speed_kmh': 650, 'ang_spd': 1.10},
+    'SQ-2240': {'name': 'C-130 Hercules', 'type': 'FRIENDLY', 'pts': -500, 'desc': 'Transporte logístico pesado aliado', 'base_alt': 2600, 'base_dist': 3100, 'speed_kmh': 420, 'ang_spd': 0.90},
+    'SQ-2310': {'name': 'CH-47 Chinook', 'type': 'FRIENDLY', 'pts': -500, 'desc': 'Helicóptero de transporte táctico aliado', 'base_alt': 1800, 'base_dist': 2300, 'speed_kmh': 260, 'ang_spd': 0.75},
+
+    # CIVILES (Vuelos comerciales y sanitarios protegidos - Prohibido disparar)
+    'SQ-7000': {'name': 'Airbus A320 Comercial', 'type': 'CIVILIAN', 'pts': -1000, 'desc': 'Vuelo civil en aerovía internacional', 'base_alt': 3500, 'base_dist': 3300, 'speed_kmh': 650, 'ang_spd': 1.10},
+    'SQ-7140': {'name': 'Boeing 737 Pasajeros', 'type': 'CIVILIAN', 'pts': -1000, 'desc': 'Vuelo regular comercial de pasajeros', 'base_alt': 3600, 'base_dist': 3500, 'speed_kmh': 680, 'ang_spd': 1.15},
+    'SQ-7320': {'name': 'ATR-72 Regional', 'type': 'CIVILIAN', 'pts': -1000, 'desc': 'Vuelo turbohélice de enlace regional', 'base_alt': 2400, 'base_dist': 2600, 'speed_kmh': 440, 'ang_spd': 0.85},
+    'SQ-7500': {'name': 'Cessna 172 Skyhawk', 'type': 'CIVILIAN', 'pts': -1000, 'desc': 'Avioneta civil de enlace y recreo privado', 'base_alt': 1100, 'base_dist': 1700, 'speed_kmh': 190, 'ang_spd': 0.50},
     'SQ-7700': {'name': 'Bell 412 Medevac', 'type': 'CIVILIAN', 'pts': -1000, 'desc': 'Evacuación médica sanitaria urgente', 'base_alt': 1500, 'base_dist': 2100, 'speed_kmh': 210, 'ang_spd': 0.60}
 }
 
@@ -512,11 +522,17 @@ def get_current_aaa_airspace():
     AAA_AIRSPACE['splashes'] = [s for s in AAA_AIRSPACE['splashes'] if (now - s.get('timestamp', 0)) < 25.0]
 
     if not AAA_AIRSPACE['contacts']:
-        squawk_keys = list(AAA_INTEL_DB.keys())
-        initial_sectors = [35.0, 125.0, 215.0, 305.0]
-        for i in range(4):
-            sq = squawk_keys[i % len(squawk_keys)]
-            c = spawn_aaa_bogey(sq, initial_azimuth=initial_sectors[i], initial_elevation=40.0 + (i * 4))
+        # Distribución táctica inicial: 6 contactos en el sector (1-2 hostiles, 1-2 amigos, 2-3 civiles)
+        initial_setup = [
+            ('SQ-4021', 45.0, 42.0),   # Su-25 Hostil al NE
+            ('SQ-7000', 135.0, 48.0),  # Airbus A320 Civil al SE
+            ('SQ-2240', 220.0, 40.0),  # C-130 Aliado al SO
+            ('SQ-6612', 315.0, 44.0),  # Shahed-136 Hostil al NO
+            ('SQ-7700', 95.0, 36.0),   # Bell 412 Medevac al E
+            ('SQ-7140', 275.0, 50.0),  # Boeing 737 Civil al O
+        ]
+        for sq, az, el in initial_setup:
+            c = spawn_aaa_bogey(sq, initial_azimuth=az, initial_elevation=el)
             AAA_AIRSPACE['contacts'].append(c)
 
     active_contacts = []
@@ -561,7 +577,25 @@ def get_current_aaa_airspace():
             'splash_time': c.get('splash_time')
         })
 
-    return active_contacts, AAA_AIRSPACE['splashes']
+    # Generar ecos de ruido ambiental / clutter
+    clutter_blips = []
+    clutter_seeds = [
+        (1, 70.0, 1500, 0.40, 0.04),
+        (2, 190.0, 2800, 0.35, 0.03),
+        (3, 310.0, 1300, 0.45, 0.05),
+    ]
+    for cid, base_az, base_dist, base_int, drift in clutter_seeds:
+        c_az = (base_az + math.sin(now * drift) * 15.0 + 360.0) % 360.0
+        c_dist = base_dist + math.cos(now * drift * 1.4) * 150
+        intensity = max(0.15, min(0.65, base_int + math.sin(now * 0.25 + cid) * 0.15))
+        clutter_blips.append({
+            'id': f'CLUTTER_{cid}',
+            'azimuth': round(c_az, 1),
+            'distance': round(c_dist),
+            'intensity': round(intensity, 2)
+        })
+
+    return active_contacts, AAA_AIRSPACE['splashes'], clutter_blips
 
 @app.route('/radar_aaa')
 @app.route('/radar-aaa')
@@ -582,7 +616,17 @@ def radar_aaa():
     return render_template('radar_aaa.html',
                            user_role=user_role,
                            user_faction=user_faction,
-                           equipo_id=equipo_id)
+                           equipo_id=equipo_id,
+                           intel_db=AAA_INTEL_DB)
+
+@app.route('/api/aaa/intel')
+def api_aaa_intel():
+    if 'role' not in session:
+        return jsonify({'success': False, 'message': 'No autenticado'}), 401
+    return jsonify({
+        'success': True,
+        'intel': AAA_INTEL_DB
+    })
 
 @app.route('/api/aaa/airspace')
 def api_aaa_airspace():
@@ -593,11 +637,12 @@ def api_aaa_airspace():
     if not unlocked:
         return jsonify({'success': False, 'message': 'Acceso no desbloqueado'}), 403
 
-    contacts, splashes = get_current_aaa_airspace()
+    contacts, splashes, clutter = get_current_aaa_airspace()
     return jsonify({
         'success': True,
         'timestamp': time.time(),
         'contacts': contacts,
+        'clutter': clutter,
         'splashes': splashes
     })
 

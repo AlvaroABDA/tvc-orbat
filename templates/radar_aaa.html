@@ -147,6 +147,18 @@
             box-shadow: 0 0 12px var(--radar-cyan);
         }
 
+        .radar-btn-gold {
+            border-color: var(--radar-gold);
+            color: var(--radar-gold);
+            background: rgba(255, 215, 0, 0.12);
+        }
+
+        .radar-btn-gold:hover, .radar-btn-gold:active {
+            background: var(--radar-gold);
+            color: #000;
+            box-shadow: 0 0 12px var(--radar-gold);
+        }
+
         .radar-btn-red {
             border-color: var(--radar-red);
             color: var(--radar-red);
@@ -180,15 +192,15 @@
         /* Contenedor Principal de la Consola */
         .radar-layout {
             display: grid;
-            grid-template-columns: 1fr 400px;
+            grid-template-columns: 1fr 420px;
             gap: 16px;
             padding: 16px;
-            max-width: 1400px;
+            max-width: 1450px;
             margin: 0 auto;
             min-height: calc(100vh - 65px);
         }
 
-        @media (max-width: 980px) {
+        @media (max-width: 1020px) {
             .radar-layout {
                 grid-template-columns: 1fr;
             }
@@ -218,6 +230,104 @@
             border-bottom: 1px dashed var(--radar-grid);
             padding-bottom: 8px;
             margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        /* Barra de Control de Antena y Modo Sector */
+        .antenna-control-bar {
+            width: 100%;
+            background: rgba(0, 15, 30, 0.7);
+            border: 1px solid var(--radar-grid);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .antenna-row-1 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .mode-toggle-group, .speed-toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .mode-btn, .speed-btn {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--radar-grid);
+            color: #94a3b8;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 0.70rem;
+            font-family: var(--font-tactical);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .mode-btn.active, .speed-btn.active {
+            background: var(--radar-cyan);
+            color: #000;
+            font-weight: bold;
+            border-color: #fff;
+            box-shadow: 0 0 8px var(--radar-cyan);
+        }
+
+        .antenna-sector-controls {
+            display: none;
+            background: rgba(0, 240, 255, 0.05);
+            border: 1px dashed var(--radar-border);
+            border-radius: 4px;
+            padding: 8px;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .antenna-sector-controls.visible {
+            display: flex;
+        }
+
+        .sector-slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.72rem;
+        }
+
+        .sector-slider-row input[type="range"] {
+            flex: 1;
+            accent-color: var(--radar-cyan);
+            cursor: pointer;
+        }
+
+        .sector-presets-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--radar-grid);
+            color: var(--radar-cyan);
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 0.65rem;
+            cursor: pointer;
+        }
+
+        .preset-btn:hover {
+            background: rgba(0, 240, 255, 0.2);
+            color: #fff;
         }
 
         .scope-container {
@@ -261,7 +371,7 @@
             flex-direction: column;
             align-items: center;
             gap: 2px;
-            transition: transform 0.1s linear;
+            transition: opacity 0.2s ease, transform 0.1s linear;
         }
 
         .blip-icon {
@@ -276,27 +386,37 @@
             transition: all 0.2s;
         }
 
+        /* Sin designar: FOG OF WAR Monocromático de radar */
+        .blip-icon.raw-echo {
+            background: rgba(0, 240, 255, 0.2);
+            border: 1.5px solid var(--radar-cyan);
+            color: var(--radar-cyan);
+            box-shadow: 0 0 6px var(--radar-cyan);
+            border-radius: 50%;
+        }
+
+        /* Designaciones manuales del operador */
         .blip-icon.hostile {
-            background: rgba(255, 51, 68, 0.25);
+            background: rgba(255, 51, 68, 0.3);
             border: 2px solid var(--radar-red);
             color: var(--radar-red);
-            box-shadow: 0 0 8px var(--radar-red);
+            box-shadow: 0 0 10px var(--radar-red);
             transform: rotate(45deg);
         }
 
         .blip-icon.friendly {
-            background: rgba(46, 204, 113, 0.25);
+            background: rgba(46, 204, 113, 0.3);
             border: 2px solid var(--radar-green);
             color: var(--radar-green);
-            box-shadow: 0 0 8px var(--radar-green);
+            box-shadow: 0 0 10px var(--radar-green);
             border-radius: 50%;
         }
 
         .blip-icon.civilian {
-            background: rgba(255, 215, 0, 0.25);
+            background: rgba(255, 215, 0, 0.3);
             border: 2px solid var(--radar-gold);
             color: var(--radar-gold);
-            box-shadow: 0 0 8px var(--radar-gold);
+            box-shadow: 0 0 10px var(--radar-gold);
         }
 
         .blip-tag {
@@ -319,7 +439,7 @@
         }
 
         .radar-blip-marker.selected .blip-icon {
-            transform: scale(1.4) rotate(45deg);
+            transform: scale(1.35);
             box-shadow: 0 0 16px #fff;
         }
 
@@ -419,6 +539,12 @@
             letter-spacing: 0.5px;
         }
 
+        .badge-unknown {
+            background: rgba(148, 163, 184, 0.15);
+            border: 1px solid #94a3b8;
+            color: #cbd5e1;
+        }
+
         .badge-hostile {
             background: rgba(255, 51, 68, 0.2);
             border: 1px solid var(--radar-red);
@@ -436,6 +562,90 @@
             background: rgba(255, 215, 0, 0.2);
             border: 1px solid var(--radar-gold);
             color: var(--radar-gold);
+        }
+
+        /* Panel de Clasificación Manual IFF */
+        .manual-classification-panel {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--radar-grid);
+            border-radius: 4px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .classification-title {
+            font-size: 0.68rem;
+            color: #94a3b8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .iff-btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .iff-classify-btn {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--radar-grid);
+            padding: 6px 4px;
+            border-radius: 3px;
+            font-family: var(--font-tactical);
+            font-size: 0.68rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+            font-weight: 600;
+        }
+
+        .iff-classify-btn.btn-hostile {
+            border-color: var(--radar-red);
+            color: var(--radar-red);
+        }
+
+        .iff-classify-btn.btn-hostile:hover, .iff-classify-btn.btn-hostile.active {
+            background: var(--radar-red);
+            color: #fff;
+            box-shadow: 0 0 8px var(--radar-red);
+        }
+
+        .iff-classify-btn.btn-friendly {
+            border-color: var(--radar-green);
+            color: var(--radar-green);
+        }
+
+        .iff-classify-btn.btn-friendly:hover, .iff-classify-btn.btn-friendly.active {
+            background: var(--radar-green);
+            color: #000;
+            box-shadow: 0 0 8px var(--radar-green);
+        }
+
+        .iff-classify-btn.btn-civilian {
+            border-color: var(--radar-gold);
+            color: var(--radar-gold);
+        }
+
+        .iff-classify-btn.btn-civilian:hover, .iff-classify-btn.btn-civilian.active {
+            background: var(--radar-gold);
+            color: #000;
+            box-shadow: 0 0 8px var(--radar-gold);
+        }
+
+        .iff-classify-btn.btn-reset {
+            border-color: #64748b;
+            color: #94a3b8;
+        }
+
+        .iff-classify-btn.btn-reset:hover {
+            background: #64748b;
+            color: #fff;
         }
 
         /* Rejilla de Telemetría para Dictar por Radio */
@@ -503,7 +713,7 @@
 
         /* Tabla de Contactos Aéreos Activos */
         .contacts-table-container {
-            max-height: 200px;
+            max-height: 220px;
             overflow-y: auto;
             border: 1px solid var(--radar-grid);
             border-radius: 4px;
@@ -569,6 +779,130 @@
             border-left-color: var(--radar-red);
         }
 
+        /* Modal de Inteligencia IFF / BBDD Documental */
+        .modal-iff-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal-iff-overlay.open {
+            display: flex;
+        }
+
+        .modal-iff-card {
+            background: #030d1a;
+            border: 2px solid var(--radar-cyan);
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.35);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-iff-header {
+            padding: 12px 18px;
+            background: rgba(0, 240, 255, 0.12);
+            border-bottom: 1px solid var(--radar-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-iff-header h2 {
+            font-family: var(--font-heading);
+            font-size: 1.05rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-iff-search-bar {
+            padding: 10px 18px;
+            background: rgba(0, 15, 30, 0.6);
+            border-bottom: 1px solid var(--radar-grid);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-iff-search-bar input {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--radar-border);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: var(--font-tactical);
+            font-size: 0.8rem;
+        }
+
+        .modal-iff-body {
+            padding: 16px 18px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .intel-section-title {
+            font-family: var(--font-heading);
+            font-size: 0.85rem;
+            padding-bottom: 4px;
+            border-bottom: 1px solid var(--radar-border);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .intel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 10px;
+        }
+
+        .intel-aircraft-card {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--radar-grid);
+            border-radius: 5px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .intel-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .intel-squawk {
+            font-family: var(--font-heading);
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .intel-card-meta {
+            font-size: 0.70rem;
+            color: #94a3b8;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
         /* Scrollbars Tácticas */
         ::-webkit-scrollbar {
             width: 4px;
@@ -595,11 +929,15 @@
             </div>
             <div class="header-titles">
                 <h1>RADAR AAA // PUESTO DIRECTOR DE TIRO</h1>
-                <div class="sub">COOPERACIÓN CON LANZADOR AR • BANDA-X 360° PPI • SQUAWK IFF</div>
+                <div class="sub">COOPERACIÓN CON LANZADOR AR • BANDA-X PPI • IDENTIFICACIÓN IFF MANUAL</div>
             </div>
         </div>
 
         <div class="header-actions">
+            <button type="button" class="radar-btn radar-btn-gold" onclick="openIffModal()" title="Abrir Documentación de Inteligencia y Códigos Transponder">
+                <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span>
+                MANUAL IFF / INTEL
+            </button>
             <button type="button" class="radar-btn" id="btn-sound-toggle" onclick="toggleAudioMute()">
                 <span class="material-symbols-outlined" style="font-size: 16px;" id="audio-icon">volume_up</span>
                 <span id="audio-text">SONIDO: ON</span>
@@ -630,10 +968,60 @@
         <section class="radar-scope-card">
             <div class="scope-header-bar">
                 <span>ESTADO: <b style="color: var(--radar-green);">RASTREO ACTIVO</b></span>
-                <span>COBERTURA: <b>360° // ALCANCE 4.0 KM</b></span>
+                <span>MODO: <b id="antenna-mode-readout" style="color: var(--radar-cyan);">360° VIGILANCIA</b></span>
                 <span>BARRIDO: <b id="sweep-az-readout">000°</b></span>
             </div>
 
+            <!-- Barra de Controles de Antena (Rotación / Sector 30°) -->
+            <div class="antenna-control-bar">
+                <div class="antenna-row-1">
+                    <div class="mode-toggle-group">
+                        <span style="font-size: 0.68rem; color: #94a3b8; margin-right: 4px;">ANTENA:</span>
+                        <button type="button" class="mode-btn active" id="btn-mode-360" onclick="setAntennaMode('360')">
+                            🔄 360° ROTACIÓN
+                        </button>
+                        <button type="button" class="mode-btn" id="btn-mode-sector" onclick="setAntennaMode('SECTOR')">
+                            🎯 SECTOR 30°
+                        </button>
+                    </div>
+
+                    <div class="speed-toggle-group">
+                        <span style="font-size: 0.68rem; color: #94a3b8; margin-right: 4px;">VELOCIDAD:</span>
+                        <button type="button" class="speed-btn active" id="btn-spd-slow" onclick="setSweepSpeed(72, this)">
+                            12 RPM
+                        </button>
+                        <button type="button" class="speed-btn" id="btn-spd-med" onclick="setSweepSpeed(120, this)">
+                            20 RPM
+                        </button>
+                        <button type="button" class="speed-btn" id="btn-spd-fast" onclick="setSweepSpeed(180, this)">
+                            30 RPM
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Controles para el modo Sector 30° -->
+                <div class="antenna-sector-controls" id="sector-controls-panel">
+                    <div class="sector-slider-row">
+                        <span style="color: var(--radar-cyan); font-weight: bold;">RUMBO SECTOR:</span>
+                        <input type="range" id="sector-azimuth-slider" min="0" max="359" value="45" oninput="updateSectorAzimuth(this.value)">
+                        <span id="sector-azimuth-display" style="font-family: var(--font-heading); color: #fff; min-width: 45px;">045°</span>
+                        <span style="font-size: 0.65rem; color: #94a3b8;">(ARCO: <span id="sector-arc-readout">030° - 060°</span>)</span>
+                    </div>
+                    <div class="sector-presets-row">
+                        <span style="font-size: 0.65rem; color: #94a3b8;">PRESETS:</span>
+                        <button type="button" class="preset-btn" onclick="setSectorPreset(0)">N (0°)</button>
+                        <button type="button" class="preset-btn" onclick="setSectorPreset(45)">NE (45°)</button>
+                        <button type="button" class="preset-btn" onclick="setSectorPreset(90)">E (90°)</button>
+                        <button type="button" class="preset-btn" onclick="setSectorPreset(135)">SE (135°)</button>
+                        <button type="button" class="preset-btn" onclick="setSectorPreset(180)">S (180°)</button>
+                        <button type="button" class="preset-btn" onclick="setSectorPreset(225)">SO (225°)</button>
+                        <button type="button" class="preset-btn" onclick="setSectorPreset(270)">O (270°)</button>
+                        <button type="button" class="preset-btn" onclick="setSectorPreset(315)">NO (315°)</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contenedor del PPI Radar -->
             <div class="scope-container" id="scope-container">
                 <canvas id="radar-canvas" width="560" height="560"></canvas>
                 <div id="radar-blips-layer"></div>
@@ -641,16 +1029,20 @@
 
             <div class="scope-legend">
                 <div class="legend-item">
+                    <div class="legend-color" style="background: var(--radar-cyan); border-radius: 50%;"></div>
+                    <span>ECO CRUDO (Sin identificar)</span>
+                </div>
+                <div class="legend-item">
                     <div class="legend-color" style="background: var(--radar-red); transform: rotate(45deg);"></div>
-                    <span>HOSTIL (Fuego libre)</span>
+                    <span>DESIGNADO HOSTIL</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: var(--radar-green); border-radius: 50%;"></div>
-                    <span>ALIADO (Alto el fuego)</span>
+                    <span>DESIGNADO ALIADO</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: var(--radar-gold);"></div>
-                    <span>CIVIL (No combatiente)</span>
+                    <span>DESIGNADO CIVIL</span>
                 </div>
                 <div class="legend-item" style="color: var(--radar-cyan);">
                     <span>✛ PUESTO DE TIRO (0,0)</span>
@@ -673,12 +1065,34 @@
                             <div style="font-size: 0.65rem; color: #94a3b8;">CÓDIGO TRANSPONDEDOR</div>
                             <div class="squawk-code-lg" id="card-squawk">SQ-4021</div>
                         </div>
-                        <span class="iff-badge-lg badge-hostile" id="card-iff-badge">HOSTIL • FUEGO</span>
+                        <span class="iff-badge-lg badge-unknown" id="card-iff-badge">NO CLASIFICADO</span>
                     </div>
 
                     <div>
-                        <div style="font-size: 0.85rem; font-weight: bold; color: #fff;" id="card-name">Su-25 Frogfoot</div>
-                        <div style="font-size: 0.70rem; color: #cbd5e1;" id="card-desc">Reactor de ataque a tierra</div>
+                        <div style="font-size: 0.85rem; font-weight: bold; color: #fff;" id="card-name">--- CONTACTO SIN IDENTIFICAR ---</div>
+                        <div style="font-size: 0.70rem; color: #cbd5e1;" id="card-desc">Consultar manual IFF para confirmar modelo y amenaza</div>
+                    </div>
+
+                    <!-- Panel de Clasificación Manual IFF del Operador -->
+                    <div class="manual-classification-panel">
+                        <div class="classification-title">
+                            <span>CLASIFICACIÓN IFF POR EL OPERADOR:</span>
+                            <span id="classification-status-tag" style="color: #94a3b8;">PENDIENTE</span>
+                        </div>
+                        <div class="iff-btn-group">
+                            <button type="button" class="iff-classify-btn btn-hostile" id="btn-cls-hostile" onclick="classifySelected('HOSTILE')">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">warning</span> 🔴 HOSTIL
+                            </button>
+                            <button type="button" class="iff-classify-btn btn-friendly" id="btn-cls-friendly" onclick="classifySelected('FRIENDLY')">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">shield</span> 🟢 ALIADO
+                            </button>
+                            <button type="button" class="iff-classify-btn btn-civilian" id="btn-cls-civilian" onclick="classifySelected('CIVILIAN')">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">flight</span> 🟡 CIVIL
+                            </button>
+                            <button type="button" class="iff-classify-btn btn-reset" onclick="classifySelected(null)">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">restart_alt</span> ⚪ REINICIAR
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Datos Críticos para Cantar por Radio al Tirador -->
@@ -715,7 +1129,7 @@
                             <span class="material-symbols-outlined" style="font-size: 14px;">mic</span>
                             CANTAR POR RADIO AL TIRADOR:
                         </div>
-                        <span id="radio-voice-text">«Tirador, vector 045, elevación 44. Blanco Hostil SQ-4021. ¡Fuego libre!»</span>
+                        <span id="radio-voice-text">«¡Atención! Blanco SQ-4021 PENDIENTE DE IDENTIFICACIÓN IFF. No abrir fuego hasta confirmar con Inteligencia.»</span>
                     </div>
                 </div>
             </div>
@@ -732,10 +1146,11 @@
                         <thead>
                             <tr>
                                 <th>SQUAWK</th>
-                                <th>MODELO</th>
                                 <th>AZ</th>
                                 <th>ELEV</th>
-                                <th>IFF</th>
+                                <th>DIST</th>
+                                <th>VEL</th>
+                                <th>ESTADO IFF</th>
                             </tr>
                         </thead>
                         <tbody id="contacts-table-body">
@@ -759,7 +1174,53 @@
         </aside>
     </main>
 
+    <!-- Modal de Documentación de Inteligencia IFF -->
+    <div class="modal-iff-overlay" id="modal-iff" onclick="closeIffModalOnOverlay(event)">
+        <div class="modal-iff-card" onclick="event.stopPropagation()">
+            <div class="modal-iff-header">
+                <h2>
+                    <span class="material-symbols-outlined" style="color: var(--radar-gold);">verified_user</span>
+                    MANUAL DE IDENTIFICACIÓN IFF & PERFILES AÉREOS
+                </h2>
+                <button type="button" class="radar-btn" onclick="closeIffModal()">CERRAR ✕</button>
+            </div>
+
+            <div class="modal-iff-search-bar">
+                <span class="material-symbols-outlined" style="color: var(--radar-cyan);">search</span>
+                <input type="text" id="intel-search-input" placeholder="Filtrar por Squawk (ej: SQ-4021) o modelo (ej: Su-25, Shahed, Airbus)..." oninput="filterIntelDatabase(this.value)">
+            </div>
+
+            <div class="modal-iff-body" id="modal-iff-content">
+                <!-- Se llena dinámicamente con la base de datos de aeronaves -->
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ==================== BASE DE DATOS DE INTELIGENCIA IFF ====================
+        const INTEL_DB = {
+            // HOSTILES
+            'SQ-4021': { name: 'Su-25 Frogfoot', type: 'HOSTILE', pts: 100, desc: 'Reactor de ataque a tierra blindado con cañón doble 30mm', alt: '2.200 m', spd: '500 km/h', roe: 'FUEGO LIBRE - AMENAZA ALTA' },
+            'SQ-6612': { name: 'Shahed-136 Drone', type: 'HOSTILE', pts: 150, desc: 'Munición merodeadora kamikaze ala delta con carga hueca', alt: '1.400 m', spd: '185 km/h', roe: 'FUEGO LIBRE - AMENAZA CRÍTICA' },
+            'SQ-8830': { name: 'Mi-24 Hind', type: 'HOSTILE', pts: 100, desc: 'Helicóptero de asalto pesado y apoyo aéreo artillado', alt: '1.200 m', spd: '220 km/h', roe: 'FUEGO LIBRE - COMBATIENTE' },
+            'SQ-5510': { name: 'Orlan-10 UAV', type: 'HOSTILE', pts: 120, desc: 'Dron de reconocimiento artillero y designación láser', alt: '1.600 m', spd: '130 km/h', roe: 'FUEGO LIBRE - DRON DE TIRO' },
+
+            // ALIADOS
+            'SQ-1104': { name: 'MQ-9 Reaper', type: 'FRIENDLY', pts: -500, desc: 'UCAV enlace de patrulla aérea y enlace aliado táctico', alt: '2.800 m', spd: '250 km/h', roe: 'ALTO EL FUEGO - FUERZA AMIGA' },
+            'SQ-2240': { name: 'C-130 Hercules', type: 'FRIENDLY', pts: -500, desc: 'Transporte logístico pesado de abastecimiento amigo', alt: '2.600 m', spd: '420 km/h', roe: 'ALTO EL FUEGO - TRANSPORTE AMIGO' },
+            'SQ-2310': { name: 'CH-47 Chinook', type: 'FRIENDLY', pts: -500, desc: 'Helicóptero de carga táctica y tropas de coalición', alt: '1.800 m', spd: '260 km/h', roe: 'ALTO EL FUEGO - FUERZA AMIGA' },
+
+            // CIVILES
+            'SQ-7000': { name: 'Airbus A320 Comercial', type: 'CIVILIAN', pts: -1000, desc: 'Línea aérea regular civil en corredor aerovía internacional', alt: '3.500 m', spd: '650 km/h', roe: 'NO COMBATIENTE - PROHIBIDO DISPARAR' },
+            'SQ-7140': { name: 'Boeing 737 Pasajeros', type: 'CIVILIAN', pts: -1000, desc: 'Vuelo regular comercial de pasajeros transcontinental', alt: '3.600 m', spd: '680 km/h', roe: 'NO COMBATIENTE - PROHIBIDO DISPARAR' },
+            'SQ-7320': { name: 'ATR-72 Regional', type: 'CIVILIAN', pts: -1000, desc: 'Vuelo comercial turbohélice de enlace regional civil', alt: '2.400 m', spd: '440 km/h', roe: 'NO COMBATIENTE - PROHIBIDO DISPARAR' },
+            'SQ-7500': { name: 'Cessna 172 Skyhawk', type: 'CIVILIAN', pts: -1000, desc: 'Avioneta civil ligera monomotor de recreo privado', alt: '1.100 m', spd: '190 km/h', roe: 'NO COMBATIENTE - PROHIBIDO DISPARAR' },
+            'SQ-7700': { name: 'Bell 412 Medevac', type: 'CIVILIAN', pts: -1000, desc: 'Helicóptero sanitario en misión de evacuación médica urgente', alt: '1.500 m', spd: '210 km/h', roe: 'MISIÓN HUMANITARIA - PROTEGIDO' }
+        };
+
+        // Clasificaciones manuales hechas por el operador: { [contactId]: 'HOSTILE' | 'FRIENDLY' | 'CIVILIAN' | null }
+        const operatorDesignations = {};
+
         // ==================== AUDIO SINTETIZADO MILITAR ====================
         let audioCtx = null;
         let isAudioMuted = false;
@@ -849,15 +1310,78 @@
             document.body.classList.toggle('phosphor-green');
         }
 
-        // ==================== ESTADO DEL RADAR PPI ====================
-        let sweepAngle = 0; // 0° a 360° (0 = Norte)
-        const SWEEP_SPEED_DEG = 72; // 5 segundos por revolución completa (72°/s)
+        // ==================== ESTADO DEL RADAR Y ANTENA ====================
+        let sweepAngle = 0; // 0° a 360°
+        let sweepSpeedDeg = 72; // 72°/s = 12 RPM
+        let antennaMode = '360'; // '360' o 'SECTOR'
+        let sectorCenterAzimuth = 45; // Centro del sector de 30°
+        let sectorDirection = 1; // 1 = horario, -1 = antihorario (para oscilación de sector)
+        const SECTOR_HALF_WIDTH = 15; // 30° de apertura total (+-15°)
         const MAX_RANGE_METERS = 4000;
+        const PHOSPHOR_DECAY_SECS = 4.5; // Duración de la fosforescencia
 
         let activeContacts = [];
+        let clutterBlips = [];
+        let contactTrackingState = {}; // { [id]: { lastHitTime: 0, trail: [{x, y, time}] } }
         let selectedContactId = null;
         let lastSeenSplashes = new Set();
         let lastSweepBeepAngle = 0;
+
+        function setAntennaMode(mode) {
+            antennaMode = mode;
+            const btn360 = document.getElementById('btn-mode-360');
+            const btnSec = document.getElementById('btn-mode-sector');
+            const panel = document.getElementById('sector-controls-panel');
+            const readout = document.getElementById('antenna-mode-readout');
+
+            if (mode === '360') {
+                btn360.classList.add('active');
+                btnSec.classList.remove('active');
+                panel.classList.remove('visible');
+                readout.textContent = '360° VIGILANCIA';
+                readout.style.color = 'var(--radar-cyan)';
+            } else {
+                btnSec.classList.add('active');
+                btn360.classList.remove('active');
+                panel.classList.add('visible');
+                readout.textContent = `SECTOR 30° [${String(Math.round(sectorCenterAzimuth)).padStart(3, '0')}°]`;
+                readout.style.color = 'var(--radar-gold)';
+                // Colocar la antena en el borde del sector
+                sweepAngle = (sectorCenterAzimuth - SECTOR_HALF_WIDTH + 360) % 360;
+                sectorDirection = 1;
+            }
+        }
+
+        function setSweepSpeed(speed, btn) {
+            sweepSpeedDeg = speed;
+            document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+        }
+
+        function updateSectorAzimuth(val) {
+            sectorCenterAzimuth = parseFloat(val);
+            const disp = document.getElementById('sector-azimuth-display');
+            const readout = document.getElementById('sector-arc-readout');
+            const modeReadout = document.getElementById('antenna-mode-readout');
+
+            const minAz = Math.round((sectorCenterAzimuth - SECTOR_HALF_WIDTH + 360) % 360);
+            const maxAz = Math.round((sectorCenterAzimuth + SECTOR_HALF_WIDTH + 360) % 360);
+
+            if (disp) disp.textContent = `${String(Math.round(sectorCenterAzimuth)).padStart(3, '0')}°`;
+            if (readout) readout.textContent = `${String(minAz).padStart(3, '0')}° - ${String(maxAz).padStart(3, '0')}°`;
+            if (modeReadout && antennaMode === 'SECTOR') {
+                modeReadout.textContent = `SECTOR 30° [${String(Math.round(sectorCenterAzimuth)).padStart(3, '0')}°]`;
+            }
+        }
+
+        function setSectorPreset(deg) {
+            const slider = document.getElementById('sector-azimuth-slider');
+            if (slider) slider.value = deg;
+            updateSectorAzimuth(deg);
+            if (antennaMode !== 'SECTOR') {
+                setAntennaMode('SECTOR');
+            }
+        }
 
         // ==================== RENDERIZADO DEL RADAR PPI ====================
         function drawRadarScope() {
@@ -868,16 +1392,42 @@
             const h = canvas.height;
             const cx = w / 2;
             const cy = h / 2;
-            const maxR = (w / 2) - 20;
+            const maxR = (w / 2) - 22;
 
             ctx.clearRect(0, 0, w, h);
 
             const isGreen = document.body.classList.contains('phosphor-green');
             const mainColor = isGreen ? '#00ff66' : '#00f0ff';
-            const dimColor = isGreen ? 'rgba(0, 255, 102, 0.18)' : 'rgba(0, 240, 255, 0.18)';
-            const strongColor = isGreen ? 'rgba(0, 255, 102, 0.45)' : 'rgba(0, 240, 255, 0.45)';
+            const dimColor = isGreen ? 'rgba(0, 255, 102, 0.16)' : 'rgba(0, 240, 255, 0.16)';
+            const strongColor = isGreen ? 'rgba(0, 255, 102, 0.42)' : 'rgba(0, 240, 255, 0.42)';
 
-            // 1. Anillos de Alcance Concéntricos (1, 2, 3, 4 km)
+            // 1. Sector enfocado de 30° (si está activo)
+            if (antennaMode === 'SECTOR') {
+                const minSectorRad = ((sectorCenterAzimuth - SECTOR_HALF_WIDTH) - 90) * Math.PI / 180;
+                const maxSectorRad = ((sectorCenterAzimuth + SECTOR_HALF_WIDTH) - 90) * Math.PI / 180;
+
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.arc(cx, cy, maxR, minSectorRad, maxSectorRad, false);
+                ctx.closePath();
+                ctx.fillStyle = isGreen ? 'rgba(0, 255, 102, 0.08)' : 'rgba(0, 240, 255, 0.08)';
+                ctx.fill();
+
+                // Líneas limítrofes del sector
+                ctx.strokeStyle = isGreen ? 'rgba(0, 255, 102, 0.6)' : 'rgba(0, 240, 255, 0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(minSectorRad) * maxR, cy + Math.sin(minSectorRad) * maxR);
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + Math.cos(maxSectorRad) * maxR, cy + Math.sin(maxSectorRad) * maxR);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 2. Anillos de Alcance Concéntricos (1, 2, 3, 4 km)
             const ringCount = 4;
             for (let i = 1; i <= ringCount; i++) {
                 const r = (maxR / ringCount) * i;
@@ -893,7 +1443,7 @@
                 ctx.fillText(`${i} KM`, cx + 4, cy - r + 11);
             }
 
-            // 2. Ejes Cardinales y Diagonales
+            // 3. Ejes Cardinales y Diagonales
             ctx.strokeStyle = dimColor;
             ctx.lineWidth = 1;
 
@@ -921,7 +1471,7 @@
             }
             ctx.restore();
 
-            // 3. Marcas de Grados en el Aro Perimetral
+            // 4. Marcas de Grados en el Aro Perimetral
             for (let deg = 0; deg < 360; deg += 10) {
                 const rad = (deg - 90) * Math.PI / 180;
                 const isMajor = (deg % 30 === 0);
@@ -944,8 +1494,8 @@
                     else if (deg === 180) label = 'S';
                     else if (deg === 270) label = 'W';
 
-                    const tx = cx + Math.cos(rad) * (maxR + 12);
-                    const ty = cy + Math.sin(rad) * (maxR + 12);
+                    const tx = cx + Math.cos(rad) * (maxR + 13);
+                    const ty = cy + Math.sin(rad) * (maxR + 13);
                     ctx.fillStyle = mainColor;
                     ctx.font = "bold 9px 'Share Tech Mono', monospace";
                     ctx.textAlign = 'center';
@@ -954,35 +1504,74 @@
                 }
             }
 
-            // 4. Haz de Barrido Giratorio (Sweep Line + Cola Fosforescente)
-            const sweepRad = (sweepAngle - 90) * Math.PI / 180;
-            const tailAngle = 45 * (Math.PI / 180); // 45° de estela fosforescente
+            // 5. Ruido Ambiental / Clutter en Canvas
+            const nowTime = performance.now() / 1000;
+            clutterBlips.forEach(cl => {
+                const clAzRad = (cl.azimuth - 90) * Math.PI / 180;
+                const rRatio = Math.min(1.0, cl.distance / MAX_RANGE_METERS);
+                const r = rRatio * maxR;
+                const clx = cx + Math.cos(clAzRad) * r;
+                const cly = cy + Math.sin(clAzRad) * r;
 
-            // Gradiente cónico para la estela
-            const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
-            grad.addColorStop(0, isGreen ? 'rgba(0, 255, 102, 0.4)' : 'rgba(0, 240, 255, 0.4)');
-            grad.addColorStop(1, 'transparent');
+                // Destello difuso de ruido
+                const clGrad = ctx.createRadialGradient(clx, cly, 0, clx, cly, 16);
+                const clAlpha = cl.intensity * 0.35;
+                clGrad.addColorStop(0, isGreen ? `rgba(0, 255, 102, ${clAlpha})` : `rgba(0, 240, 255, ${clAlpha})`);
+                clGrad.addColorStop(1, 'transparent');
+
+                ctx.beginPath();
+                ctx.arc(clx, cly, 16, 0, Math.PI * 2);
+                ctx.fillStyle = clGrad;
+                ctx.fill();
+            });
+
+            // 6. Haz de Barrido Giratorio (Sweep Line + Cola Fosforescente)
+            const sweepRad = (sweepAngle - 90) * Math.PI / 180;
+            const tailAngle = 40 * (Math.PI / 180); // 40° de estela fosforescente
 
             ctx.save();
             ctx.beginPath();
             ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, maxR, sweepRad - tailAngle, sweepRad, false);
+            if (antennaMode === 'SECTOR' && sectorDirection < 0) {
+                // En retroceso dentro del sector
+                ctx.arc(cx, cy, maxR, sweepRad, sweepRad + tailAngle, false);
+            } else {
+                ctx.arc(cx, cy, maxR, sweepRad - tailAngle, sweepRad, false);
+            }
             ctx.closePath();
-            ctx.fillStyle = isGreen ? 'rgba(0, 255, 102, 0.12)' : 'rgba(0, 240, 255, 0.12)';
+            ctx.fillStyle = isGreen ? 'rgba(0, 255, 102, 0.14)' : 'rgba(0, 240, 255, 0.14)';
             ctx.fill();
 
             // Línea brillante principal del barrido
             ctx.beginPath();
             ctx.moveTo(cx, cy);
             ctx.lineTo(cx + Math.cos(sweepRad) * maxR, cy + Math.sin(sweepRad) * maxR);
-            ctx.strokeStyle = isGreen ? '#88ffaa' : '#ffffff';
+            ctx.strokeStyle = isGreen ? '#aaffcc' : '#ffffff';
             ctx.lineWidth = 2;
             ctx.shadowColor = mainColor;
             ctx.shadowBlur = 8;
             ctx.stroke();
             ctx.restore();
 
-            // 5. Cruz del Emplazamiento Central
+            // 7. Rastro de Fosforescencia Histórica de los Contactos (Phosphor Trails)
+            activeContacts.forEach(c => {
+                if (c.destroyed) return;
+                const track = contactTrackingState[c.id];
+                if (!track || !track.trail) return;
+
+                track.trail.forEach(crumb => {
+                    const age = nowTime - crumb.time;
+                    if (age > PHOSPHOR_DECAY_SECS) return;
+                    const trailAlpha = Math.max(0, 0.5 * (1.0 - (age / PHOSPHOR_DECAY_SECS)));
+
+                    ctx.beginPath();
+                    ctx.arc(crumb.x, crumb.y, 2.5, 0, Math.PI * 2);
+                    ctx.fillStyle = isGreen ? `rgba(0, 255, 102, ${trailAlpha})` : `rgba(0, 240, 255, ${trailAlpha})`;
+                    ctx.fill();
+                });
+            });
+
+            // 8. Cruz del Emplazamiento Central
             ctx.strokeStyle = mainColor;
             ctx.lineWidth = 1.5;
             ctx.beginPath();
@@ -990,7 +1579,7 @@
             ctx.stroke();
         }
 
-        // ==================== POSICIONAMIENTO DE CONTACTOS BLIPS ====================
+        // ==================== POSICIONAMIENTO Y FOSFORESCENCIA DE BLIPS ====================
         function updateBlipElements() {
             const container = document.getElementById('scope-container');
             const blipsLayer = document.getElementById('radar-blips-layer');
@@ -1001,15 +1590,15 @@
             const h = rect.height;
             const cx = w / 2;
             const cy = h / 2;
-            const maxR = (w / 2) - 20;
+            const maxR = (w / 2) - 22;
 
             blipsLayer.innerHTML = '';
+            const nowTime = performance.now() / 1000;
 
             activeContacts.forEach(c => {
                 if (c.destroyed) return;
 
-                // Coordenadas polares:
-                // 0° es Norte (arriba: y = cy - r), 90° es Este (derecha: x = cx + r)
+                // Coordenadas polares: 0° es Norte (arriba: y = cy - r), 90° es Este (derecha: x = cx + r)
                 const azRad = c.azimuth * (Math.PI / 180);
                 const rRatio = Math.min(1.0, c.distance / MAX_RANGE_METERS);
                 const r = rRatio * maxR;
@@ -1018,22 +1607,38 @@
                 const by = cy - Math.cos(azRad) * r;
 
                 const isSelected = (c.id === selectedContactId);
+                const track = contactTrackingState[c.id] || { lastHitTime: 0, trail: [] };
+                const elapsedSinceHit = Math.max(0, nowTime - track.lastHitTime);
+                const phosphorAlpha = Math.max(0, 1.0 - (elapsedSinceHit / PHOSPHOR_DECAY_SECS));
+
+                // Clasificación manual asignada por el operador
+                const designation = operatorDesignations[c.id];
 
                 const marker = document.createElement('div');
                 marker.className = `radar-blip-marker ${isSelected ? 'selected' : ''}`;
                 marker.style.left = `${bx}px`;
                 marker.style.top = `${by}px`;
-                marker.title = `${c.squawk} [${c.name}] - AZ: ${c.azimuth}° | ELEV: ${c.elevation}°`;
 
-                let iconClass = 'hostile';
-                let iconSymbol = '◆';
-                if (c.type === 'FRIENDLY') {
+                // Opacidad según la fosforescencia (solo brilla tras ser iluminado por el barrido)
+                const displayAlpha = isSelected ? 1.0 : Math.max(0.06, phosphorAlpha);
+                marker.style.opacity = displayAlpha;
+                marker.style.pointerEvents = (displayAlpha > 0.08 || isSelected) ? 'auto' : 'none';
+
+                let iconClass = 'raw-echo';
+                let iconSymbol = '⦿';
+
+                if (designation === 'HOSTILE') {
+                    iconClass = 'hostile';
+                    iconSymbol = '◆';
+                } else if (designation === 'FRIENDLY') {
                     iconClass = 'friendly';
-                    iconSymbol = '■';
-                } else if (c.type === 'CIVILIAN') {
-                    iconClass = 'civilian';
                     iconSymbol = '●';
+                } else if (designation === 'CIVILIAN') {
+                    iconClass = 'civilian';
+                    iconSymbol = '■';
                 }
+
+                marker.title = `${c.squawk} | AZ: ${c.azimuth}° | ELEV: +${c.elevation}° | ALT: ${c.altitude}m`;
 
                 marker.innerHTML = `
                     <div class="blip-icon ${iconClass}">${iconSymbol}</div>
@@ -1060,6 +1665,7 @@
             const nameEl = document.getElementById('card-name');
             const descEl = document.getElementById('card-desc');
             const badgeEl = document.getElementById('card-iff-badge');
+            const statusTag = document.getElementById('classification-status-tag');
             const azEl = document.getElementById('card-az');
             const elEl = document.getElementById('card-el');
             const distEl = document.getElementById('card-dist');
@@ -1069,20 +1675,43 @@
             const voiceEl = document.getElementById('radio-voice-text');
 
             if (squawkEl) squawkEl.textContent = contact.squawk;
-            if (nameEl) nameEl.textContent = contact.name;
-            if (descEl) descEl.textContent = contact.desc || 'Aparato en vuelo';
+
+            const designation = operatorDesignations[contact.id];
+            const intel = INTEL_DB[contact.squawk] || null;
+
+            // Actualizar botones de clasificación
+            document.querySelectorAll('.iff-classify-btn').forEach(b => b.classList.remove('active'));
+            if (designation === 'HOSTILE') document.getElementById('btn-cls-hostile')?.classList.add('active');
+            else if (designation === 'FRIENDLY') document.getElementById('btn-cls-friendly')?.classList.add('active');
+            else if (designation === 'CIVILIAN') document.getElementById('btn-cls-civilian')?.classList.add('active');
 
             if (badgeEl) {
-                if (contact.type === 'HOSTILE') {
+                if (designation === 'HOSTILE') {
                     badgeEl.className = 'iff-badge-lg badge-hostile';
                     badgeEl.textContent = 'HOSTIL • FUEGO LIBRE';
-                } else if (contact.type === 'FRIENDLY') {
+                    if (statusTag) statusTag.innerHTML = '<b style="color: var(--radar-red);">HOSTIL CONFIRMADO</b>';
+                } else if (designation === 'FRIENDLY') {
                     badgeEl.className = 'iff-badge-lg badge-friendly';
                     badgeEl.textContent = 'ALIADO • ALTO EL FUEGO';
-                } else {
+                    if (statusTag) statusTag.innerHTML = '<b style="color: var(--radar-green);">ALIADO CONFIRMADO</b>';
+                } else if (designation === 'CIVILIAN') {
                     badgeEl.className = 'iff-badge-lg badge-civilian';
                     badgeEl.textContent = 'CIVIL • NO DISPARAR';
+                    if (statusTag) statusTag.innerHTML = '<b style="color: var(--radar-gold);">CIVIL PROTEGIDO</b>';
+                } else {
+                    badgeEl.className = 'iff-badge-lg badge-unknown';
+                    badgeEl.textContent = 'NO CLASIFICADO';
+                    if (statusTag) statusTag.innerHTML = '<span style="color: #94a3b8;">PENDIENTE DE IFF</span>';
                 }
+            }
+
+            // Datos del modelo: Revelados si se ha clasificado o permanece como eco táctico
+            if (designation && intel) {
+                if (nameEl) nameEl.textContent = intel.name;
+                if (descEl) descEl.textContent = intel.desc;
+            } else {
+                if (nameEl) nameEl.textContent = `--- ECO SIN CLASIFICAR [${contact.squawk}] ---`;
+                if (descEl) descEl.textContent = `Consultar Base de Datos IFF para evaluar perfil de amenaza.`;
             }
 
             const azStr = String(Math.round(contact.azimuth)).padStart(3, '0') + '°';
@@ -1095,18 +1724,29 @@
             if (spdEl) spdEl.textContent = `${contact.speed_kmh} km/h`;
             if (hdgEl) hdgEl.textContent = `${String(contact.heading_flight).padStart(3, '0')}°`;
 
-            // Plantilla de frase para radio al tirador
+            // Plantilla de frase para radio al tirador según clasificación
             if (voiceEl) {
-                if (contact.type === 'HOSTILE') {
-                    voiceEl.textContent = `«¡Tirador, vector azimut ${String(Math.round(contact.azimuth)).padStart(3, '0')}, elevación ${Math.round(contact.elevation)}! Blanco Hostil ${contact.squawk} [${contact.name}]. ¡Fuego a discreción!»`;
-                } else if (contact.type === 'FRIENDLY') {
-                    voiceEl.textContent = `«¡Tirador, sector ${String(Math.round(contact.azimuth)).padStart(3, '0')}, elevación ${Math.round(contact.elevation)}! Contacto ${contact.squawk} es ALIADO AMIGO. ¡ALTO EL FUEGO!»`;
+                if (designation === 'HOSTILE') {
+                    voiceEl.textContent = `«¡Tirador, vector azimut ${String(Math.round(contact.azimuth)).padStart(3, '0')}, elevación ${Math.round(contact.elevation)}! Blanco Hostil confirmado ${contact.squawk} [${intel ? intel.name : 'Amenaza'}]. ¡Fuego a discreción!»`;
+                } else if (designation === 'FRIENDLY') {
+                    voiceEl.textContent = `«¡Tirador, sector ${String(Math.round(contact.azimuth)).padStart(3, '0')}, elevación ${Math.round(contact.elevation)}! Contacto ${contact.squawk} clasificado ALIADO AMIGO. ¡ALTO EL FUEGO!»`;
+                } else if (designation === 'CIVILIAN') {
+                    voiceEl.textContent = `«¡Atención puesto de tiro! Contacto ${contact.squawk} clasificado VUELO CIVIL NO COMBATIENTE. ¡PROHIBIDO ENGANCHAR!»`;
                 } else {
-                    voiceEl.textContent = `«¡Atención puesto de tiro! Contacto ${contact.squawk} en sector ${String(Math.round(contact.azimuth)).padStart(3, '0')} es VUELO CIVIL. ¡PROHIBIDO ENGANCHAR!»`;
+                    voiceEl.textContent = `«¡Atención! Blanco ${contact.squawk} en sector ${String(Math.round(contact.azimuth)).padStart(3, '0')} PENDIENTE DE IDENTIFICACIÓN IFF. No abrir fuego hasta confirmar con Inteligencia.»`;
                 }
             }
 
             updateTableSelection();
+            updateBlipElements();
+        }
+
+        function classifySelected(designationType) {
+            if (!selectedContactId) return;
+            operatorDesignations[selectedContactId] = designationType;
+            selectContact(selectedContactId);
+            renderContactsTable();
+            playBlipPing();
         }
 
         function updateTableSelection() {
@@ -1120,7 +1760,7 @@
             });
         }
 
-        // ==================== ACTUALIZACIÓN DE TABLA ====================
+        // ==================== ACTUALIZACIÓN DE TABLA DE CONTACTOS ====================
         function renderContactsTable() {
             const tbody = document.getElementById('contacts-table-body');
             const countEl = document.getElementById('contacts-count');
@@ -1135,22 +1775,23 @@
                 tr.dataset.id = c.id;
                 if (c.id === selectedContactId) tr.className = 'selected';
 
-                let iffColor = 'var(--radar-red)';
-                let iffLabel = 'HOSTIL';
-                if (c.type === 'FRIENDLY') {
-                    iffColor = 'var(--radar-green)';
-                    iffLabel = 'ALIADO';
-                } else if (c.type === 'CIVILIAN') {
-                    iffColor = 'var(--radar-gold)';
-                    iffLabel = 'CIVIL';
+                const designation = operatorDesignations[c.id];
+                let iffLabel = '<span style="color: #94a3b8;">[PENDIENTE]</span>';
+                if (designation === 'HOSTILE') {
+                    iffLabel = '<b style="color: var(--radar-red);">[HOSTIL]</b>';
+                } else if (designation === 'FRIENDLY') {
+                    iffLabel = '<b style="color: var(--radar-green);">[ALIADO]</b>';
+                } else if (designation === 'CIVILIAN') {
+                    iffLabel = '<b style="color: var(--radar-gold);">[CIVIL]</b>';
                 }
 
                 tr.innerHTML = `
                     <td style="font-weight: bold; color: #fff;">${c.squawk}</td>
-                    <td>${c.name}</td>
                     <td style="color: var(--radar-cyan); font-weight: bold;">${String(Math.round(c.azimuth)).padStart(3, '0')}°</td>
                     <td style="color: var(--radar-gold); font-weight: bold;">+${Math.round(c.elevation)}°</td>
-                    <td style="color: ${iffColor}; font-weight: bold;">${iffLabel}</td>
+                    <td>${c.distance}m</td>
+                    <td>${c.speed_kmh}km/h</td>
+                    <td>${iffLabel}</td>
                 `;
 
                 tr.addEventListener('click', () => {
@@ -1171,17 +1812,24 @@
                 if (!data.success) return;
 
                 activeContacts = data.contacts || [];
+                clutterBlips = data.clutter || [];
 
-                // Seleccionar primer blanco hostile si no hay ninguno seleccionado
+                // Asegurar tracking state para cada contacto
+                activeContacts.forEach(c => {
+                    if (!contactTrackingState[c.id]) {
+                        contactTrackingState[c.id] = {
+                            lastHitTime: performance.now() / 1000 - 1.0, // iluminado inicialmente
+                            trail: []
+                        };
+                    }
+                });
+
+                // Si no hay seleccionado o fue destruido, seleccionar el primero disponible
                 if (!selectedContactId || !activeContacts.find(c => c.id === selectedContactId && !c.destroyed)) {
-                    const firstHostile = activeContacts.find(c => c.type === 'HOSTILE' && !c.destroyed);
-                    if (firstHostile) {
-                        selectContact(firstHostile.id);
-                    } else if (activeContacts.length > 0) {
+                    if (activeContacts.length > 0) {
                         selectContact(activeContacts[0].id);
                     }
                 } else {
-                    // Refrescar datos del seleccionado
                     selectContact(selectedContactId);
                 }
 
@@ -1240,31 +1888,206 @@
         // ==================== BUCLE DE ANIMACIÓN DEL RADAR ====================
         let lastTime = performance.now();
 
+        function checkBeamCrossings(prevSweep, currentSweep, dt) {
+            const nowTime = performance.now() / 1000;
+            const container = document.getElementById('scope-container');
+            const rect = container ? container.getBoundingClientRect() : null;
+            const maxR = rect ? (rect.width / 2) - 22 : 258;
+            const cx = rect ? rect.width / 2 : 280;
+            const cy = rect ? rect.height / 2 : 280;
+
+            activeContacts.forEach(c => {
+                if (c.destroyed) return;
+
+                // Calcular diferencia angular entre el barrido y el azimut del contacto
+                let diff = (currentSweep - c.azimuth + 360) % 360;
+                if (diff > 180) diff = 360 - diff;
+
+                const stepWindow = Math.max(2.5, sweepSpeedDeg * dt * 1.5);
+                if (diff <= stepWindow) {
+                    const track = contactTrackingState[c.id];
+                    if (track && (nowTime - track.lastHitTime) > 0.35) {
+                        track.lastHitTime = nowTime;
+
+                        // Agregar punto al rastro histórico de fosforescencia
+                        const azRad = c.azimuth * (Math.PI / 180);
+                        const rRatio = Math.min(1.0, c.distance / MAX_RANGE_METERS);
+                        const r = rRatio * maxR;
+                        const bx = cx + Math.sin(azRad) * r;
+                        const by = cy - Math.cos(azRad) * r;
+
+                        track.trail.unshift({ x: bx, y: by, time: nowTime });
+                        if (track.trail.length > 5) track.trail.pop();
+
+                        playSweepTone(1350, 0.025);
+                    }
+                }
+            });
+        }
+
         function radarAnimationLoop(now) {
             const dt = (now - lastTime) / 1000;
             lastTime = now;
+            const prevSweep = sweepAngle;
 
-            // Avanzar barrido
-            sweepAngle = (sweepAngle + SWEEP_SPEED_DEG * dt) % 360;
+            if (antennaMode === '360') {
+                // Rotación continua 360°
+                sweepAngle = (sweepAngle + sweepSpeedDeg * dt) % 360;
+
+                // Pitido táctico suave en cada cuadrante cardinal
+                if (Math.floor(sweepAngle / 90) !== Math.floor(lastSweepBeepAngle / 90)) {
+                    playSweepTone(900, 0.02);
+                }
+                lastSweepBeepAngle = sweepAngle;
+            } else {
+                // Modo Sector 30°: oscilación continua en el arco de 30°
+                const minSec = (sectorCenterAzimuth - SECTOR_HALF_WIDTH + 360) % 360;
+                const maxSec = (sectorCenterAzimuth + SECTOR_HALF_WIDTH + 360) % 360;
+
+                sweepAngle = sweepAngle + (sweepSpeedDeg * 1.1) * sectorDirection * dt;
+
+                // Manejo de límites de oscilación
+                let relAngle = (sweepAngle - sectorCenterAzimuth + 540) % 360 - 180;
+                if (relAngle >= SECTOR_HALF_WIDTH) {
+                    sweepAngle = (sectorCenterAzimuth + SECTOR_HALF_WIDTH + 360) % 360;
+                    sectorDirection = -1;
+                    playSweepTone(1100, 0.02);
+                } else if (relAngle <= -SECTOR_HALF_WIDTH) {
+                    sweepAngle = (sectorCenterAzimuth - SECTOR_HALF_WIDTH + 360) % 360;
+                    sectorDirection = 1;
+                    playSweepTone(1100, 0.02);
+                }
+                sweepAngle = (sweepAngle + 360) % 360;
+            }
 
             const azEl = document.getElementById('sweep-az-readout');
             if (azEl) azEl.textContent = `${String(Math.round(sweepAngle)).padStart(3, '0')}°`;
 
-            // Pitido táctico suave cada 90° (cuadrante)
-            if (Math.floor(sweepAngle / 90) !== Math.floor(lastSweepBeepAngle / 90)) {
-                playSweepTone(1400, 0.03);
-            }
-            lastSweepBeepAngle = sweepAngle;
-
+            checkBeamCrossings(prevSweep, sweepAngle, dt);
             drawRadarScope();
+            updateBlipElements();
 
             requestAnimationFrame(radarAnimationLoop);
         }
 
+        // ==================== CLICK EN RADAR PARA APUNTAR SECTOR ====================
+        function handleRadarCanvasClick(event) {
+            const canvas = document.getElementById('radar-canvas');
+            if (!canvas) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = event.clientX - rect.left - (rect.width / 2);
+            const clickY = event.clientY - rect.top - (rect.height / 2);
+
+            // Calcular azimut del clic en coordenadas de brújula (0° Norte, 90° Este)
+            let angleDeg = Math.atan2(clickX, -clickY) * (180 / Math.PI);
+            if (angleDeg < 0) angleDeg += 360;
+
+            const targetAz = Math.round(angleDeg);
+            setSectorPreset(targetAz);
+            playBlipPing();
+        }
+
+        // ==================== MODAL DE INTELIGENCIA IFF ====================
+        function openIffModal() {
+            renderIntelDatabase();
+            document.getElementById('modal-iff').classList.add('open');
+        }
+
+        function closeIffModal() {
+            document.getElementById('modal-iff').classList.remove('open');
+        }
+
+        function closeIffModalOnOverlay(e) {
+            if (e.target.id === 'modal-iff') closeIffModal();
+        }
+
+        function renderIntelDatabase(filterText = '') {
+            const container = document.getElementById('modal-iff-content');
+            if (!container) return;
+
+            const term = filterText.toLowerCase().trim();
+            const keys = Object.keys(INTEL_DB);
+
+            const filteredKeys = keys.filter(k => {
+                const item = INTEL_DB[k];
+                return !term ||
+                    k.toLowerCase().includes(term) ||
+                    item.name.toLowerCase().includes(term) ||
+                    item.desc.toLowerCase().includes(term) ||
+                    item.type.toLowerCase().includes(term);
+            });
+
+            const hostiles = filteredKeys.filter(k => INTEL_DB[k].type === 'HOSTILE');
+            const friendlies = filteredKeys.filter(k => INTEL_DB[k].type === 'FRIENDLY');
+            const civilians = filteredKeys.filter(k => INTEL_DB[k].type === 'CIVILIAN');
+
+            function renderCards(list) {
+                return list.map(sq => {
+                    const item = INTEL_DB[sq];
+                    let badgeColor = 'var(--radar-red)';
+                    if (item.type === 'FRIENDLY') badgeColor = 'var(--radar-green)';
+                    if (item.type === 'CIVILIAN') badgeColor = 'var(--radar-gold)';
+
+                    return `
+                        <div class="intel-aircraft-card" style="border-left: 3px solid ${badgeColor};">
+                            <div class="intel-card-header">
+                                <span class="intel-squawk" style="color: ${badgeColor};">${sq}</span>
+                                <span style="font-size: 0.65rem; font-weight: bold; color: ${badgeColor};">${item.type}</span>
+                            </div>
+                            <div style="font-size: 0.85rem; font-weight: bold; color: #fff;">${item.name}</div>
+                            <div style="font-size: 0.70rem; color: #cbd5e1;">${item.desc}</div>
+                            <div class="intel-card-meta">
+                                <div><b>ALTITUD TÍPICA:</b> ${item.alt} | <b>VELOCIDAD:</b> ${item.spd}</div>
+                                <div style="color: ${badgeColor}; font-weight: bold; margin-top: 2px;">ROE: ${item.roe}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            container.innerHTML = `
+                <div>
+                    <div class="intel-section-title" style="color: var(--radar-red);">
+                        <span class="material-symbols-outlined">warning</span> AERONAVES HOSTILES IDENTIFICADAS (OBJETIVOS DE DISPARO)
+                    </div>
+                    <div class="intel-grid">
+                        ${hostiles.length > 0 ? renderCards(hostiles) : '<div style="color: #64748b; font-size: 0.75rem;">Sin coincidencias</div>'}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="intel-section-title" style="color: var(--radar-green);">
+                        <span class="material-symbols-outlined">shield</span> FUERZAS ALIADAS AMIGAS (ALTO EL FUEGO OBLIGATORIO)
+                    </div>
+                    <div class="intel-grid">
+                        ${friendlies.length > 0 ? renderCards(friendlies) : '<div style="color: #64748b; font-size: 0.75rem;">Sin coincidencias</div>'}
+                    </div>
+                </div>
+
+                <div>
+                    <div class="intel-section-title" style="color: var(--radar-gold);">
+                        <span class="material-symbols-outlined">flight</span> VUELOS CIVILES Y SANITARIOS PROTEGIDOS (PROHIBIDO ENGANCHAR)
+                    </div>
+                    <div class="intel-grid">
+                        ${civilians.length > 0 ? renderCards(civilians) : '<div style="color: #64748b; font-size: 0.75rem;">Sin coincidencias</div>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function filterIntelDatabase(val) {
+            renderIntelDatabase(val);
+        }
+
         // ==================== INICIALIZACIÓN ====================
         window.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('radar-canvas');
+            if (canvas) {
+                canvas.addEventListener('click', handleRadarCanvasClick);
+            }
+
             fetchAirspace();
-            setInterval(fetchAirspace, 1200); // Polling cada 1.2 segundos
+            setInterval(fetchAirspace, 1200); // Polling de contactos cada 1.2s
             requestAnimationFrame(radarAnimationLoop);
 
             window.addEventListener('resize', () => {
