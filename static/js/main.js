@@ -1140,18 +1140,37 @@ function initModal() {
     const btnCancel = document.getElementById('btn-cancel-modal');
     const form = document.getElementById('form-equipo');
 
-    btnNew.addEventListener('click', () => openModal());
-    btnCancel.addEventListener('click', closeModal);
+    if (btnNew) btnNew.addEventListener('click', () => openModal());
+    if (btnCancel) btnCancel.addEventListener('click', closeModal);
     
     const btnMiExpediente = document.getElementById('btn-mi-expediente');
     if (btnMiExpediente) {
         btnMiExpediente.addEventListener('click', async () => {
-            if (!window.equipoId) return;
-            const res = await fetch('/api/equipos');
-            const equipos = await res.json();
-            const miEquipo = equipos.find(e => e.id == window.equipoId);
-            if (miEquipo) {
-                openModal(miEquipo);
+            // Si es admin o no tiene equipoId asociado, navegar a la vista de Gestión de Unidades
+            if (window.userRole === 'admin' || !window.equipoId) {
+                const navEquiposBtn = document.querySelector('.nav-icon-btn[data-target="view-equipos"]');
+                if (navEquiposBtn) {
+                    navEquiposBtn.click();
+                } else {
+                    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+                    document.querySelectorAll('.nav-icon-btn').forEach(b => b.classList.remove('active'));
+                    const viewEquipos = document.getElementById('view-equipos');
+                    if (viewEquipos) viewEquipos.classList.add('active');
+                }
+                return;
+            }
+            try {
+                const res = await fetch('/api/equipos');
+                const equipos = await res.json();
+                const miEquipo = equipos.find(e => e.id == window.equipoId);
+                if (miEquipo) {
+                    openModal(miEquipo);
+                } else {
+                    alert('No se encontró la información de tu unidad.');
+                }
+            } catch (err) {
+                console.error('Error al cargar expediente de unidad:', err);
+                alert('Error al conectar con el servidor.');
             }
         });
     }
@@ -1347,14 +1366,20 @@ function initModal() {
 
 function openModal(equipo = null) {
     const modal = document.getElementById('modal-equipo');
-    document.getElementById('modal-title').innerText = equipo ? 'Gestionar Unidad' : 'Registrar Unidad';
+    if (!modal) return;
+    const titleEl = document.getElementById('modal-title');
+    if (titleEl) titleEl.innerText = equipo ? 'Gestionar Unidad' : 'Registrar Unidad';
     
-    document.getElementById('eq-id').value = equipo ? equipo.id : '';
-    document.getElementById('eq-nombre').value = equipo ? equipo.nombre : '';
-    document.getElementById('eq-jugadores').value = equipo ? equipo.jugadores : '0 / 0';
-    document.getElementById('eq-jugadores-manual').checked = equipo ? equipo.jugadores_manual : false;
-    document.getElementById('eq-tipo').value = equipo ? equipo.tipo : 'GAD';
-    document.getElementById('eq-misiones-preferidas').value = equipo ? (equipo.misiones_preferidas || '') : '';
+    const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+    setVal('eq-id', equipo ? equipo.id : '');
+    setVal('eq-nombre', equipo ? equipo.nombre : '');
+    setVal('eq-jugadores', equipo ? equipo.jugadores : '0 / 0');
+    const chkManual = document.getElementById('eq-jugadores-manual');
+    if (chkManual) chkManual.checked = equipo ? equipo.jugadores_manual : false;
+    setVal('eq-tipo', equipo ? equipo.tipo : 'GAD');
+    setVal('eq-misiones-preferidas', equipo ? (equipo.misiones_preferidas || '') : '');
+    setVal('eq-codigo', equipo ? (equipo.codigo || '') : '');
+    setVal('eq-password', '');
     
     const logoPreview = document.getElementById('eq-logo-preview');
     const logoInput = document.getElementById('eq-logo');
@@ -1381,80 +1406,81 @@ function openModal(equipo = null) {
             fotoPreview.style.display = 'none';
         }
     }
-    if (document.getElementById('eq-codigo')) {
-        document.getElementById('eq-codigo').value = equipo ? (equipo.codigo || '') : '';
-    }
-    if (document.getElementById('eq-password')) {
-        document.getElementById('eq-password').value = ''; // Always empty on open
-    }
     
     // Admin features visibility
     const adminExpediente = document.getElementById('admin-expediente');
-    
-    // Core fields restrictions
     const coreFields = ['eq-nombre', 'eq-faccion', 'eq-codigo'];
     
-    if (window.userRole === 'admin') {
-        adminExpediente.style.display = 'block';
-        document.getElementById('eq-tags').value = equipo ? (equipo.tags_comportamiento || '[]') : '[]';
-        document.getElementById('eq-estado-medalla').value = equipo ? (equipo.estado_medalla || 'verde') : 'verde';
-        if (document.getElementById('eq-estado-sancion')) {
-            document.getElementById('eq-estado-sancion').value = equipo ? (equipo.estado_sancion || 'Autorizado') : 'Autorizado';
+    if (adminExpediente) {
+        if (window.userRole === 'admin') {
+            adminExpediente.style.display = 'block';
+            setVal('eq-tags', equipo ? (equipo.tags_comportamiento || '[]') : '[]');
+            setVal('eq-estado-medalla', equipo ? (equipo.estado_medalla || 'verde') : 'verde');
+            setVal('eq-estado-sancion', equipo ? (equipo.estado_sancion || 'Autorizado') : 'Autorizado');
+            coreFields.forEach(f => {
+                const el = document.getElementById(f);
+                if(el) { el.disabled = false; el.readOnly = false; }
+            });
+            if (typeof renderTagsUI === 'function') renderTagsUI();
+        } else {
+            adminExpediente.style.display = 'none';
+            coreFields.forEach(f => {
+                const el = document.getElementById(f);
+                if(el) { el.disabled = true; el.readOnly = true; }
+            });
         }
-        coreFields.forEach(f => {
-            const el = document.getElementById(f);
-            if(el) { el.disabled = false; el.readOnly = false; }
-        });
-        renderTagsUI();
-    } else {
-        adminExpediente.style.display = 'none';
-        coreFields.forEach(f => {
-            const el = document.getElementById(f);
-            if(el) { el.disabled = true; el.readOnly = true; }
-        });
     }
     
     // Update badge visual
     const badge = document.getElementById('badge-medalla');
-    if (equipo && equipo.estado_medalla && window.userRole === 'admin') {
-        badge.style.display = 'block';
-        if (equipo.estado_medalla === 'verde') badge.innerHTML = '🟢 Excelente';
-        else if (equipo.estado_medalla === 'amarillo') badge.innerHTML = '🟡 Advertencia';
-        else badge.innerHTML = '🔴 Problemático';
-    } else {
-        badge.style.display = 'none';
+    if (badge) {
+        if (equipo && equipo.estado_medalla && window.userRole === 'admin') {
+            badge.style.display = 'block';
+            if (equipo.estado_medalla === 'verde') badge.innerHTML = '🟢 Excelente';
+            else if (equipo.estado_medalla === 'amarillo') badge.innerHTML = '🟡 Advertencia';
+            else badge.innerHTML = '🔴 Problemático';
+        } else {
+            badge.style.display = 'none';
+        }
     }
     
-    updateJugadoresState();
+    if (typeof updateJugadoresState === 'function') updateJugadoresState();
     
-    if (equipo) {
-        document.getElementById('eq-faccion').value = equipo.faccion_id;
+    if (equipo && equipo.faccion_id) {
+        setVal('eq-faccion', equipo.faccion_id);
     }
 
     const miembrosContainer = document.getElementById('miembros-container');
-    miembrosContainer.innerHTML = '';
-    
-    if (equipo && equipo.miembros && equipo.miembros.length > 0) {
-        equipo.miembros.forEach(m => addMiembroRow(m));
-    } else {
-        addMiembroRow();
+    if (miembrosContainer) {
+        miembrosContainer.innerHTML = '';
+        if (equipo && equipo.miembros && equipo.miembros.length > 0) {
+            equipo.miembros.forEach(m => addMiembroRow(m));
+        } else {
+            addMiembroRow();
+        }
     }
     
     const historialContainer = document.getElementById('historial-container');
-    historialContainer.innerHTML = '';
-    
-    if (equipo && equipo.historial && equipo.historial.length > 0) {
-        equipo.historial.forEach(h => addHistorialRow(h));
-    } else {
-        addHistorialRow();
+    if (historialContainer) {
+        historialContainer.innerHTML = '';
+        if (equipo && equipo.historial && equipo.historial.length > 0) {
+            equipo.historial.forEach(h => addHistorialRow(h));
+        } else {
+            addHistorialRow();
+        }
     }
     
     modal.classList.add('active');
-    cargarEquipoDocumentos(equipo ? equipo.id : null, equipo ? equipo.documentos : null);
-    if (equipo && equipo.id) {
+    if (typeof cargarEquipoDocumentos === 'function') {
+        cargarEquipoDocumentos(equipo ? equipo.id : null, equipo ? equipo.documentos : null);
+    }
+    if (equipo && equipo.id && typeof startEquipoReadinessPolling === 'function') {
         startEquipoReadinessPolling(equipo.id);
     }
 }
+
+window.openModal = openModal;
+window.closeModal = closeModal;
 
 window.equipoReadinessInterval = null;
 function startEquipoReadinessPolling(equipoId) {
@@ -1634,6 +1660,9 @@ function addMiembroRow(m = null) {
     const carnetBtn = (m && m.id) ? `<a href="/carnet/${m.id}" target="_blank" title="Ver Carnet / QR" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; text-decoration: none; cursor: pointer; transition: all 0.2s; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #94a3b8;"><span class="material-symbols-outlined" style="font-size: 16px;">badge</span></a>` : '';
     
     const iceBtn = (m && m.id) ? `<button type="button" title="Ficha Médica Real (I.C.E.)" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(231, 76, 60, 0.12); border: 1px solid rgba(231, 76, 60, 0.35); color: #ff6b7a;" onclick="verIceMiembro(${m.id})"><span class="material-symbols-outlined" style="font-size: 16px;">emergency</span></button>` : '';
+
+    const isExistingMember = Boolean(m && m.id);
+    const isAdmin = (window.userRole === 'admin');
 
     const isMedicRole = rol.toLowerCase().includes('medico') || rol.toLowerCase().includes('sanitario');
     const unbindMedicBtn = (isAdmin && isExistingMember && isMedicRole) ?
@@ -4186,65 +4215,75 @@ async function cargarDocs() {
     }
 }
 
-window.subirPdfDocDirecto = async function(input) {
-    if (!input.files || input.files.length === 0) return;
-    const file = input.files[0];
-    
+window.onDocPdfFileSelected = function(input) {
     const statusEl = document.getElementById('doc-pdf-upload-status');
-    const urlInput = document.getElementById('doc-pdf-url');
     const tituloInput = document.getElementById('doc-titulo');
+    const activeContainer = document.getElementById('doc-pdf-active-container');
+    
+    if (!input.files || input.files.length === 0) {
+        if (statusEl) {
+            statusEl.style.color = '#94a3b8';
+            statusEl.textContent = 'Ningún archivo nuevo seleccionado.';
+        }
+        return;
+    }
+    const file = input.files[0];
     
     if (!file.name.toLowerCase().endsWith('.pdf')) {
         alert('Por favor selecciona un archivo con extensión .pdf');
         input.value = '';
+        if (statusEl) {
+            statusEl.style.color = '#ef4444';
+            statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">error</span> Formato incorrecto. Debe ser .pdf';
+        }
         return;
     }
     
     if (file.size > 10 * 1024 * 1024) {
         alert('El archivo excede el tamaño máximo permitido de 10 MB');
         input.value = '';
-        return;
-    }
-    
-    if (statusEl) {
-        statusEl.style.color = '#00f0ff';
-        statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle; animation: spin 1s linear infinite;">sync</span> Subiendo ${file.name}...`;
-    }
-    
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    try {
-        const res = await fetch('/api/docs/upload_pdf', {
-            method: 'POST',
-            body: formData
-        });
-        const data = await res.json();
-        
-        if (res.ok && data.status === 'success') {
-            if (urlInput) urlInput.value = data.pdf_url;
-            if (tituloInput && !tituloInput.value.trim()) {
-                tituloInput.value = data.title_suggested || file.name.replace(/\.pdf$/i, '');
-            }
-            if (statusEl) {
-                statusEl.style.color = '#10b981';
-                statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">check_circle</span> Subido con éxito: ${data.filename}`;
-            }
-        } else {
-            const err = data.error || 'Error al subir el archivo PDF';
-            if (statusEl) {
-                statusEl.style.color = '#ef4444';
-                statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">error</span> ${err}`;
-            }
-            alert(err);
-        }
-    } catch (e) {
-        console.error('Error subiendo PDF:', e);
         if (statusEl) {
             statusEl.style.color = '#ef4444';
-            statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">error</span> Error de conexión al subir`;
+            statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">error</span> El archivo supera los 10 MB';
         }
-        alert('Error de conexión al subir el documento PDF.');
+        return;
+    }
+
+    // Proponer título limpio si el campo está vacío
+    if (tituloInput && !tituloInput.value.trim()) {
+        const cleanName = file.name.replace(/\.pdf$/i, '').replace(/[_-]/g, ' ').trim();
+        tituloInput.value = cleanName;
+    }
+
+    if (activeContainer) activeContainer.style.display = 'none';
+
+    const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+    if (statusEl) {
+        statusEl.style.color = '#10b981';
+        statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:15px; vertical-align:middle;">check_circle</span> Archivo preparado: <strong>${file.name}</strong> (${sizeMb} MB). Se adjuntará al pulsar Guardar Documento.`;
+    }
+};
+
+window.subirPdfDocDirecto = window.onDocPdfFileSelected;
+
+window.quitarPdfDoc = function() {
+    const urlInput = document.getElementById('doc-pdf-url');
+    if (urlInput) urlInput.value = '';
+    const fileInput = document.getElementById('doc-pdf-file');
+    if (fileInput) fileInput.value = '';
+    const activeContainer = document.getElementById('doc-pdf-active-container');
+    if (activeContainer) activeContainer.style.display = 'none';
+    const statusEl = document.getElementById('doc-pdf-upload-status');
+    if (statusEl) {
+        statusEl.style.color = '#f59e0b';
+        statusEl.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">info</span> PDF desvinculado. Pulsa "Guardar Documento" para consolidar los cambios.';
+    }
+};
+
+window.toggleExternalDocUrl = function() {
+    const el = document.getElementById('doc-pdf-external-wrapper');
+    if (el) {
+        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
     }
 };
 
@@ -4255,36 +4294,54 @@ async function guardarDoc() {
     const faccion_id = document.getElementById('doc-faccion').value;
     const orden = document.getElementById('doc-orden').value;
     const contenido = quillDocEditor ? quillDocEditor.root.innerHTML : '';
+    const fileInput = document.getElementById('doc-pdf-file');
     
     if (!titulo) {
         alert('El título es obligatorio.');
         return;
     }
     
-    const payload = {
-        titulo: titulo,
-        contenido: contenido,
-        pdf_url: pdf_url,
-        faccion_id: faccion_id ? parseInt(faccion_id) : null,
-        orden: orden ? parseInt(orden) : 0
-    };
-    if (id) payload.id = parseInt(id);
-    
+    const saveBtn = document.querySelector('button[onclick="guardarDoc()"]');
+    const originalText = saveBtn ? saveBtn.innerHTML : '';
+    if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size:16px; animation: spin 1s linear infinite; vertical-align:middle;">sync</span> Guardando...';
+    }
+
     try {
+        const formData = new FormData();
+        if (id) formData.append('id', id);
+        formData.append('titulo', titulo);
+        formData.append('contenido', contenido);
+        formData.append('faccion_id', faccion_id || '');
+        formData.append('orden', orden || '0');
+        formData.append('pdf_url', pdf_url);
+
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            formData.append('file', fileInput.files[0]);
+        }
+
         const res = await fetch('/api/docs', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
+            body: formData
         });
-        if (res.ok) {
-            alert('Documento guardado');
+        const data = await res.json();
+        
+        if (res.ok && data.status === 'success') {
+            alert('Documento guardado con éxito');
             limpiarDocEditor();
             cargarDocs();
         } else {
-            alert('Error al guardar documento');
+            alert('Error al guardar documento: ' + (data.error || 'Error desconocido'));
         }
     } catch(e) {
-        alert('Error de conexión');
+        console.error('Error al guardar documento:', e);
+        alert('Error de conexión al guardar el documento.');
+    } finally {
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = originalText || 'Guardar Documento';
+        }
     }
 }
 
@@ -4298,16 +4355,33 @@ function editarDoc(docJsonStr) {
     
     const fileInput = document.getElementById('doc-pdf-file');
     if (fileInput) fileInput.value = '';
+
     const statusEl = document.getElementById('doc-pdf-upload-status');
-    if (statusEl) {
-        if (doc.pdf_url) {
-            statusEl.style.color = '#38bdf8';
-            statusEl.innerHTML = `<span class="material-symbols-outlined" style="font-size:14px; vertical-align:middle;">description</span> PDF actual asignado`;
-        } else {
+    const activeContainer = document.getElementById('doc-pdf-active-container');
+    const activeLabel = document.getElementById('doc-pdf-active-label');
+    
+    if (doc.pdf_url) {
+        if (activeContainer) activeContainer.style.display = 'inline-flex';
+        if (activeLabel) {
+            const rawFileName = doc.pdf_url.split('/').pop().split('?')[0];
+            activeLabel.innerHTML = `PDF actual: <a href="${doc.pdf_url}" target="_blank" rel="noopener noreferrer" style="color:#00f0ff; text-decoration:underline; font-weight:600;">${rawFileName}</a>`;
+        }
+        if (statusEl) {
             statusEl.style.color = '#94a3b8';
-            statusEl.innerHTML = 'Ningún PDF seleccionado';
+            statusEl.textContent = 'Para reemplazar este PDF, selecciona un archivo nuevo en el explorador de arriba.';
+        }
+    } else {
+        if (activeContainer) activeContainer.style.display = 'none';
+        if (statusEl) {
+            statusEl.style.color = '#94a3b8';
+            statusEl.textContent = 'Haz clic en "Examinar..." o arrastra aquí tu archivo PDF.';
         }
     }
+
+    const extWrapper = document.getElementById('doc-pdf-external-wrapper');
+    if (extWrapper) extWrapper.style.display = 'none';
+    const extInput = document.getElementById('doc-pdf-url-external');
+    if (extInput) extInput.value = doc.pdf_url && !doc.pdf_url.startsWith('/static/uploads/') ? doc.pdf_url : '';
 
     if (quillDocEditor) {
         quillDocEditor.root.innerHTML = doc.contenido || '';
@@ -4315,7 +4389,7 @@ function editarDoc(docJsonStr) {
     
     // Scroll up to editor
     const view = document.getElementById('view-docs');
-    if(view) view.scrollTop = 0;
+    if (view) view.scrollTop = 0;
 }
 
 function limpiarDocEditor() {
@@ -4329,8 +4403,14 @@ function limpiarDocEditor() {
     const statusEl = document.getElementById('doc-pdf-upload-status');
     if (statusEl) {
         statusEl.style.color = '#94a3b8';
-        statusEl.innerHTML = 'Ningún PDF seleccionado';
+        statusEl.textContent = 'Haz clic en "Examinar..." o arrastra aquí tu archivo PDF.';
     }
+    const activeContainer = document.getElementById('doc-pdf-active-container');
+    if (activeContainer) activeContainer.style.display = 'none';
+    const extWrapper = document.getElementById('doc-pdf-external-wrapper');
+    if (extWrapper) extWrapper.style.display = 'none';
+    const extInput = document.getElementById('doc-pdf-url-external');
+    if (extInput) extInput.value = '';
     if (quillDocEditor) {
         quillDocEditor.root.innerHTML = '';
     }

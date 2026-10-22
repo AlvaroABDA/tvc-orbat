@@ -3340,17 +3340,61 @@ def get_docs():
 @app.route('/api/docs', methods=['POST'])
 def save_doc():
     if session.get('role') != 'admin': return jsonify({'error': 'Unauthorized'}), 403
-    data = request.json
+
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        titulo = request.form.get('titulo', '').strip()
+        contenido = request.form.get('contenido', '')
+        pdf_url = request.form.get('pdf_url', '').strip()
+        faccion_raw = request.form.get('faccion_id')
+        faccion_id = int(faccion_raw) if faccion_raw and str(faccion_raw).strip() != '' else None
+        orden_raw = request.form.get('orden', 0)
+        try:
+            orden = int(orden_raw) if orden_raw else 0
+        except ValueError:
+            orden = 0
+        doc_id_raw = request.form.get('id')
+        doc_id = int(doc_id_raw) if doc_id_raw and str(doc_id_raw).strip() != '' else None
+
+        # Check if an uploaded file is included from the file explorer
+        if 'file' in request.files:
+            file = request.files['file']
+            if file and file.filename != '':
+                ext = os.path.splitext(file.filename)[1].lower()
+                if ext != '.pdf':
+                    return jsonify({'error': 'Solo se admiten documentos en formato PDF (.pdf)'}), 400
+
+                import secrets
+                raw_name = os.path.splitext(file.filename)[0]
+                safe_name = "".join([c for c in raw_name if c.isalnum() or c in ('_', '-', ' ')]).replace(' ', '_').strip()
+                if not safe_name:
+                    safe_name = "reglamento"
+                rand_token = secrets.token_hex(4)
+                filename = f"{safe_name}_{rand_token}.pdf"
+                filepath = os.path.join(UPLOAD_REGLAMENTOS_FOLDER, filename)
+                file.save(filepath)
+                pdf_url = f"/static/uploads/documentos_reglamentos/{filename}?v={int(time.time())}"
+    else:
+        data = request.json or {}
+        titulo = data.get('titulo', '').strip()
+        contenido = data.get('contenido', '')
+        pdf_url = data.get('pdf_url', '').strip()
+        faccion_id = data.get('faccion_id')
+        orden = data.get('orden', 0)
+        doc_id = data.get('id')
+
+    if not titulo:
+        return jsonify({'error': 'El título es obligatorio'}), 400
+
     conn = get_db_connection()
-    if data.get('id'):
+    if doc_id:
         conn.execute('UPDATE Documento SET titulo = ?, contenido = ?, pdf_url = ?, faccion_id = ?, orden = ? WHERE id = ?',
-                     (data['titulo'], data.get('contenido', ''), data.get('pdf_url', ''), data.get('faccion_id'), data.get('orden', 0), data['id']))
+                     (titulo, contenido, pdf_url, faccion_id, orden, doc_id))
     else:
         conn.execute('INSERT INTO Documento (titulo, contenido, pdf_url, faccion_id, orden) VALUES (?, ?, ?, ?, ?)',
-                     (data['titulo'], data.get('contenido', ''), data.get('pdf_url', ''), data.get('faccion_id'), data.get('orden', 0)))
+                     (titulo, contenido, pdf_url, faccion_id, orden))
     conn.commit()
     conn.close()
-    return jsonify({'status': 'success'})
+    return jsonify({'status': 'success', 'pdf_url': pdf_url})
 
 @app.route('/api/docs/upload_pdf', methods=['POST'])
 def api_docs_upload_pdf():
