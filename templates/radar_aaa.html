@@ -987,14 +987,14 @@
 
                     <div class="speed-toggle-group">
                         <span style="font-size: 0.68rem; color: #94a3b8; margin-right: 4px;">VELOCIDAD:</span>
-                        <button type="button" class="speed-btn active" id="btn-spd-slow" onclick="setSweepSpeed(72, this)">
-                            12 RPM
+                        <button type="button" class="speed-btn active" id="btn-spd-slow" onclick="setSweepSpeed(36, this)">
+                            6 RPM
                         </button>
-                        <button type="button" class="speed-btn" id="btn-spd-med" onclick="setSweepSpeed(120, this)">
-                            20 RPM
+                        <button type="button" class="speed-btn" id="btn-spd-med" onclick="setSweepSpeed(60, this)">
+                            10 RPM
                         </button>
-                        <button type="button" class="speed-btn" id="btn-spd-fast" onclick="setSweepSpeed(180, this)">
-                            30 RPM
+                        <button type="button" class="speed-btn" id="btn-spd-fast" onclick="setSweepSpeed(90, this)">
+                            15 RPM
                         </button>
                     </div>
                 </div>
@@ -1312,13 +1312,13 @@
 
         // ==================== ESTADO DEL RADAR Y ANTENA ====================
         let sweepAngle = 0; // 0° a 360°
-        let sweepSpeedDeg = 72; // 72°/s = 12 RPM
+        let sweepSpeedDeg = 36; // 36°/s = 6 RPM (reducido a la mitad: 1 revolución cada 10s)
         let antennaMode = '360'; // '360' o 'SECTOR'
         let sectorCenterAzimuth = 45; // Centro del sector de 30°
         let sectorDirection = 1; // 1 = horario, -1 = antihorario (para oscilación de sector)
         const SECTOR_HALF_WIDTH = 15; // 30° de apertura total (+-15°)
         const MAX_RANGE_METERS = 4000;
-        const PHOSPHOR_DECAY_SECS = 4.5; // Duración de la fosforescencia
+        const PHOSPHOR_DECAY_SECS = 2.2; // Reducido a la mitad (2.2s) para que los ecos desaparezcan claramente en la oscuridad
 
         let activeContacts = [];
         let clutterBlips = [];
@@ -1513,9 +1513,9 @@
                 const clx = cx + Math.cos(clAzRad) * r;
                 const cly = cy + Math.sin(clAzRad) * r;
 
-                // Destello difuso de ruido
+                // Destello difuso de ruido (reducido a la mitad)
                 const clGrad = ctx.createRadialGradient(clx, cly, 0, clx, cly, 16);
-                const clAlpha = cl.intensity * 0.35;
+                const clAlpha = cl.intensity * 0.18;
                 clGrad.addColorStop(0, isGreen ? `rgba(0, 255, 102, ${clAlpha})` : `rgba(0, 240, 255, ${clAlpha})`);
                 clGrad.addColorStop(1, 'transparent');
 
@@ -1619,8 +1619,8 @@
                 marker.style.left = `${bx}px`;
                 marker.style.top = `${by}px`;
 
-                // Opacidad según la fosforescencia (solo brilla tras ser iluminado por el barrido)
-                const displayAlpha = isSelected ? 1.0 : Math.max(0.06, phosphorAlpha);
+                // Opacidad según la fosforescencia: el eco desaparece completamente si el haz no lo ha barrido recientemente
+                const displayAlpha = isSelected ? 1.0 : (phosphorAlpha > 0.04 ? phosphorAlpha : 0);
                 marker.style.opacity = displayAlpha;
                 marker.style.pointerEvents = (displayAlpha > 0.08 || isSelected) ? 'auto' : 'none';
 
@@ -1917,7 +1917,7 @@
                         const by = cy - Math.cos(azRad) * r;
 
                         track.trail.unshift({ x: bx, y: by, time: nowTime });
-                        if (track.trail.length > 5) track.trail.pop();
+                        if (track.trail.length > 2) track.trail.pop();
 
                         playSweepTone(1350, 0.025);
                     }

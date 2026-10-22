@@ -577,17 +577,16 @@ def get_current_aaa_airspace():
             'splash_time': c.get('splash_time')
         })
 
-    # Generar ecos de ruido ambiental / clutter
+    # Generar ecos de ruido ambiental / clutter (intensidad reducida a la mitad)
     clutter_blips = []
     clutter_seeds = [
-        (1, 70.0, 1500, 0.40, 0.04),
-        (2, 190.0, 2800, 0.35, 0.03),
-        (3, 310.0, 1300, 0.45, 0.05),
+        (1, 70.0, 1500, 0.20, 0.04),
+        (2, 220.0, 2600, 0.18, 0.03),
     ]
     for cid, base_az, base_dist, base_int, drift in clutter_seeds:
         c_az = (base_az + math.sin(now * drift) * 15.0 + 360.0) % 360.0
         c_dist = base_dist + math.cos(now * drift * 1.4) * 150
-        intensity = max(0.15, min(0.65, base_int + math.sin(now * 0.25 + cid) * 0.15))
+        intensity = max(0.08, min(0.32, base_int + math.sin(now * 0.25 + cid) * 0.08))
         clutter_blips.append({
             'id': f'CLUTTER_{cid}',
             'azimuth': round(c_az, 1),
