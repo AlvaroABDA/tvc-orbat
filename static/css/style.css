@@ -1800,7 +1800,7 @@ select option { color: #000; background: #fff; }
         border-radius: 4px !important;
     }
 
-    /* 7. Tablas de Gestión (.data-table) - Formato tabla compacto con scroll horizontal */
+    /* 7. Tablas de Gestión (.data-table) & Cuadro de Mando de Unidades */
     .table-container {
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch !important;
@@ -1827,61 +1827,149 @@ select option { color: #000; background: #fff; }
         justify-content: center !important;
     }
 
-    .data-table {
+    /* VISTA GESTIÓN DE UNIDADES (#view-equipos) EN MÓVIL: TARJETAS TÁCTICAS */
+    #view-equipos .table-container {
+        overflow-x: visible !important;
+        border: none !important;
+        background: transparent !important;
+        padding: 0 !important;
+    }
+
+    #view-equipos .data-table {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        border: none !important;
+    }
+
+    #view-equipos .data-table thead {
+        display: none !important;
+    }
+
+    #view-equipos .data-table tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+
+    #view-equipos .data-table tbody tr.equipo-row-item,
+    #view-equipos .data-table tbody tr {
+        display: flex !important;
+        flex-direction: column !important;
+        background: #141822 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-left: 4px solid var(--theme-color) !important;
+        border-radius: 8px !important;
+        padding: 12px 14px !important;
+        gap: 8px !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5) !important;
+        box-sizing: border-box !important;
+    }
+
+    #view-equipos .data-table td.col-eq-unidad,
+    #view-equipos .data-table td[data-label="Unidad"] {
+        display: flex !important;
+        align-items: center !important;
+        padding: 0 0 8px 0 !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    #view-equipos .data-table td[data-label="Unidad"] span[style*="font-weight:bold"] {
+        font-size: 1.05rem !important;
+        color: #fff !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    #view-equipos .data-table td.col-eq-usuario,
+    #view-equipos .data-table td.col-eq-faccion,
+    #view-equipos .data-table td.col-eq-jugadores,
+    #view-equipos .data-table td.col-eq-perfil,
+    #view-equipos .data-table td[data-label="Usuario (Login)"],
+    #view-equipos .data-table td[data-label="Facción"],
+    #view-equipos .data-table td[data-label="Jugadores"],
+    #view-equipos .data-table td[data-label="Perfil"] {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 3px 0 !important;
+        border: none !important;
+        font-size: 0.86rem !important;
+    }
+
+    #view-equipos .data-table td[data-label="Usuario (Login)"]::before,
+    #view-equipos .data-table td[data-label="Facción"]::before,
+    #view-equipos .data-table td[data-label="Jugadores"]::before,
+    #view-equipos .data-table td[data-label="Perfil"]::before {
+        content: attr(data-label) !important;
+        font-size: 0.72rem !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        color: #94a3b8 !important;
+        text-transform: uppercase !important;
+        font-weight: 600 !important;
+    }
+
+    #view-equipos .data-table td.col-eq-pin,
+    #view-equipos .data-table td[data-label="PIN / Contraseña"] {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 8px 0 !important;
+        border: none !important;
+        border-top: 1px dashed rgba(255, 255, 255, 0.08) !important;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.08) !important;
+    }
+    #view-equipos .data-table td[data-label="PIN / Contraseña"]::before {
+        content: "PIN / ACCESO" !important;
+        font-size: 0.72rem !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        color: #94a3b8 !important;
+        text-transform: uppercase !important;
+        font-weight: 600 !important;
+    }
+    #view-equipos .data-table td[data-label="PIN / Contraseña"] input {
+        width: 80px !important;
+        height: 34px !important;
+        font-size: 0.95rem !important;
+    }
+    #view-equipos .data-table td[data-label="PIN / Contraseña"] button {
+        height: 34px !important;
+        padding: 0 12px !important;
+    }
+
+    #view-equipos .data-table td.col-eq-acciones,
+    #view-equipos .data-table td[data-label="Acciones"] {
+        padding: 4px 0 0 0 !important;
+        border: none !important;
+    }
+    #view-equipos .data-table td[data-label="Acciones"] > div {
+        display: flex !important;
+        width: 100% !important;
+        gap: 8px !important;
+    }
+    #view-equipos .data-table td[data-label="Acciones"] .btn {
+        flex: 1 !important;
+        height: 38px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        font-size: 0.88rem !important;
+        font-weight: 700 !important;
+        border-radius: 4px !important;
+    }
+
+    /* Tablas genéricas de gestión en desktop fallback */
+    .data-table:not(#view-equipos .data-table) {
         display: table !important;
         width: 100% !important;
         min-width: 540px !important;
         border-collapse: collapse !important;
         border-spacing: 0 !important;
     }
-
-    .data-table thead {
+    .data-table:not(#view-equipos .data-table) thead {
         display: table-header-group !important;
     }
-
-    .data-table thead tr {
-        display: table-row !important;
-        position: static !important;
-    }
-
-    .data-table thead th {
-        display: table-cell !important;
-        padding: 6px 10px !important;
-        font-size: 0.8rem !important;
-        color: var(--theme-color) !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.5px !important;
-        white-space: nowrap !important;
-        border-bottom: 2px solid var(--theme-color) !important;
-        position: sticky !important;
-        top: 0 !important;
-        background: #141820 !important;
-        z-index: 2 !important;
-    }
-
-    .data-table tbody {
-        display: table-row-group !important;
-    }
-
-    .data-table tbody tr {
-        display: table-row !important;
-        background: rgba(255, 255, 255, 0.02) !important;
-        border: none !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-        box-shadow: none !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }
-
-    .data-table tbody tr:nth-child(even) {
-        background: rgba(255, 255, 255, 0.04) !important;
-    }
-
-    .data-table tbody tr:hover {
-        background: rgba(255, 255, 255, 0.07) !important;
-    }
-
-    .data-table td {
+    .data-table:not(#view-equipos .data-table) td {
         display: table-cell !important;
         padding: 6px 10px !important;
         font-size: 0.85rem !important;
@@ -1891,171 +1979,301 @@ select option { color: #000; background: #fff; }
         border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
     }
 
-    .data-table td::before {
-        display: none !important;
-    }
-
-    .data-table td:first-child {
-        font-size: 0.92rem !important;
-        font-weight: 600 !important;
-        color: #fff !important;
-        border-left: 3px solid var(--theme-color) !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
-        padding: 6px 10px !important;
-        margin: 0 !important;
-    }
-
-    .data-table td:last-child {
-        border-top: none !important;
-        padding: 6px 10px !important;
-        margin: 0 !important;
-        white-space: nowrap !important;
-    }
-
-    .data-table td:last-child .btn {
-        display: inline-block !important;
-        padding: 3px 8px !important;
-        font-size: 0.78rem !important;
-        min-height: 28px !important;
-        line-height: 20px !important;
-        margin: 0 4px 0 0 !important;
-    }
-
-    /* 8. Formularios y Jugadores en Modales de Gestión (modal-equipo, etc.) */
+    /* 8. MODAL DE GESTIÓN DE UNIDAD Y DASHBOARD DE JUGADORES (#modal-equipo) */
     #modal-equipo .modal-content {
         width: 96vw !important;
         max-width: 96vw !important;
-        max-height: 90dvh !important;
-        padding: 12px !important;
+        max-height: 92dvh !important;
+        padding: 14px 12px !important;
+        border-radius: 6px !important;
+        overflow-y: auto !important;
     }
 
-    #form-equipo > div {
+    #form-equipo {
+        padding-bottom: 80px !important; /* Espacio de seguridad para evitar que la barra flotante tape contenido */
+    }
+
+    .eq-basic-header-row {
         flex-direction: column !important;
+        align-items: center !important;
         gap: 1rem !important;
+        width: 100% !important;
     }
-
+    .eq-basic-fields-row {
+        width: 100% !important;
+        gap: 0.8rem !important;
+    }
     #form-equipo .form-group {
+        width: 100% !important;
         min-width: 100% !important;
-        width: 100% !important;
+        margin-bottom: 0 !important;
+    }
+    #form-equipo input:not([type="checkbox"]):not([type="radio"]),
+    #form-equipo select {
+        height: 40px !important;
+        font-size: 16px !important; /* Evita auto-zoom en iOS Safari */
     }
 
-    /* Recuperar Formato Tabla Nativo y Fluido en el Dashboard de Jugadores */
-    #modal-equipo table {
-        display: table !important;
-        width: 100% !important;
-        min-width: 820px !important;
-        border-collapse: collapse !important;
-    }
-
-    #modal-equipo thead {
-        display: table-header-group !important;
-    }
-
-    #modal-equipo thead tr {
-        display: table-row !important;
-        position: static !important;
-        background: #12161c !important;
-    }
-
-    #modal-equipo thead th {
-        display: table-cell !important;
-        padding: 6px 8px !important;
-        font-size: 0.78rem !important;
-        color: var(--theme-color) !important;
-        text-transform: uppercase !important;
-        white-space: nowrap !important;
-        border-bottom: 2px solid var(--theme-color) !important;
-        position: sticky !important;
-        top: 0 !important;
-        background: #141820 !important;
-        z-index: 2 !important;
-    }
-
-    #modal-equipo tbody {
-        display: table-row-group !important;
-    }
-
-    #modal-equipo tr.miembro-row {
-        display: table-row !important;
-        background: transparent !important;
+    /* DASHBOARD DE JUGADORES: TARJETAS TÁCTICAS EN MÓVIL */
+    #modal-equipo .miembros-table-wrapper,
+    #modal-equipo div[style*="overflow-x: auto"] {
+        overflow-x: visible !important;
         border: none !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-        box-shadow: none !important;
-        margin: 0 !important;
+        background: transparent !important;
+        max-height: none !important;
         padding: 0 !important;
     }
 
-    #modal-equipo tr.miembro-row:nth-child(even) {
-        background: rgba(255, 255, 255, 0.02) !important;
-    }
-
-    #modal-equipo tr.miembro-row:hover {
-        background: rgba(255, 255, 255, 0.06) !important;
-    }
-
-    #modal-equipo td {
-        display: table-cell !important;
-        padding: 4px 6px !important;
-        vertical-align: middle !important;
-        white-space: nowrap !important;
+    #modal-equipo .table-miembros-dashboard,
+    #modal-equipo table {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
         border: none !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
     }
 
-    #modal-equipo td::before {
+    #modal-equipo thead {
         display: none !important;
     }
 
-    #modal-equipo td input,
-    #modal-equipo td select {
-        font-size: 0.85rem !important;
-        padding: 3px 6px !important;
-        height: 32px !important;
-        min-height: 32px !important;
-        line-height: 1.2 !important;
-        border-radius: 3px !important;
+    #modal-equipo #miembros-container {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+
+    #modal-equipo tr.miembro-row {
+        display: flex !important;
+        flex-direction: column !important;
+        background: #141824 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-left: 4px solid var(--theme-color) !important;
+        border-radius: 8px !important;
+        padding: 12px !important;
+        gap: 8px !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Cabecera de la tarjeta del combatiente */
+    #modal-equipo tr.miembro-row .col-miembro-activo {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0 0 6px 0 !important;
+        border: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    #modal-equipo tr.miembro-row .miembro-activo-wrapper {
+        display: flex !important;
+        align-items: center !important;
+        gap: 10px !important;
+        cursor: pointer !important;
+        width: 100% !important;
+    }
+    #modal-equipo tr.miembro-row .miembro-activo {
+        width: 22px !important;
+        height: 22px !important;
+        min-width: 22px !important;
+        transform: none !important;
+        margin: 0 !important;
+        cursor: pointer !important;
+        accent-color: #00f0ff !important;
+    }
+    #modal-equipo tr.miembro-row .miembro-activo-label {
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
+        color: #00f0ff !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    #modal-equipo tr.miembro-row .col-miembro-nick {
+        padding: 0 !important;
+        width: 100% !important;
+        border: none !important;
+    }
+    #modal-equipo tr.miembro-row .miembro-nick-wrapper {
+        display: flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        width: 100% !important;
+    }
+    #modal-equipo tr.miembro-row .miembro-nombre {
+        font-size: 1.05rem !important;
+        font-weight: 700 !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        color: #ffcc00 !important;
+        height: 38px !important;
+        background: rgba(0, 0, 0, 0.6) !important;
+        border: 1px solid rgba(255, 204, 0, 0.35) !important;
+        border-radius: 4px !important;
+        padding: 4px 8px !important;
+    }
+
+    /* Inputs de datos del combatiente con labels visibles arriba */
+    #modal-equipo tr.miembro-row .col-miembro-fullname,
+    #modal-equipo tr.miembro-row .col-miembro-dni,
+    #modal-equipo tr.miembro-row .col-miembro-rol,
+    #modal-equipo tr.miembro-row .col-miembro-armamento,
+    #modal-equipo tr.miembro-row .col-miembro-telefono,
+    #modal-equipo tr.miembro-row .col-miembro-email {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 3px !important;
+        padding: 0 !important;
+        width: 100% !important;
+        border: none !important;
+    }
+
+    #modal-equipo tr.miembro-row .col-miembro-fullname::before,
+    #modal-equipo tr.miembro-row .col-miembro-dni::before,
+    #modal-equipo tr.miembro-row .col-miembro-rol::before,
+    #modal-equipo tr.miembro-row .col-miembro-armamento::before,
+    #modal-equipo tr.miembro-row .col-miembro-telefono::before,
+    #modal-equipo tr.miembro-row .col-miembro-email::before {
+        content: attr(data-label) !important;
+        font-size: 0.68rem !important;
+        font-family: 'Share Tech Mono', monospace !important;
+        color: #94a3b8 !important;
+        text-transform: uppercase !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    #modal-equipo tr.miembro-row input:not([type="checkbox"]),
+    #modal-equipo tr.miembro-row select {
+        width: 100% !important;
+        height: 38px !important;
+        font-size: 16px !important;
+        padding: 6px 10px !important;
+        border-radius: 4px !important;
+        border: 1px solid rgba(255, 255, 255, 0.18) !important;
         background: rgba(0, 0, 0, 0.45) !important;
-        border: 1px solid rgba(255, 255, 255, 0.2) !important;
         color: #fff !important;
         box-sizing: border-box !important;
     }
 
-    #modal-equipo td input:focus,
-    #modal-equipo td select:focus {
-        border-color: var(--theme-color) !important;
-        outline: none !important;
-        background: rgba(0, 0, 0, 0.7) !important;
-    }
-
-    #modal-equipo .miembro-activo {
-        transform: scale(1.2) !important;
-        margin: 0 auto !important;
-        display: block !important;
-        cursor: pointer !important;
-    }
-
-    #modal-equipo td .btn {
-        padding: 2px 6px !important;
-        font-size: 0.8rem !important;
-        min-height: 28px !important;
-        line-height: 22px !important;
-        margin: 0 2px !important;
-    }
-
-    .modal-actions {
-        position: sticky !important;
-        bottom: -12px !important;
-        background: rgba(18, 22, 28, 0.98) !important;
-        padding: 10px 0 !important;
-        border-top: 1px solid var(--border-color) !important;
-        z-index: 10 !important;
-        width: 100% !important;
+    /* Fila de herramientas (foto, carnet, ICE) */
+    #modal-equipo tr.miembro-row .col-miembro-herramientas {
         display: flex !important;
         justify-content: space-between !important;
-        gap: 10px !important;
+        align-items: center !important;
+        padding: 8px 0 0 0 !important;
+        border: none !important;
+        border-top: 1px dashed rgba(255, 255, 255, 0.08) !important;
+        margin-top: 4px !important;
     }
-    .modal-actions button {
+    #modal-equipo tr.miembro-row .col-miembro-herramientas::before {
+        content: "Ficha & Documentación:" !important;
+        font-size: 0.72rem !important;
+        color: #94a3b8 !important;
+        font-family: 'Share Tech Mono', monospace !important;
+    }
+    #modal-equipo tr.miembro-row .miembro-tools-wrapper {
+        display: inline-flex !important;
+        gap: 6px !important;
+    }
+    #modal-equipo tr.miembro-row .miembro-tools-wrapper button,
+    #modal-equipo tr.miembro-row .miembro-tools-wrapper a {
+        width: 34px !important;
+        height: 34px !important;
+    }
+
+    /* Botón eliminar combatiente */
+    #modal-equipo tr.miembro-row .col-miembro-del {
+        display: flex !important;
+        justify-content: flex-end !important;
+        padding: 4px 0 0 0 !important;
+        border: none !important;
+        width: 100% !important;
+    }
+    #modal-equipo tr.miembro-row .col-miembro-del .btn-del-miembro {
+        width: 100% !important;
+        height: 34px !important;
+        background: rgba(255, 51, 68, 0.12) !important;
+        border: 1px solid rgba(255, 51, 68, 0.35) !important;
+        color: #ff5566 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        border-radius: 4px !important;
+    }
+    #modal-equipo tr.miembro-row .col-miembro-del .btn-del-miembro::after {
+        content: "Eliminar Combatiente";
+    }
+
+    /* Botonera de Guardar / Cancelar fija en la base con fondo translúcido y sombra */
+    #modal-equipo .modal-actions {
+        position: fixed !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        background: rgba(12, 16, 22, 0.96) !important;
+        backdrop-filter: blur(10px) !important;
+        -webkit-backdrop-filter: blur(10px) !important;
+        padding: 10px 14px !important;
+        border-top: 1px solid var(--theme-color) !important;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.85) !important;
+        z-index: 1000 !important;
+        margin: 0 !important;
+        display: flex !important;
+        gap: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    #modal-equipo .modal-actions button {
         flex: 1 !important;
+        height: 42px !important;
+        font-size: 0.92rem !important;
+        font-weight: 700 !important;
+        border-radius: 4px !important;
+    }
+
+    /* 9. DASHBOARD DE RÉPLICAS Y CAPACIDADES (#tab-armas) EN MÓVIL */
+    #tab-armas .table-tactical {
+        display: block !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        border: none !important;
+    }
+    #tab-armas .table-tactical thead {
+        display: none !important;
+    }
+    #tab-armas tbody#armas-dashboard-tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 12px !important;
+        width: 100% !important;
+    }
+    #tab-armas tbody#armas-dashboard-tbody tr.armas-row-item,
+    #tab-armas tbody#armas-dashboard-tbody tr {
+        display: flex !important;
+        flex-direction: column !important;
+        background: #141822 !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        border-left: 4px solid var(--theme-color) !important;
+        border-radius: 8px !important;
+        padding: 12px 14px !important;
+        gap: 8px !important;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45) !important;
+        box-sizing: border-box !important;
+    }
+    #tab-armas tbody#armas-dashboard-tbody td {
+        display: block !important;
+        padding: 2px 0 !important;
+        border: none !important;
+        width: 100% !important;
+        white-space: normal !important;
+    }
+    #tab-armas tbody#armas-dashboard-tbody td.col-armas-accion button {
+        width: 100% !important;
+        height: 38px !important;
+        margin-top: 6px !important;
     }
 }
 

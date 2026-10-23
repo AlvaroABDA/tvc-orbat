@@ -42,7 +42,7 @@
 
         .container {
             width: 100%;
-            max-width: 880px;
+            max-width: 600px;
             display: flex;
             flex-direction: column;
             gap: 20px;
@@ -110,271 +110,275 @@
             letter-spacing: 1px;
         }
 
-        /* Contenedor Grid Principal de Juegos */
-        .games-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
+        /* ========================================================
+           SISTEMA DE ACORDEÓN TÁCTICO MÓVIL
+           - De normal: 5 botones compactos (~46px) en 1 columna, 100% ancho móvil.
+           - Al desplegar: se expande la tarjeta con el tamaño (padding 22px),
+             visibilidad y fidelidad del diseño original.
+           ======================================================== */
+        html, body {
+            overflow-x: hidden;
+            max-width: 100vw;
+        }
+
+        .systems-accordion-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
             width: 100%;
         }
 
-        @media (min-width: 768px) {
-            .games-grid {
-                grid-template-columns: repeat(3, 1fr);
-                gap: 16px;
-            }
-        }
-
-        @media (max-width: 400px) {
-            .games-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 8px;
-            }
-        }
-
-        /* Tactical Cards - ORBAT Puro */
-        .card-menu {
-            position: relative;
-            background: var(--panel-bg);
+        .system-accordion-item {
+            background: rgba(25, 30, 40, 0.95);
             border: 1px solid var(--border-color);
-            padding: 14px 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .system-accordion-item:hover {
+            border-color: #555;
+        }
+
+        /* Temáticas activas */
+        .system-accordion-item.is-expanded {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.25);
+        }
+
+        .system-accordion-item.is-expanded.item-theme-red {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 16px rgba(255, 51, 68, 0.25);
+        }
+
+        .system-accordion-item.is-expanded.item-theme-green {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 16px rgba(46, 204, 113, 0.25);
+        }
+
+        /* 1. Botón / Barra Compacta (visible de normal) */
+        .system-bar {
+            width: 100%;
+            min-height: 48px;
+            padding: 8px 12px;
             cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
             display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 135px;
-            user-select: none;
-            -webkit-user-select: none;
-            border-radius: 4px !important;
-        }
-
-        .card-menu:hover {
-            border-color: rgba(255, 255, 255, 0.35);
-            background: #242933;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
-        }
-
-        .card-menu:active {
-            transform: translateY(0);
-        }
-
-        /* Temas por Tarjeta */
-        .card-theme-cyan:hover, .card-theme-cyan.is-expanded {
-            border-color: var(--accent-cyan) !important;
-        }
-        .card-theme-cyan.is-expanded {
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 18px rgba(0, 240, 255, 0.22);
-        }
-
-        .card-theme-red:hover, .card-theme-red.is-expanded {
-            border-color: var(--accent-red) !important;
-        }
-        .card-theme-red.is-expanded {
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 18px rgba(255, 51, 68, 0.22);
-        }
-
-        .card-theme-green:hover, .card-theme-green.is-expanded {
-            border-color: var(--accent-green) !important;
-        }
-        .card-theme-green.is-expanded {
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 18px rgba(46, 204, 113, 0.22);
-        }
-
-        /* Estado Expandido (Ocupa todo el ancho del Grid) */
-        .card-menu.is-expanded {
-            grid-column: 1 / -1;
-            background: #171c26;
-            cursor: default;
-            transform: none;
-            padding: 20px;
-            z-index: 5;
-            min-height: auto;
-        }
-
-        /* Efecto focus en el grid: atenuar las demás tarjetas cuando una está abierta */
-        .games-grid.has-expanded .card-menu:not(.is-expanded) {
-            opacity: 0.55;
-            filter: saturate(0.85);
-            transition: opacity 0.25s ease, filter 0.25s ease;
-        }
-        .games-grid.has-expanded .card-menu:not(.is-expanded):hover {
-            opacity: 0.95;
-            filter: saturate(1);
-            border-color: #888;
-        }
-
-        /* Cabecera Compacta (Modo Grid en reposo) */
-        .card-header-compact {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-            gap: 8px;
-        }
-
-        .card-menu.is-expanded .card-header-compact {
-            display: none !important;
-        }
-
-        .card-compact-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            gap: 6px;
-        }
-
-        .card-compact-icon {
-            width: 38px;
-            height: 38px;
-            display: flex;
-            justify-content: center;
             align-items: center;
-            font-size: 22px;
+            justify-content: space-between;
+            gap: 8px;
+            background: rgba(18, 22, 28, 0.95);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            transition: background 0.15s ease;
+        }
+
+        .system-bar:hover {
+            background: rgba(28, 34, 46, 0.98);
+        }
+
+        .system-accordion-item.is-expanded .system-bar {
+            background: rgba(22, 28, 38, 1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .system-bar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .system-bar-icon {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 19px;
+            flex-shrink: 0;
             border: 1px solid var(--border-color);
             background: #111;
-            flex-shrink: 0;
-            border-radius: 4px !important;
         }
 
-        .card-compact-body {
+        .system-bar-icon-medic {
+            padding: 2px;
+            background: rgba(255, 51, 68, 0.12);
+            border-color: rgba(255, 51, 68, 0.4);
+        }
+
+        .system-bar-icon-medic img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .system-bar-info {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            min-width: 0;
+            gap: 2px;
         }
 
-        .card-compact-title {
+        .system-bar-title {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.88rem;
-            letter-spacing: 0.8px;
-            color: #fff;
-            margin: 0;
-            line-height: 1.25;
+            font-size: 0.80rem;
             font-weight: 700;
+            color: #fff;
+            letter-spacing: 0.6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .card-compact-sub {
+        .system-bar-sub {
             font-family: 'Share Tech Mono', monospace;
-            font-size: 0.65rem;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
+            font-size: 0.64rem;
+            color: var(--text-muted);
+            letter-spacing: 0.4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .card-expand-indicator {
+        .system-bar-right {
             display: flex;
             align-items: center;
-            justify-content: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .system-status-chip {
             font-family: 'Share Tech Mono', monospace;
             font-size: 0.66rem;
-            color: var(--text-muted);
-            gap: 3px;
-            padding-top: 4px;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            transition: color 0.15s;
-        }
-
-        .card-menu:hover .card-expand-indicator {
-            color: var(--accent-cyan);
-        }
-
-        /* Cabecera Expandida (Modo Desplegado) */
-        .card-header-expanded {
-            display: none;
-            width: 100%;
-            justify-content: space-between;
+            padding: 3px 6px;
+            font-weight: bold;
+            display: inline-flex;
             align-items: center;
-            gap: 12px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            flex-wrap: wrap;
-        }
-
-        .card-menu.is-expanded .card-header-expanded {
-            display: flex !important;
-        }
-
-        .card-expanded-identity {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .card-expanded-icon {
-            width: 44px;
-            height: 44px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 26px;
-            border: 1px solid var(--border-color);
-            background: #111;
-            flex-shrink: 0;
-            border-radius: 4px !important;
-        }
-
-        .card-expanded-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            letter-spacing: 1.2px;
-            color: #fff;
-            margin: 0 0 2px 0;
-        }
-
-        .card-expanded-sub {
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.74rem;
-            letter-spacing: 0.8px;
+            gap: 4px;
+            letter-spacing: 0.4px;
             text-transform: uppercase;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .card-expanded-actions {
+        .system-status-chip.chip-ready {
+            color: var(--accent-green);
+            border-color: rgba(46, 204, 113, 0.3);
+        }
+
+        .system-status-chip.chip-locked {
+            color: var(--accent-gold);
+            border-color: rgba(226, 185, 56, 0.3);
+        }
+
+        .system-status-chip.chip-off {
+            color: var(--accent-red);
+            border-color: rgba(255, 51, 68, 0.3);
+        }
+
+        .launcher-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50% !important;
+            display: inline-block;
+        }
+
+        .dot-ready {
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--accent-green);
+        }
+
+        .dot-locked {
+            background: var(--accent-gold);
+            box-shadow: 0 0 6px var(--accent-gold);
+        }
+
+        .dot-off {
+            background: var(--accent-red);
+            box-shadow: 0 0 6px var(--accent-red);
+        }
+
+        .system-bar-chevron {
+            font-size: 18px;
+            color: #777;
+            transition: transform 0.22s ease, color 0.15s ease;
+        }
+
+        .system-accordion-item.is-expanded .system-bar-chevron {
+            transform: rotate(180deg);
+            color: #fff;
+        }
+
+        /* 2. Tarjeta Desplegada: Tamaño y Visibilidad de la versión anterior */
+        .system-expanded-panel {
+            display: none;
+            padding: 22px;
+            flex-direction: column;
+            gap: 14px;
+            background: rgba(22, 26, 34, 0.98);
+            animation: cardDeployFade 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .system-accordion-item.is-expanded .system-expanded-panel {
             display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
-        .card-collapse-btn {
+        @keyframes cardDeployFade {
+            from {
+                opacity: 0;
+                transform: translateY(-6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .btn-close-card {
             background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.22);
-            color: #ddd;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.72rem;
-            padding: 5px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #aaa;
+            font-size: 12px;
+            line-height: 1;
+            padding: 4px 8px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
+            font-family: 'Share Tech Mono', monospace;
             transition: all 0.15s ease;
-            letter-spacing: 0.5px;
-            border-radius: 3px !important;
         }
 
-        .card-collapse-btn:hover {
+        .btn-close-card:hover {
             background: rgba(255, 51, 68, 0.2);
             border-color: #ff3344;
             color: #ff5566;
-            box-shadow: 0 0 10px rgba(255, 51, 68, 0.25);
         }
 
-        /* Drawer de Contenido Expandido */
-        .card-detail-drawer {
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease;
-            pointer-events: none;
+        .card-header-row {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .card-icon-title {
+            display: flex;
+            align-items: center;
             gap: 14px;
         }
 
-        .card-menu.is-expanded .card-detail-drawer {
-            max-height: 2200px;
-            opacity: 1;
-            pointer-events: auto;
-            padding-top: 14px;
+        .card-icon {
+            width: 46px;
+            height: 46px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            border: 1px solid var(--border-color);
+            background: #111;
         }
 
         .icon-mortero {
@@ -387,6 +391,14 @@
             background: rgba(0, 240, 255, 0.12);
             color: var(--accent-cyan);
             border-color: rgba(0, 240, 255, 0.4);
+        }
+
+        .card-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.15rem;
+            letter-spacing: 1.5px;
+            color: #fff;
+            margin: 0 0 4px 0;
         }
 
         .card-badge {
@@ -913,65 +925,68 @@
             <p>[ HERRAMIENTAS Y MINIJUEGOS TÁCTICOS ]</p>
         </div>
 
-        <!-- Grid Táctico de Minijuegos y Herramientas -->
-        <div class="games-grid" id="games-grid">
+        
+        <!-- Variables de Desbloqueo Jinja -->
+        {% set recon_unlocked = (user_role == 'admin') or ('telemetro_recon' in unlocked_minigames) %}
+        {% set mortero_unlocked = (user_role == 'admin') or ('mortero' in unlocked_minigames) %}
+        {% set aaa_unlocked = (user_role == 'admin') or ('simulador_aaa' in unlocked_minigames) %}
 
-            <!-- Card: Telémetro Recon -->
-            {% set recon_unlocked = (user_role == 'admin') or ('telemetro_recon' in unlocked_minigames) %}
-            <div class="card-menu card-theme-cyan" onclick="toggleCardExpansion(this, event)">
-                <!-- Header Compacto (Modo Grid) -->
-                <div class="card-header-compact">
-                    <div class="card-compact-top">
-                        <div class="card-compact-icon icon-recon">
-                            <span class="material-symbols-outlined">radar</span>
+                <!-- Selector y Contenedor de Sistemas de Simulación (Acordeón Táctico Móvil) -->
+        <div id="launcher-hint" style="text-align: center; font-family: 'Share Tech Mono', monospace; font-size: 0.74rem; color: #777; padding: 2px 0 6px 0; letter-spacing: 0.5px;">
+            [ TOCA UN SISTEMA PARA DESPLEGAR DETALLES Y ACCESO ]
+        </div>
+
+        <div class="systems-accordion-list">
+            <!-- Sistema 1: Telémetro Recon -->
+            <div class="system-accordion-item" id="item-accordion-recon">
+                <!-- Barra Compacta (visible de normal: ~48px) -->
+                <div class="system-bar" onclick="toggleSystemAccordion('recon')">
+                    <div class="system-bar-left">
+                        <span class="material-symbols-outlined system-bar-icon icon-recon">radar</span>
+                        <div class="system-bar-info">
+                            <span class="system-bar-title">TELÉMETRO RECON</span>
+                            <span class="system-bar-sub" style="color: var(--accent-cyan);">RECON // IMINT</span>
                         </div>
-                        <div>
+                    </div>
+                    <div class="system-bar-right">
+                        {% if not (juegos_estado.get('telemetro_recon', True) if juegos_estado is defined else True) %}
+                        <span class="system-status-chip chip-off"><span class="launcher-dot dot-off"></span> DESACTIVADO</span>
+                        {% elif recon_unlocked %}
+                        <span class="system-status-chip chip-ready"><span class="launcher-dot dot-ready"></span> OPERATIVO</span>
+                        {% else %}
+                        <span class="system-status-chip chip-locked"><span class="launcher-dot dot-locked"></span> PIN</span>
+                        {% endif %}
+                        <span class="material-symbols-outlined system-bar-chevron">expand_more</span>
+                    </div>
+                </div>
+
+                <!-- Panel Desplegado: Tamaño y Visibilidad de la versión anterior -->
+                <div class="system-expanded-panel">
+                    <div class="card-header-row">
+                        <div class="card-icon-title">
+                            <div class="card-icon icon-recon">
+                                <span class="material-symbols-outlined">radar</span>
+                            </div>
+                            <div>
+                                <h2 class="card-title">Telémetro Recon</h2>
+                                <div style="font-size: 0.75rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">RECONOCIMIENTO AVANZADO</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
                             {% if not (juegos_estado.get('telemetro_recon', True) if juegos_estado is defined else True) %}
-                            <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ OFF</span>
+                            <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
                             {% elif recon_unlocked %}
                             <span class="card-badge badge-ready">OPERATIVO</span>
                             {% else %}
                             <span class="card-badge badge-locked">🔒 PIN</span>
                             {% endif %}
+                            <button type="button" class="btn-close-card" onclick="event.stopPropagation(); toggleSystemAccordion('recon')" title="Cerrar">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                                <span>CERRAR</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="card-compact-body">
-                        <h2 class="card-compact-title">Telémetro Recon</h2>
-                        <div class="card-compact-sub" style="color: var(--accent-cyan);">RECON & IMINT</div>
-                    </div>
-                    <div class="card-expand-indicator">
-                        <span>INFO TÁCTICA</span>
-                        <span class="material-symbols-outlined" style="font-size: 14px;">expand_more</span>
-                    </div>
-                </div>
 
-                <!-- Header Expandido (Modo Desplegado) -->
-                <div class="card-header-expanded">
-                    <div class="card-expanded-identity">
-                        <div class="card-expanded-icon icon-recon">
-                            <span class="material-symbols-outlined">radar</span>
-                        </div>
-                        <div>
-                            <h2 class="card-expanded-title">Telémetro Recon</h2>
-                            <div class="card-expanded-sub" style="color: var(--accent-cyan);">RECONOCIMIENTO AVANZADO & DESIGNACIÓN IMINT</div>
-                        </div>
-                    </div>
-                    <div class="card-expanded-actions">
-                        {% if not (juegos_estado.get('telemetro_recon', True) if juegos_estado is defined else True) %}
-                        <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ DESACTIVADO</span>
-                        {% elif recon_unlocked %}
-                        <span class="card-badge badge-ready">OPERATIVO</span>
-                        {% else %}
-                        <span class="card-badge badge-locked">🔒 PIN</span>
-                        {% endif %}
-                        <button type="button" class="card-collapse-btn" onclick="collapseCard(this.closest('.card-menu'), event)" title="Colapsar tarjeta">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">close</span> CERRAR
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Drawer Detalle Expandido -->
-                <div class="card-detail-drawer" onclick="event.stopPropagation()">
                     <div class="card-tags">
                         <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">location_searching</span> GPS & SENSORES</span>
                         <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">photo_camera</span> CÁMARA IMINT</span>
@@ -983,7 +998,7 @@
                     </p>
 
                     <!-- INSTRUCCIONES EN LA TARJETA -->
-                    <div class="card-instructions-panel">
+                    <div class="card-instructions-panel" onclick="event.stopPropagation()">
                         <div class="card-instructions-header" id="card-inst-header-recon" onclick="toggleCardInstructions('recon')">
                             <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> MANUAL TÁCTICO DE RECON
@@ -1019,9 +1034,9 @@
                     <div class="card-footer">
                         <span>ESTADO: {{ 'AUTORIZADO' if recon_unlocked else 'ENCRIPTADO' }}</span>
                         <div class="card-footer-btns">
-                            <button type="button" class="btn-instruction-card" onclick="openInstructionsModal('recon')" title="Desplegar guía interactiva completa">
+                            <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('recon')" title="Desplegar instrucciones tácticas">
                                 <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
-                                GUÍA COMPLETA
+                                INSTRUCCIONES
                             </button>
                             <button type="button" class="btn-action" onclick="handleCardClick('telemetro_recon', {{ 'true' if recon_unlocked else 'false' }}, '/telemetro_recon')">
                                 {{ 'ACCEDER' if recon_unlocked else 'DESBLOQUEAR' }} ➔
@@ -1031,62 +1046,56 @@
                 </div>
             </div>
 
-            <!-- Card: Mortero / Artillería -->
-            {% set mortero_unlocked = (user_role == 'admin') or ('mortero' in unlocked_minigames) %}
-            <div class="card-menu card-theme-red" onclick="toggleCardExpansion(this, event)">
-                <!-- Header Compacto (Modo Grid) -->
-                <div class="card-header-compact">
-                    <div class="card-compact-top">
-                        <div class="card-compact-icon icon-mortero">
-                            <span class="material-symbols-outlined">rocket_launch</span>
+            <!-- Sistema 2: Mortero / Artillería -->
+            <div class="system-accordion-item item-theme-red" id="item-accordion-mortero">
+                <!-- Barra Compacta -->
+                <div class="system-bar" onclick="toggleSystemAccordion('mortero')">
+                    <div class="system-bar-left">
+                        <span class="material-symbols-outlined system-bar-icon icon-mortero">rocket_launch</span>
+                        <div class="system-bar-info">
+                            <span class="system-bar-title">ARTILLERÍA MORTERO</span>
+                            <span class="system-bar-sub" style="color: var(--accent-red);">FUEGO INDIRECTO</span>
                         </div>
-                        <div>
+                    </div>
+                    <div class="system-bar-right">
+                        {% if not (juegos_estado.get('mortero', True) if juegos_estado is defined else True) %}
+                        <span class="system-status-chip chip-off"><span class="launcher-dot dot-off"></span> DESACTIVADO</span>
+                        {% elif mortero_unlocked %}
+                        <span class="system-status-chip chip-ready"><span class="launcher-dot dot-ready"></span> OPERATIVO</span>
+                        {% else %}
+                        <span class="system-status-chip chip-locked"><span class="launcher-dot dot-locked"></span> PIN</span>
+                        {% endif %}
+                        <span class="material-symbols-outlined system-bar-chevron">expand_more</span>
+                    </div>
+                </div>
+
+                <!-- Panel Desplegado -->
+                <div class="system-expanded-panel">
+                    <div class="card-header-row">
+                        <div class="card-icon-title">
+                            <div class="card-icon icon-mortero">
+                                <span class="material-symbols-outlined">rocket_launch</span>
+                            </div>
+                            <div>
+                                <h2 class="card-title">Artillería / Mortero</h2>
+                                <div style="font-size: 0.75rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">FUEGO INDIRECTO</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
                             {% if not (juegos_estado.get('mortero', True) if juegos_estado is defined else True) %}
-                            <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ OFF</span>
+                            <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
                             {% elif mortero_unlocked %}
                             <span class="card-badge badge-ready">OPERATIVO</span>
                             {% else %}
                             <span class="card-badge badge-locked">🔒 PIN</span>
                             {% endif %}
+                            <button type="button" class="btn-close-card" onclick="event.stopPropagation(); toggleSystemAccordion('mortero')" title="Cerrar">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                                <span>CERRAR</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="card-compact-body">
-                        <h2 class="card-compact-title">Artillería / Mortero</h2>
-                        <div class="card-compact-sub" style="color: var(--accent-red);">FUEGO INDIRECTO</div>
-                    </div>
-                    <div class="card-expand-indicator">
-                        <span>INFO TÁCTICA</span>
-                        <span class="material-symbols-outlined" style="font-size: 14px;">expand_more</span>
-                    </div>
-                </div>
 
-                <!-- Header Expandido (Modo Desplegado) -->
-                <div class="card-header-expanded">
-                    <div class="card-expanded-identity">
-                        <div class="card-expanded-icon icon-mortero">
-                            <span class="material-symbols-outlined">rocket_launch</span>
-                        </div>
-                        <div>
-                            <h2 class="card-expanded-title">Artillería / Mortero</h2>
-                            <div class="card-expanded-sub" style="color: var(--accent-red);">CALCULADORA BALÍSTICA // FUEGO INDIRECTO</div>
-                        </div>
-                    </div>
-                    <div class="card-expanded-actions">
-                        {% if not (juegos_estado.get('mortero', True) if juegos_estado is defined else True) %}
-                        <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ DESACTIVADO</span>
-                        {% elif mortero_unlocked %}
-                        <span class="card-badge badge-ready">OPERATIVO</span>
-                        {% else %}
-                        <span class="card-badge badge-locked">🔒 PIN</span>
-                        {% endif %}
-                        <button type="button" class="card-collapse-btn" onclick="collapseCard(this.closest('.card-menu'), event)" title="Colapsar tarjeta">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">close</span> CERRAR
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Drawer Detalle Expandido -->
-                <div class="card-detail-drawer" onclick="event.stopPropagation()">
                     <div class="card-tags">
                         <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">adjust</span> FUEGO INDIRECTO</span>
                         <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">architecture</span> 45° - 85° ELEVACIÓN</span>
@@ -1098,9 +1107,9 @@
                     </p>
 
                     <!-- INSTRUCCIONES EN LA TARJETA -->
-                    <div class="card-instructions-panel">
+                    <div class="card-instructions-panel" onclick="event.stopPropagation()">
                         <div class="card-instructions-header" id="card-inst-header-mortero" onclick="toggleCardInstructions('mortero')">
-                            <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">
+                            <div style="display: flex; align-items: gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> MANUAL DE TIRO DE ARTILLERÍA
                             </div>
                             <span class="card-tag" id="card-arrow-mortero" style="border-color: rgba(255,51,68,0.3); color: #ff5566;">▼ VER INSTRUCCIONES</span>
@@ -1134,73 +1143,70 @@
                     <div class="card-footer">
                         <span>ESTADO: {{ 'AUTORIZADO' if mortero_unlocked else 'ENCRIPTADO' }}</span>
                         <div class="card-footer-btns">
-                            <button type="button" class="btn-instruction-card" onclick="openInstructionsModal('mortero')" title="Desplegar manual de artillería">
+                            <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('mortero')" title="Desplegar manual de artillería">
                                 <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
-                                GUÍA COMPLETA
+                                INSTRUCCIONES
                             </button>
                             <button type="button" class="btn-action" style="border-color: var(--accent-red); color: var(--accent-red); background: rgba(255,51,68,0.1);" onclick="handleCardClick('mortero', {{ 'true' if mortero_unlocked else 'false' }}, '/mortero_app')">
-                                {{ 'ACCEDER' if mortero_unlocked else 'DESBLOQUEAR' }} ➔
+                                {{ 'CALCULADORA DE TIRO' if mortero_unlocked else 'DESBLOQUEAR' }} ➔
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Card: Field Medic (Descarga e Instalación PWA) -->
-            <div class="card-menu card-theme-green" onclick="toggleCardExpansion(this, event)">
-                <!-- Header Compacto (Modo Grid) -->
-                <div class="card-header-compact">
-                    <div class="card-compact-top">
-                        <div class="card-compact-icon" style="padding: 2px; background: rgba(255, 51, 68, 0.12); border-color: rgba(255, 51, 68, 0.4); overflow: hidden;">
-                            <img src="/static/imgs/medic_icon.png" alt="Field Medic" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-symbols-outlined\' style=\'color:#ff5566; font-size:22px;\'>medical_services</span>';">
+            <!-- Sistema 3: Field Medic (Descarga e Instalación PWA) -->
+            <div class="system-accordion-item item-theme-red" id="item-accordion-medic">
+                <!-- Barra Compacta -->
+                <div class="system-bar" onclick="toggleSystemAccordion('medic')">
+                    <div class="system-bar-left">
+                        <div class="system-bar-icon system-bar-icon-medic">
+                            <img src="/static/imgs/medic_icon.png" alt="Field Medic" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-symbols-outlined\' style=\'color:#ff5566; font-size:19px;\'>medical_services</span>';">
                         </div>
-                        <div>
+                        <div class="system-bar-info">
+                            <span class="system-bar-title">FIELD MEDIC PWA</span>
+                            <span class="system-bar-sub" style="color: #ff5566;">SUITE SANITARIA // OFFLINE</span>
+                        </div>
+                    </div>
+                    <div class="system-bar-right">
+                        {% if not (juegos_estado.get('field_medic', True) if juegos_estado is defined else True) %}
+                        <span class="system-status-chip chip-off"><span class="launcher-dot dot-off"></span> DESACTIVADO</span>
+                        {% elif is_medic %}
+                        <span class="system-status-chip chip-ready" style="color:#2ecc71; border-color:rgba(46,204,113,0.3);"><span class="launcher-dot dot-ready"></span> SANITARIO</span>
+                        {% else %}
+                        <span class="system-status-chip chip-ready" style="color:#ff5566; border-color:rgba(255,51,68,0.3);"><span class="launcher-dot dot-ready"></span> PWA ACTIVA</span>
+                        {% endif %}
+                        <span class="material-symbols-outlined system-bar-chevron">expand_more</span>
+                    </div>
+                </div>
+
+                <!-- Panel Desplegado -->
+                <div class="system-expanded-panel">
+                    <div class="card-header-row">
+                        <div class="card-icon-title">
+                            <div class="card-icon" style="padding: 2px; background: rgba(255, 51, 68, 0.12); border-color: rgba(255, 51, 68, 0.4); overflow: hidden; border-radius: 6px;">
+                                <img src="/static/imgs/medic_icon.png" alt="Field Medic" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <h2 class="card-title">Field Medic PWA</h2>
+                                <div style="font-size: 0.75rem; color: #ff5566; font-family: 'Share Tech Mono', monospace;">SUITE SANITARIA // OFFLINE TOTAL // COMBATE</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
                             {% if not (juegos_estado.get('field_medic', True) if juegos_estado is defined else True) %}
-                                <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ OFF</span>
+                                <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
                             {% elif is_medic %}
-                                <span class="card-badge badge-ready" style="border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.15);">🩺 MÉDICO</span>
+                                <span class="card-badge badge-ready" style="border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.15); font-weight: bold;">🩺 SANITARIO</span>
                             {% else %}
                                 <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">📱 PWA</span>
                             {% endif %}
+                            <button type="button" class="btn-close-card" onclick="event.stopPropagation(); toggleSystemAccordion('medic')" title="Cerrar">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                                <span>CERRAR</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="card-compact-body">
-                        <h2 class="card-compact-title">Field Medic PWA</h2>
-                        <div class="card-compact-sub" style="color: #ff5566;">SUITE SANITARIA</div>
-                    </div>
-                    <div class="card-expand-indicator">
-                        <span>INFO TÁCTICA</span>
-                        <span class="material-symbols-outlined" style="font-size: 14px;">expand_more</span>
-                    </div>
-                </div>
 
-                <!-- Header Expandido (Modo Desplegado) -->
-                <div class="card-header-expanded">
-                    <div class="card-expanded-identity">
-                        <div class="card-expanded-icon" style="padding: 2px; background: rgba(255, 51, 68, 0.12); border-color: rgba(255, 51, 68, 0.4); overflow: hidden;">
-                            <img src="/static/imgs/medic_icon.png" alt="Field Medic" style="width: 100%; height: 100%; object-fit: contain; border-radius: 4px;" onerror="this.onerror=null; this.parentElement.innerHTML='<span class=\'material-symbols-outlined\' style=\'color:#ff5566; font-size:24px;\'>medical_services</span>';">
-                        </div>
-                        <div>
-                            <h2 class="card-expanded-title">Field Medic PWA</h2>
-                            <div class="card-expanded-sub" style="color: #ff5566;">SUITE SANITARIA // OFFLINE TOTAL // COMBATE</div>
-                        </div>
-                    </div>
-                    <div class="card-expanded-actions">
-                        {% if not (juegos_estado.get('field_medic', True) if juegos_estado is defined else True) %}
-                            <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ DESACTIVADO</span>
-                        {% elif is_medic %}
-                            <span class="card-badge badge-ready" style="border-color: #2ecc71; color: #2ecc71; background: rgba(46, 204, 113, 0.15);">🩺 SANITARIO</span>
-                        {% else %}
-                            <span class="card-badge badge-ready" style="border-color: rgba(255, 51, 68, 0.5); color: #ff5566; background: rgba(255, 51, 68, 0.12);">📱 PWA</span>
-                        {% endif %}
-                        <button type="button" class="card-collapse-btn" onclick="collapseCard(this.closest('.card-menu'), event)" title="Colapsar tarjeta">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">close</span> CERRAR
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Drawer Detalle Expandido -->
-                <div class="card-detail-drawer" onclick="event.stopPropagation()">
                     <div class="card-tags">
                         <span class="card-tag" style="color:#ff5566; border-color:rgba(255,51,68,0.3); background:rgba(255,51,68,0.1);"><span class="material-symbols-outlined" style="font-size:13px;">offline_pin</span> 100% OFFLINE TOTAL</span>
                         <span class="card-tag" id="sim-menu-kits-tag" style="color: {{ '#2ecc71' if (reanimaciones_disponibles | default(3)) > 0 else '#ff3344' }}; border-color: {{ 'rgba(46,204,113,0.4)' if (reanimaciones_disponibles | default(3)) > 0 else 'rgba(255,51,68,0.5)' }}; background: {{ 'rgba(46,204,113,0.12)' if (reanimaciones_disponibles | default(3)) > 0 else 'rgba(255,51,68,0.18)' }}; font-weight: bold;">
@@ -1211,8 +1217,8 @@
                         <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:#ff5566;">vital_signs</span> 5 PROCEDIMIENTOS CLÍNICOS</span>
                     </div>
 
-                    <!-- AVISO DE CONSUMO DE BOTIQUÍN -->
-                    <div id="sim-menu-consumption-alert" style="display: none; background: rgba(14, 26, 36, 0.95); border: 1px solid #00f0ff; border-left: 4px solid #2ecc71; padding: 10px 14px; margin-bottom: 6px; font-size: 0.82rem; font-family: 'Share Tech Mono', monospace; line-height: 1.45;">
+                    <!-- AVISO DE CONSUMO DE BOTIQUÍN EN MENÚ DE SIMULACIÓN -->
+                    <div id="sim-menu-consumption-alert" style="display: none; background: rgba(14, 26, 36, 0.95); border: 1px solid #00f0ff; border-left: 4px solid #2ecc71; padding: 10px 14px; margin-bottom: 12px; font-size: 0.82rem; font-family: 'Share Tech Mono', monospace; line-height: 1.45;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div style="color: #2ecc71; font-weight: bold; display: flex; align-items: center; gap: 6px;">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">check_circle</span>
@@ -1230,121 +1236,131 @@
                     </p>
 
                     <!-- GUÍA DESTACADA DE ACCESO E INSTALACIÓN PWA -->
-                    <div class="card-pwa-guide">
+                    <div class="card-pwa-guide" onclick="event.stopPropagation()">
                         <div style="font-weight: 700; color: #ff5566; font-size: 0.84rem; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
                             <span class="material-symbols-outlined" style="font-size: 18px;">install_mobile</span> GUÍA DE ACCESO E INSTALACIÓN EN MÓVIL
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; font-size: 0.78rem; color: #cbd5e1; line-height: 1.45;">
                             <div style="background: rgba(0,0,0,0.4); padding: 8px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
                                 <b style="color: #00f0ff;">🤖 ANDROID (Chrome / Motorola / Samsung):</b><br>
-                                1. Pulsa el botón abajo: <b>ENTRAR / INSTALAR ➔</b>.<br>
-                                2. Si te sale la ventana <i>"Instalar y crear acceso directo"</i>, pulsa únicamente en <b>"Instalar"</b>.
+                                1. Pulsa el botón abajo a la derecha: <b>ENTRAR / INSTALAR ➔</b>.<br>
+                                2. Si te sale la ventana <i>"Instalar y crear acceso directo"</i>, pulsa únicamente en el botón <b>"Instalar"</b> (¡no hace falta arrastrar el icono!).
                             </div>
                             <div style="background: rgba(0,0,0,0.4); padding: 8px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
                                 <b style="color: #e2b938;">🍏 IPHONE / iOS (Safari):</b><br>
                                 1. Pulsa el botón <b>ENTRAR / INSTALAR ➔</b>.<br>
-                                2. Toca <b>Compartir</b> y elige <b>"Añadir a pantalla de inicio"</b>.
+                                2. Toca el botón <b>Compartir</b> (cuadrado con flecha arriba) y elige <b>"Añadir a pantalla de inicio"</b>.
                             </div>
                         </div>
                         <div style="font-size: 0.74rem; color: #2ecc71; margin-top: 6px; display: flex; align-items: center; gap: 4px;">
                             <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
-                            <span><b>¡Sin instalación obligatoria!</b> Puedes usar la app directamente en el navegador y funciona 100% offline.</span>
+                            <span><b>¡Sin instalación obligatoria!</b> Puedes usar la app directamente en el navegador Chrome/Safari y funciona 100% offline.</span>
                         </div>
                     </div>
 
                     <!-- INSTRUCCIONES EN LA TARJETA -->
-                    <div class="card-instructions-panel">
+                    <div class="card-instructions-panel" onclick="event.stopPropagation()">
                         <div class="card-instructions-header" id="card-inst-header-medic" onclick="toggleCardInstructions('medic')">
                             <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: #ff5566; font-family: 'Share Tech Mono', monospace;">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">medical_information</span> MANUAL DE PROTOCOLOS SANITARIOS
                             </div>
-                            <span class="card-tag" id="card-arrow-medic" style="border-color: rgba(255,51,68,0.3); color: #ff5566;">▼ VER PROTOCOLOS</span>
+                            <span class="card-tag" id="card-arrow-medic" style="border-color: rgba(255,51,68,0.3); color: #ff5566;">▼ VER INSTRUCCIONES</span>
                         </div>
                         <div class="card-instructions-drawer" id="card-drawer-medic">
                             <div class="card-inst-box" style="border-left-color: #ff5566; background: rgba(255,51,68,0.06);">
-                                <b style="color: #ff5566;">OBJETIVO:</b> Detener hemorragias y estabilizar signos vitales en combatientes caídos en menos de 90 segundos mediante el smartphone.
+                                <b style="color: #ff5566;">OBJETIVO:</b> Prestar asistencia médica de emergencia bajo fuego, estabilizar heridos críticos y gestionar el cupo de botiquines sin requerir cobertura ni conexión a internet.
                             </div>
                             <div class="card-step-item" style="border-left-color: #ff5566;">
-                                <div class="card-step-title"><span style="color: #ff5566;">1.</span> Triage y Escaneo de Carnet QR</div>
-                                <div class="card-step-desc">Acércate al compañero caído y enfoca con la cámara el código QR físico de su carnet militar para abrir su expediente clínico.</div>
+                                <div class="card-step-title"><span style="color: #ff5566;">1.</span> Triage y Escaneo de Paciente</div>
+                                <div class="card-step-desc">Al alcanzar a un operador derribado, pulsa "Escanear QR de Paciente" y enfoca con la cámara el código QR físico del carnet militar táctico del jugador herido.</div>
                             </div>
                             <div class="card-step-item" style="border-left-color: #ff5566;">
-                                <div class="card-step-title"><span style="color: #ff5566;">2.</span> Intervención Quirúrgica Táctica</div>
-                                <div class="card-step-desc">Selecciona la maniobra prioritaria: aplica y gira el Molinete de Torniquete, mantén la Presión Directa, desobstruye Neumotórax o Sutura.</div>
+                                <div class="card-step-title"><span style="color: #ff5566;">2.</span> Fase 1 - Control de Hemorragia / Trauma</div>
+                                <div class="card-step-desc">
+                                    Detén la pérdida de sangre antes de que la línea de vida caiga al 0% según la herida:
+                                    <ul style="margin: 4px 0 0 16px; padding: 0;">
+                                        <li>🩸 <b>Torniquete Táctico:</b> Gira el molinete y ajusta la varilla de fijación.</li>
+                                        <li>🩹 <b>Compresión Hemostática:</b> Mantén la presión táctil dentro de la banda verde.</li>
+                                        <li>🫁 <b>Punción Neumotórax:</b> Pulsa en el 2º espacio intercostal para descompresión torácica con aguja.</li>
+                                        <li>🪡 <b>Sutura y Cierre:</b> Alinea y sutura los bordes de la herida lacerada.</li>
+                                    </ul>
+                                </div>
                             </div>
-                            <div class="card-step-item" style="border-left-color: #2ecc71;">
-                                <div class="card-step-title"><span style="color: #2ecc71;">3.</span> Reanimación Vital</div>
-                                <div class="card-step-desc">Ejecuta el protocolo de estimulación cardíaca o estabilización para recuperar la operatividad del soldado.</div>
+                            <div class="card-step-item" style="border-left-color: #ff5566;">
+                                <div class="card-step-title"><span style="color: #ff5566;">3.</span> Fase 2 - Soporte y Estabilización Vital</div>
+                                <div class="card-step-desc">Ejecuta la maniobra de sincronización de constantes (ritmo cardíaco ECG, ajuste de constantes o secuencia de estimulación) hasta reanimar completamente al combatiente.</div>
+                            </div>
+                            <div class="card-step-item" style="border-left-color: #ff5566;">
+                                <div class="card-step-title"><span style="color: #ff5566;">4.</span> Consumo de Botiquines y Sincronización</div>
+                                <div class="card-step-desc">Cada reanimación exitosa descuenta 1 botiquín de tu cupo de sanitario. El historial clínico se almacena en el teléfono y se sincronizará automáticamente con el ORBAT central al recuperar conexión o en Respawn.</div>
+                            </div>
+                            <div style="font-size: 0.74rem; color: #94a3b8; font-style: italic;">
+                                💡 Consejo: Si te quedas sin botiquines en combate, acude al punto de RESPAWN autorizado de tu facción para reaprovisionar material médico.
                             </div>
                         </div>
                     </div>
 
                     <div class="card-footer">
-                        <span>ESTADO: {{ 'AUTORIZADO (SANITARIO)' if is_medic else 'ACCESO GENERAL PWA' }}</span>
+                        <span>ESTADO: 📱 PWA OFFLINE</span>
                         <div class="card-footer-btns">
-                            <button type="button" class="btn-instruction-card" onclick="openInstructionsModal('medic')" title="Desplegar guía interactiva completa">
+                            <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('medic')" title="Desplegar manual sanitario">
                                 <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
-                                GUÍA COMPLETA
+                                INSTRUCCIONES
                             </button>
                             <button type="button" class="btn-action" style="border-color: #ff5566; color: #ff5566; background: rgba(255,51,68,0.12);" onclick="handleCardClick('medic', true, '/medic')">
-                                ENTRAR / INSTALAR ➔
+                                <span class="material-symbols-outlined" style="font-size:16px;">medical_services</span> ENTRAR / INSTALAR (PWA) ➔
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Card: Prismáticos Tácticos AR -->
-            <div class="card-menu card-theme-cyan" onclick="toggleCardExpansion(this, event)">
-                <!-- Header Compacto (Modo Grid) -->
-                <div class="card-header-compact">
-                    <div class="card-compact-top">
-                        <div class="card-compact-icon" style="background: rgba(0, 240, 255, 0.12); border-color: var(--accent-cyan);">
-                            <span class="material-symbols-outlined" style="color: var(--accent-cyan); font-size: 22px;">visibility</span>
-                        </div>
-                        <div>
-                            {% if not (juegos_estado.get('prismaticos_ar', True) if juegos_estado is defined else True) %}
-                            <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ OFF</span>
-                            {% else %}
-                            <span class="card-badge badge-ready" style="border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.12);">LIBRE</span>
-                            {% endif %}
+            <!-- Sistema 4: Prismáticos Tácticos AR -->
+            <div class="system-accordion-item" id="item-accordion-prismaticos">
+                <!-- Barra Compacta -->
+                <div class="system-bar" onclick="toggleSystemAccordion('prismaticos')">
+                    <div class="system-bar-left">
+                        <span class="material-symbols-outlined system-bar-icon icon-recon">visibility</span>
+                        <div class="system-bar-info">
+                            <span class="system-bar-title">PRISMÁTICOS AR</span>
+                            <span class="system-bar-sub" style="color: var(--accent-cyan);">VISOR ÓPTICO FLIR // BALIZAS</span>
                         </div>
                     </div>
-                    <div class="card-compact-body">
-                        <h2 class="card-compact-title">Prismáticos AR</h2>
-                        <div class="card-compact-sub" style="color: var(--accent-cyan);">VISOR ÓPTICO // NVG</div>
-                    </div>
-                    <div class="card-expand-indicator">
-                        <span>INFO TÁCTICA</span>
-                        <span class="material-symbols-outlined" style="font-size: 14px;">expand_more</span>
-                    </div>
-                </div>
-
-                <!-- Header Expandido (Modo Desplegado) -->
-                <div class="card-header-expanded">
-                    <div class="card-expanded-identity">
-                        <div class="card-expanded-icon" style="background: rgba(0, 240, 255, 0.12); border-color: var(--accent-cyan);">
-                            <span class="material-symbols-outlined" style="color: var(--accent-cyan); font-size: 26px;">visibility</span>
-                        </div>
-                        <div>
-                            <h2 class="card-expanded-title">Prismáticos Tácticos AR</h2>
-                            <div class="card-expanded-sub" style="color: var(--accent-cyan);">LOCALIZACIÓN DE BALIZAS // REALIDAD AUMENTADA</div>
-                        </div>
-                    </div>
-                    <div class="card-expanded-actions">
+                    <div class="system-bar-right">
                         {% if not (juegos_estado.get('prismaticos_ar', True) if juegos_estado is defined else True) %}
-                        <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ DESACTIVADO</span>
+                        <span class="system-status-chip chip-off"><span class="launcher-dot dot-off"></span> DESACTIVADO</span>
                         {% else %}
-                        <span class="card-badge badge-ready" style="border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.12);">ACCESO LIBRE</span>
+                        <span class="system-status-chip chip-ready"><span class="launcher-dot dot-ready"></span> ACCESO LIBRE</span>
                         {% endif %}
-                        <button type="button" class="card-collapse-btn" onclick="collapseCard(this.closest('.card-menu'), event)" title="Colapsar tarjeta">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">close</span> CERRAR
-                        </button>
+                        <span class="material-symbols-outlined system-bar-chevron">expand_more</span>
                     </div>
                 </div>
 
-                <!-- Drawer Detalle Expandido -->
-                <div class="card-detail-drawer" onclick="event.stopPropagation()">
+                <!-- Panel Desplegado -->
+                <div class="system-expanded-panel">
+                    <div class="card-header-row">
+                        <div class="card-icon-title">
+                            <div class="card-icon" style="background: rgba(0, 240, 255, 0.12); border: 1px solid var(--accent-cyan); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 6px;">
+                                <span class="material-symbols-outlined" style="color: var(--accent-cyan); font-size: 26px;">visibility</span>
+                            </div>
+                            <div>
+                                <h2 class="card-title">Prismáticos Tácticos AR</h2>
+                                <div style="font-size: 0.75rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">LOCALIZACIÓN DE BALIZAS // REALIDAD AUMENTADA</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            {% if not (juegos_estado.get('prismaticos_ar', True) if juegos_estado is defined else True) %}
+                            <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
+                            {% else %}
+                            <span class="card-badge badge-ready" style="border-color: #00f0ff; color: #00f0ff; background: rgba(0, 240, 255, 0.12); font-weight: bold;">ACCESO LIBRE</span>
+                            {% endif %}
+                            <button type="button" class="btn-close-card" onclick="event.stopPropagation(); toggleSystemAccordion('prismaticos')" title="Cerrar">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                                <span>CERRAR</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="card-tags">
                         <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">view_in_ar</span> REALIDAD AUMENTADA</span>
                         <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">explore</span> BRÚJULA 360° + INCLINACIÓN</span>
@@ -1359,7 +1375,7 @@
                     </p>
 
                     <!-- INSTRUCCIONES EN LA TARJETA -->
-                    <div class="card-instructions-panel">
+                    <div class="card-instructions-panel" onclick="event.stopPropagation()">
                         <div class="card-instructions-header" id="card-inst-header-prismaticos" onclick="toggleCardInstructions('prismaticos')">
                             <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-cyan); font-family: 'Share Tech Mono', monospace;">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> MANUAL DE OPERACIÓN DEL VISOR AR
@@ -1392,9 +1408,9 @@
                     <div class="card-footer">
                         <span>ESTADO: ACCESO LIBRE</span>
                         <div class="card-footer-btns">
-                            <button type="button" class="btn-instruction-card" onclick="openInstructionsModal('prismaticos')" title="Desplegar instrucciones del visor">
+                            <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('prismaticos')" title="Desplegar instrucciones del visor">
                                 <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
-                                GUÍA COMPLETA
+                                INSTRUCCIONES
                             </button>
                             <button type="button" class="btn-action" onclick="handleCardClick('prismaticos', true, '/prismaticos')">
                                 ENTRAR AL VISOR AR ➔
@@ -1404,62 +1420,56 @@
                 </div>
             </div>
 
-            <!-- Card: Defensa Antiaérea / Batería SAM AAA (Binomio Cooperativo) -->
-            {% set aaa_unlocked = (user_role == 'admin') or ('simulador_aaa' in unlocked_minigames) %}
-            <div class="card-menu card-theme-red" onclick="toggleCardExpansion(this, event)">
-                <!-- Header Compacto (Modo Grid) -->
-                <div class="card-header-compact">
-                    <div class="card-compact-top">
-                        <div class="card-compact-icon" style="background: rgba(255, 51, 68, 0.12); border-color: var(--accent-red);">
-                            <span class="material-symbols-outlined" style="color: var(--accent-red); font-size: 22px;">radar</span>
+            <!-- Sistema 5: Defensa Antiaérea / Batería SAM AAA (Binomio Cooperativo) -->
+            <div class="system-accordion-item item-theme-red" id="item-accordion-aaa">
+                <!-- Barra Compacta -->
+                <div class="system-bar" onclick="toggleSystemAccordion('aaa')">
+                    <div class="system-bar-left">
+                        <span class="material-symbols-outlined system-bar-icon icon-mortero">radar</span>
+                        <div class="system-bar-info">
+                            <span class="system-bar-title">DEFENSA ANTIAÉREA (AAA SAM)</span>
+                            <span class="system-bar-sub" style="color: var(--accent-red);">BINOMIO TÁCTICO // RADAR + LANZADOR</span>
                         </div>
-                        <div>
+                    </div>
+                    <div class="system-bar-right">
+                        {% if not (juegos_estado.get('simulador_aaa', True) if juegos_estado is defined else True) %}
+                        <span class="system-status-chip chip-off"><span class="launcher-dot dot-off"></span> DESACTIVADO</span>
+                        {% elif aaa_unlocked %}
+                        <span class="system-status-chip chip-ready"><span class="launcher-dot dot-ready"></span> OPERATIVO</span>
+                        {% else %}
+                        <span class="system-status-chip chip-locked"><span class="launcher-dot dot-locked"></span> PIN</span>
+                        {% endif %}
+                        <span class="material-symbols-outlined system-bar-chevron">expand_more</span>
+                    </div>
+                </div>
+
+                <!-- Panel Desplegado -->
+                <div class="system-expanded-panel">
+                    <div class="card-header-row">
+                        <div class="card-icon-title">
+                            <div class="card-icon" style="background: rgba(255, 51, 68, 0.12); border: 1px solid var(--accent-red); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 6px;">
+                                <span class="material-symbols-outlined" style="color: var(--accent-red); font-size: 26px;">radar</span>
+                            </div>
+                            <div>
+                                <h2 class="card-title">Defensa Antiaérea (AAA)</h2>
+                                <div style="font-size: 0.75rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">BINOMIO TÁCTICO // RADAR DIRECTOR + LANZADOR AR</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
                             {% if not (juegos_estado.get('simulador_aaa', True) if juegos_estado is defined else True) %}
-                            <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ OFF</span>
+                            <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344; font-weight: bold;">⛔ DESACTIVADO</span>
                             {% elif aaa_unlocked %}
                             <span class="card-badge badge-ready">OPERATIVO</span>
                             {% else %}
                             <span class="card-badge badge-locked">🔒 PIN</span>
                             {% endif %}
+                            <button type="button" class="btn-close-card" onclick="event.stopPropagation(); toggleSystemAccordion('aaa')" title="Cerrar">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                                <span>CERRAR</span>
+                            </button>
                         </div>
                     </div>
-                    <div class="card-compact-body">
-                        <h2 class="card-compact-title">Defensa AAA</h2>
-                        <div class="card-compact-sub" style="color: var(--accent-red);">RADAR + SAM AR</div>
-                    </div>
-                    <div class="card-expand-indicator">
-                        <span>INFO TÁCTICA</span>
-                        <span class="material-symbols-outlined" style="font-size: 14px;">expand_more</span>
-                    </div>
-                </div>
 
-                <!-- Header Expandido (Modo Desplegado) -->
-                <div class="card-header-expanded">
-                    <div class="card-expanded-identity">
-                        <div class="card-expanded-icon" style="background: rgba(255, 51, 68, 0.12); border-color: var(--accent-red);">
-                            <span class="material-symbols-outlined" style="color: var(--accent-red); font-size: 26px;">radar</span>
-                        </div>
-                        <div>
-                            <h2 class="card-expanded-title">Defensa Antiaérea (AAA)</h2>
-                            <div class="card-expanded-sub" style="color: var(--accent-red);">BINOMIO TÁCTICO // RADAR DIRECTOR + LANZADOR AR</div>
-                        </div>
-                    </div>
-                    <div class="card-expanded-actions">
-                        {% if not (juegos_estado.get('simulador_aaa', True) if juegos_estado is defined else True) %}
-                        <span class="card-badge" style="background: rgba(255, 51, 68, 0.2); color: #ff5566; border: 1px solid #ff3344;">⛔ DESACTIVADO</span>
-                        {% elif aaa_unlocked %}
-                        <span class="card-badge badge-ready">OPERATIVO</span>
-                        {% else %}
-                        <span class="card-badge badge-locked">🔒 PIN</span>
-                        {% endif %}
-                        <button type="button" class="card-collapse-btn" onclick="collapseCard(this.closest('.card-menu'), event)" title="Colapsar tarjeta">
-                            <span class="material-symbols-outlined" style="font-size: 14px;">close</span> CERRAR
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Drawer Detalle Expandido -->
-                <div class="card-detail-drawer" onclick="event.stopPropagation()">
                     <div class="card-tags">
                         <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-cyan);">radar</span> RADAR PPI 360°</span>
                         <span class="card-tag"><span class="material-symbols-outlined" style="font-size:13px; color:var(--accent-red);">rocket_launch</span> LANZADOR SACLOS FOX-1</span>
@@ -1472,7 +1482,7 @@
                     </p>
 
                     <!-- INSTRUCCIONES EN LA TARJETA -->
-                    <div class="card-instructions-panel">
+                    <div class="card-instructions-panel" onclick="event.stopPropagation()">
                         <div class="card-instructions-header" id="card-inst-header-aaa" onclick="toggleCardInstructions('aaa')">
                             <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.78rem; color: var(--accent-red); font-family: 'Share Tech Mono', monospace;">
                                 <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span> PROTOCOLO DE TIRO COOPERATIVO (DIRECTOR + TIRADOR)
@@ -1505,9 +1515,9 @@
                     <div class="card-footer">
                         <span>ESTADO: {{ 'AUTORIZADO' if aaa_unlocked else 'ENCRIPTADO' }}</span>
                         <div class="card-footer-btns" style="display: flex; gap: 6px; flex-wrap: wrap;">
-                            <button type="button" class="btn-instruction-card" onclick="openInstructionsModal('aaa')" title="Desplegar protocolo de tiro antiaéreo">
+                            <button type="button" class="btn-instruction-card" onclick="event.stopPropagation(); toggleCardInstructions('aaa')" title="Desplegar protocolo de tiro antiaéreo">
                                 <span class="material-symbols-outlined" style="font-size: 15px;">help_outline</span>
-                                GUÍA COMPLETA
+                                INSTRUCCIONES
                             </button>
                             <button type="button" class="btn-action" style="border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(0,240,255,0.12);" onclick="handleCardClick('simulador_aaa', {{ 'true' if aaa_unlocked else 'false' }}, '/radar_aaa')">
                                 <span class="material-symbols-outlined" style="font-size: 15px;">radar</span> {{ 'RADAR DIRECTOR' if aaa_unlocked else 'DESBLOQUEAR' }} ➔
@@ -1519,8 +1529,8 @@
                     </div>
                 </div>
             </div>
+        </div>
 
-        </div> <!-- Fin de #games-grid -->
 
         <!-- Contingencia QR -->
         <div class="info-contingencia">
@@ -1815,43 +1825,25 @@
             document.getElementById('modal-instrucciones').style.display = 'none';
         }
 
-        function toggleCardExpansion(cardElement, event) {
-            // Si el usuario hace click en un botón, enlace o inputs dentro del drawer, no colapsar la tarjeta
-            if (event && event.target.closest('button, a, input, .card-instructions-header, .card-instructions-drawer, .card-pwa-guide, #sim-menu-consumption-alert')) {
-                return;
-            }
+                function toggleSystemAccordion(systemKey) {
+            const item = document.getElementById('item-accordion-' + systemKey);
+            if (!item) return;
 
-            const grid = document.getElementById('games-grid');
-            const isAlreadyExpanded = cardElement.classList.contains('is-expanded');
+            const isAlreadyOpen = item.classList.contains('is-expanded');
 
-            // Cerrar cualquier otra tarjeta expandida
-            document.querySelectorAll('.card-menu.is-expanded').forEach(c => {
-                if (c !== cardElement) {
-                    c.classList.remove('is-expanded');
-                }
+            // Cerrar cualquier otro sistema que esté abierto
+            document.querySelectorAll('.system-accordion-item').forEach(el => {
+                el.classList.remove('is-expanded');
             });
 
-            if (isAlreadyExpanded) {
-                cardElement.classList.remove('is-expanded');
-                if (grid) grid.classList.remove('has-expanded');
-            } else {
-                cardElement.classList.add('is-expanded');
-                if (grid) grid.classList.add('has-expanded');
+            if (!isAlreadyOpen) {
+                item.classList.add('is-expanded');
 
-                // Desplazamiento suave para centrar la tarjeta desplegada
+                // Desplazamiento suave para encuadrar la tarjeta en la pantalla del móvil
                 setTimeout(() => {
-                    cardElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 100);
+                    item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 60);
             }
-        }
-
-        function collapseCard(cardElement, event) {
-            if (event) {
-                event.stopPropagation();
-            }
-            const grid = document.getElementById('games-grid');
-            cardElement.classList.remove('is-expanded');
-            if (grid) grid.classList.remove('has-expanded');
         }
 
         const JUEGOS_ESTADO = {{ juegos_estado | tojson | safe if juegos_estado is defined else '{}' }};

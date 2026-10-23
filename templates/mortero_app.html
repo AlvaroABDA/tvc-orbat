@@ -26,6 +26,34 @@
         .mortero-hud-panel { background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); border-radius: 8px; padding: 10px; pointer-events: auto; border: 1px solid rgba(255,255,255,0.2); }
         .mortero-hud-panel .btn, .mortero-hud-panel input { pointer-events: auto; }
 
+        @keyframes spinGps { 100% { transform: rotate(360deg); } }
+        .spin-animation { animation: spinGps 1s linear infinite; display: inline-block; }
+        
+        #btn-gps-mortero {
+            background: rgba(0, 240, 255, 0.12);
+            border: 2px solid var(--accent-cyan, #00f0ff);
+            color: var(--accent-cyan, #00f0ff);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        #btn-gps-mortero:hover {
+            background: rgba(0, 240, 255, 0.25);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+        }
+        #btn-gps-mortero:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         @media (max-width: 896px) {
             #mortero-panel-header { padding: 5px 10px !important; }
             #mortero-title { font-size: 1rem !important; display: none !important; } /* Oculto en movil para ganar espacio */
@@ -123,20 +151,35 @@
                   <div id="mortero-leaflet-map" style="flex: 1; width: 100%; height: 100%; background: #111; z-index: 1;"></div>
                   
                   <!-- HUD Superior: Batería -->
-                  <div id="mortero-hud-top" class="mortero-hud-container" style="position: absolute; top: 10px; left: 10px; right: 10px; z-index: 1000; display: flex; align-items: center; gap: 10px;">
-                      <div class="mortero-hud-panel" style="flex: 1; display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 5px 10px;">
-                      <div style="flex: 1; display: flex; flex-direction: column;">
-                          <label style="font-size: 0.8rem; color: #aaa; margin-bottom: 2px;">CUADRÍCULA DESPLIEGUE</label>
-                          <input type="text" id="mortero_coord_display" class="form-control" style="width: 100%; font-family: var(--font-mono); font-weight: bold; text-align: center; font-size: 1.1rem; padding: 5px;" placeholder="Ej: AP 45 C">
+                  <div id="mortero-hud-top" class="mortero-hud-container" style="position: absolute; top: 10px; left: 10px; right: 10px; z-index: 1000; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                      <div class="mortero-hud-panel" style="flex: 1; min-width: 150px; display: flex; flex-direction: row; align-items: center; gap: 10px; padding: 5px 10px;">
+                          <div style="flex: 1; display: flex; flex-direction: column;">
+                              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                  <label style="font-size: 0.78rem; color: #aaa;">CUADRÍCULA DESPLIEGUE</label>
+                                  <span id="gps-mortero-status" style="font-size: 0.66rem; color: #888; font-family: 'Share Tech Mono', monospace;">[MANUAL]</span>
+                              </div>
+                              <input type="text" id="mortero_coord_display" class="form-control" style="width: 100%; font-family: var(--font-mono); font-weight: bold; text-align: center; font-size: 1.1rem; padding: 5px;" placeholder="Ej: AP 45 C">
+                          </div>
                       </div>
-                      </div>
-                      <button id="btn-measure" class="btn outline" style="pointer-events: auto; padding: 10px; margin-right: 5px;" title="Medir Distancia">
-                            <span class="material-symbols-outlined">straighten</span>
-                        </button>
-                        <button id="btn-ubicar-mortero" class="btn" style="pointer-events: auto; font-weight: bold; height: 100%; white-space: nowrap; background: #000; border: 2px solid #fff; color: #fff; border-radius: 8px; padding: 10px 15px;">DESPLEGAR</button>
-                        <button id="btn-clear-mortero" class="btn" onclick="clearMorteroImpacts()" style="pointer-events: auto; font-weight: bold; height: 100%; white-space: nowrap; background: rgba(255,0,0,0.2); border: 2px solid #ff4444; color: #ff4444; border-radius: 8px; padding: 10px; margin-left: 5px;" title="Limpiar Mapa">
-                            <span class="material-symbols-outlined">delete</span>
-                        </button>
+                      
+                      <button id="btn-gps-mortero" class="btn" style="pointer-events: auto;" title="Auto-fijar posición por GPS">
+                          <span class="material-symbols-outlined" id="gps-mortero-icon" style="font-size: 18px;">my_location</span>
+                          <span id="gps-mortero-label">GPS</span>
+                      </button>
+
+                      <button id="btn-measure" class="btn outline" style="pointer-events: auto; padding: 10px; margin-right: 2px;" title="Medir Distancia">
+                          <span class="material-symbols-outlined">straighten</span>
+                      </button>
+                      <button id="btn-ubicar-mortero" class="btn" style="pointer-events: auto; font-weight: bold; height: 100%; white-space: nowrap; background: #000; border: 2px solid #fff; color: #fff; border-radius: 8px; padding: 10px 15px;">DESPLEGAR</button>
+                      <button id="btn-clear-mortero" class="btn" onclick="clearMorteroImpacts()" style="pointer-events: auto; font-weight: bold; height: 100%; white-space: nowrap; background: rgba(255,0,0,0.2); border: 2px solid #ff4444; color: #ff4444; border-radius: 8px; padding: 10px;" title="Limpiar Mapa">
+                          <span class="material-symbols-outlined">delete</span>
+                      </button>
+                  </div>
+
+                  <!-- Banner Táctico GPS / Fallback Manual -->
+                  <div id="mortero-gps-banner" style="display: none; position: absolute; top: 72px; left: 10px; right: 10px; z-index: 1005; background: rgba(18, 22, 30, 0.96); border: 1px solid #444; border-left: 4px solid var(--accent-cyan, #00f0ff); padding: 8px 12px; font-family: 'Share Tech Mono', monospace; font-size: 0.80rem; border-radius: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.85); align-items: center; justify-content: space-between; gap: 8px; pointer-events: auto;">
+                      <div id="mortero-gps-banner-text" style="flex: 1; line-height: 1.4;">--</div>
+                      <button type="button" onclick="document.getElementById('mortero-gps-banner').style.display='none'" style="background: none; border: none; color: #888; font-size: 18px; cursor: pointer; line-height: 1; padding: 0 4px;">&times;</button>
                   </div>
 
                   <!-- HUD Inferior Izquierdo: Fuego -->
@@ -202,7 +245,7 @@
             <button onclick="document.getElementById('modal-instrucciones-mortero').style.display='none'" style="position:absolute; right:10px; top:10px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
             <h3 style="margin-top:0; color:var(--theme-color);">CÓMO USAR EL MORTERO</h3>
             <ul style="padding-left:20px; line-height:1.6; font-size:0.95rem;">
-                <li><b>1. Despliegue:</b> Introduce la cuadrícula donde está la batería (ej. <i>AP 45 C</i>) y pulsa DESPLEGAR.</li>
+                <li><b>1. Despliegue:</b> Pulsa <b>GPS</b> para auto-posicionar tu batería por satélite, o bien escribe la cuadrícula manualmente (ej. <i>AP 45 C</i>) / toca el mapa y pulsa <b>DESPLEGAR</b>.</li>
                 <li><b>2. Medir Distancia:</b> Puedes usar la herramienta de la regla: toca una vez en tu posición (punto A), desplázate por el mapa si lo necesitas, y vuelve a tocar en el objetivo (punto B) para trazar la línea y saber la distancia.</li>
                 <li><b>3. Tracking:</b> Pasa el dedo o el ratón por el mapa para ver coordenadas en el HUD verde. Usa la cruceta (D-PAD) para apuntar con precisión.</li>
                 <li><b>4. Fuego:</b> Introduce el Azimut (dirección) y la Elevación (ángulo entre 45º y 85º). A 45º el mortero alcanza su <b>distancia máxima ({{ alcance_base }}m)</b>, mientras que a 85º el disparo cae muy cerca (casi vertical). Pulsa FUEGO cuando la barra esté lista.</li>

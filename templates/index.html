@@ -1601,8 +1601,11 @@
     <div id="modal-equipo" class="modal">
         <div class="modal-content panel" style="max-width: 1300px; width: 95%; display: flex; flex-direction: column; gap: 1rem; max-height: 90vh; overflow-y: auto; background: rgba(30, 30, 30, 0.98); border: 1px solid var(--border-color); border-top: 3px solid var(--theme-color); border-radius: 0; box-shadow: 0 10px 40px rgba(0,0,0,0.9); color: var(--text-main); font-family: 'Rajdhani', sans-serif;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--theme-color); padding-bottom: 0.5rem; margin-bottom: 1rem;">
-                <h2 id="modal-title" style="margin: 0; color: var(--theme-color); font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">GESTIÓN DE UNIDAD</h2>
-                <div id="badge-medalla" style="display: none; padding: 0.5rem 1.5rem; border-radius: 0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 0.9rem; border: 1px solid transparent;"></div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <h2 id="modal-title" style="margin: 0; color: var(--theme-color); font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">GESTIÓN DE UNIDAD</h2>
+                    <div id="badge-medalla" style="display: none; padding: 0.25rem 0.75rem; border-radius: 0; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-size: 0.85rem; border: 1px solid transparent;"></div>
+                </div>
+                <button type="button" class="btn-close-modal" onclick="closeModal()" style="background: none; border: none; color: #aaa; font-size: 28px; cursor: pointer; line-height: 1; padding: 0 6px;" title="Cerrar">&times;</button>
             </div>
             
             <style>
@@ -1637,9 +1640,9 @@
                 <!-- Fila 1: Datos Básicos -->
                 <div style="background: transparent; padding: 0; margin-bottom: 1rem; border: none;">
                     <h3 style="font-size: 1.1rem; border-bottom: 1px solid #333; padding-bottom: 0.5rem; margin-bottom: 1rem; color: var(--theme-color); font-weight: bold;">[1] Datos Base y Credenciales</h3>
-                    <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
+                    <div class="eq-basic-header-row" style="display: flex; gap: 1.5rem; align-items: flex-start;">
                         <!-- Logo Immersive Input -->
-                        <div style="flex-shrink: 0;" title="Subir Logotipo del Equipo">
+                        <div class="eq-logo-wrapper" style="flex-shrink: 0;" title="Subir Logotipo del Equipo">
                             <label for="eq-logo" style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 120px; height: 120px; border: 2px dashed var(--theme-color); background: rgba(0,0,0,0.5); cursor: pointer; position: relative; overflow: hidden; transition: all 0.3s ease;">
                                 <span class="material-symbols-outlined" style="font-size: 2rem; color: var(--theme-color); margin-bottom: 0.5rem;">upload</span>
                                 <span style="font-size: 0.8rem; color: var(--theme-color); text-transform: uppercase; text-align: center; line-height: 1.2;">Subir<br>Logo</span>
@@ -1649,7 +1652,7 @@
                         </div>
                         
                         <!-- Rest of basic fields -->
-                        <div style="flex: 1; display: flex; gap: 1.5rem; flex-wrap: wrap;">
+                        <div class="eq-basic-fields-row" style="flex: 1; display: flex; gap: 1.5rem; flex-wrap: wrap;">
                         <div class="form-group" style="flex: 1; min-width: 250px;">
                             <label>Nombre del UNIDAD</label>
                             <input type="text" id="eq-nombre" required style="font-size: 1.1rem;">
@@ -1743,8 +1746,8 @@
                         <span class="material-symbols-outlined" style="font-size: 15px; color: var(--theme-color);">info</span>
                         <span><b>Plantilla y Censo:</b> Los gestores pueden marcar combatientes como Activos o Inactivos para el evento. La baja definitiva del censo militar está reservada a Administración.</span>
                     </div>
-                    <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; max-height: 440px; overflow-y: auto; background: rgba(0,0,0,0.3);">
-                        <table style="width: 100%; text-align: left; border-collapse: collapse; min-width: 860px;">
+                    <div class="miembros-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; max-height: 440px; overflow-y: auto; background: rgba(0,0,0,0.3);">
+                        <table class="table-miembros-dashboard" style="width: 100%; text-align: left; border-collapse: collapse; min-width: 860px;">
                             <thead>
                                 <tr style="border-bottom: 2px solid var(--theme-color); color: var(--theme-color); font-size: 0.85rem; text-transform: uppercase;">
                                     <th style="padding: 0.5rem; width: 50px; text-align: center;" title="Marcados como activos desplegarán en la misión actual">Activo</th>

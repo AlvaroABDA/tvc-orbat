@@ -2921,7 +2921,7 @@ from datetime import datetime, timedelta
 def api_mortero_fijar():
     if 'role' not in session: return jsonify({'error': 'Unauthorized'}), 401
     
-    data = request.json
+    data = request.json or {}
     faccion_name = session.get('faction', '')
     if session.get('role') == 'admin' and data.get('admin_faccion'):
         faccion_name = data.get('admin_faccion')
@@ -2929,17 +2929,52 @@ def api_mortero_fijar():
     faccion_id = 1 if faccion_name == 'Syldavia' else (2 if faccion_name == 'Volkovia' else None)
     if not faccion_id: return jsonify({'error': 'Facción inválida para artillería.'}), 400
     
-    data = request.json
-    lat = data.get('lat')
-    lng = data.get('lng')
+    gps_lat = data.get('gps_lat')
+    gps_lng = data.get('gps_lng')
+    grid_coord = None
     
+    if gps_lat is not None and gps_lng is not None:
+        try:
+            gps_lat = float(gps_lat)
+            gps_lng = float(gps_lng)
+            map_y, map_x = gps_mapper.gps_to_map(gps_lat, gps_lng)
+            lat = round(map_y, 2)
+            lng = round(map_x, 2)
+            grid_coord = gps_mapper.get_grid_coordinate(lat, lng)
+            
+            # Validar límites de la zona de operaciones
+            if not (0 <= lat <= 2000 and 0 <= lng <= 3000) or grid_coord == "FUERA MAPA":
+                return jsonify({
+                    'error': 'Posición GPS fuera del área de operaciones.',
+                    'fuera_de_zona': True,
+                    'grid_coord': grid_coord
+                }), 400
+        except Exception as e:
+            return jsonify({'error': f'Coordenadas GPS no válidas: {str(e)}'}), 400
+    else:
+        lat = data.get('lat')
+        lng = data.get('lng')
+        if lat is None or lng is None:
+            return jsonify({'error': 'Faltan coordenadas de despliegue.'}), 400
+        try:
+            lat = float(lat)
+            lng = float(lng)
+            grid_coord = gps_mapper.get_grid_coordinate(lat, lng)
+        except Exception:
+            return jsonify({'error': 'Coordenadas de despliegue no válidas.'}), 400
+
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('UPDATE Mortero_Estado SET lat=?, lng=? WHERE faccion_id=?', (lat, lng, faccion_id))
     conn.commit()
     conn.close()
     
-    return jsonify({'status': 'success'})
+    return jsonify({
+        'status': 'success',
+        'lat': lat,
+        'lng': lng,
+        'grid_coord': grid_coord
+    })
 
 def ensure_artilleria_tables(conn):
     try:

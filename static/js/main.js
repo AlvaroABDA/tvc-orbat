@@ -1079,7 +1079,7 @@ function renderEquiposTable(equipos) {
     tbody.innerHTML = '';
 
     equipos.forEach(eq => {
-        const logoHtml = eq.logo_url ? `<img src="${eq.logo_url}" style="width:30px; height:30px; object-fit:contain; vertical-align:middle; margin-right:10px;">` : '';
+        const logoHtml = eq.logo_url ? `<img src="${eq.logo_url}" style="width:34px; height:34px; object-fit:contain; vertical-align:middle; margin-right:10px; border-radius:3px;">` : '';
         const userCode = eq.codigo ? `<span style="color:#ffcc00; font-family:var(--font-mono); font-weight:bold;">${eq.codigo}</span>` : `<span style="color:#888;">--</span>`;
         const docs = eq.documentos || [];
         const hasDoc = docs.some(d => d.tipo === 'SEGURO_EXENCION' || d.tipo === 'EXENCION' || d.tipo === 'SEGURO');
@@ -1089,20 +1089,20 @@ function renderEquiposTable(equipos) {
             </div>
         `;
         tbody.innerHTML += `
-            <tr>
-                <td data-label="Unidad"><div style="display: flex; align-items: center;">${logoHtml}<div><span style="font-weight:bold;">${eq.nombre}</span>${docsBadges}</div></div></td>
-                <td data-label="Usuario (Login)">${userCode}</td>
-                <td data-label="Facción" class="color-${eq.faccion_nombre}">${eq.faccion_nombre}</td>
-                <td data-label="Jugadores" style="text-align:center;">${eq.jugadores}</td>
-                <td data-label="Perfil">${eq.tipo}</td>
-                <td data-label="PIN / Contraseña">
+            <tr class="equipo-row-item">
+                <td class="col-eq-unidad" data-label="Unidad"><div style="display: flex; align-items: center;">${logoHtml}<div><span style="font-weight:bold;">${eq.nombre}</span>${docsBadges}</div></div></td>
+                <td class="col-eq-usuario" data-label="Usuario (Login)">${userCode}</td>
+                <td class="col-eq-faccion" data-label="Facción" class="color-${eq.faccion_nombre}">${eq.faccion_nombre}</td>
+                <td class="col-eq-jugadores" data-label="Jugadores" style="text-align:center;"><span class="badge-jugadores-count" style="font-family:var(--font-mono); font-weight:bold; background:rgba(255,255,255,0.08); padding:2px 8px; border-radius:4px;">${eq.jugadores}</span></td>
+                <td class="col-eq-perfil" data-label="Perfil"><span class="badge-perfil-tag" style="background:rgba(0,240,255,0.1); border:1px solid rgba(0,240,255,0.3); color:#00f0ff; padding:2px 6px; border-radius:3px; font-size:0.75rem; font-weight:bold;">${eq.tipo}</span></td>
+                <td class="col-eq-pin" data-label="PIN / Contraseña">
                     <div style="display: flex; gap: 6px; align-items: center;">
                         <input type="text" id="eq-pwd-${eq.id}" placeholder="PIN" maxlength="4" style="width: 70px; padding: 4px 6px; font-family: var(--font-mono); font-size: 0.85rem; background: rgba(0,0,0,0.4); border: 1px solid #444; color: #fff; border-radius: 3px; text-align: center;">
                         <button class="btn btn-outline btn-sm" onclick="updateEquipoPwd(${eq.id})" style="padding: 4px 8px; font-size: 0.75rem;">Guardar</button>
                     </div>
                 </td>
-                <td data-label="Acciones" style="white-space: nowrap;">
-                    <div style="display: inline-flex; gap: 4px; align-items: center;">
+                <td class="col-eq-acciones" data-label="Acciones" style="white-space: nowrap;">
+                    <div style="display: inline-flex; gap: 6px; align-items: center;">
                         <button class="btn secondary btn-edit" data-id="${eq.id}">Editar</button>
                         <button class="btn danger btn-del" data-id="${eq.id}">Borrar</button>
                     </div>
@@ -1113,7 +1113,9 @@ function renderEquiposTable(equipos) {
 
     document.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', (e) => {
-            const eqId = parseInt(e.target.dataset.id);
+            const btnEl = e.target.closest('.btn-edit');
+            if (!btnEl) return;
+            const eqId = parseInt(btnEl.dataset.id);
             const eq = todosEquipos.find(x => x.id === eqId);
             openModal(eq);
         });
@@ -1121,8 +1123,10 @@ function renderEquiposTable(equipos) {
 
     document.querySelectorAll('.btn-del').forEach(btn => {
         btn.addEventListener('click', async (e) => {
+            const btnEl = e.target.closest('.btn-del');
+            if (!btnEl) return;
             if(confirm('¿Eliminar equipo?')) {
-                const id = e.target.dataset.id;
+                const id = btnEl.dataset.id;
                 await fetch(`/api/equipos/${id}`, { method: 'DELETE' });
                 await loadEquipos();
     if(window.userRole === "admin") loadPOIs();
@@ -1678,17 +1682,26 @@ function addMiembroRow(m = null) {
     const dronBadge = (m && m.tiene_dron) ? `<span title="Dron: ${m.dron_modelo || 'Reconocimiento'}" style="font-size: 0.68rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); color: #00f0ff; padding: 1px 5px; border-radius: 3px; font-weight: 600; cursor: help; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 11px;">flight</span> Dron</span>` : '';
 
     tr.innerHTML = `
-        <td style="padding: 0.25rem; text-align: center;"><input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} style="transform: scale(1.3); cursor: pointer;" title="Marcar/desmarcar para activar o inactivar del despliegue"></td>
-        <td style="padding: 0.25rem;">
-            <div style="display: flex; align-items: center; gap: 4px;">
-                <input type="text" class="miembro-nombre" placeholder="Nick" value="${nombre}" style="flex: 1; min-width: 80px; padding: 0.25rem;">
-                ${nvgBadge}${dronBadge}
+        <td class="col-miembro-activo" data-label="Activo">
+            <label class="miembro-activo-wrapper">
+                <input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} title="Marcar/desmarcar para activar o inactivar del despliegue">
+                <span class="miembro-activo-label">Activo en Despliegue</span>
+            </label>
+        </td>
+        <td class="col-miembro-nick" data-label="Nick">
+            <div class="miembro-nick-wrapper">
+                <input type="text" class="miembro-nombre" placeholder="Nick / Indicativo" value="${nombre}">
+                <div class="miembro-badges-wrap">${nvgBadge}${dronBadge}</div>
             </div>
         </td>
-        <td style="padding: 0.25rem;"><input type="text" class="miembro-fullname" placeholder="Nombre completo" value="${fullname}" style="width: 100%; padding: 0.25rem;"></td>
-        <td style="padding: 0.25rem;"><input type="text" class="miembro-dni" placeholder="DNI" value="${dni}" style="width: 100%; padding: 0.25rem;"></td>
-        <td style="padding: 0.25rem;">
-            <select class="miembro-rol" style="width: 100%; padding: 0.25rem;">
+        <td class="col-miembro-fullname" data-label="Nombre completo">
+            <input type="text" class="miembro-fullname" placeholder="Nombre completo" value="${fullname}">
+        </td>
+        <td class="col-miembro-dni" data-label="DNI">
+            <input type="text" class="miembro-dni" placeholder="DNI / NIE" value="${dni}">
+        </td>
+        <td class="col-miembro-rol" data-label="Rol">
+            <select class="miembro-rol">
                 <option value="Operador" ${rol === 'Operador' ? 'selected' : ''}>Operador</option>
                 <option value="Jefe de equipo" ${rol === 'Jefe de equipo' ? 'selected' : ''}>Jefe de equipo</option>
                 <option value="Enlace" ${rol === 'Enlace' ? 'selected' : ''}>Enlace</option>
@@ -1696,18 +1709,26 @@ function addMiembroRow(m = null) {
                 <option value="Ingeniero" ${rol === 'Ingeniero' ? 'selected' : ''}>Ingeniero</option>
             </select>
         </td>
-        <td style="padding: 0.25rem;">
-            <select class="miembro-armamento" style="width: 100%; padding: 0.25rem;">
+        <td class="col-miembro-armamento" data-label="Armamento">
+            <select class="miembro-armamento">
                 <option value="Fusilero" ${armamento === 'Fusilero' ? 'selected' : ''}>Fusilero</option>
                 <option value="Francotirador" ${armamento === 'Francotirador' ? 'selected' : ''}>Francotirador</option>
                 <option value="Tirador" ${armamento === 'Tirador' ? 'selected' : ''}>Tirador</option>
                 <option value="Apoyo" ${armamento === 'Apoyo' ? 'selected' : ''}>Apoyo</option>
             </select>
         </td>
-        <td style="padding: 0.25rem;"><input type="text" class="miembro-telefono" placeholder="Teléfono" value="${tel}" style="width: 100%; padding: 0.25rem;"></td>
-        <td style="padding: 0.25rem;"><input type="email" class="miembro-email" placeholder="Email" value="${email}" style="width: 100%; padding: 0.25rem;"></td>
-        <td style="padding: 0.25rem; text-align: center; white-space: nowrap;"><div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">${fotoBtn}${carnetBtn}${iceBtn}${unbindMedicBtn}${placeholderGuardar}</div></td>
-        <td style="padding: 0.25rem; text-align: center;">${delBtn}</td>
+        <td class="col-miembro-telefono" data-label="Teléfono">
+            <input type="tel" class="miembro-telefono" placeholder="Teléfono" value="${tel}">
+        </td>
+        <td class="col-miembro-email" data-label="Email">
+            <input type="email" class="miembro-email" placeholder="Email" value="${email}">
+        </td>
+        <td class="col-miembro-herramientas" data-label="Ficha / I.C.E.">
+            <div class="miembro-tools-wrapper">${fotoBtn}${carnetBtn}${iceBtn}${unbindMedicBtn}${placeholderGuardar}</div>
+        </td>
+        <td class="col-miembro-del" data-label="Eliminar">
+            ${delBtn}
+        </td>
     `;
     
     function applyActivoStyle(isAct) {
@@ -2864,11 +2885,169 @@ let serverLat = null;
 let serverLng = null;
 let isPendingLocation = false;
 let cooldownInterval = null;
+let isGpsLocatingMortero = false;
+
+function showMorteroBanner(htmlMsg, type = 'info', timeoutMs = 5000) {
+    const banner = document.getElementById('mortero-gps-banner');
+    const bannerText = document.getElementById('mortero-gps-banner-text');
+    if (!banner || !bannerText) return;
+
+    bannerText.innerHTML = htmlMsg;
+    banner.style.display = 'flex';
+
+    if (type === 'error' || type === 'warn') {
+        banner.style.borderLeftColor = 'var(--accent-red, #ff3344)';
+        banner.style.color = '#ff9999';
+    } else if (type === 'success') {
+        banner.style.borderLeftColor = 'var(--accent-green, #2ecc71)';
+        banner.style.color = '#aaffaa';
+    } else {
+        banner.style.borderLeftColor = 'var(--accent-cyan, #00f0ff)';
+        banner.style.color = '#e0f7fa';
+    }
+
+    if (window._morteroBannerTimeout) {
+        clearTimeout(window._morteroBannerTimeout);
+        window._morteroBannerTimeout = null;
+    }
+
+    if (timeoutMs > 0) {
+        window._morteroBannerTimeout = setTimeout(() => {
+            if (banner) banner.style.display = 'none';
+        }, timeoutMs);
+    }
+}
+
+async function ubicarMorteroPorGPS(isAutoTrigger = false) {
+    if (isGpsLocatingMortero) return;
+
+    const btnGps = document.getElementById('btn-gps-mortero');
+    const iconGps = document.getElementById('gps-mortero-icon');
+    const labelGps = document.getElementById('gps-mortero-label');
+    const statusGps = document.getElementById('gps-mortero-status');
+
+    if (!navigator.geolocation) {
+        if (statusGps) {
+            statusGps.textContent = '[MANUAL]';
+            statusGps.style.color = '#888';
+        }
+        if (!isAutoTrigger) {
+            showMorteroBanner("⚠️ Tu dispositivo no soporta GPS. Introduce la cuadrícula o toca el mapa manualmente.", 'warn', 5000);
+        }
+        return;
+    }
+
+    isGpsLocatingMortero = true;
+    if (btnGps) btnGps.disabled = true;
+    if (iconGps) iconGps.classList.add('spin-animation');
+    if (labelGps) labelGps.textContent = 'BUSCANDO...';
+    if (statusGps) {
+        statusGps.textContent = '[BUSCANDO GPS]';
+        statusGps.style.color = 'var(--accent-gold, #e2b938)';
+    }
+
+    showMorteroBanner("🛰️ <b>SATCOM:</b> Adquiriendo señal de satélites GPS...", 'info', 0);
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            isGpsLocatingMortero = false;
+            if (btnGps) btnGps.disabled = false;
+            if (iconGps) iconGps.classList.remove('spin-animation');
+            if (labelGps) labelGps.textContent = 'GPS';
+
+            const { latitude, longitude, accuracy } = position.coords;
+
+            try {
+                const simFac = document.getElementById('admin-sim-faccion')?.value || '';
+                const res = await fetch('/api/mortero/fijar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        gps_lat: latitude,
+                        gps_lng: longitude,
+                        admin_faccion: simFac
+                    })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    isPendingLocation = false;
+                    pendingBatteryLat = data.lat;
+                    pendingBatteryLng = data.lng;
+
+                    const display = document.getElementById('mortero_coord_display');
+                    if (display) {
+                        display.value = data.grid_coord || '--';
+                    }
+
+                    if (morteroMap) {
+                        morteroMap.setView([data.lat, data.lng], Math.max(morteroMap.getZoom(), 0));
+                    }
+
+                    const btnUbicar = document.getElementById('btn-ubicar-mortero');
+                    if (btnUbicar) {
+                        btnUbicar.classList.remove('primary');
+                        btnUbicar.classList.add('outline');
+                        btnUbicar.innerText = "BATERÍA DESPLEGADA";
+                    }
+
+                    if (statusGps) {
+                        statusGps.textContent = '[FIJADO GPS]';
+                        statusGps.style.color = 'var(--accent-green, #2ecc71)';
+                    }
+
+                    showMorteroBanner(`✅ <b>BATERÍA DESPLEGADA POR GPS</b><br>📍 Cuadrícula: <b>${data.grid_coord}</b> (±${Math.round(accuracy)}m)`, 'success', 5000);
+                    refreshMorteroState();
+                } else {
+                    if (statusGps) {
+                        statusGps.textContent = '[MANUAL]';
+                        statusGps.style.color = 'var(--accent-red, #ff3344)';
+                    }
+                    showMorteroBanner(`⚠️ <b>${data.error || 'Posición fuera de zona'}</b><br>Despliegue manual habilitado: introduce la cuadrícula o toca el mapa.`, 'warn', 6000);
+                }
+            } catch (err) {
+                if (statusGps) {
+                    statusGps.textContent = '[MANUAL]';
+                    statusGps.style.color = '#888';
+                }
+                showMorteroBanner("⚠️ Error de enlace con el servidor. Se ha habilitado el despliegue manual.", 'warn', 5000);
+            }
+        },
+        (err) => {
+            isGpsLocatingMortero = false;
+            if (btnGps) btnGps.disabled = false;
+            if (iconGps) iconGps.classList.remove('spin-animation');
+            if (labelGps) labelGps.textContent = 'GPS';
+            if (statusGps) {
+                statusGps.textContent = '[MANUAL]';
+                statusGps.style.color = '#888';
+            }
+
+            let msg = "No se pudo obtener señal GPS.";
+            if (err.code === 1) msg = "Permiso de ubicación denegado en el navegador.";
+            else if (err.code === 3) msg = "Tiempo de espera agotado buscando satélites.";
+
+            showMorteroBanner(`⚠️ <b>${msg}</b><br>Modo manual habilitado: escribe la cuadrícula (ej. <i>AP 45 C</i>) o toca el mapa.`, 'warn', 5500);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 7000,
+            maximumAge: 15000
+        }
+    );
+}
 
 function initMortero() {
     morteroAuth = true;
     // We give it a slight delay to ensure it renders if it was selected
     setTimeout(initMorteroLeaflet, 200);
+
+    const btnGps = document.getElementById('btn-gps-mortero');
+    if (btnGps) {
+        btnGps.addEventListener('click', () => {
+            ubicarMorteroPorGPS(false);
+        });
+    }
 
     const btnUbicar = document.getElementById('btn-ubicar-mortero');
     if (btnUbicar) {
@@ -2896,7 +3075,12 @@ function initMortero() {
             
             if (res.ok) {
                 isPendingLocation = false;
-                alert("Batería desplegada en " + val.toUpperCase());
+                const statusGps = document.getElementById('gps-mortero-status');
+                if (statusGps) {
+                    statusGps.textContent = '[MANUAL]';
+                    statusGps.style.color = 'var(--accent-cyan, #00f0ff)';
+                }
+                showMorteroBanner(`📍 <b>BATERÍA DESPLEGADA MANUALMENTE</b><br>Cuadrícula: <b>${val.toUpperCase()}</b>`, 'info', 4000);
                 document.getElementById('btn-ubicar-mortero').classList.remove('primary');
                 document.getElementById('btn-ubicar-mortero').classList.add('outline');
                 document.getElementById('btn-ubicar-mortero').innerText = "BATERÍA DESPLEGADA";
@@ -2907,6 +3091,24 @@ function initMortero() {
             }
         });
     }
+
+    // Auto-intento transparente de GPS si aún no hay batería fijada
+    setTimeout(async () => {
+        try {
+            const simFac = document.getElementById('admin-sim-faccion')?.value || '';
+            const res = await fetch('/api/mortero/todos_json' + (simFac ? '?faccion='+simFac : ''));
+            const data = await res.json();
+            if (!data.lat || !data.lng) {
+                ubicarMorteroPorGPS(true);
+            } else {
+                const statusGps = document.getElementById('gps-mortero-status');
+                if (statusGps) {
+                    statusGps.textContent = '[DESPLEGADA]';
+                    statusGps.style.color = 'var(--accent-green, #2ecc71)';
+                }
+            }
+        } catch(e) {}
+    }, 600);
 
     const btnFuego = document.getElementById('btn-fuego-mortero');
     if (btnFuego) {
@@ -5099,8 +5301,9 @@ function renderArmasDashboard(lista) {
             armasHtml = `<span style="color: #64748b; font-size: 0.76rem; font-style: italic;">Sin réplicas registradas</span>`;
         }
         
+        tr.className = 'armas-row-item';
         tr.innerHTML = `
-            <td style="border-left: 3px solid ${borderAccent} !important;">
+            <td class="col-armas-combatiente" data-label="Combatiente" style="border-left: 3px solid ${borderAccent} !important;">
                 <div style="color: #fff; font-size: 0.95rem; font-weight: 700; display: flex; align-items: center; gap: 6px;">
                     <span class="material-symbols-outlined" style="font-size: 1.15rem; color: #e2b938;">person</span>
                     <span>${m.nombre_jugador || 'Operador'}</span>
@@ -5110,15 +5313,15 @@ function renderArmasDashboard(lista) {
                     ${m.uid ? `<span class="med-uid-tag" style="color: #00f0ff; border-color: rgba(0,240,255,0.3);">QR: ${m.uid}</span>` : ''}
                 </div>
             </td>
-            <td>
+            <td class="col-armas-unidad" data-label="Unidad // Facción">
                 <div style="font-weight: 700; color: #fff; font-size: 0.92rem;">${m.equipo_nombre}</div>
                 <div style="margin-top: 4px;"><span class="med-badge-faction ${facBadgeClass}">${m.faccion_nombre}</span></div>
             </td>
-            <td>${capacidadesFinal}</td>
-            <td>${armasHtml}</td>
-            <td style="text-align: center;">
-                <button type="button" class="btn btn-sm" onclick="event.stopPropagation(); abrirModalArmas(${m.id})" style="border-color: #e2b938; color: #e2b938; background: rgba(226,185,56,0.08); padding: 4px 8px; font-size: 0.74rem; font-weight: 600; border-radius: 3px; display: inline-flex; align-items: center; gap: 4px;">
-                    <span class="material-symbols-outlined" style="font-size: 14px;">tune</span> GESTIONAR
+            <td class="col-armas-capacidades" data-label="Capacidades">${capacidadesFinal}</td>
+            <td class="col-armas-replicas" data-label="Réplicas">${armasHtml}</td>
+            <td class="col-armas-accion" data-label="Acción" style="text-align: center;">
+                <button type="button" class="btn btn-sm btn-gestionar-armas" onclick="event.stopPropagation(); abrirModalArmas(${m.id})" style="border-color: #e2b938; color: #e2b938; background: rgba(226,185,56,0.08); padding: 6px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 100%;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">tune</span> GESTIONAR
                 </button>
             </td>
         `;
