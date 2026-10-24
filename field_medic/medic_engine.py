@@ -166,7 +166,10 @@ def init_medic_db(conn):
             duracion_total_segundos REAL DEFAULT 0,
             discrepancias_flags TEXT,          -- JSON Array con banderas de anomalía auditables
             sincronizado_en DATETIME DEFAULT CURRENT_TIMESTAMP,
-            detalles_json TEXT                  -- Métricas opcionales y telemetría de juego
+            detalles_json TEXT,                 -- Métricas opcionales y telemetría de juego
+            es_buddy_aid BOOLEAN DEFAULT 0,    -- 1 si fue reanimación de médico por compañero
+            asistente_uid TEXT,                -- UID del compañero socorrista
+            asistente_nombre TEXT              -- Nombre del compañero socorrista
         )
     ''')
     
@@ -182,7 +185,10 @@ def init_medic_db(conn):
             ('paciente_faccion', 'TEXT'),
             ('hora_inicio', 'TEXT'),
             ('hora_cierre', 'TEXT'),
-            ('discrepancias_flags', 'TEXT')
+            ('discrepancias_flags', 'TEXT'),
+            ('es_buddy_aid', 'BOOLEAN DEFAULT 0'),
+            ('asistente_uid', 'TEXT'),
+            ('asistente_nombre', 'TEXT')
         ]
         for col_name, col_type in migraciones:
             if col_name not in cols:
@@ -328,6 +334,11 @@ def sync_episodio_medico(conn, payload):
     paciente_uid = str(payload.get('paciente_uid') or payload.get('operador_uid') or 'PACIENTE_DESCONOCIDO').strip()
     medico_uid = str(payload.get('medico_uid') or payload.get('sanitario_id') or 'MEDICO_DESCONOCIDO').strip()
     
+    es_buddy_aid = bool(payload.get('es_buddy_aid', False))
+    asistente_uid = str(payload.get('asistente_uid') or '').strip()
+    asistente_nombre = str(payload.get('asistente_nombre') or '').strip()
+    asistente_faccion = str(payload.get('asistente_faccion') or '').strip()
+
     paciente_nombre = str(payload.get('paciente_nombre') or payload.get('operador_nombre') or paciente_uid).strip()
     paciente_faccion = str(payload.get('paciente_faccion') or payload.get('faccion_nombre') or '').strip()
     
@@ -343,7 +354,14 @@ def sync_episodio_medico(conn, payload):
     estabilizacion_completada = bool(payload.get('estabilizacion_completada', False))
     resultado_final = payload.get('resultado_final', 'EXITO')
     duracion = float(payload.get('duracion_total_segundos') or payload.get('duration_total_segundos') or 0.0)
-    detalles_json = json.dumps(payload.get('detalles', {}))
+
+    detalles = payload.get('detalles', {}) or {}
+    if es_buddy_aid:
+        detalles['es_buddy_aid'] = True
+        detalles['asistente_uid'] = asistente_uid
+        detalles['asistente_nombre'] = asistente_nombre
+        detalles['asistente_faccion'] = asistente_faccion
+    detalles_json = json.dumps(detalles)
     
     cursor = conn.cursor()
     
@@ -365,14 +383,18 @@ def sync_episodio_medico(conn, payload):
     if duracion < 25.0 and resultado_final == 'EXITO':
         flags.append('FAST_DURATION')
         
-    # (b) Intento de auto-curación (mismo carnet en ambos extremos)
+    # (b) Intento de auto-curación o Reanimación de Compañero (Buddy Aid)
     if paciente_uid and medico_uid and paciente_uid.upper() == medico_uid.upper():
-        flags.append('SELF_HEAL')
+        if es_buddy_aid and asistente_uid and asistente_uid.upper() != paciente_uid.upper():
+            flags.append('BUDDY_AID')
+        else:
+            flags.append('SELF_HEAL')
         
     # (c) Bando cruzado (asistencia médica a otra facción)
-    if paciente_faccion and medico_faccion:
+    faccion_verificar = asistente_faccion if (es_buddy_aid and asistente_faccion) else medico_faccion
+    if paciente_faccion and faccion_verificar:
         pf = paciente_faccion.lower()
-        mf = medico_faccion.lower()
+        mf = faccion_verificar.lower()
         if pf != mf and 'global' not in pf and 'global' not in mf and 'desconocid' not in pf and 'desconocid' not in mf:
             flags.append('CROSS_FACTION')
             
@@ -398,15 +420,17 @@ def sync_episodio_medico(conn, payload):
             paciente_uid, paciente_nombre, paciente_faccion,
             hora_inicio, hora_cierre,
             escenario_id, fase_actual, hemorragia_controlada, estabilizacion_completada,
-            resultado_final, duracion_total_segundos, discrepancias_flags, detalles_json
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            resultado_final, duracion_total_segundos, discrepancias_flags, detalles_json,
+            es_buddy_aid, asistente_uid, asistente_nombre
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
         episode_id, medico_uid, paciente_uid, paciente_nombre, paciente_faccion,
         medico_uid, medico_nombre, medico_faccion,
         paciente_uid, paciente_nombre, paciente_faccion,
         str(hora_inicio), str(hora_cierre),
         escenario_id, fase_actual, hemorragia_controlada, estabilizacion_completada,
-        resultado_final, duracion, discrepancias_json, detalles_json
+        resultado_final, duracion, discrepancias_json, detalles_json,
+        1 if es_buddy_aid else 0, asistente_uid or None, asistente_nombre or None
     ))
     
     # 4. Descontar 1 reanimación al médico tratante si la atención fue exitosa
@@ -579,7 +603,8 @@ def get_medic_audit_log(conn, limit=150):
                paciente_uid, paciente_nombre, paciente_faccion,
                hora_inicio, hora_cierre, escenario_id, fase_actual,
                hemorragia_controlada, estabilizacion_completada, resultado_final,
-               duracion_total_segundos, discrepancias_flags, sincronizado_en, detalles_json
+               duracion_total_segundos, discrepancias_flags, sincronizado_en, detalles_json,
+               es_buddy_aid, asistente_uid, asistente_nombre
         FROM EpisodioMedico
         ORDER BY sincronizado_en DESC
         LIMIT ?
@@ -602,7 +627,8 @@ def get_medic_audit_log(conn, limit=150):
         except Exception:
             d['flags'] = []
             
-        if len(d['flags']) > 0:
+        alertas_reales = [f for f in d['flags'] if f != 'BUDDY_AID']
+        if len(alertas_reales) > 0:
             anomalias_count += 1
             
         if d.get('resultado_final') == 'EXITO':

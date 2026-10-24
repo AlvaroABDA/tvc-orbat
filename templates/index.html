@@ -1733,6 +1733,11 @@
                                     const flagTag = '<span title="El médico y el paciente comparten el mismo carnet" style="background:rgba(155,89,182,0.25); border:1px solid #9b59b6; color:#d2a8e8; font-size:0.72rem; padding:2px 8px; font-weight:700; border-radius:3px; display:inline-flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">person</span> AUTO-CURACIÓN</span>';
                                     flagsHtml += flagTag;
                                     flagsCardHtml += `<div>${flagTag} <span style="font-size:0.75rem; color:#d2a8e8; margin-left:4px;">Mismo UID en médico y paciente.</span></div>`;
+                                } else if (f === 'BUDDY_AID') {
+                                    const asisNom = ep.asistente_nombre || (ep.detalles && ep.detalles.asistente_nombre) || ep.asistente_uid || 'Compañero';
+                                    const flagTag = `<span title="Reanimación táctica de médico por compañero (Buddy Aid)" style="background:rgba(46,204,113,0.25); border:1px solid #2ecc71; color:#2ecc71; font-size:0.72rem; padding:2px 8px; font-weight:700; border-radius:3px; display:inline-flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">volunteer_activism</span> BUDDY AID</span>`;
+                                    flagsHtml += flagTag;
+                                    flagsCardHtml += `<div>${flagTag} <span style="font-size:0.75rem; color:#2ecc71; margin-left:4px;">Médico reanimado por: <b>${asisNom}</b>.</span></div>`;
                                 } else if (f === 'CROSS_FACTION') {
                                     const flagTag = '<span title="Atención sanitaria entre bandos rivales" style="background:rgba(230,126,34,0.25); border:1px solid #e67e22; color:#f39c12; font-size:0.72rem; padding:2px 8px; font-weight:700; border-radius:3px; display:inline-flex; align-items:center; gap:4px;"><span class="material-symbols-outlined" style="font-size:14px;">swords</span> BANDO CRUZADO</span>';
                                     flagsHtml += flagTag;

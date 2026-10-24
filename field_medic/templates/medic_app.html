@@ -698,6 +698,11 @@
                 📷 ESCANEAR CARNET DE PACIENTE (QR)
             </button>
 
+            <button type="button" class="btn-action-large" id="btn-buddy-aid-main" onclick="startBuddyAidFlow()" style="margin-bottom: 10px; background: rgba(226, 185, 56, 0.12); border: 2px solid var(--accent-gold); color: #fff; font-size: 0.88rem; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: var(--accent-gold); font-size: 20px;">volunteer_activism</span>
+                <span>🆘 AUXILIAR AL MÉDICO (BUDDY AID)</span>
+            </button>
+
             <button type="button" class="btn-header" onclick="openQRScanner('RESPAWN')" style="width: 100%; justify-content: center; font-size: 0.78rem; padding: 9px; margin-bottom: 16px; border-color: rgba(226,185,56,0.4); color: var(--accent-gold); background: rgba(226,185,56,0.06);">
                 <span class="material-symbols-outlined" style="font-size: 16px;">local_shipping</span>
                 ESCANEAR BALIZA QR DE RESPAWN / RECARGA
@@ -1170,17 +1175,17 @@
 
             <!-- Bloque de Cierre y Registro: Re-escaneo del Carnet del Paciente -->
             <div id="medic-seal-prompt-card" style="background: rgba(0, 240, 255, 0.08); border: 1px solid rgba(0, 240, 255, 0.4); padding: 18px; margin-top: 15px; text-align: center;">
-                <div style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #00f0ff; margin-bottom: 8px; letter-spacing: 1px;">
+                <div id="seal-prompt-title" style="font-family: 'Orbitron', sans-serif; font-size: 0.95rem; color: #00f0ff; margin-bottom: 8px; letter-spacing: 1px;">
                     PASO FINAL: CIERRE Y REGISTRO DE INCIDENCIA
                 </div>
                 <div style="font-family: 'Share Tech Mono', monospace; font-size: 0.85rem; color: #fff; margin-bottom: 12px; background: rgba(0,0,0,0.45); padding: 10px; border: 1px solid rgba(255,255,255,0.12); text-align: left; line-height: 1.6;">
-                    <div>JUGADOR ATENDIDO: <b id="sum-req-patient-name" style="color: #00f0ff;">--</b></div>
-                    <div>SANITARIO ACTUANTE: <b id="seal-bound-medic-name" style="color: #2ecc71;">--</b></div>
+                    <div><span id="sum-req-patient-label">JUGADOR ATENDIDO:</span> <b id="sum-req-patient-name" style="color: #00f0ff;">--</b></div>
+                    <div><span id="seal-bound-medic-label">SANITARIO ACTUANTE:</span> <b id="seal-bound-medic-name" style="color: #2ecc71;">--</b></div>
                 </div>
-                <p style="font-size: 0.82rem; color: #e2e8f0; margin: 0 0 14px 0; line-height: 1.45;">
+                <p id="seal-prompt-desc" style="font-size: 0.82rem; color: #e2e8f0; margin: 0 0 14px 0; line-height: 1.45;">
                     Para certificar el alta médica y registrar la intervención en el ORBAT, <b>vuelva a escanear el carnet QR del jugador atendido</b>.
                 </p>
-                <button type="button" class="btn-action-large btn-cyan" onclick="openQRScannerForPatientClosing()" style="font-weight: 800; margin: 0 0 10px 0; box-shadow: 0 0 20px rgba(0,240,255,0.35);">
+                <button type="button" class="btn-action-large btn-cyan" id="btn-seal-patient-close" onclick="openQRScannerForPatientClosing()" style="font-weight: 800; margin: 0 0 10px 0; box-shadow: 0 0 20px rgba(0,240,255,0.35);">
                     📷 ESCANEAR QR DEL JUGADOR PARA CERRAR
                 </button>
                 <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
@@ -1683,6 +1688,7 @@
 
             // Alerta y bloqueo de botón si no hay kits
             const userRole = "{{ user_role }}";
+            const buddyBtn = document.getElementById('btn-buddy-aid-main');
             if (val <= 0 && userRole !== 'admin') {
                 if (alertNoKits) alertNoKits.style.display = 'flex';
                 if (scanBtn) {
@@ -1690,12 +1696,24 @@
                     scanBtn.classList.add('btn-red');
                     scanBtn.innerHTML = '🚫 SIN BOTIQUINES (BLOQUEADO)';
                 }
+                if (buddyBtn) {
+                    buddyBtn.style.borderColor = '#ff3344';
+                    buddyBtn.style.color = '#ff9999';
+                    buddyBtn.style.background = 'rgba(255, 51, 68, 0.12)';
+                    buddyBtn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 20px;">block</span><span>MÉDICO SIN BOTIQUINES (RESPAWN REQUERIDO)</span>';
+                }
             } else {
                 if (alertNoKits) alertNoKits.style.display = 'none';
                 if (scanBtn) {
                     scanBtn.classList.remove('btn-red');
                     scanBtn.classList.add('btn-cyan');
                     scanBtn.innerHTML = '📷 ESCANEAR CARNET DE PACIENTE (QR)';
+                }
+                if (buddyBtn) {
+                    buddyBtn.style.borderColor = 'var(--accent-gold)';
+                    buddyBtn.style.color = '#fff';
+                    buddyBtn.style.background = 'rgba(226, 185, 56, 0.12)';
+                    buddyBtn.innerHTML = '<span class="material-symbols-outlined" style="color: var(--accent-gold); font-size: 20px;">volunteer_activism</span><span>🆘 AUXILIAR AL MÉDICO (BUDDY AID)</span>';
                 }
             }
 
@@ -1813,9 +1831,19 @@
             if (banner) {
                 if (mode === 'CLOSE_PATIENT') {
                     const pacNom = (activeEpisode && (activeEpisode.paciente_nombre || activeEpisode.operador_nombre)) || "JUGADOR";
-                    banner.textContent = `2. ESCANEE EL QR DE ${pacNom.toUpperCase()} PARA CERRAR`;
-                    banner.style.borderColor = "var(--accent-cyan)";
-                    banner.style.color = "#00f0ff";
+                    if (activeEpisode && activeEpisode.es_buddy_aid) {
+                        banner.textContent = `2. ESCANEE EL QR DEL MÉDICO (${pacNom.toUpperCase()}) PARA ALTA`;
+                        banner.style.borderColor = "var(--accent-gold)";
+                        banner.style.color = "var(--accent-gold)";
+                    } else {
+                        banner.textContent = `2. ESCANEE EL QR DE ${pacNom.toUpperCase()} PARA CERRAR`;
+                        banner.style.borderColor = "var(--accent-cyan)";
+                        banner.style.color = "#00f0ff";
+                    }
+                } else if (mode === 'BUDDY_ASSISTANT') {
+                    banner.textContent = "1. ESCANEE EL CARNET DEL COMPAÑERO (SOCORRISTA)";
+                    banner.style.borderColor = "var(--accent-gold)";
+                    banner.style.color = "var(--accent-gold)";
                 } else if (mode === 'MEDIC_SEAL') {
                     banner.textContent = "2. ESCANEE SU CARNET DE SANITARIO PARA FIRMAR";
                     banner.style.borderColor = "var(--accent-green)";
@@ -1846,6 +1874,8 @@
                 modal.style.display = 'none';
                 if (scannerTargetMode === 'CLOSE_PATIENT') {
                     completeEpisodeWithPatientToken(token);
+                } else if (scannerTargetMode === 'BUDDY_ASSISTANT') {
+                    handleScannedBuddyAssistantToken(token);
                 } else if (scannerTargetMode === 'MEDIC_SEAL') {
                     completeEpisodeWithMedicToken(token);
                 } else if (scannerTargetMode === 'BINDING') {
@@ -1923,7 +1953,12 @@
 
         function updatePatientLabels(name) {
             document.querySelectorAll('.patient-name-target').forEach(el => {
-                el.textContent = name;
+                if (activeEpisode && activeEpisode.es_buddy_aid) {
+                    const asisNom = (activeEpisode.asistente_nombre || activeEpisode.asistente_uid || 'Compañero').toUpperCase();
+                    el.innerHTML = `MÉDICO: ${name} <span style="font-size:0.75rem; color:var(--accent-gold); font-weight:normal;">[AUXILIADO POR: ${asisNom}]</span>`;
+                } else {
+                    el.textContent = name;
+                }
             });
         }
 
@@ -2029,6 +2064,104 @@
             if (modal) modal.style.display = 'none';
         }
 
+        // ==================== PROTOCOLO BUDDY AID (AUXILIO DE COMPAÑERO AL MÉDICO) ====================
+        function startBuddyAidFlow() {
+            const boundUid = (localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId || '').trim();
+            if (!boundUid) {
+                alert("El terminal no está vinculado a ningún médico actualmente.");
+                return;
+            }
+            const activeSanitario = boundUid;
+            const currentKits = storage.getMedicReanimations(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
+            const userRole = "{{ user_role }}";
+            if (currentKits <= 0 && userRole !== 'admin') {
+                showNoKitsModal(`El médico ${boundUid} ha consumido todos sus botiquines (0 disponibles).\n\nNo es posible reanimarlo en combate sin material sanitario reglamentario.\nEl médico debe reaprovisionarse en un punto de RESPAWN.`);
+                return;
+            }
+            openQRScanner('BUDDY_ASSISTANT');
+        }
+
+        function handleScannedBuddyAssistantToken(rawToken) {
+            const cleanToken = (rawToken || '').trim();
+            const upperToken = cleanToken.toUpperCase();
+            const boundUid = (localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId || '').trim().toUpperCase();
+            const userRole = "{{ user_role }}";
+
+            // 1. Validar que no sea el propio médico intentando auto-curarse
+            if (upperToken === boundUid && boundUid !== '') {
+                alert("🚫 AUTO-AUXILIO DENEGADO\n\nEl médico caído no puede reanimarse a sí mismo.\nUn compañero de escuadra o bando debe escanear su propio carnet militar para identificarse como socorrista.");
+                return;
+            }
+
+            // 2. Buscar datos del compañero en el roster offline
+            const member = storage.lookupMember(cleanToken);
+            const asistenteNombre = member ? member.nombre : ("OPERADOR " + cleanToken);
+            const asistenteFaccion = member ? member.faccion : "";
+            const boundFaction = localStorage.getItem('tvc_medic_bound_faction') || "";
+
+            // 3. Comprobar bando si ambos bandos son conocidos y no neutrales
+            if (asistenteFaccion && boundFaction) {
+                const af = asistenteFaccion.toLowerCase();
+                const bf = boundFaction.toLowerCase();
+                if (af !== bf && !af.includes('global') && !bf.includes('global') && !af.includes('desconocid') && !bf.includes('desconocid')) {
+                    alert(`🚫 ACCESO DENEGADO // BANDO RIVAL\n\nEl operador [${asistenteNombre}] pertenece a la facción enemiga (${asistenteFaccion}).\nSolo personal aliado de tu bando o escuadra puede prestar auxilio.`);
+                    return;
+                }
+            }
+
+            // 4. Comprobar cupo del médico
+            const activeSanitario = boundUid;
+            const currentKits = storage.getMedicReanimations(activeSanitario, medicConfig.reanimaciones_iniciales_medico || 3);
+            if (currentKits <= 0 && userRole !== 'admin') {
+                showNoKitsModal(`El médico ${boundUid} no tiene botiquines disponibles (0 restantes).\n\nDebe reaprovisionarse en un punto de RESPAWN.`);
+                return;
+            }
+
+            // 5. Seleccionar variantes estándar (igual que a cualquier operador)
+            let fase1Var = selectedFase1Variant;
+            let fase2Var = selectedFase2Variant;
+            if (userRole !== 'admin') {
+                const f1Options = ['COMPRESION_RIEL', 'TORNIQUETE_CIRCULAR', 'SUTURA_OBJETIVOS', 'NEUMOTORAX_PUNCION'];
+                const f2Options = ['RITMO_ECG', 'CONSTANTES_RANGO', 'DOBLE_INDICADOR', 'SECUENCIA_VISUAL', 'CORRECCION_LINEA'];
+                fase1Var = f1Options[Math.floor(Math.random() * f1Options.length)];
+                fase2Var = f2Options[Math.floor(Math.random() * f2Options.length)];
+            }
+
+            const boundName = localStorage.getItem('tvc_medic_bound_name') || boundUid;
+
+            activeEpisode = {
+                episode_id: "EP-BA-" + Date.now() + "-" + Math.random().toString(36).substring(2, 7).toUpperCase(),
+                es_buddy_aid: true,
+                asistente_uid: cleanToken,
+                asistente_nombre: asistenteNombre,
+                asistente_faccion: asistenteFaccion,
+                paciente_uid: boundUid,
+                paciente_nombre: boundName,
+                paciente_faccion: boundFaction,
+                operador_uid: boundUid,
+                operador_nombre: boundName,
+                faccion_nombre: boundFaction,
+                medico_uid: boundUid,
+                medico_nombre: boundName,
+                medico_faccion: boundFaction,
+                sanitario_id: boundUid,
+                escenario_id: fase1Var,
+                fase1_variante: fase1Var,
+                fase2_variante: fase2Var,
+                fase_actual: 'hemorrhage_control',
+                hemorragia_controlada: false,
+                estabilizacion_completada: false,
+                phase1_progress: 0,
+                stabilization_progress: 0,
+                hora_inicio: new Date().toISOString(),
+                start_time: Date.now(),
+                duration_total_segundos: 0
+            };
+
+            storage.saveCurrentEpisode(activeEpisode);
+            launchPhase1(fase1Var, 0);
+        }
+
         // ==================== INICIO / RECUPERACIÓN DE EPISODIO ====================
         function startNewEpisodeWithToken(token) {
             const cleanToken = (token || '').trim();
@@ -2042,9 +2175,16 @@
                 return;
             }
 
-            // ANTI-TRAMPAS INMEDIATO: Prohibir auto-curación (mismo carnet de paciente y médico)
+            // ANTI-TRAMPAS / BUDDY AID: Detección de carnet del médico en su propio terminal
             if (boundUid && upperToken === boundUid) {
-                alert("🚫 ERROR DE SEGURIDAD // AUTO-ATENCIÓN DENEGADA\n\nUn operador caído no puede ser su propio médico tratante en combate.\nDebes ser asistido por otro sanitario militar de tu unidad.");
+                const iniciarBA = confirm(
+                    `🆘 CARNET DEL MÉDICO DETECTADO [${boundUid}]\n\n` +
+                    `Has escaneado la credencial del sanitario asignado a este terminal.\n\n` +
+                    `¿Deseas activar el protocolo de AUXILIO DE COMPAÑERO (BUDDY AID) para reanimarlo?`
+                );
+                if (iniciarBA) {
+                    startBuddyAidFlow();
+                }
                 return;
             }
 
@@ -2365,14 +2505,40 @@
 
             // Datos de paciente y sanitario en la tarjeta de cierre
             const sumReqPacEl = document.getElementById('sum-req-patient-name');
-            if (sumReqPacEl) {
-                sumReqPacEl.textContent = `${activeEpisode.operador_nombre || activeEpisode.paciente_nombre} [${activeEpisode.operador_uid || activeEpisode.paciente_uid}]`;
-            }
+            const sumReqPacLabel = document.getElementById('sum-req-patient-label');
+            const sealBoundNameEl = document.getElementById('seal-bound-medic-name');
+            const sealBoundLabel = document.getElementById('seal-bound-medic-label');
+            const sealPromptTitle = document.getElementById('seal-prompt-title');
+            const sealPromptDesc = document.getElementById('seal-prompt-desc');
+            const sealCloseBtn = document.getElementById('btn-seal-patient-close');
+
             const boundName = localStorage.getItem('tvc_medic_bound_name') || localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId;
             const boundUid = localStorage.getItem('tvc_medic_bound_uid') || storage.currentSessionId || sanitarioId;
-            const sealBoundNameEl = document.getElementById('seal-bound-medic-name');
-            if (sealBoundNameEl) {
-                sealBoundNameEl.textContent = `${boundName} [${boundUid}]`;
+
+            if (activeEpisode.es_buddy_aid) {
+                document.getElementById('sum-patient-name').textContent = `MÉDICO: ${activeEpisode.operador_nombre}`;
+                document.getElementById('sum-patient-uid').textContent = `${activeEpisode.operador_uid} [SOCORRISTA: ${activeEpisode.asistente_nombre || activeEpisode.asistente_uid}]`;
+                if (sumInjuryEl) {
+                    sumInjuryEl.innerHTML = `<span style="color:var(--accent-gold); font-weight:bold;">[ 🆘 AUXILIO AL MÉDICO // BUDDY AID ]</span><br>${f1Name} + ${f2Name}<br><span style="font-size:0.75rem; color:#aaa;">Socorrista: ${activeEpisode.asistente_nombre || activeEpisode.asistente_uid}</span>`;
+                }
+                if (sumReqPacLabel) sumReqPacLabel.textContent = "MÉDICO ASISTIDO:";
+                if (sumReqPacEl) sumReqPacEl.textContent = `${activeEpisode.paciente_nombre} [${activeEpisode.paciente_uid}]`;
+                if (sealBoundLabel) sealBoundLabel.textContent = "SOCORRISTA:";
+                if (sealBoundNameEl) sealBoundNameEl.textContent = `${activeEpisode.asistente_nombre} [${activeEpisode.asistente_uid}]`;
+                if (sealPromptTitle) sealPromptTitle.textContent = "PASO FINAL: ALTA DE REANIMACIÓN AL MÉDICO (BUDDY AID)";
+                if (sealPromptDesc) sealPromptDesc.innerHTML = "Para certificar el alta médica del sanitario y reactivarlo en combate, <b>vuelva a escanear el carnet QR del médico asistido</b>.";
+                if (sealCloseBtn) sealCloseBtn.innerHTML = "📷 ESCANEAR QR DEL MÉDICO PARA ALTA";
+            } else {
+                document.getElementById('sum-patient-name').textContent = activeEpisode.operador_nombre;
+                document.getElementById('sum-patient-uid').textContent = activeEpisode.operador_uid;
+                if (sumInjuryEl) sumInjuryEl.textContent = `${f1Name} + ${f2Name}`;
+                if (sumReqPacLabel) sumReqPacLabel.textContent = "JUGADOR ATENDIDO:";
+                if (sumReqPacEl) sumReqPacEl.textContent = `${activeEpisode.operador_nombre || activeEpisode.paciente_nombre} [${activeEpisode.operador_uid || activeEpisode.paciente_uid}]`;
+                if (sealBoundLabel) sealBoundLabel.textContent = "SANITARIO ACTUANTE:";
+                if (sealBoundNameEl) sealBoundNameEl.textContent = `${boundName} [${boundUid}]`;
+                if (sealPromptTitle) sealPromptTitle.textContent = "PASO FINAL: CIERRE Y REGISTRO DE INCIDENCIA";
+                if (sealPromptDesc) sealPromptDesc.innerHTML = "Para certificar el alta médica y registrar la intervención en el ORBAT, <b>vuelva a escanear el carnet QR del jugador atendido</b>.";
+                if (sealCloseBtn) sealCloseBtn.innerHTML = "📷 ESCANEAR QR DEL JUGADOR PARA CERRAR";
             }
 
             // Resetear tarjetas de sellado
@@ -2480,9 +2646,15 @@
             const successCard = document.getElementById('medic-seal-success-card');
             if (promptCard) promptCard.style.display = 'none';
             if (successCard) {
-                document.getElementById('seal-medic-name').textContent = `${medicoNombre} [${boundUid}]`;
-                document.getElementById('seal-patient-name').textContent = `${patientName} [${patientUid}]`;
-                document.getElementById('seal-medic-remaining').textContent = `${remaining} BOTIQUINES RESTANTES`;
+                if (activeEpisode.es_buddy_aid) {
+                    document.getElementById('seal-medic-name').textContent = `MÉDICO REANIMADO: ${patientName} [${boundUid}]`;
+                    document.getElementById('seal-patient-name').textContent = `SOCORRISTA: ${activeEpisode.asistente_nombre || activeEpisode.asistente_uid}`;
+                    document.getElementById('seal-medic-remaining').textContent = `${remaining} BOTIQUINES RESTANTES DEL MÉDICO`;
+                } else {
+                    document.getElementById('seal-medic-name').textContent = `${medicoNombre} [${boundUid}]`;
+                    document.getElementById('seal-patient-name').textContent = `${patientName} [${patientUid}]`;
+                    document.getElementById('seal-medic-remaining').textContent = `${remaining} BOTIQUINES RESTANTES`;
+                }
                 successCard.style.display = 'block';
             }
 
@@ -2746,8 +2918,11 @@
                     <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
                         <b style="color:#00f0ff;">4. Cierre y Registro (Re-escaneo QR):</b> Al finalizar el tratamiento, <b>vuelve a escanear el carnet QR del jugador atendido</b>. Esto certifica presencialmente el alta médica y registra la incidencia.
                     </div>
-                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px;">
+                    <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); padding:8px 10px; margin-bottom:6px;">
                         <b style="color:#fff;">5. Cupo de Botiquines:</b> Cada rescate validado consume 1 botiquín. Al agotarse, acude a un punto de RESPAWN de tu bando para reaprovisionar tu equipo médico.
+                    </div>
+                    <div style="background:rgba(226,185,56,0.06); border:1px solid rgba(226,185,56,0.25); padding:8px 10px;">
+                        <b style="color:#e2b938;">6. Auxilio al Médico (Buddy Aid):</b> Si el médico de la unidad es alcanzado, cualquier compañero de su bando puede pulsar <i>Auxiliar al Médico</i>, escanear su propio carnet para identificarse como socorrista y completar el tratamiento usando los botiquines del médico.
                     </div>
                 </div>
 
