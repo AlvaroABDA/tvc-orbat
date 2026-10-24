@@ -756,6 +756,7 @@
                     <button class="btn admin-tab-btn active" data-tab="tab-armas" style="color: #e2b938; border-color: rgba(226,185,56,0.4); padding: 5px 14px; font-size: 0.82rem;">RÉPLICAS</button>
                     <button class="btn admin-tab-btn" data-tab="tab-medicos" style="color: #2ecc71; border-color: rgba(46,204,113,0.4); padding: 5px 14px; font-size: 0.82rem;">✚ MÉDICOS</button>
                     <button class="btn admin-tab-btn" data-tab="tab-juegos" style="color: #00f0ff; border-color: rgba(0,240,255,0.4); padding: 5px 14px; font-size: 0.82rem;">🎮 GESTIÓN DE JUEGOS</button>
+                    <button class="btn admin-tab-btn" data-tab="tab-evento" style="color: #ff9900; border-color: rgba(255,153,0,0.4); padding: 5px 14px; font-size: 0.82rem;">⚡ ESTADO EVENTO / FLASH</button>
                     <button class="btn admin-tab-btn" data-tab="tab-zafarrancho" style="color: var(--danger-color); border-color: var(--danger-color); padding: 5px 14px; font-size: 0.82rem;">ZAFARRANCHO</button>
                 </div>
                 
@@ -1104,6 +1105,139 @@
                     </div>
                 </div>
 
+                <div id="tab-evento" class="admin-tab-content" style="display: none;">
+                    <!-- GESTIÓN Y TRANSMISIÓN DEL ESTADO GLOBAL DEL EVENTO (FLASH + BANNER) -->
+                    <div class="panel management-panel" style="border: 1px solid rgba(255, 153, 0, 0.4); background: rgba(14, 18, 28, 0.96); box-shadow: 0 4px 25px rgba(0,0,0,0.6);">
+                        <!-- CABECERA -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.4rem; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px;">
+                            <div>
+                                <h3 style="color: #ff9900; margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                                    <span class="material-symbols-outlined" style="color: #ff9900; font-size: 26px;">campaign</span>
+                                    CENTRO DE ESTADO Y TRANSMISIÓN GLOBAL DE EVENTO
+                                </h3>
+                                <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 0.86rem; line-height: 1.4;">
+                                    Emite el <b>inicio de operaciones (Hora H)</b>, <b>alto el fuego temporal</b> o <b>fin del evento</b>. Al emitir un cambio, todos los terminales de los operadores reciben un <b>flash de alto impacto acústico/visual</b> y mantienen la directiva fija en la barra superior.
+                                </p>
+                            </div>
+                            <button type="button" class="btn outline btn-sm" onclick="cargarAdminEventoAlerta()" style="border-color: #ff9900; color: #ff9900; font-weight: 600; padding: 6px 12px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">sync</span> Actualizar Estado
+                            </button>
+                        </div>
+
+                        <!-- ESTADO ACTUAL DEL EVENTO (KPI CARD) -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 1.8rem;">
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #ff9900; padding: 12px 16px; border-radius: 6px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Estado de Operaciones</div>
+                                <div id="admin-evento-estado-label" style="font-size: 1.35rem; font-weight: 800; color: #ff9900; font-family: 'Orbitron', monospace; margin-top: 4px;">--</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #00f0ff; padding: 12px 16px; border-radius: 6px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Visibilidad de Banner</div>
+                                <div id="admin-evento-banner-status" style="font-size: 1.35rem; font-weight: 800; color: #00f0ff; font-family: 'Orbitron', monospace; margin-top: 4px;">--</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #94a3b8; padding: 12px 16px; border-radius: 6px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Última Transmisión</div>
+                                <div id="admin-evento-timestamp" style="font-size: 1.05rem; font-weight: 700; color: #e2e8f0; font-family: monospace; margin-top: 6px;">--</div>
+                            </div>
+                        </div>
+
+                        <!-- BOTONES DE ACCIÓN RÁPIDA (1 CLIC) -->
+                        <div style="margin-bottom: 2rem;">
+                            <div style="font-size: 0.82rem; font-weight: 700; color: #cbd5e1; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="font-size: 18px; color: #ff9900;">touch_app</span>
+                                ACCIONES RÁPIDAS DE ESTADO (BROADCAST INMEDIATO)
+                            </div>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px;">
+                                <!-- INICIO DE OPERACIONES -->
+                                <button type="button" class="btn" onclick="emitirEstadoRapido('EN_CURSO')" style="background: rgba(0, 255, 136, 0.12); border: 1px solid #00ff88; color: #00ff88; padding: 14px 16px; border-radius: 6px; text-align: left; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: all 0.2s ease;">
+                                    <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-family: 'Orbitron', monospace; font-size: 0.92rem;">
+                                        <span class="material-symbols-outlined" style="font-size: 20px;">play_circle</span> INICIAR OPERACIONES
+                                    </div>
+                                    <div style="font-size: 0.78rem; color: #a7f3d0; line-height: 1.3;">Hora H oficial. Fuego a discreción según reglas de enfrentamiento.</div>
+                                </button>
+
+                                <!-- ALTO EL FUEGO -->
+                                <button type="button" class="btn" onclick="emitirEstadoRapido('PAUSADO')" style="background: rgba(245, 158, 11, 0.12); border: 1px solid #f59e0b; color: #fbbf24; padding: 14px 16px; border-radius: 6px; text-align: left; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: all 0.2s ease;">
+                                    <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-family: 'Orbitron', monospace; font-size: 0.92rem;">
+                                        <span class="material-symbols-outlined" style="font-size: 20px;">pause_circle</span> ALTO EL FUEGO (PAUSA)
+                                    </div>
+                                    <div style="font-size: 0.78rem; color: #fde68a; line-height: 1.3;">Pausa técnica o de seguridad. Detener fuego y mantener posiciones.</div>
+                                </button>
+
+                                <!-- FIN DEL EVENTO -->
+                                <button type="button" class="btn" onclick="emitirEstadoRapido('FINALIZADO')" style="background: rgba(255, 51, 68, 0.15); border: 1px solid #ff3344; color: #ff5566; padding: 14px 16px; border-radius: 6px; text-align: left; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: all 0.2s ease;">
+                                    <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-family: 'Orbitron', monospace; font-size: 0.92rem;">
+                                        <span class="material-symbols-outlined" style="font-size: 20px;">stop_circle</span> FINALIZAR EVENTO
+                                    </div>
+                                    <div style="font-size: 0.78rem; color: #fca5a5; line-height: 1.3;">Conclusión de operaciones. Retirar cargadores y repliegue a base.</div>
+                                </button>
+
+                                <!-- APAGAR BANNER -->
+                                <button type="button" class="btn" onclick="emitirEstadoRapido('OCULTAR')" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.25); color: #cbd5e1; padding: 14px 16px; border-radius: 6px; text-align: left; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: all 0.2s ease;">
+                                    <div style="display: flex; align-items: center; gap: 6px; font-weight: 800; font-family: 'Orbitron', monospace; font-size: 0.92rem;">
+                                        <span class="material-symbols-outlined" style="font-size: 20px;">visibility_off</span> DESACTIVAR BANNER
+                                    </div>
+                                    <div style="font-size: 0.78rem; color: #94a3b8; line-height: 1.3;">Oculta la barra superior en todos los terminales sin emitir alerta sonora.</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- FORMULARIO PERSONALIZADO -->
+                        <div style="background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 16px 18px;">
+                            <div style="font-size: 0.88rem; font-weight: 700; color: #ff9900; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">edit_note</span>
+                                REDACTAR COMUNICADO O DIRECTIVA PERSONALIZADA
+                            </div>
+
+                            <form id="form-admin-evento-alerta" onsubmit="guardarCustomEventoAlerta(event)">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 14px;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.76rem; color: #94a3b8; margin-bottom: 6px; font-weight: 600; text-transform: uppercase;">Estado Táctico</label>
+                                        <select id="form-alerta-estado" class="form-control" style="width: 100%; background: #090e17; border: 1px solid #334155; color: #fff; padding: 8px 10px; border-radius: 4px;">
+                                            <option value="EN_CURSO">OPERACIONES ACTIVAS (EN_CURSO)</option>
+                                            <option value="PAUSADO">ALTO EL FUEGO (PAUSADO)</option>
+                                            <option value="FINALIZADO">FIN DEL EVENTO (FINALIZADO)</option>
+                                            <option value="AVISO_GENERAL">AVISO GENERAL / HQ</option>
+                                            <option value="PRE_EVENTO">PREPARACIÓN (PRE_EVENTO)</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.76rem; color: #94a3b8; margin-bottom: 6px; font-weight: 600; text-transform: uppercase;">Nivel de Severidad (Color)</label>
+                                        <select id="form-alerta-nivel" class="form-control" style="width: 100%; background: #090e17; border: 1px solid #334155; color: #fff; padding: 8px 10px; border-radius: 4px;">
+                                            <option value="success">Verde Operativo (Success)</option>
+                                            <option value="warning">Ámbar Precaución (Warning)</option>
+                                            <option value="danger">Rojo Crítico (Danger)</option>
+                                            <option value="info">Azul Informativo (Info)</option>
+                                        </select>
+                                    </div>
+                                    <div style="display: flex; align-items: flex-end;">
+                                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: #fff; font-size: 0.88rem; padding-bottom: 8px;">
+                                            <input type="checkbox" id="form-alerta-activo" checked style="width: 18px; height: 18px; cursor: pointer;">
+                                            <b>Banner Visible en Terminales</b>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div style="margin-bottom: 14px;">
+                                    <label style="display: block; font-size: 0.76rem; color: #94a3b8; margin-bottom: 6px; font-weight: 600; text-transform: uppercase;">Título del Comunicado</label>
+                                    <input type="text" id="form-alerta-titulo" class="form-control" placeholder="Ej: ¡OPERACIONES EN CURSO! o DIRECTIVA HQ" required style="width: 100%; background: #090e17; border: 1px solid #334155; color: #fff; padding: 9px 12px; border-radius: 4px; font-size: 0.95rem;">
+                                </div>
+
+                                <div style="margin-bottom: 16px;">
+                                    <label style="display: block; font-size: 0.76rem; color: #94a3b8; margin-bottom: 6px; font-weight: 600; text-transform: uppercase;">Cuerpo del Mensaje</label>
+                                    <textarea id="form-alerta-mensaje" class="form-control" rows="3" placeholder="Describe la directiva u orden para todos los combatientes..." required style="width: 100%; background: #090e17; border: 1px solid #334155; color: #fff; padding: 9px 12px; border-radius: 4px; font-size: 0.9rem; line-height: 1.4; resize: vertical;"></textarea>
+                                </div>
+
+                                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                                    <button type="submit" class="btn" style="background: #ff9900; color: #000; font-weight: 800; font-family: 'Orbitron', monospace; padding: 10px 22px; border: none; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                                        <span class="material-symbols-outlined" style="font-size: 20px;">send</span>
+                                        TRANSMITIR AHORA A TODOS LOS OPERADORES
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="tab-zafarrancho" class="admin-tab-content" style="display: none;">
                     <!-- REINICIO DE ESTADISTICAS -->
                     <div class="panel management-panel" style="border: 2px solid #a32a2a;">
@@ -1133,9 +1267,135 @@
                         } else if (targetId === 'tab-juegos' || targetId === 'tab-artilleria') {
                             if (typeof cargarAdminJuegos === 'function') cargarAdminJuegos();
                             if (typeof loadAdminArtilleria === 'function') loadAdminArtilleria();
+                        } else if (targetId === 'tab-evento') {
+                            cargarAdminEventoAlerta();
                         }
                     });
                 });
+
+                // --- CONTROL DE ESTADO GLOBAL DE EVENTO (ADMIN) ---
+                async function cargarAdminEventoAlerta() {
+                    try {
+                        const res = await fetch('/api/evento/alerta', { cache: 'no-store' });
+                        if (!res.ok) return;
+                        const data = await res.json();
+
+                        const estadoLabel = document.getElementById('admin-evento-estado-label');
+                        const bannerStatus = document.getElementById('admin-evento-banner-status');
+                        const timestamp = document.getElementById('admin-evento-timestamp');
+
+                        if (estadoLabel) {
+                            let labelTxt = data.estado || '--';
+                            if (data.estado === 'EN_CURSO') labelTxt = '🟢 EN CURSO';
+                            else if (data.estado === 'FINALIZADO') labelTxt = '🔴 FINALIZADO';
+                            else if (data.estado === 'PAUSADO') labelTxt = '🟡 ALTO EL FUEGO';
+                            else if (data.estado === 'PRE_EVENTO') labelTxt = '⚪ PREPARACIÓN';
+                            estadoLabel.textContent = labelTxt;
+                            if (data.estado === 'EN_CURSO') estadoLabel.style.color = '#00ff88';
+                            else if (data.estado === 'FINALIZADO') estadoLabel.style.color = '#ff3344';
+                            else if (data.estado === 'PAUSADO') estadoLabel.style.color = '#f59e0b';
+                            else estadoLabel.style.color = '#00d2ff';
+                        }
+                        if (bannerStatus) {
+                            bannerStatus.textContent = data.activo ? 'ACTIVO (EN PANTALLA)' : 'OCULTO (SILENCIADO)';
+                            bannerStatus.style.color = data.activo ? '#00ff88' : '#94a3b8';
+                        }
+                        if (timestamp) {
+                            timestamp.textContent = data.actualizado_en || 'Sin registro';
+                        }
+
+                        // Llenar formulario
+                        const formEstado = document.getElementById('form-alerta-estado');
+                        const formNivel = document.getElementById('form-alerta-nivel');
+                        const formActivo = document.getElementById('form-alerta-activo');
+                        const formTitulo = document.getElementById('form-alerta-titulo');
+                        const formMensaje = document.getElementById('form-alerta-mensaje');
+
+                        if (formEstado) formEstado.value = data.estado || 'EN_CURSO';
+                        if (formNivel) formNivel.value = data.nivel || 'info';
+                        if (formActivo) formActivo.checked = Boolean(data.activo);
+                        if (formTitulo) formTitulo.value = data.titulo || '';
+                        if (formMensaje) formMensaje.value = data.mensaje || '';
+                    } catch (err) {
+                        console.error('Error cargando evento_alerta:', err);
+                    }
+                }
+
+                async function emitirEstadoRapido(accion) {
+                    let payload = {};
+                    if (accion === 'EN_CURSO') {
+                        if (!confirm('¿Confirmas el INICIO DE OPERACIONES? Se emitirá alerta sonora y visual en tiempo real a todos los combatientes.')) return;
+                        payload = {
+                            activo: true,
+                            estado: 'EN_CURSO',
+                            nivel: 'success',
+                            titulo: '¡OPERACIONES EN CURSO!',
+                            mensaje: 'Hora H confirmada. Todas las unidades autorizadas para despliegue y combate según ROE.'
+                        };
+                    } else if (accion === 'PAUSADO') {
+                        if (!confirm('¿Confirmas ALTO EL FUEGO? Se emitirá orden inmediata de parada a todas las unidades.')) return;
+                        payload = {
+                            activo: true,
+                            estado: 'PAUSADO',
+                            nivel: 'warning',
+                            titulo: 'ALTO EL FUEGO TEMPORAL',
+                            mensaje: 'Pausa táctica por motivos de organización/seguridad. Detengan disparos y mantengan posiciones.'
+                        };
+                    } else if (accion === 'FINALIZADO') {
+                        if (!confirm('¿Confirmas el FIN DEL EVENTO? Esta directiva ordenará la desmovilización de todas las tropas.')) return;
+                        payload = {
+                            activo: true,
+                            estado: 'FINALIZADO',
+                            nivel: 'danger',
+                            titulo: 'FIN DEL EVENTO - MISIÓN CUMPLIDA',
+                            mensaje: 'Operaciones concluidas. Aseguren réplicas, retiren cargadores y replieguen a zona de descanso.'
+                        };
+                    } else if (accion === 'OCULTAR') {
+                        payload = {
+                            activo: false,
+                            estado: document.getElementById('form-alerta-estado')?.value || 'PRE_EVENTO',
+                            nivel: document.getElementById('form-alerta-nivel')?.value || 'info',
+                            titulo: document.getElementById('form-alerta-titulo')?.value || '',
+                            mensaje: document.getElementById('form-alerta-mensaje')?.value || ''
+                        };
+                    }
+
+                    await postAdminEventoAlerta(payload);
+                }
+
+                async function guardarCustomEventoAlerta(e) {
+                    if (e) e.preventDefault();
+                    const payload = {
+                        activo: document.getElementById('form-alerta-activo').checked,
+                        estado: document.getElementById('form-alerta-estado').value,
+                        nivel: document.getElementById('form-alerta-nivel').value,
+                        titulo: document.getElementById('form-alerta-titulo').value.trim(),
+                        mensaje: document.getElementById('form-alerta-mensaje').value.trim()
+                    };
+                    await postAdminEventoAlerta(payload);
+                }
+
+                async function postAdminEventoAlerta(payload) {
+                    try {
+                        const res = await fetch('/api/admin/evento/alerta', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            alert('Directiva de Evento transmitida con éxito.');
+                            cargarAdminEventoAlerta();
+                            if (window.refreshOrbatEventoAlerta) {
+                                window.refreshOrbatEventoAlerta();
+                            }
+                        } else {
+                            alert('Error: ' + (data.message || 'No se pudo emitir'));
+                        }
+                    } catch (err) {
+                        alert('Error de conexión al emitir directiva.');
+                    }
+                }
 
                 function stepQuota(sanitarioId, delta) {
                     const input = document.getElementById(`input-quota-${sanitarioId}`);
@@ -2273,6 +2533,7 @@
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}?v=59"></script>
     <script src="{{ url_for('static', filename='js/map.js') }}?v=23"></script>
+    <script src="{{ url_for('static', filename='js/evento_alerta.js') }}?v=1"></script>
         </div>
     </div>
     <!-- Modal Instrucciones Mapa Táctico -->

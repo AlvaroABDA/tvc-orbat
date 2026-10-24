@@ -297,6 +297,69 @@ def ensure_juego_config_tables(conn):
     except Exception as e:
         print("Error en ensure_juego_config_tables:", e)
 
+def ensure_evento_alerta_table(conn):
+    try:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS evento_alerta (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                activo INTEGER DEFAULT 0,
+                estado TEXT DEFAULT 'PRE_EVENTO',
+                titulo TEXT DEFAULT 'PREPARACIÓN DE OPERACIONES',
+                mensaje TEXT DEFAULT 'Esperando inicio oficial de operaciones.',
+                nivel TEXT DEFAULT 'info',
+                actualizado_en DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        row = conn.execute('SELECT id FROM evento_alerta WHERE id = 1').fetchone()
+        if not row:
+            conn.execute('''
+                INSERT INTO evento_alerta (id, activo, estado, titulo, mensaje, nivel)
+                VALUES (1, 0, 'PRE_EVENTO', 'PREPARACIÓN DE OPERACIONES', 'Esperando inicio oficial de operaciones.', 'info')
+            ''')
+        conn.commit()
+    except Exception as e:
+        print("Error en ensure_evento_alerta_table:", e)
+
+def get_evento_alerta(conn=None):
+    close_at_end = False
+    if conn is None:
+        conn = get_db_connection()
+        close_at_end = not has_app_context()
+    try:
+        ensure_evento_alerta_table(conn)
+        row = conn.execute('SELECT * FROM evento_alerta WHERE id = 1').fetchone()
+        if row:
+            return {
+                'id': row['id'],
+                'activo': bool(row['activo']),
+                'estado': row['estado'] or 'PRE_EVENTO',
+                'titulo': row['titulo'] or '',
+                'mensaje': row['mensaje'] or '',
+                'nivel': row['nivel'] or 'info',
+                'actualizado_en': str(row['actualizado_en']) if row['actualizado_en'] else ''
+            }
+        return {
+            'activo': False,
+            'estado': 'PRE_EVENTO',
+            'titulo': 'PREPARACIÓN DE OPERACIONES',
+            'mensaje': 'Esperando inicio oficial de operaciones.',
+            'nivel': 'info',
+            'actualizado_en': ''
+        }
+    except Exception as e:
+        print("Error obteniendo evento_alerta:", e)
+        return {
+            'activo': False,
+            'estado': 'PRE_EVENTO',
+            'titulo': '',
+            'mensaje': '',
+            'nivel': 'info',
+            'actualizado_en': ''
+        }
+    finally:
+        if close_at_end:
+            conn.close()
+
 def get_all_juegos_config(conn=None):
     close_at_end = False
     if conn is None:
@@ -3663,6 +3726,12 @@ def patch_db():
         except Exception as e:
             print("Error inicializando tablas juego_config:", e)
 
+        # Inicializar tabla de alertas y estado global del evento
+        try:
+            ensure_evento_alerta_table(conn)
+        except Exception as e:
+            print("Error inicializando tabla evento_alerta:", e)
+
         # Migración: Resolver duplicados históricos de nicks para garantizar unicidad y evitar colisiones de login
         try:
             dup_rows = conn.execute('''
@@ -5121,6 +5190,44 @@ def api_admin_juegos_toggle_all():
         return jsonify({'status': 'success', 'message': msg, 'activo': bool(activo)})
     finally:
         conn.close()
+
+# -------------------------------------------------------------
+# RUTAS DE ESTADO Y ALERTA GLOBAL DEL EVENTO (BROADCAST / BANNER)
+# -------------------------------------------------------------
+@app.route('/api/evento/alerta', methods=['GET'])
+def api_evento_alerta_get():
+    return jsonify(get_evento_alerta())
+
+@app.route('/api/admin/evento/alerta', methods=['POST'])
+def api_admin_evento_alerta_post():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json or {}
+    activo = 1 if data.get('activo', False) else 0
+    estado = str(data.get('estado', 'EN_CURSO'))
+    titulo = str(data.get('titulo', '')).strip()
+    mensaje = str(data.get('mensaje', '')).strip()
+    nivel = str(data.get('nivel', 'info')).strip().lower()
+    if nivel not in ['info', 'success', 'warning', 'danger']:
+        nivel = 'info'
+    
+    conn = get_db_connection()
+    try:
+        ensure_evento_alerta_table(conn)
+        conn.execute('''
+            UPDATE evento_alerta
+            SET activo = ?, estado = ?, titulo = ?, mensaje = ?, nivel = ?, actualizado_en = CURRENT_TIMESTAMP
+            WHERE id = 1
+        ''', (activo, estado, titulo, mensaje, nivel))
+        conn.commit()
+        updated = get_evento_alerta(conn)
+        return jsonify({'status': 'success', 'data': updated})
+    except Exception as e:
+        print("Error actualizando evento_alerta:", e)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    finally:
+        if not has_app_context():
+            conn.close()
 
 patch_db()
 
