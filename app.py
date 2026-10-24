@@ -1490,23 +1490,19 @@ def update_delete_equipo(id):
             incoming_ids = [m['id'] for m in data['miembros'] if m.get('id')]
             jugadores_dir = os.path.join(app.root_path, 'static', 'imgs', 'fotos_jugadores')
             
-            # Solo los administradores pueden eliminar operadores definitivamente del censo militar
-            if is_admin:
-                if incoming_ids:
-                    placeholders = ','.join('?' * len(incoming_ids))
-                    # Limpiar fotos en disco de los miembros eliminados
-                    del_members = cursor.execute(f'SELECT id FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids).fetchall()
-                    for dm in del_members:
-                        clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
-                    cursor.execute(f'DELETE FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids)
-                else:
-                    del_members = cursor.execute('SELECT id FROM Miembro WHERE equipo_id = ?', (id,)).fetchall()
-                    for dm in del_members:
-                        clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
-                    cursor.execute('DELETE FROM Miembro WHERE equipo_id = ?', (id,))
+            # Eliminar operadores que ya no están en la escuadra
+            if incoming_ids:
+                placeholders = ','.join('?' * len(incoming_ids))
+                # Limpiar fotos en disco de los miembros eliminados
+                del_members = cursor.execute(f'SELECT id FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids).fetchall()
+                for dm in del_members:
+                    clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
+                cursor.execute(f'DELETE FROM Miembro WHERE equipo_id = ? AND id NOT IN ({placeholders})', [id] + incoming_ids)
             else:
-                # El gestor de unidad NO puede eliminar miembros de la BD; se conservan intactos
-                pass
+                del_members = cursor.execute('SELECT id FROM Miembro WHERE equipo_id = ?', (id,)).fetchall()
+                for dm in del_members:
+                    clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
+                cursor.execute('DELETE FROM Miembro WHERE equipo_id = ?', (id,))
                 
             import uuid
             for m in data['miembros']:

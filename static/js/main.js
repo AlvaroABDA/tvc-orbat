@@ -1674,34 +1674,25 @@ function addMiembroRow(m = null) {
 
     const placeholderGuardar = (!isExistingMember) ? `<span style="font-size: 0.68rem; color: #64748b; font-family: monospace;">(guardar)</span>` : '';
 
-    const delBtn = (isExistingMember && !isAdmin) ?
-        `<span title="Baja definitiva restringida a Administradores. Para este evento puedes desmarcar 'Activo'." style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.08); color: #64748b; cursor: not-allowed;"><span class="material-symbols-outlined" style="font-size: 15px;">lock</span></span>` :
-        `<button type="button" class="btn-del-miembro" title="${isExistingMember ? 'Eliminar operador del censo militar' : 'Descartar fila'}" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #888;" onmouseover="this.style.color='#ff5566'; this.style.borderColor='rgba(255,85,102,0.4)';" onmouseout="this.style.color='#888'; this.style.borderColor='rgba(255,255,255,0.12)';"><span class="material-symbols-outlined" style="font-size: 15px;">close</span></button>`;
+    const delBtn = `<button type="button" class="btn-del-miembro" title="Eliminar combatiente" style="width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center; padding: 0; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: rgba(255, 51, 68, 0.1); border: 1px solid rgba(255, 51, 68, 0.35); color: #ff5566;" onmouseover="this.style.background='rgba(255,51,68,0.25)';" onmouseout="this.style.background='rgba(255,51,68,0.1)';"><span class="material-symbols-outlined" style="font-size: 16px;">close</span></button>`;
 
     const nvgBadge = (m && m.tiene_nvg) ? `<span title="NVG: ${m.nvg_categoria || 'Visión Nocturna'}" style="font-size: 0.68rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); color: #00f0ff; padding: 1px 5px; border-radius: 3px; font-weight: 600; cursor: help; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 11px;">visibility</span> NVG</span>` : '';
     const dronBadge = (m && m.tiene_dron) ? `<span title="Dron: ${m.dron_modelo || 'Reconocimiento'}" style="font-size: 0.68rem; background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.35); color: #00f0ff; padding: 1px 5px; border-radius: 3px; font-weight: 600; cursor: help; white-space: nowrap; display: inline-flex; align-items: center; gap: 3px;"><span class="material-symbols-outlined" style="font-size: 11px;">flight</span> Dron</span>` : '';
 
     tr.innerHTML = `
-        <td class="col-miembro-activo" data-label="Activo">
-            <label class="miembro-activo-wrapper">
-                <input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} title="Marcar/desmarcar para activar o inactivar del despliegue">
-                <span class="miembro-activo-label">Activo en Despliegue</span>
-            </label>
+        <td style="padding: 0.25rem; text-align: center;">
+            <input type="checkbox" class="miembro-activo" ${activo ? 'checked' : ''} style="transform: scale(1.2); cursor: pointer;" title="Marcar/desmarcar para activar o inactivar del despliegue">
         </td>
-        <td class="col-miembro-nick" data-label="Nick">
-            <div class="miembro-nick-wrapper">
-                <input type="text" class="miembro-nombre" placeholder="Nick / Indicativo" value="${nombre}">
-                <div class="miembro-badges-wrap">${nvgBadge}${dronBadge}</div>
+        <td style="padding: 0.25rem;">
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <input type="text" class="miembro-nombre" placeholder="Nick" value="${nombre}" style="flex: 1; min-width: 80px; padding: 0.25rem;">
+                ${nvgBadge}${dronBadge}
             </div>
         </td>
-        <td class="col-miembro-fullname" data-label="Nombre completo">
-            <input type="text" class="miembro-fullname" placeholder="Nombre completo" value="${fullname}">
-        </td>
-        <td class="col-miembro-dni" data-label="DNI">
-            <input type="text" class="miembro-dni" placeholder="DNI / NIE" value="${dni}">
-        </td>
-        <td class="col-miembro-rol" data-label="Rol">
-            <select class="miembro-rol">
+        <td style="padding: 0.25rem;"><input type="text" class="miembro-fullname" placeholder="Nombre completo" value="${fullname}" style="width: 100%; min-width: 140px; padding: 0.25rem;"></td>
+        <td style="padding: 0.25rem;"><input type="text" class="miembro-dni" placeholder="DNI / NIE" value="${dni}" style="width: 100%; min-width: 90px; padding: 0.25rem;"></td>
+        <td style="padding: 0.25rem;">
+            <select class="miembro-rol" style="width: 100%; min-width: 110px; padding: 0.25rem;">
                 <option value="Operador" ${rol === 'Operador' ? 'selected' : ''}>Operador</option>
                 <option value="Jefe de equipo" ${rol === 'Jefe de equipo' ? 'selected' : ''}>Jefe de equipo</option>
                 <option value="Enlace" ${rol === 'Enlace' ? 'selected' : ''}>Enlace</option>
@@ -1709,24 +1700,20 @@ function addMiembroRow(m = null) {
                 <option value="Ingeniero" ${rol === 'Ingeniero' ? 'selected' : ''}>Ingeniero</option>
             </select>
         </td>
-        <td class="col-miembro-armamento" data-label="Armamento">
-            <select class="miembro-armamento">
+        <td style="padding: 0.25rem;">
+            <select class="miembro-armamento" style="width: 100%; min-width: 110px; padding: 0.25rem;">
                 <option value="Fusilero" ${armamento === 'Fusilero' ? 'selected' : ''}>Fusilero</option>
                 <option value="Francotirador" ${armamento === 'Francotirador' ? 'selected' : ''}>Francotirador</option>
                 <option value="Tirador" ${armamento === 'Tirador' ? 'selected' : ''}>Tirador</option>
                 <option value="Apoyo" ${armamento === 'Apoyo' ? 'selected' : ''}>Apoyo</option>
             </select>
         </td>
-        <td class="col-miembro-telefono" data-label="Teléfono">
-            <input type="tel" class="miembro-telefono" placeholder="Teléfono" value="${tel}">
+        <td style="padding: 0.25rem;"><input type="tel" class="miembro-telefono" placeholder="Teléfono" value="${tel}" style="width: 100%; min-width: 95px; padding: 0.25rem;"></td>
+        <td style="padding: 0.25rem;"><input type="email" class="miembro-email" placeholder="Email" value="${email}" style="width: 100%; min-width: 130px; padding: 0.25rem;"></td>
+        <td style="padding: 0.25rem; text-align: center;">
+            <div style="display: inline-flex; gap: 4px; align-items: center; justify-content: center;">${fotoBtn}${carnetBtn}${iceBtn}${unbindMedicBtn}${placeholderGuardar}</div>
         </td>
-        <td class="col-miembro-email" data-label="Email">
-            <input type="email" class="miembro-email" placeholder="Email" value="${email}">
-        </td>
-        <td class="col-miembro-herramientas" data-label="Ficha / I.C.E.">
-            <div class="miembro-tools-wrapper">${fotoBtn}${carnetBtn}${iceBtn}${unbindMedicBtn}${placeholderGuardar}</div>
-        </td>
-        <td class="col-miembro-del" data-label="Eliminar">
+        <td style="padding: 0.25rem; text-align: center;">
             ${delBtn}
         </td>
     `;
@@ -1874,11 +1861,9 @@ function addMiembroRow(m = null) {
     const delBtnEl = tr.querySelector('.btn-del-miembro');
     if (delBtnEl) {
         delBtnEl.addEventListener('click', () => {
-            if (isExistingMember) {
-                const curNick = (tr.querySelector('.miembro-nombre')?.value || '').trim() || 'este operador';
-                if (!confirm(`¿Eliminar definitivamente a "${curNick}" del censo militar? Esta acción borrará permanentemente sus credenciales y ficha médica.`)) {
-                    return;
-                }
+            const curNick = (tr.querySelector('.miembro-nombre')?.value || '').trim() || 'este combatiente';
+            if (!confirm(`¿Eliminar al combatiente "${curNick}" de la unidad?`)) {
+                return;
             }
             tr.remove();
             updateJugadoresCount();

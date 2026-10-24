@@ -17,9 +17,9 @@
             background: #11141c !important;
             border: 1px solid rgba(0, 240, 255, 0.22) !important;
             border-radius: 8px !important;
-            padding: 1.5rem !important;
-            margin-bottom: 2rem !important;
-            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6) !important;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6);
             position: relative;
         }
 
@@ -344,7 +344,7 @@
         </section>
 
         <!-- VISTA GESTIÓN DE EQUIPOS / UNIDADES Y CREDENCIALES -->
-        <section id="view-equipos" class="view-section">
+        <section id="view-equipos" class="view-section view-column">
             <div class="panel management-panel">
                 <div class="panel-header">
                     <h2>Inventario de Unidades y Credenciales</h2>
@@ -372,7 +372,7 @@
         </section>
 
         <!-- VISTA GESTIÓN DE MISIONES -->
-        <section id="view-misiones" class="view-section">
+        <section id="view-misiones" class="view-section view-column">
             <div class="panel management-panel">
                 <div class="panel-header">
                     <h2>Inventario de Misiones</h2>
@@ -407,7 +407,7 @@
         </section>
 
         <!-- VISTA PUNTOS DE INTERÉS (POIs) -->
-        <section id="view-pois" class="view-section">
+        <section id="view-pois" class="view-section view-column">
             <div class="panel management-panel">
                 <div class="panel-header">
                     <h2>Sectores de Interés (POIs)</h2>
@@ -415,7 +415,7 @@
                 </div>
 
                 <!-- VALIDACIÓN GPS ESTRICTA DE POIs -->
-                <div style="background: rgba(0,0,0,0.3); border: 1px solid #444; padding: 1rem; margin-bottom: 1.5rem; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div class="admin-banner-card poi-geo-box" style="background: rgba(0,0,0,0.3); border: 1px solid #444; padding: 1rem; margin-bottom: 1.5rem; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
                     <div>
                         <h4 style="margin: 0; color: #fff; display: flex; align-items: center; gap: 8px;">
                             <span class="material-symbols-outlined" style="color: #00f0ff; font-size: 20px;">location_searching</span>
@@ -1744,7 +1744,7 @@
                     </div>
                     <div style="font-size: 0.76rem; color: #94a3b8; margin-bottom: 0.65rem; font-family: 'Share Tech Mono', monospace; display: flex; align-items: center; gap: 6px;">
                         <span class="material-symbols-outlined" style="font-size: 15px; color: var(--theme-color);">info</span>
-                        <span><b>Plantilla y Censo:</b> Los gestores pueden marcar combatientes como Activos o Inactivos para el evento. La baja definitiva del censo militar está reservada a Administración.</span>
+                        <span><b>Plantilla y Censo:</b> Gestiona los combatientes de tu escuadra, márcalos como Activos o Inactivos para el despliegue o elimínalos con el botón de baja.</span>
                     </div>
                     <div class="miembros-table-wrapper" style="overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid rgba(255,255,255,0.12); border-radius: 4px; max-height: 440px; overflow-y: auto; background: rgba(0,0,0,0.3);">
                         <table class="table-miembros-dashboard" style="width: 100%; text-align: left; border-collapse: collapse; min-width: 860px;">
