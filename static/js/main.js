@@ -5207,6 +5207,7 @@ function filtrarArmasDashboard() {
     const texto = (document.getElementById('filtro-armas-texto')?.value || '').toLowerCase().trim();
     const faccion = (document.getElementById('filtro-armas-faccion')?.value || '').toLowerCase().trim();
     const equipo = (document.getElementById('filtro-armas-equipo')?.value || '').toLowerCase().trim();
+    const cronoFiltro = (document.getElementById('filtro-armas-crono')?.value || '').trim();
     
     let lista = window.armasDashboardData || [];
     
@@ -5216,6 +5217,32 @@ function filtrarArmasDashboard() {
 
     if (equipo) {
         lista = lista.filter(m => (m.equipo_nombre || '').toLowerCase() === equipo || (m.equipo_nombre || '').toLowerCase().includes(equipo));
+    }
+
+    if (cronoFiltro === 'sin_cronar') {
+        // Jugadores con réplicas donde al menos una réplica NO ha sido cronada (sin FPS ni Julios)
+        lista = lista.filter(m => {
+            const armas = m.armas || [];
+            if (armas.length === 0) return false;
+            return armas.some(a => {
+                const sinFps = (a.fps === null || a.fps === undefined || a.fps === '' || parseFloat(a.fps) === 0);
+                const sinJul = (a.julios === null || a.julios === undefined || a.julios === '' || parseFloat(a.julios) === 0);
+                return sinFps && sinJul;
+            });
+        });
+    } else if (cronoFiltro === 'cronadas') {
+        // Jugadores con réplicas donde todas están cronadas (con FPS o Julios)
+        lista = lista.filter(m => {
+            const armas = m.armas || [];
+            if (armas.length === 0) return false;
+            return armas.every(a => {
+                const hasFps = (a.fps !== null && a.fps !== undefined && a.fps !== '' && parseFloat(a.fps) > 0);
+                const hasJul = (a.julios !== null && a.julios !== undefined && a.julios !== '' && parseFloat(a.julios) > 0);
+                return hasFps || hasJul;
+            });
+        });
+    } else if (cronoFiltro === 'sin_replicas') {
+        lista = lista.filter(m => !m.armas || m.armas.length === 0);
     }
     
     if (texto) {
@@ -5228,6 +5255,19 @@ function filtrarArmasDashboard() {
             const dron = (m.dron_modelo || '').toLowerCase();
             return nom.includes(texto) || ape.includes(texto) || uid.includes(texto) || eq.includes(texto) || tieneArma || dron.includes(texto);
         });
+    }
+
+    // Actualizar badge del contador
+    const badgeContador = document.getElementById('filtro-armas-contador-badge');
+    if (badgeContador) {
+        const total = (window.armasDashboardData || []).length;
+        let totalSinCronar = 0;
+        (window.armasDashboardData || []).forEach(m => {
+            const hasSinCronar = (m.armas || []).some(a => (!a.fps || parseFloat(a.fps) === 0) && (!a.julios || parseFloat(a.julios) === 0));
+            if (hasSinCronar) totalSinCronar++;
+        });
+        badgeContador.style.display = 'inline-flex';
+        badgeContador.innerHTML = `Mostrando <b>${lista.length}</b> de <b>${total}</b> combatientes (${totalSinCronar} con réplicas sin cronar)`;
     }
     
     renderArmasDashboard(lista);
@@ -5273,12 +5313,17 @@ function renderArmasDashboard(lista) {
         let armasHtml = '';
         if (m.armas && m.armas.length > 0) {
             armasHtml = '<div style="display: flex; flex-wrap: wrap; gap: 6px;">' + m.armas.map(a => {
+                const hasBalistica = (a.fps !== null && a.fps !== undefined && a.fps !== '' && parseFloat(a.fps) > 0) || 
+                                     (a.julios !== null && a.julios !== undefined && a.julios !== '' && parseFloat(a.julios) > 0);
                 const balistica = (a.fps ? `${a.fps} FPS` : '') + (a.julios ? ` · ${a.julios}J` : '');
+                const balisticaBadge = hasBalistica 
+                    ? `<span style="color: #00f0ff; font-family: monospace; font-weight: bold; background: rgba(0,240,255,0.08); padding: 1px 5px; border-radius: 2px;">${balistica}</span>`
+                    : `<span style="color: #f1c40f; font-size: 0.7rem; font-weight: bold; background: rgba(241,196,15,0.15); border: 1px solid rgba(241,196,15,0.35); padding: 1px 5px; border-radius: 3px;">⚠️ SIN CRONAR</span>`;
                 return `
                     <span style="background: rgba(226,185,56,0.1); border: 1px solid rgba(226,185,56,0.35); color: #fff; padding: 3px 8px; border-radius: 4px; font-size: 0.76rem; display: inline-flex; align-items: center; gap: 6px;">
                         <span style="color: #e2b938; font-weight: bold;">[${a.tipo || 'Fusil'}]</span>
                         <span>${a.modelo}</span>
-                        ${balistica ? `<span style="color: #00f0ff; font-family: monospace; font-weight: bold; background: rgba(0,240,255,0.08); padding: 1px 4px; border-radius: 2px;">${balistica}</span>` : ''}
+                        ${balisticaBadge}
                     </span>
                 `;
             }).join('') + '</div>';
@@ -5379,13 +5424,50 @@ function toggleNvgFields() {
     if (sel) sel.style.display = chk && chk.checked ? 'block' : 'none';
 }
 
+window.autoCalcJulios = function(target) {
+    let fpsInp, julInp;
+    if (target === 'nueva') {
+        fpsInp = document.getElementById('modal-nueva-fps');
+        julInp = document.getElementById('modal-nueva-julios');
+    } else {
+        fpsInp = document.getElementById(`m-arma-edit-fps-${target}`);
+        julInp = document.getElementById(`m-arma-edit-julios-${target}`);
+    }
+    if (!fpsInp || !julInp) return;
+    
+    const fpsVal = parseFloat(fpsInp.value);
+    if (!isNaN(fpsVal) && fpsVal > 0) {
+        const joules = (0.5 * 0.0002 * Math.pow(fpsVal * 0.3048, 2)).toFixed(2);
+        if (!julInp.dataset.manual || !julInp.value) {
+            julInp.value = joules;
+        }
+    } else if (isNaN(fpsVal) || fpsVal <= 0) {
+        if (!julInp.dataset.manual) {
+            julInp.value = '';
+        }
+    }
+};
+
 function renderModalArmasExistentes(armas) {
     const cont = document.getElementById('modal-armas-lista-existentes');
     const badge = document.getElementById('modal-armas-count-badge');
     if (!cont) return;
     cont.innerHTML = '';
     
-    if (badge) badge.textContent = `${armas.length} réplica${armas.length === 1 ? '' : 's'}`;
+    const totalArmas = armas ? armas.length : 0;
+    const sinCronarCount = (armas || []).filter(a => (!a.fps || parseFloat(a.fps) === 0) && (!a.julios || parseFloat(a.julios) === 0)).length;
+    
+    if (badge) {
+        if (sinCronarCount > 0) {
+            badge.innerHTML = `${totalArmas} réplica${totalArmas === 1 ? '' : 's'} · <span style="color:#f1c40f; font-weight:bold;">${sinCronarCount} SIN CRONAR</span>`;
+            badge.style.borderColor = 'rgba(241,196,15,0.5)';
+            badge.style.background = 'rgba(241,196,15,0.12)';
+        } else {
+            badge.innerHTML = `${totalArmas} réplica${totalArmas === 1 ? '' : 's'} · <span style="color:#2ecc71;">TODAS CRONADAS</span>`;
+            badge.style.borderColor = 'rgba(46,204,113,0.4)';
+            badge.style.background = 'rgba(46,204,113,0.12)';
+        }
+    }
     
     if (!armas || armas.length === 0) {
         cont.innerHTML = '<div style="color: #64748b; font-size: 0.8rem; font-style: italic; padding: 6px 0;">Este operador aún no tiene réplicas registradas. Añade una abajo.</div>';
@@ -5394,21 +5476,144 @@ function renderModalArmasExistentes(armas) {
     
     armas.forEach(a => {
         const item = document.createElement('div');
-        item.style.cssText = 'background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); padding: 8px 12px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 10px;';
+        item.style.cssText = 'background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.1); padding: 10px 12px; border-radius: 6px; display: flex; flex-direction: column; gap: 8px;';
         
-        const balistica = (a.fps ? `<b>${a.fps} FPS</b>` : '') + (a.julios ? ` · <b>${a.julios} Julios</b>` : '');
+        const hasBalistica = (a.fps !== null && a.fps !== undefined && a.fps !== '' && parseFloat(a.fps) > 0) || 
+                             (a.julios !== null && a.julios !== undefined && a.julios !== '' && parseFloat(a.julios) > 0);
+        
+        const estado = a.estado_crono || (hasBalistica ? 'APROBADO' : 'PENDIENTE');
+        const estadoColor = estado === 'APROBADO' ? '#2ecc71' : (estado === 'EXCEDIDO' || estado === 'RECHAZADO' ? '#ff5566' : '#f1c40f');
+        const balisticaTexto = (a.fps ? `${a.fps} FPS` : '') + (a.julios ? ` · ${a.julios} J` : '');
         
         item.innerHTML = `
-            <div style="font-size: 0.85rem;">
-                <span style="color: #e2b938; font-weight: bold; margin-right: 6px;">[${a.tipo || 'Fusil'}]</span>
-                <span style="color: #fff; font-weight: 500;">${a.modelo}</span>
-                ${balistica ? `<span style="margin-left: 8px; color: #00f0ff; font-family: monospace; font-size: 0.8rem; background: rgba(0,240,255,0.08); padding: 2px 6px; border-radius: 3px;">${balistica}</span>` : ''}
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 6px;">
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <span style="color: #e2b938; font-weight: bold; font-size: 0.78rem; background: rgba(226,185,56,0.12); padding: 2px 7px; border-radius: 3px; border: 1px solid rgba(226,185,56,0.3);">
+                        ${a.tipo || 'Fusilero / Asalto'}
+                    </span>
+                    <span style="color: #fff; font-weight: 600; font-size: 0.9rem;">${a.modelo}</span>
+                    ${hasBalistica 
+                        ? `<span style="color: #2ecc71; font-size: 0.72rem; font-weight: bold; background: rgba(46,204,113,0.12); border: 1px solid rgba(46,204,113,0.3); padding: 2px 6px; border-radius: 3px; font-family: monospace;">✓ CRONADA: ${balisticaTexto}</span>`
+                        : `<span style="color: #f1c40f; font-size: 0.72rem; font-weight: bold; background: rgba(241,196,15,0.15); border: 1px solid rgba(241,196,15,0.4); padding: 2px 6px; border-radius: 3px; font-family: monospace;">⏳ SIN CRONAR</span>`
+                    }
+                </div>
+                <button type="button" class="btn danger btn-sm" onclick="eliminarReplica(${a.id})" style="padding: 3px 8px; font-size: 0.72rem; line-height: 1; border-radius: 3px; display: inline-flex; align-items: center; gap: 4px;" title="Eliminar réplica">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Borrar
+                </button>
             </div>
-            <button type="button" class="btn danger btn-sm" onclick="eliminarReplica(${a.id})" style="padding: 3px 8px; font-size: 0.72rem; line-height: 1; border-radius: 3px; display: inline-flex; align-items: center; gap: 4px;" title="Eliminar réplica"><span class="material-symbols-outlined" style="font-size: 14px;">delete</span> Borrar</button>
+
+            <!-- Fila de edición de FPS, Julios, Estado y Guardar -->
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 2px;">
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <label style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">FPS:</label>
+                    <input type="number" step="1" id="m-arma-edit-fps-${a.id}" value="${a.fps !== null && a.fps !== undefined ? a.fps : ''}" placeholder="Ej: 325" 
+                        oninput="autoCalcJulios(${a.id})"
+                        style="width: 80px; padding: 4px 6px; font-size: 0.82rem; background: #0c0f14; border: 1px solid #444; color: #fff; border-radius: 4px; font-family: monospace;">
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <label style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">Julios:</label>
+                    <input type="number" step="0.01" id="m-arma-edit-julios-${a.id}" value="${a.julios !== null && a.julios !== undefined ? a.julios : ''}" placeholder="Ej: 0.98" 
+                        oninput="this.dataset.manual = 'true'"
+                        style="width: 78px; padding: 4px 6px; font-size: 0.82rem; background: #0c0f14; border: 1px solid #444; color: #fff; border-radius: 4px; font-family: monospace;">
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <label style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">Estado:</label>
+                    <select id="m-arma-edit-estado-${a.id}" style="padding: 4px 6px; font-size: 0.78rem; background: #0c0f14; border: 1px solid #444; color: ${estadoColor}; font-weight: bold; border-radius: 4px;">
+                        <option value="APROBADO" ${estado === 'APROBADO' ? 'selected' : ''} style="color: #2ecc71;">✓ APROBADO</option>
+                        <option value="PENDIENTE" ${estado === 'PENDIENTE' ? 'selected' : ''} style="color: #f1c40f;">⏳ PENDIENTE</option>
+                        <option value="EXCEDIDO" ${estado === 'EXCEDIDO' ? 'selected' : ''} style="color: #ff5566;">✕ EXCEDIDO</option>
+                        <option value="RECHAZADO" ${estado === 'RECHAZADO' ? 'selected' : ''} style="color: #ff5566;">✕ RECHAZADO</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn primary btn-sm" onclick="guardarCronoReplicaExistente(${a.id})" id="btn-save-arma-${a.id}" style="padding: 5px 12px; font-size: 0.78rem; font-weight: 700; background: #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.15); border-color: #00f0ff; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px; margin-left: auto;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">save</span> Guardar Balística
+                </button>
+            </div>
         `;
         cont.appendChild(item);
     });
 }
+
+window.guardarCronoReplicaExistente = async function(armaId) {
+    const fpsInp = document.getElementById(`m-arma-edit-fps-${armaId}`);
+    const julInp = document.getElementById(`m-arma-edit-julios-${armaId}`);
+    const estSel = document.getElementById(`m-arma-edit-estado-${armaId}`);
+    const btn = document.getElementById(`btn-save-arma-${armaId}`);
+    
+    const fps = fpsInp?.value;
+    const julios = julInp?.value;
+    let estado_crono = estSel?.value || 'APROBADO';
+    
+    // Si se especificó FPS o Julios y el estado era PENDIENTE, cambiar automáticamente a APROBADO
+    if ((fps || julios) && estado_crono === 'PENDIENTE') {
+        estado_crono = 'APROBADO';
+        if (estSel) estSel.value = 'APROBADO';
+    }
+    
+    const originalHtml = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;">sync</span> Guardando...';
+    }
+    
+    try {
+        const res = await fetch(`/api/crono/arma/${armaId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                fps: fps ? parseFloat(fps) : null,
+                julios: julios ? parseFloat(julios) : null,
+                estado_crono: estado_crono
+            })
+        });
+        const data = await res.json();
+        if (data.status === 'success') {
+            if (btn) {
+                btn.style.background = '#2ecc71';
+                btn.style.color = '#000';
+                btn.innerHTML = '<span class="material-symbols-outlined" style="font-size:14px;">check</span> ¡Guardado!';
+            }
+            
+            // Actualizar en el modelo en memoria
+            if (window.armasDashboardData) {
+                for (const m of window.armasDashboardData) {
+                    if (m.armas) {
+                        const target = m.armas.find(x => x.id === armaId);
+                        if (target) {
+                            target.fps = data.arma.fps;
+                            target.julios = data.arma.julios;
+                            target.estado_crono = data.arma.estado_crono;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            setTimeout(() => {
+                const miembro = (window.armasDashboardData || []).find(x => x.id === window.activeArmasMiembroId);
+                if (miembro) {
+                    renderModalArmasExistentes(miembro.armas || []);
+                }
+                filtrarArmasDashboard();
+            }, 700);
+        } else {
+            alert(data.error || 'Error al guardar réplica');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+    } catch (e) {
+        alert('Error de conexión con el servidor.');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        }
+    }
+};
 
 async function guardarEquipamientoTactico() {
     if (!window.activeArmasMiembroId) return;

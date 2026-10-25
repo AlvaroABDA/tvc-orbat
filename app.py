@@ -4208,10 +4208,20 @@ def api_crono_armas():
 
 @app.route('/api/crono/arma/<int:arma_id>', methods=['POST', 'DELETE'])
 def api_crono_arma_admin(arma_id):
-    if session.get('role') != 'admin':
-        return jsonify({'error': 'Solo la Dirección / Administración puede validar el crono'}), 403
+    if session.get('role') not in ['admin', 'equipo']:
+        return jsonify({'error': 'Solo la Dirección / Organización puede validar el crono'}), 403
         
     conn = get_db_connection()
+    if session.get('role') == 'equipo':
+        arma_check = conn.execute('''
+            SELECT a.id FROM Miembro_Arma a
+            JOIN Miembro m ON a.miembro_id = m.id
+            WHERE a.id = ? AND m.equipo_id = ?
+        ''', (arma_id, session.get('equipo_id'))).fetchone()
+        if not arma_check:
+            conn.close()
+            return jsonify({'error': 'No autorizado para gestionar réplicas de otra unidad'}), 403
+
     if request.method == 'DELETE':
         conn.execute('DELETE FROM Miembro_Arma WHERE id = ?', (arma_id,))
         conn.commit()
@@ -4221,31 +4231,39 @@ def api_crono_arma_admin(arma_id):
     data = request.json or {}
     fps = data.get('fps')
     julios = data.get('julios')
-    peso_bb = data.get('peso_bb', '0.20g').strip() or '0.20g'
-    estado_crono = data.get('estado_crono', 'APROBADO').strip().upper()
-    precinto_num = data.get('precinto_num', '').strip()
-    modelo = data.get('modelo')
-    tipo = data.get('tipo')
-    
+    try:
+        fps = float(fps) if fps not in [None, ''] else None
+    except (ValueError, TypeError):
+        fps = None
+    try:
+        julios = float(julios) if julios not in [None, ''] else None
+    except (ValueError, TypeError):
+        julios = None
+
+    estado_crono = (data.get('estado_crono') or 'APROBADO').strip().upper()
     admin_name = session.get('usuario') or 'Dirección'
     
     updates = [
         "fps = ?",
         "julios = ?",
-        "peso_bb = ?",
         "estado_crono = ?",
-        "precinto_num = ?",
         "cronometrado_en = datetime('now')",
         "cronometrado_por = ?"
     ]
-    params = [fps, julios, peso_bb, estado_crono, precinto_num, admin_name]
+    params = [fps, julios, estado_crono, admin_name]
     
-    if modelo:
+    if 'peso_bb' in data and data.get('peso_bb') is not None:
+        updates.append("peso_bb = ?")
+        params.append(str(data.get('peso_bb')).strip() or '0.20g')
+    if 'precinto_num' in data and data.get('precinto_num') is not None:
+        updates.append("precinto_num = ?")
+        params.append(str(data.get('precinto_num')).strip())
+    if data.get('modelo'):
         updates.append("modelo = ?")
-        params.append(modelo.strip())
-    if tipo:
+        params.append(str(data.get('modelo')).strip())
+    if data.get('tipo'):
         updates.append("tipo = ?")
-        params.append(tipo.strip())
+        params.append(str(data.get('tipo')).strip())
         
     params.append(arma_id)
     

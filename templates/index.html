@@ -902,12 +902,19 @@
                                 <select id="filtro-armas-equipo" onchange="filtrarArmasDashboard()" style="background: rgba(0,0,0,0.4); border: 1px solid #444; color: #fff; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; max-width: 180px;">
                                     <option value="">Todas las unidades</option>
                                 </select>
+                                <select id="filtro-armas-crono" onchange="filtrarArmasDashboard()" style="background: rgba(0,0,0,0.4); border: 1px solid rgba(226,185,56,0.5); color: #e2b938; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
+                                    <option value="" style="color: #fff; background: #111;">Crono: Todos</option>
+                                    <option value="sin_cronar" style="color: #f1c40f; background: #111;">⚠️ Con réplicas SIN CRONAR</option>
+                                    <option value="cronadas" style="color: #2ecc71; background: #111;">✓ Todas cronadas</option>
+                                    <option value="sin_replicas" style="color: #94a3b8; background: #111;">✕ Sin réplicas</option>
+                                </select>
                                 <button class="btn outline btn-sm" onclick="cargarArmasDashboard()" style="border-color: #e2b938; color: #e2b938; padding: 5px 10px; font-size: 0.78rem; display: inline-flex; align-items: center; gap: 4px;">
                                     <span class="material-symbols-outlined" style="font-size: 14px;">sync</span> Actualizar
                                 </button>
                                 <button type="button" class="btn btn-sm" onclick="abrirScannerQrArmas()" style="background: rgba(0, 240, 255, 0.12); border: 1px solid #00f0ff; color: #00f0ff; padding: 5px 12px; font-size: 0.78rem; font-weight: 600; border-radius: 4px; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; transition: all 0.2s ease;">
                                     <span class="material-symbols-outlined" style="font-size: 16px;">qr_code_scanner</span> Escanear Carnet
                                 </button>
+                                <span id="filtro-armas-contador-badge" style="display: none; font-size: 0.75rem; background: rgba(0,240,255,0.08); border: 1px solid rgba(0,240,255,0.25); color: #00f0ff; padding: 3px 8px; border-radius: 4px; font-family: monospace;"></span>
                             </div>
                         </div>
 
@@ -2656,8 +2663,8 @@
     </div>
 
     <!-- MODAL GESTIÓN DE ARMAS Y EQUIPAMIENTO DE JUGADOR -->
-    <div id="modal-gestionar-armas" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; align-items: center; justify-content: center; padding: 15px;">
-        <div class="panel" style="width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; background: #13171f; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); padding: 20px;">
+    <div id="modal-gestionar-armas" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10000; justify-content: center; align-items: flex-start; padding: 16px 12px 60px 12px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
+        <div class="panel" style="width: 100%; max-width: 680px; margin: auto 0; max-height: 90vh; max-height: 90dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; background: #13171f; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); padding: 20px 20px 30px 20px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 16px;">
                 <div>
                     <div style="font-size: 0.72rem; color: #e2b938; font-family: 'Share Tech Mono', monospace; letter-spacing: 1px;">DIRECCIÓN // CONTROL OPERACIONAL</div>
@@ -2749,7 +2756,7 @@
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
                     <div>
                         <label style="font-size: 0.75rem; color: #aaa; display: block; margin-bottom: 4px;">Velocidad (FPS)</label>
-                        <input type="number" id="modal-nueva-fps" placeholder="Ej: 325" step="1" style="width: 100%; padding: 6px 8px; font-size: 0.85rem; background: #0c0f14; border: 1px solid #444; color: #fff; border-radius: 4px;">
+                        <input type="number" id="modal-nueva-fps" placeholder="Ej: 325" step="1" oninput="autoCalcJulios('nueva')" style="width: 100%; padding: 6px 8px; font-size: 0.85rem; background: #0c0f14; border: 1px solid #444; color: #fff; border-radius: 4px;">
                     </div>
                     <div>
                         <label style="font-size: 0.75rem; color: #aaa; display: block; margin-bottom: 4px;">Potencia (Julios)</label>

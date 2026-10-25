@@ -464,6 +464,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
+            height: 100dvh;
             background: rgba(0,0,0,0.85);
             backdrop-filter: blur(8px);
             z-index: 200;
@@ -471,6 +472,9 @@
             align-items: center;
             justify-content: center;
             padding: 16px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
         }
 
         .modal-box {
@@ -480,10 +484,25 @@
             width: 100%;
             max-width: 500px;
             max-height: 90vh;
+            max-height: 90dvh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
             padding: 20px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.8);
             position: relative;
+        }
+
+        @media (max-width: 600px) {
+            .modal-overlay {
+                align-items: flex-start !important;
+                padding: 12px 10px 50px 10px !important;
+            }
+            .modal-box {
+                max-height: none !important;
+                margin: auto 0 !important;
+                padding: 16px 14px 24px 14px !important;
+            }
         }
 
         .modal-header {
@@ -1013,7 +1032,7 @@
             </div>
 
             <!-- List of weapons -->
-            <div id="armas-list-container" style="max-height: 240px; overflow-y: auto; margin-bottom: 16px;">
+            <div id="armas-list-container" style="margin-bottom: 16px;">
                 {% if armas and armas|length > 0 %}
                     <div style="display: flex; flex-direction: column; gap: 8px;">
                     {% for a in armas %}

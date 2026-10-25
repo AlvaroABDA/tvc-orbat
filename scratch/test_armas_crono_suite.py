@@ -193,5 +193,67 @@ class TestArmasCronoSuite(unittest.TestCase):
         self.assertIn('HK416 A5', html_portal)
         self.assertIn('329.5 FPS', html_portal)
 
+    def test_06_operator_added_weapon_crono_edit(self):
+        """Test that an operator registers a weapon without crono, and admin can edit its FPS and Julios."""
+        # 1. Operator registers weapon
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'operador'
+            sess['miembro_id'] = 8801
+            sess['equipo_id'] = 888
+            sess['faction'] = 'Syldavia'
+
+        add_res = self.client.post('/api/operador/armas', json={
+            'modelo': 'G&G Predator',
+            'tipo': 'Fusil / Asalto'
+        })
+        self.assertEqual(add_res.status_code, 200)
+        arma_id = add_res.get_json()['arma']['id']
+
+        # Verify initially pending without fps or julios
+        arma_initial = add_res.get_json()['arma']
+        self.assertIsNone(arma_initial['fps'])
+        self.assertIsNone(arma_initial['julios'])
+        self.assertEqual(arma_initial['estado_crono'], 'PENDIENTE')
+
+        # 2. Admin edits FPS and Julios for this weapon
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'admin'
+            sess['usuario'] = 'JuezCrono'
+
+        edit_res = self.client.post(f'/api/crono/arma/{arma_id}', json={
+            'fps': 328.0,
+            'julios': 1.00,
+            'estado_crono': 'APROBADO'
+        })
+        self.assertEqual(edit_res.status_code, 200)
+        updated = edit_res.get_json()['arma']
+        self.assertEqual(updated['fps'], 328.0)
+        self.assertEqual(updated['julios'], 1.00)
+        self.assertEqual(updated['estado_crono'], 'APROBADO')
+
+    def test_07_armas_dashboard_contains_all_members_and_weapons(self):
+        """Verify that admin dashboard returns members with their weapons for filtering."""
+        with app.app.app_context():
+            conn = app.get_db_connection()
+            conn.execute('''
+                INSERT INTO Miembro_Arma (miembro_id, modelo, tipo, fps, julios, estado_crono)
+                VALUES (8801, 'SCAR-L', 'Fusil / Asalto', NULL, NULL, 'PENDIENTE')
+            ''')
+            conn.commit()
+
+        with self.client.session_transaction() as sess:
+            sess['role'] = 'admin'
+
+        res = self.client.get('/api/admin/armas_dashboard')
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertIsInstance(data, list)
+        m8801 = next((m for m in data if m['id'] == 8801), None)
+        self.assertIsNotNone(m8801)
+        self.assertTrue(len(m8801['armas']) > 0)
+        self.assertIsNone(m8801['armas'][0]['fps'])
+        self.assertIsNone(m8801['armas'][0]['julios'])
+
 if __name__ == '__main__':
     unittest.main()
+
