@@ -496,17 +496,22 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertEqual(medic_engine.get_max_medicos_permitidos(24), 3)
         self.assertEqual(medic_engine.get_max_medicos_permitidos(50), 3)
 
-        # 2. Fórmula de curas por médico: miembros // medicos (a la baja)
-        # Escuadra de 14 con 2 médicos -> 7 curas cada uno
-        self.assertEqual(medic_engine.calcular_curas_por_medico(14, 2), 7)
-        # Escuadra de 14 con 1 médico -> 14 curas
-        self.assertEqual(medic_engine.calcular_curas_por_medico(14, 1), 14)
-        # Escuadra de 8 con 1 médico -> 8 curas
-        self.assertEqual(medic_engine.calcular_curas_por_medico(8, 1), 8)
-        # Escuadra de 9 con 2 médicos -> 4 curas (división a la baja: 9 // 2 = 4)
-        self.assertEqual(medic_engine.calcular_curas_por_medico(9, 2), 4)
-        # Escuadra de 17 con 3 médicos -> 5 curas (17 // 3 = 5)
-        self.assertEqual(medic_engine.calcular_curas_por_medico(17, 3), 5)
+        # 2. Fórmula de curas por médico: (miembros - medicos) * ratio // medicos
+        # Con ratio default (2.0):
+        # 10 miembros con 2 médicos -> tropa = 8 -> 8 * 2 = 16 curas escuadra -> 8 curas c/u (no 4 de 8)
+        self.assertEqual(medic_engine.calcular_curas_por_medico(10, 2), 8)
+        # Escuadra de 14 con 2 médicos -> tropa = 12 -> 12 * 2 = 24 -> 12 curas cada uno
+        self.assertEqual(medic_engine.calcular_curas_por_medico(14, 2), 12)
+        # Escuadra de 14 con 1 médico -> tropa = 13 -> 13 * 2 = 26 curas
+        self.assertEqual(medic_engine.calcular_curas_por_medico(14, 1), 26)
+        # Escuadra de 8 con 1 médico -> tropa = 7 -> 7 * 2 = 14 curas
+        self.assertEqual(medic_engine.calcular_curas_por_medico(8, 1), 14)
+        # Escuadra de 9 con 2 médicos -> tropa = 7 -> 7 * 2 = 14 -> 7 curas c/u
+        self.assertEqual(medic_engine.calcular_curas_por_medico(9, 2), 7)
+        # Escuadra de 17 con 3 médicos -> tropa = 14 -> 14 * 2 = 28 -> 9 curas c/u
+        self.assertEqual(medic_engine.calcular_curas_por_medico(17, 3), 9)
+        # Con ratio 1.5:
+        self.assertEqual(medic_engine.calcular_curas_por_medico(10, 2, 1.5), 6)
 
         # 3. Snapshot de Roster calcula squad_stats y cupo_nominal
         self.conn.execute("CREATE TABLE IF NOT EXISTS Faccion (id INTEGER PRIMARY KEY, nombre TEXT)")
@@ -532,11 +537,11 @@ class TestFieldMedicSuite(unittest.TestCase):
         self.assertEqual(s_stat["medicos_count"], 2)
         self.assertEqual(s_stat["max_medicos_permitidos"], 2)
         self.assertEqual(s_stat["excede_limite"], False)
-        self.assertEqual(s_stat["curas_por_medico"], 7)
+        self.assertEqual(s_stat["curas_por_medico"], 12)
 
         # Verificar cupo nominal asignado a cada médico de la escuadra
         med_a = snapshot["roster"]["MED-SYL-A"]
-        self.assertEqual(med_a["cupo_nominal"], 7)
+        self.assertEqual(med_a["cupo_nominal"], 12)
 
         # 4. Bloqueo al jefe de unidad al intentar exceder el límite doctrinal de médicos
         # Escuadra de 6 miembros con 2 médicos (el límite para <= 8 miembros es 1 médico)

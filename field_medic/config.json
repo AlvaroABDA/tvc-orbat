@@ -1,5 +1,6 @@
 {
     "reanimaciones_iniciales_medico": 3,
+    "ratio_doctrina_curas": 2.0,
     "fase1_hemorragia": {
         "velocidad_marcador_ms": 1600,
         "velocidad_deriva_zona_ms": 2500,

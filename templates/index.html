@@ -1085,25 +1085,39 @@
                         </div>
 
                         <!-- DOCTRINA TVC DE ASIGNACIÓN MÉDICA -->
-                        <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-left: 4px solid #00f0ff; padding: 1rem 1.2rem; border-radius: 6px; margin-bottom: 1.2rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-                                <div>
-                                    <div style="color: #00f0ff; font-size: 0.88rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
+                        <div style="background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.25); border-left: 4px solid #00f0ff; padding: 1.2rem; border-radius: 6px; margin-bottom: 1.2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                                <div style="flex: 1; min-width: 300px;">
+                                    <div style="color: #00f0ff; font-size: 0.92rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 6px;">
                                         <span class="material-symbols-outlined" style="font-size: 20px; color: #00f0ff;">verified_user</span>
-                                        METODOLOGÍA DOCTRINAL TVC // ASIGNACIÓN Y CURAS
+                                        METODOLOGÍA DOCTRINAL TVC // ASIGNACIÓN CONFIGURABLE
                                     </div>
-                                    <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 5px; line-height: 1.5;">
-                                        • <b>Límites de Médicos por Escuadra:</b> Hasta 8 miembros: <b>1 médico</b> | De 9 a 16 miembros: <b>máx 2 médicos</b> | De 17 o más: <b>máx 3 médicos</b>.<br>
-                                        • <b>Fórmula de Curas por Defecto:</b> <code>Efectivos de Escuadra // Médicos Asignados</code> (redondeo a la baja).<br>
-                                        • <b>Seguridad de Terminales:</b> Desvinculación de dispositivos restringida en exclusiva a Dirección (PIN <code>4747</code>).
+                                    <div style="color: #cbd5e1; font-size: 0.82rem; margin-top: 6px; line-height: 1.55;">
+                                        • <b>Límites por Escuadra:</b> Hasta 8 pax: <b>1 médico</b> | De 9 a 16 pax: <b>máx 2 médicos</b> | De 17 o más: <b>máx 3 médicos</b>.<br>
+                                        • <b>Cálculo de Botiquines de Escuadra:</b> <code>Curas Totales = (Efectivos Escuadra − Médicos) × Ratio</code>.<br>
+                                        • <b>Cupo Individual por Médico:</b> <code>Curas Totales // Médicos Asignados</code>. <b>Cada médico dispone de su propio cupo independiente (no se comparten).</b><br>
+                                        • <b>Ejemplo Actual:</b> <span id="doctrina-preview-txt" style="color: #00f0ff; font-weight: bold;">10 pax con 2 médicos -> 8 curas c/u (16 curaciones totales de escuadra, no 4 de 8).</span>
                                     </div>
                                 </div>
-                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                    <button class="btn btn-sm" onclick="asignarAdminRapido(10)" style="font-size: 0.78rem; border-color: #e2b938; color: #e2b938; background: rgba(226,185,56,0.1); font-weight: 600; padding: 6px 10px;">+10 Admin</button>
-                                    <button class="btn btn-sm" onclick="asignarAdminRapido(99)" style="font-size: 0.78rem; border-color: #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.1); font-weight: 600; padding: 6px 10px;">Admin 99 INF</button>
-                                    <button class="btn btn-sm outline" onclick="recargarTodosSanitarios()" style="font-size: 0.8rem; border-color: #2ecc71; color: #2ecc71; background: rgba(46,204,113,0.15); font-weight: 700; padding: 6px 12px; box-shadow: 0 0 10px rgba(46,204,113,0.2);">
-                                        <span class="material-symbols-outlined" style="font-size: 16px;">autorenew</span> RECARGAR SEGÚN DOCTRINA
-                                    </button>
+                                <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+                                    <!-- Selector interactivo de Ratio Doctrinal -->
+                                    <div style="display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.4); padding: 6px 10px; border-radius: 5px; border: 1px solid rgba(0,240,255,0.2);">
+                                        <label for="input-doctrina-ratio" style="font-size: 0.78rem; color: #94a3b8; font-weight: bold; text-transform: uppercase;">Ratio Curas/Pax:</label>
+                                        <input type="number" id="input-doctrina-ratio" value="2.0" step="0.1" min="0.5" max="5.0" style="width: 54px; padding: 3px 6px; text-align: center; background: #000; border: 1px solid #00f0ff; color: #00f0ff; font-weight: bold; font-family: 'Share Tech Mono', monospace; border-radius: 3px; font-size: 0.95rem;" onchange="actualizarDoctrinaPreview()">
+                                        <div style="display: flex; gap: 4px;">
+                                            <button type="button" class="btn btn-sm" onclick="setDoctrinaPreset(1.0)" style="padding: 2px 6px; font-size: 0.72rem; background: rgba(255,255,255,0.08); border-color: #555; color: #ccc;">1.0x</button>
+                                            <button type="button" class="btn btn-sm" onclick="setDoctrinaPreset(1.5)" style="padding: 2px 6px; font-size: 0.72rem; background: rgba(255,255,255,0.08); border-color: #555; color: #ccc;">1.5x</button>
+                                            <button type="button" class="btn btn-sm" onclick="setDoctrinaPreset(2.0)" style="padding: 2px 6px; font-size: 0.72rem; background: rgba(0,240,255,0.15); border-color: #00f0ff; color: #00f0ff; font-weight: bold;">2.0x</button>
+                                        </div>
+                                        <button type="button" class="btn btn-sm" onclick="guardarDoctrinaTVC(false)" title="Guardar configuración doctrinal" style="padding: 4px 8px; font-size: 0.75rem; background: rgba(0,240,255,0.2); border-color: #00f0ff; color: #00f0ff; font-weight: bold; border-radius: 3px;">GUARDAR</button>
+                                    </div>
+                                    <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                                        <button class="btn btn-sm" onclick="asignarAdminRapido(10)" style="font-size: 0.75rem; border-color: #e2b938; color: #e2b938; background: rgba(226,185,56,0.1); font-weight: 600; padding: 5px 8px;">+10 Admin</button>
+                                        <button class="btn btn-sm" onclick="asignarAdminRapido(99)" style="font-size: 0.75rem; border-color: #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.1); font-weight: 600; padding: 5px 8px;">Admin 99 INF</button>
+                                        <button class="btn btn-sm outline" onclick="guardarDoctrinaTVC(true)" style="font-size: 0.8rem; border-color: #2ecc71; color: #2ecc71; background: rgba(46,204,113,0.15); font-weight: 700; padding: 6px 12px; box-shadow: 0 0 10px rgba(46,204,113,0.2);">
+                                            <span class="material-symbols-outlined" style="font-size: 16px;">autorenew</span> APLICAR Y RECARGAR TODOS
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1119,7 +1133,7 @@
                                         <th style="text-align: left; width: 230px;">SANITARIO // CREDENCIALES</th>
                                         <th style="text-align: left; width: 180px;">UNIDAD // FACCIÓN</th>
                                         <th style="text-align: center; width: 140px;">DOCTRINA ESCUADRA</th>
-                                        <th style="text-align: center; width: 110px;">CURAS DOCTRINA</th>
+                                        <th style="text-align: center; width: 140px;">CURAS DOCTRINA // ESCUADRA</th>
                                         <th style="text-align: center; width: 120px;">BOTIQUINES</th>
                                         <th style="text-align: center; width: 200px;">AJUSTAR CUPO</th>
                                     </tr>
@@ -1558,6 +1572,7 @@
                 async function cargarAdminMedicos() {
                     const tbody = document.getElementById('admin-medicos-tbody');
                     if (!tbody) return;
+                    cargarDoctrinaTVC();
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:#888;">Cargando sanitarios y unidades...</td></tr>';
                     try {
                         const res = await fetch('/api/admin/medicos');
@@ -1584,9 +1599,10 @@
                                    </div>`;
                             
                             const curasDoc = m.curas_doctrina !== undefined ? m.curas_doctrina : 3;
+                            const totalEsc = m.total_curas_escuadra || (curasDoc * (m.medicos_count || 1));
                             const btnExtra = m.is_admin 
                                 ? `<button class="btn btn-sm" onclick="asignarAdminRapido(99)" title="Modo Test / Ilimitado" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; color: #00f0ff; border-color: #00f0ff; font-weight: 700; background: rgba(0,240,255,0.1);">99 INF</button>`
-                                : `<button class="btn btn-sm outline" onclick="recargarFullMedico('${m.sanitario_id}', ${curasDoc})" title="Recargar cupo doctrinal (${curasDoc} curas)" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; border-color: #2ecc71; color: #2ecc71; font-weight: 700; background: rgba(46,204,113,0.1);">+AUTO</button>
+                                : `<button class="btn btn-sm outline" onclick="recargarFullMedico('${m.sanitario_id}', ${curasDoc})" title="Recargar cupo individual (${curasDoc} curas)" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; border-color: #2ecc71; color: #2ecc71; font-weight: 700; background: rgba(46,204,113,0.1);">+AUTO</button>
                                    <button class="btn btn-sm outline" onclick="desvincularRemoto('${m.sanitario_id}', '${m.uid || ''}', '${m.nombre_medico}')" title="Desvincular terminal remotamente sin pedir PIN al jugador" style="padding: 5px 8px; font-size: 0.75rem; border-radius: 3px; border-color: #ff3344; color: #ff3344; font-weight: 700; background: rgba(255,51,68,0.1);">🔓 LIBERAR</button>`;
 
                             let doctrinaHtml = '';
@@ -1609,7 +1625,15 @@
 
                             const curasColHtml = m.is_admin
                                 ? `<span style="color: #e2b938; font-family: 'Share Tech Mono', monospace; font-weight: bold;">99</span>`
-                                : `<div style="display: flex; align-items: baseline; justify-content: center; gap: 4px;"><span style="font-family: 'Share Tech Mono', monospace; font-size: 1.15rem; color: #00f0ff; font-weight: bold;">${curasDoc}</span><span style="font-size: 0.74rem; color: #94a3b8;">curas</span></div>`;
+                                : `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                                       <div style="display: flex; align-items: baseline; gap: 4px;">
+                                           <span style="font-family: 'Share Tech Mono', monospace; font-size: 1.15rem; color: #00f0ff; font-weight: bold;">${curasDoc}</span>
+                                           <span style="font-size: 0.74rem; color: #94a3b8;">c/médico</span>
+                                       </div>
+                                       <div style="font-size: 0.72rem; color: #2ecc71; margin-top: 2px;" title="Curas totales asignadas a la escuadra">
+                                           <span style="color: #94a3b8;">Tot. Esc:</span> <b>${totalEsc}</b> curas
+                                       </div>
+                                   </div>`;
 
                             tr.innerHTML = `
                                 <td style="border-left-color: ${borderAccent} !important;">${nombreMed}</td>
@@ -1645,6 +1669,70 @@
                         });
                     } catch (e) {
                         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:18px; color:#ff4444;">Error cargando recursos médicos.</td></tr>';
+                    }
+                }
+
+                async function cargarDoctrinaTVC() {
+                    try {
+                        const res = await fetch('/api/admin/medicos/doctrina');
+                        const data = await res.json();
+                        if (data.status === 'success' && data.ratio_doctrina_curas !== undefined) {
+                            const inp = document.getElementById('input-doctrina-ratio');
+                            if (inp) inp.value = data.ratio_doctrina_curas;
+                            actualizarDoctrinaPreview(data.ratio_doctrina_curas);
+                        }
+                    } catch(e) {
+                        console.warn("Error cargando doctrina TVC:", e);
+                    }
+                }
+
+                function setDoctrinaPreset(val) {
+                    const inp = document.getElementById('input-doctrina-ratio');
+                    if (inp) {
+                        inp.value = val;
+                        actualizarDoctrinaPreview(val);
+                    }
+                }
+
+                function actualizarDoctrinaPreview(forcedVal) {
+                    const inp = document.getElementById('input-doctrina-ratio');
+                    const ratio = parseFloat(forcedVal !== undefined ? forcedVal : (inp ? inp.value : 2.0)) || 2.0;
+                    const tropa = 8; // 10 pax - 2 med
+                    const total = Math.round(tropa * ratio);
+                    const cMed = Math.floor(total / 2);
+                    const prevEl = document.getElementById('doctrina-preview-txt');
+                    if (prevEl) {
+                        prevEl.innerHTML = `Ejemplo Actual: 10 pax con 2 médicos y ratio ${ratio}x &rarr; <b>${cMed} curas c/u</b> (<b>${total} curaciones totales de escuadra</b>, no 4 de 8).`;
+                    }
+                }
+
+                async function guardarDoctrinaTVC(aplicarRecarga = false) {
+                    const inp = document.getElementById('input-doctrina-ratio');
+                    const ratio = parseFloat(inp ? inp.value : 2.0);
+                    if (isNaN(ratio) || ratio < 0.1 || ratio > 10.0) {
+                        return alert("Por favor introduce un ratio válido entre 0.1 y 10.0.");
+                    }
+                    const accionTxt = aplicarRecarga 
+                        ? `¿Confirmas actualizar la doctrina a ${ratio}x y RECARGAR inmediatamente a todos los sanitarios según este nuevo cupo?`
+                        : `¿Guardar la doctrina en ${ratio}x curas por operador de tropa?`;
+                    if (!confirm(accionTxt)) return;
+
+                    try {
+                        const res = await fetch('/api/admin/medicos/doctrina', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ratio_doctrina_curas: ratio, aplicar_recarga: aplicarRecarga })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            alert(data.message || "Doctrina TVC actualizada con éxito.");
+                            actualizarDoctrinaPreview(data.ratio_doctrina_curas);
+                            cargarAdminMedicos();
+                        } else {
+                            alert(data.message || "Error al actualizar doctrina.");
+                        }
+                    } catch(e) {
+                        alert("Error de conexión al guardar doctrina.");
                     }
                 }
 
@@ -1687,16 +1775,7 @@
                 }
 
                 async function recargarTodosSanitarios() {
-                    if (!confirm("¿Deseas recargar automáticamente el cupo de todos los sanitarios según el tamaño de su escuadra?")) return;
-                    try {
-                        const res = await fetch('/api/admin/medicos/refill-all', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' }
-                        });
-                        const data = await res.json();
-                        alert(data.message || "Recarga masiva completada.");
-                        cargarAdminMedicos();
-                    } catch(e) { alert("Error en la recarga masiva."); }
+                    guardarDoctrinaTVC(true);
                 }
 
                 async function desvincularRemoto(sanitarioId, uid, nombre) {

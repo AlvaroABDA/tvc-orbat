@@ -21,20 +21,80 @@ def get_max_medicos_permitidos(miembros_count: int) -> int:
     else:
         return 3
 
-def calcular_curas_por_medico(miembros_count: int, medicos_count: int) -> int:
+def calcular_curas_por_medico(miembros_count: int, medicos_count: int, ratio_doctrina: float = None) -> int:
     """
-    Metodología TVC para la cantidad de curas por médico:
-    número de miembros de la escuadra // número de médicos asignados (redondeado a la baja).
-    Ejemplos:
-    - Escuadra de 14 miembros con 2 médicos -> 7 curas cada uno (14 // 2)
-    - Escuadra de 14 miembros con 1 médico -> 14 curas (14 // 1)
-    - Escuadra de 8 miembros con 1 médico -> 8 curas (8 // 1)
+    Metodología TVC configurable para la cantidad de curas por médico:
+    - Se calcula el número de operadores de tropa a reanimar: max(1, miembros - medicos) si miembros > medicos else miembros.
+    - Se aplica la doctrina configurable (ratio de botiquines por operador, ej. 2.0 por defecto):
+      total_curas_escuadra = round(tropa * ratio_doctrina)
+    - Los botiquines totales de la escuadra se dividen equitativamente entre los médicos asignados:
+      curas_por_medico = max(1, total_curas_escuadra // medicos)
+    - Cada médico dispone de su propio cupo individual e independiente (no se comparten).
+    
+    Ejemplo TVC: 
+      10 jugadores, 2 médicos, ratio 2.0:
+      tropa = 10 - 2 = 8 operadores.
+      total curas escuadra = round(8 * 2.0) = 16 curas.
+      cada médico = 16 // 2 = 8 curas individuales (total escuadra: 16, no 4 de 8).
     """
+    if ratio_doctrina is None:
+        try:
+            cfg = load_medic_config()
+            ratio_doctrina = float(cfg.get('ratio_doctrina_curas', 2.0))
+        except Exception:
+            ratio_doctrina = 2.0
+    else:
+        try:
+            ratio_doctrina = float(ratio_doctrina)
+        except (ValueError, TypeError):
+            ratio_doctrina = 2.0
+
     miembros = max(0, int(miembros_count or 0))
     medicos = max(0, int(medicos_count or 0))
     if medicos <= 0:
         return 0
-    return max(1, miembros // medicos)
+
+    tropa = max(1, miembros - medicos) if miembros > medicos else miembros
+    total_curas = max(medicos, round(tropa * ratio_doctrina))
+    return max(1, total_curas // medicos)
+
+def calcular_resumen_doctrina_escuadra(miembros_count: int, medicos_count: int, ratio_doctrina: float = None) -> dict:
+    """Calcula el desglose completo de doctrina médica para una escuadra."""
+    if ratio_doctrina is None:
+        try:
+            cfg = load_medic_config()
+            ratio_doctrina = float(cfg.get('ratio_doctrina_curas', 2.0))
+        except Exception:
+            ratio_doctrina = 2.0
+    else:
+        try:
+            ratio_doctrina = float(ratio_doctrina)
+        except (ValueError, TypeError):
+            ratio_doctrina = 2.0
+
+    miembros = max(0, int(miembros_count or 0))
+    medicos = max(0, int(medicos_count or 0))
+    tropa = max(1, miembros - medicos) if miembros > medicos else miembros
+    total_curas = max(medicos, round(tropa * ratio_doctrina)) if medicos > 0 else 0
+    curas_med = max(1, total_curas // medicos) if medicos > 0 else 0
+    return {
+        "miembros_count": miembros,
+        "medicos_count": medicos,
+        "tropa_count": tropa,
+        "ratio_doctrina": ratio_doctrina,
+        "total_curas_escuadra": total_curas,
+        "curas_por_medico": curas_med
+    }
+
+def save_medic_config(config_dict):
+    """Guarda la configuración general de field_medic en config.json de manera persistente."""
+    try:
+        with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+            json.dump(config_dict, f, indent=4, ensure_ascii=False)
+        return True
+    except Exception as e:
+        print("Error guardando field_medic/config.json:", e)
+        return False
 
 def load_medic_config():
     if os.path.exists(CONFIG_PATH):
@@ -45,6 +105,7 @@ def load_medic_config():
             print("Error cargando field_medic/config.json:", e)
     return {
         "reanimaciones_iniciales_medico": 3,
+        "ratio_doctrina_curas": 2.0,
         "fase1_hemorragia": {
             "velocidad_marcador_ms": 1600,
             "velocidad_deriva_zona_ms": 2500,
@@ -224,8 +285,7 @@ def resolve_sanitario_id_and_aliases(conn, sanitario_id):
                OR UPPER(m.nombre_jugador) = ? 
                OR UPPER('MED-' || m.nombre_jugador) = ?
                OR UPPER(m.nombre_jugador) = ?
-               OR UPPER('MED-' || e.id) = ?
-        ''', (u, u, u, clean_name.upper(), u)).fetchone()
+        ''', (u, u, u, clean_name.upper())).fetchone()
     except sqlite3.OperationalError:
         # La tabla Miembro / Equipo puede no existir en bases de datos aisladas de test
         m = None
@@ -242,8 +302,8 @@ def resolve_sanitario_id_and_aliases(conn, sanitario_id):
             aliases.add(nom.upper())
             aliases.add(f"MED-{nom.upper()}")
             aliases.add(f"MED-{nom}")
-        if m['equipo_id']:
-            aliases.add(f"MED-{m['equipo_id']}")
+        # IMPORTANTE ANTI-COLISIÓN: NO asociar MED-{equipo_id} a los alias personales del sanitario
+        # para garantizar que múltiples médicos de una misma escuadra tengan saldos 100% independientes y no se compartan.
         return canonical, list(aliases)
     
     return ident, [ident, ident.upper(), ident.lower()]
@@ -472,15 +532,18 @@ def get_medic_roster_snapshot(conn):
             med_row = cursor.execute("SELECT COUNT(*) FROM Miembro WHERE equipo_id = ? AND (LOWER(rol) LIKE '%medico%' OR LOWER(rol) LIKE '%sanitario%')", (eq_id,)).fetchone()
             meds_m = med_row[0] if med_row else 0
             max_meds = get_max_medicos_permitidos(total_m)
-            curas = calcular_curas_por_medico(total_m, meds_m)
+            doc_res = calcular_resumen_doctrina_escuadra(total_m, meds_m, config.get("ratio_doctrina_curas", 2.0))
             stat_item = {
                 'equipo_id': eq_id,
                 'equipo_nombre': eq['nombre'],
                 'miembros_count': total_m,
                 'medicos_count': meds_m,
+                'tropa_count': doc_res['tropa_count'],
+                'ratio_doctrina': doc_res['ratio_doctrina'],
+                'total_curas_escuadra': doc_res['total_curas_escuadra'],
                 'max_medicos_permitidos': max_meds,
                 'excede_limite': meds_m > max_meds,
-                'curas_por_medico': curas
+                'curas_por_medico': doc_res['curas_por_medico']
             }
             squad_stats[str(eq_id)] = stat_item
     except Exception as e:
@@ -524,6 +587,7 @@ def get_medic_roster_snapshot(conn):
             "equipo_id": eq_id,
             "is_medic": is_medic,
             "cupo_nominal": cupo_nominal,
+            "total_curas_escuadra": st.get('total_curas_escuadra', cupo_nominal),
             "miembros_escuadra": st.get('miembros_count', 0),
             "medicos_escuadra": st.get('medicos_count', 0),
             "max_medicos_permitidos": st.get('max_medicos_permitidos', 1),
@@ -546,8 +610,8 @@ def get_medic_roster_snapshot(conn):
                 medicos_set.add(nombre_key)
                 medicos_set.add(f"MED-{nombre_key}")
                 
-        # Indexar por equipo médico
-        if row['equipo_id']:
+        # Indexar por equipo médico SOLO si no hay médicos individuales en esa escuadra
+        if row['equipo_id'] and st.get('medicos_count', 0) == 0:
             med_eq = f"MED-{row['equipo_id']}"
             roster[med_eq] = {
                 "uid": med_eq,
@@ -558,6 +622,7 @@ def get_medic_roster_snapshot(conn):
                 "equipo_id": eq_id,
                 "is_medic": True,
                 "cupo_nominal": cupo_nominal,
+                "total_curas_escuadra": st.get('total_curas_escuadra', cupo_nominal),
                 "miembros_escuadra": st.get('miembros_count', 0),
                 "medicos_escuadra": st.get('medicos_count', 0),
                 "max_medicos_permitidos": st.get('max_medicos_permitidos', 1),
@@ -1017,8 +1082,9 @@ def get_post_mortem_analytics(conn):
         t["ratio_cr"] = ratio_cr
         t["duracion_media"] = round(sum(t["duraciones"]) / len(t["duraciones"]), 1) if t["duraciones"] else 0.0
 
-        # Límite teórico de curas = (Respawns + 1) * Cupo
-        limite_teorico = (respawns + 1) * cupo if cupo > 0 else 0
+        # Límite teórico de curas = (Respawns + 1) * Cupo Total de Escuadra
+        cupo_total_escuadra = cupo * meds if meds > 0 else cupo
+        limite_teorico = (respawns + 1) * cupo_total_escuadra if cupo_total_escuadra > 0 else 0
         t["limite_teorico"] = limite_teorico
 
         # --- DETECCIÓN DE ANOMALÍAS ---

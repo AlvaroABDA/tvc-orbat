@@ -5013,7 +5013,8 @@ def api_admin_medicos():
             pax = med['miembros_count'] or 0
             meds_count = med['medicos_count'] or 1
             max_permitidos = medic_engine.get_max_medicos_permitidos(pax)
-            curas_doctrina = medic_engine.calcular_curas_por_medico(pax, meds_count)
+            doc_res = medic_engine.calcular_resumen_doctrina_escuadra(pax, meds_count)
+            curas_doctrina = doc_res['curas_por_medico']
             rec = medic_engine.get_or_create_sanitario_recursos(conn, canonical_lookup, default_reanim=curas_doctrina)
             sanitario_id = f"MED-{med['nombre_jugador'].upper()}" if med['nombre_jugador'] else f"MED-{med['equipo_id']}"
 
@@ -5027,6 +5028,9 @@ def api_admin_medicos():
                 'faccion': med['faccion'] or 'Sin facción',
                 'miembros_count': pax,
                 'medicos_count': meds_count,
+                'tropa_count': doc_res['tropa_count'],
+                'ratio_doctrina': doc_res['ratio_doctrina'],
+                'total_curas_escuadra': doc_res['total_curas_escuadra'],
                 'max_medicos_permitidos': max_permitidos,
                 'excede_limite': meds_count > max_permitidos,
                 'curas_doctrina': curas_doctrina,
@@ -5047,7 +5051,8 @@ def api_admin_medicos():
             sanitario_id = f"MED-{eq['id']}"
             pax = eq['miembros_count'] or 0
             max_permitidos = medic_engine.get_max_medicos_permitidos(pax)
-            curas_doctrina = medic_engine.calcular_curas_por_medico(pax, 1)
+            doc_res = medic_engine.calcular_resumen_doctrina_escuadra(pax, 1)
+            curas_doctrina = doc_res['curas_por_medico']
             rec = medic_engine.get_or_create_sanitario_recursos(conn, sanitario_id, default_reanim=curas_doctrina)
             lista.append({
                 'sanitario_id': sanitario_id,
@@ -5058,6 +5063,9 @@ def api_admin_medicos():
                 'faccion': eq['faccion'] or 'Sin facción',
                 'miembros_count': pax,
                 'medicos_count': 1,
+                'tropa_count': doc_res['tropa_count'],
+                'ratio_doctrina': doc_res['ratio_doctrina'],
+                'total_curas_escuadra': doc_res['total_curas_escuadra'],
                 'max_medicos_permitidos': max_permitidos,
                 'excede_limite': False,
                 'curas_doctrina': curas_doctrina,
@@ -5067,6 +5075,62 @@ def api_admin_medicos():
             })
 
     return jsonify(lista)
+
+@app.route('/api/admin/medicos/doctrina', methods=['GET', 'POST'])
+def api_admin_medicos_doctrina():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    config = medic_engine.load_medic_config()
+    
+    if request.method == 'GET':
+        ratio = float(config.get('ratio_doctrina_curas', 2.0))
+        ejemplo = medic_engine.calcular_resumen_doctrina_escuadra(10, 2, ratio)
+        return jsonify({
+            'status': 'success',
+            'ratio_doctrina_curas': ratio,
+            'ejemplo_10_2': ejemplo
+        })
+
+    data = request.json or {}
+    try:
+        nuevo_ratio = float(data.get('ratio_doctrina_curas', 2.0))
+        if nuevo_ratio < 0.1 or nuevo_ratio > 10.0:
+            return jsonify({'status': 'error', 'message': 'El ratio doctrinal debe estar entre 0.1 y 10.0'}), 400
+    except (ValueError, TypeError):
+        return jsonify({'status': 'error', 'message': 'Valor de ratio inválido'}), 400
+
+    config['ratio_doctrina_curas'] = round(nuevo_ratio, 2)
+    saved = medic_engine.save_medic_config(config)
+    if not saved:
+        return jsonify({'status': 'error', 'message': 'Error al guardar la configuración en field_medic/config.json'}), 500
+
+    recargados = 0
+    if data.get('aplicar_recarga', False):
+        conn = get_db_connection()
+        medicos_db = conn.execute('''
+            SELECT m.nombre_jugador, m.uid, e.id as equipo_id,
+                   (SELECT COUNT(*) FROM Miembro m2 WHERE m2.equipo_id = e.id) as miembros_count,
+                   (SELECT COUNT(*) FROM Miembro m3 WHERE m3.equipo_id = e.id AND (LOWER(m3.rol) LIKE '%medico%' OR LOWER(m3.rol) LIKE '%sanitario%')) as medicos_count
+            FROM Miembro m
+            JOIN Equipo e ON m.equipo_id = e.id
+            WHERE LOWER(m.rol) LIKE '%medico%' OR LOWER(m.rol) LIKE '%sanitario%'
+        ''').fetchall()
+        for med in medicos_db:
+            pax = med['miembros_count'] or 0
+            meds_count = med['medicos_count'] or 1
+            val = medic_engine.calcular_curas_por_medico(pax, meds_count, nuevo_ratio)
+            medic_engine.update_sanitario_recursos(conn, med['uid'] or med['nombre_jugador'], val)
+            recargados += 1
+        medic_engine.update_sanitario_recursos(conn, 'ADMIN', 99)
+
+    ejemplo = medic_engine.calcular_resumen_doctrina_escuadra(10, 2, nuevo_ratio)
+    return jsonify({
+        'status': 'success',
+        'message': f'Doctrina TVC actualizada a {nuevo_ratio}x curas por operador.' + (f' Recargados {recargados} sanitarios.' if recargados > 0 else ''),
+        'ratio_doctrina_curas': nuevo_ratio,
+        'recargados': recargados,
+        'ejemplo_10_2': ejemplo
+    })
 
 @app.route('/api/admin/medicos/update', methods=['POST'])
 def api_admin_medicos_update():
@@ -5088,7 +5152,7 @@ def api_admin_medicos_refill_all():
         return jsonify({'error': 'Unauthorized'}), 403
     conn = get_db_connection()
     config = medic_engine.load_medic_config()
-    default_reanim = config.get("reanimaciones_iniciales_medico", 3)
+    ratio_doctrina = float(config.get("ratio_doctrina_curas", 2.0))
     
     medicos_db = conn.execute('''
         SELECT m.nombre_jugador, m.uid, e.id as equipo_id,
@@ -5104,8 +5168,8 @@ def api_admin_medicos_refill_all():
         for med in medicos_db:
             pax = med['miembros_count'] or 0
             meds_count = med['medicos_count'] or 1
-            # Metodología TVC: miembros de escuadra // medicos asignados (a la baja)
-            val = medic_engine.calcular_curas_por_medico(pax, meds_count)
+            # Metodología TVC: total curas escuadra // medicos asignados (individual no compartido)
+            val = medic_engine.calcular_curas_por_medico(pax, meds_count, ratio_doctrina)
             medic_engine.update_sanitario_recursos(conn, med['uid'] or med['nombre_jugador'], val)
             count += 1
     else:
@@ -5116,13 +5180,18 @@ def api_admin_medicos_refill_all():
         ''').fetchall()
         for eq in equipos:
             pax = eq['miembros_count'] or 0
-            val = medic_engine.calcular_curas_por_medico(pax, 1)
+            val = medic_engine.calcular_curas_por_medico(pax, 1, ratio_doctrina)
             sanitario_id = f"MED-{eq['id']}"
             medic_engine.update_sanitario_recursos(conn, sanitario_id, val)
             count += 1
             
     medic_engine.update_sanitario_recursos(conn, 'ADMIN', 99)
-    return jsonify({'status': 'success', 'message': f'Recargados {count} sanitarios según doctrina TVC (miembros // médicos).', 'total_actualizados': count})
+    return jsonify({
+        'status': 'success', 
+        'message': f'Recargados {count} sanitarios según doctrina TVC ({ratio_doctrina}x por operador). Cada médico dispone de cupo individual no compartido.', 
+        'total_actualizados': count,
+        'ratio_doctrina': ratio_doctrina
+    })
 
 # ==================== ADMIN GESTIÓN GLOBAL DE JUEGOS ====================
 @app.route('/api/admin/juegos/config', methods=['GET'])
