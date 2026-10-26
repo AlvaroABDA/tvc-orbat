@@ -37,8 +37,10 @@ class TestInscripcionesFlow(unittest.TestCase):
         eq_id = target_eq['id']
         eq_name = target_eq['nombre']
 
-        # Ensure target_eq has active members in DB
+        # Ensure target_eq has active members in DB and clean previous test registration
         conn = flask_app.get_db_connection()
+        conn.execute('DELETE FROM inscripciones_equipo WHERE equipo_id = ?', (eq_id,))
+        conn.commit()
         m_count = conn.execute('SELECT COUNT(*) as c FROM Miembro WHERE equipo_id = ?', (eq_id,)).fetchone()['c']
         if m_count == 0:
             conn.execute('''

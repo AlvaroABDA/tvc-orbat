@@ -1520,6 +1520,40 @@
                                     </button>
                                 </div>
                             </form>
+                        <!-- REGISTRO DE AUDITORÍA MÉDICA ICE (BREAK-THE-GLASS / RGPD ART. 9) -->
+                        <div style="margin-top: 1.8rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(231,76,60,0.35); border-radius: 6px; padding: 16px 18px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                                <div>
+                                    <div style="font-size: 0.88rem; font-weight: 700; color: #ff6b81; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 6px;">
+                                        <span class="material-symbols-outlined" style="font-size: 20px; color: #ff6b81;">policy</span>
+                                        REGISTRO DE AUDITORÍA MÉDICA I.C.E. (BREAK-THE-GLASS / RGPD ART. 9)
+                                    </div>
+                                    <div style="font-size: 0.76rem; color: #94a3b8; margin-top: 2px;">
+                                        Trazabilidad legal de accesos a datos clínicos y contactos de emergencia durante la operación.
+                                    </div>
+                                </div>
+                                <button type="button" class="btn outline btn-sm" onclick="cargarAuditoriaIce()" style="border-color: #ff6b81; color: #ff6b81; padding: 4px 10px; font-size: 0.78rem; cursor: pointer;">
+                                    <span class="material-symbols-outlined" style="font-size: 15px; vertical-align: middle;">refresh</span> Actualizar Auditoría
+                                </button>
+                            </div>
+
+                            <div style="overflow-x: auto; max-height: 260px; overflow-y: auto;">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; font-family: 'Share Tech Mono', monospace;">
+                                    <thead>
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.15); color: #94a3b8; text-align: left;">
+                                            <th style="padding: 6px 8px;">FECHA / HORA</th>
+                                            <th style="padding: 6px 8px;">USUARIO / ROL</th>
+                                            <th style="padding: 6px 8px;">JUGADOR HERIDO</th>
+                                            <th style="padding: 6px 8px;">ESCUADRA</th>
+                                            <th style="padding: 6px 8px;">MOTIVO DECLARADO</th>
+                                            <th style="padding: 6px 8px;">IP ORIGEN</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-auditoria-ice-body">
+                                        <tr><td colspan="6" style="padding: 14px; text-align: center; color: #64748b;">No hay accesos registrados a fichas médicas.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1836,8 +1870,37 @@
                         if (formActivo) formActivo.checked = Boolean(data.bloqueado);
                         if (formFase) formFase.value = data.fase_inscripcion || 'CERRADAS';
                         if (formMotivo) formMotivo.value = data.motivo || '';
+
+                        await cargarAuditoriaIce();
                     } catch (err) {
                         console.error('Error cargando seguridad servicio:', err);
+                    }
+                }
+
+                async function cargarAuditoriaIce() {
+                    const tbody = document.getElementById('tabla-auditoria-ice-body');
+                    if (!tbody) return;
+                    try {
+                        const res = await fetch('/api/admin/seguridad/auditoria_ice', { cache: 'no-store' });
+                        if (!res.ok) return;
+                        const json = await res.json();
+                        const records = json.data || [];
+                        if (records.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="6" style="padding: 14px; text-align: center; color: #64748b;">No hay accesos registrados a fichas médicas.</td></tr>';
+                            return;
+                        }
+                        tbody.innerHTML = records.map(r => `
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.06);">
+                                <td style="padding: 6px 8px; color: #e2e8f0; font-size: 0.78rem;">${r.accedido_en || '--'}</td>
+                                <td style="padding: 6px 8px;"><b style="color: #00f0ff;">${r.usuario_id || '--'}</b> <span style="font-size:0.7rem; color:#888;">(${r.rol || '--'})</span></td>
+                                <td style="padding: 6px 8px; color: #ff6b81; font-weight: bold;">${r.nombre_jugador || '--'} <span style="font-size:0.7rem; color:#aaa;">[${r.miembro_uid || ''}]</span></td>
+                                <td style="padding: 6px 8px; color: #94a3b8;">${r.equipo_nombre || '--'}</td>
+                                <td style="padding: 6px 8px; color: #f1c40f;">${r.motivo || '--'}</td>
+                                <td style="padding: 6px 8px; color: #64748b; font-size: 0.72rem;">${r.ip_origen || '--'}</td>
+                            </tr>
+                        `).join('');
+                    } catch (e) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="padding: 14px; text-align: center; color: #ef4444;">Error cargando auditoría médica.</td></tr>';
                     }
                 }
 

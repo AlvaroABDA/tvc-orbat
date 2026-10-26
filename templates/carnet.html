@@ -1002,7 +1002,8 @@
             uid: "{{ miembro.uid if miembro and miembro.uid != 'None' else '' }}",
             nickname: "{{ miembro.nombre_jugador if miembro and miembro.nombre_jugador != 'None' else '' }}",
             realName: "{{ miembro.nombre_apellidos if miembro and miembro.nombre_apellidos != 'None' else '' }}",
-            dni: "{{ miembro.dni if miembro and miembro.dni != 'None' else '' }}"
+            dni: "{{ miembro.dni if miembro and miembro.dni != 'None' else '' }}",
+            token: "{{ miembro.token_acceso if miembro and miembro.token_acceso else '' }}"
         };
 
         const setCensored = (el, text) => {

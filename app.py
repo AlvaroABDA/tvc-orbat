@@ -12,6 +12,9 @@ import op_dinamico_engine
 from field_medic import medic_engine
 import math
 import json
+import uuid
+import crypto_vault
+
 
 def calculate_azimuth(lat_origin, lng_origin, lat_target, lng_target):
     dy = float(lat_target) - float(lat_origin)
@@ -403,6 +406,114 @@ def ensure_seguridad_servicio_tables(conn):
         conn.commit()
     except Exception as e:
         print("Error en ensure_seguridad_servicio_tables:", e)
+
+def ensure_gdpr_security_tables(conn):
+    try:
+        # Columna token_acceso en Miembro
+        try:
+            conn.execute('ALTER TABLE Miembro ADD COLUMN token_acceso TEXT;')
+        except Exception:
+            pass
+        try:
+            conn.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_miembro_token_acceso ON Miembro(token_acceso);')
+        except Exception:
+            pass
+
+        # Generar token_acceso para miembros que no tengan
+        rows = conn.execute("SELECT id, token_acceso FROM Miembro WHERE token_acceso IS NULL OR token_acceso = ''").fetchall()
+        for r in rows:
+            new_tok = uuid.uuid4().hex
+            conn.execute('UPDATE Miembro SET token_acceso = ? WHERE id = ?', (new_tok, r['id']))
+
+        # Tabla de Auditoría Acceso ICE (Break-the-glass)
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS AuditoriaAccesoICE (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                usuario_id TEXT,
+                rol TEXT,
+                miembro_id INTEGER NOT NULL,
+                motivo TEXT NOT NULL,
+                ip_origen TEXT,
+                accedido_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
+            )
+        ''')
+        conn.commit()
+    except Exception as e:
+        print("[GDPR] Error en ensure_gdpr_security_tables:", e)
+
+def migrate_gdpr_encryption(conn):
+    """
+    Migración en caliente y transparente de datos sensibles en SQLite (Zero Data Loss).
+    Cifra los datos en texto claro de Miembro y Miembro_ICE sin duplicar ni romper compatibilidad.
+    """
+    try:
+        ensure_gdpr_security_tables(conn)
+        
+        # 1. Cifrado de Miembro (dni, telefono, email, nombre_apellidos)
+        m_rows = conn.execute("SELECT id, dni, telefono, email, nombre_apellidos FROM Miembro").fetchall()
+        for m in m_rows:
+            needs_update = False
+            dni_c = m['dni']
+            tel_c = m['telefono']
+            email_c = m['email']
+            nom_c = m['nombre_apellidos']
+
+            if dni_c and not crypto_vault.is_encrypted(dni_c):
+                dni_c = crypto_vault.encrypt_val(dni_c)
+                needs_update = True
+            if tel_c and not crypto_vault.is_encrypted(tel_c):
+                tel_c = crypto_vault.encrypt_val(tel_c)
+                needs_update = True
+            if email_c and not crypto_vault.is_encrypted(email_c):
+                email_c = crypto_vault.encrypt_val(email_c)
+                needs_update = True
+            if nom_c and not crypto_vault.is_encrypted(nom_c):
+                nom_c = crypto_vault.encrypt_val(nom_c)
+                needs_update = True
+
+            if needs_update:
+                conn.execute(
+                    "UPDATE Miembro SET dni = ?, telefono = ?, email = ?, nombre_apellidos = ? WHERE id = ?",
+                    (dni_c, tel_c, email_c, nom_c, m['id'])
+                )
+
+        # 2. Cifrado de Miembro_ICE
+        try:
+            ice_rows = conn.execute("""
+                SELECT miembro_id, alergias, condiciones_medicas, medicacion_actual,
+                       contacto_nombre, contacto_telefono, contacto_parentesco, observaciones
+                FROM Miembro_ICE
+            """).fetchall()
+            for ice in ice_rows:
+                needs_update = False
+                updates = {}
+                for field in ('alergias', 'condiciones_medicas', 'medicacion_actual',
+                              'contacto_nombre', 'contacto_telefono', 'contacto_parentesco', 'observaciones'):
+                    val = ice[field]
+                    if val and not crypto_vault.is_encrypted(val):
+                        updates[field] = crypto_vault.encrypt_val(val)
+                        needs_update = True
+                    else:
+                        updates[field] = val
+                if needs_update:
+                    conn.execute("""
+                        UPDATE Miembro_ICE SET
+                            alergias = :alergias,
+                            condiciones_medicas = :condiciones_medicas,
+                            medicacion_actual = :medicacion_actual,
+                            contacto_nombre = :contacto_nombre,
+                            contacto_telefono = :contacto_telefono,
+                            contacto_parentesco = :contacto_parentesco,
+                            observaciones = :observaciones
+                        WHERE miembro_id = :miembro_id
+                    """, {**updates, 'miembro_id': ice['miembro_id']})
+        except Exception:
+            pass
+
+        conn.commit()
+    except Exception as e:
+        print("[GDPR] Error en migrate_gdpr_encryption:", e)
 
 def get_seguridad_servicio_config(conn=None):
     close_at_end = False
@@ -1274,8 +1385,16 @@ def manage_equipos():
         for eq in equipos_list:
             if not is_admin:
                 eq.pop('valoracion', None)
+            is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == eq['id'])
             miembros = conn.execute('SELECT * FROM Miembro WHERE equipo_id = ?', (eq['id'],)).fetchall()
-            eq['miembros'] = [dict(m) for m in miembros]
+            eq_miembros = []
+            for m in miembros:
+                m_dict = dict(m)
+                m_dict = crypto_vault.decrypt_miembro_dict(m_dict)
+                if not (is_admin or is_owner):
+                    m_dict = crypto_vault.sanitize_miembro_public(m_dict, keep_masked_dni=True)
+                eq_miembros.append(m_dict)
+            eq['miembros'] = eq_miembros
             
             historial = conn.execute('SELECT * FROM Historial_Equipo WHERE equipo_id = ?', (eq['id'],)).fetchall()
             eq['historial'] = [dict(h) for h in historial]
@@ -1340,13 +1459,17 @@ def manage_equipos():
         new_id = cursor.lastrowid
         
         if 'miembros' in data and isinstance(data['miembros'], list):
-            import uuid
             for m in data['miembros']:
                 new_uid = str(uuid.uuid4()).split('-')[0].upper()
+                token_acceso = uuid.uuid4().hex
                 activo_val = 1 if m.get('activo', 1) in [1, '1', True] else 0
+                c_nom = crypto_vault.encrypt_val(m.get('nombre_apellidos', ''))
+                c_dni = crypto_vault.encrypt_val(m.get('dni', ''))
+                c_tel = crypto_vault.encrypt_val(m.get('telefono', ''))
+                c_email = crypto_vault.encrypt_val(m.get('email', ''))
                 cursor.execute(
-                    'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid, nombre_apellidos, dni, telefono, email, bando_original, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                    (new_id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), activo_val)
+                    'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid, nombre_apellidos, dni, telefono, email, bando_original, activo, token_acceso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    (new_id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, c_nom, c_dni, c_tel, c_email, m.get('bando_original', ''), activo_val, token_acceso)
                 )
         
         if 'historial' in data and isinstance(data['historial'], list):
@@ -1669,19 +1792,23 @@ def update_delete_equipo(id):
                     clean_old_files(jugadores_dir, f"miembro_{dm['id']}.*")
                 cursor.execute('DELETE FROM Miembro WHERE equipo_id = ?', (id,))
                 
-            import uuid
             for m in data['miembros']:
                 activo_val = 1 if m.get('activo', 1) in [1, '1', True] else 0
+                c_nom = crypto_vault.encrypt_val(m.get('nombre_apellidos', ''))
+                c_dni = crypto_vault.encrypt_val(m.get('dni', ''))
+                c_tel = crypto_vault.encrypt_val(m.get('telefono', ''))
+                c_email = crypto_vault.encrypt_val(m.get('email', ''))
                 if m.get('id'):
                     cursor.execute(
                         'UPDATE Miembro SET nombre_jugador = ?, rol = ?, armamento = ?, nombre_apellidos = ?, dni = ?, telefono = ?, email = ?, bando_original = ?, activo = ? WHERE id = ? AND equipo_id = ?',
-                        (m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), activo_val, m['id'], id)
+                        (m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), c_nom, c_dni, c_tel, c_email, m.get('bando_original', ''), activo_val, m['id'], id)
                     )
                 else:
                     new_uid = str(uuid.uuid4()).split('-')[0].upper()
+                    token_acceso = uuid.uuid4().hex
                     cursor.execute(
-                        'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid, nombre_apellidos, dni, telefono, email, bando_original, activo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-                        (id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, m.get('nombre_apellidos', ''), m.get('dni', ''), m.get('telefono', ''), m.get('email', ''), m.get('bando_original', ''), activo_val)
+                        'INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid, nombre_apellidos, dni, telefono, email, bando_original, activo, token_acceso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                        (id, m.get('nombre_jugador', ''), m.get('rol', 'Operador'), m.get('armamento', 'Fusilero'), new_uid, c_nom, c_dni, c_tel, c_email, m.get('bando_original', ''), activo_val, token_acceso)
                     )
                 
         # Update historial (only admin can modify team history)
@@ -3597,33 +3724,80 @@ def geo_validation_config():
         set_config(config)
         return jsonify({'status': 'success', 'enabled': config['geo_validation_enabled']})
 
-@app.route('/carnet/<int:id>')
-def view_carnet(id):
+@app.route('/carnet/<identificador>')
+def view_carnet(identificador):
     conn = get_db_connection()
-    miembro = conn.execute('''
-        SELECT m.*, f.color as faccion_color, f.nombre as faccion_nombre, COALESCE(e.logo_url, e.foto_url) as equipo_logo, e.nombre as equipo_nombre
-        FROM Miembro m 
-        JOIN Equipo e ON m.equipo_id = e.id 
-        JOIN Faccion f ON e.faccion_id = f.id 
-        WHERE m.id = ?
-    ''', (id,)).fetchone()
+    ensure_gdpr_security_tables(conn)
+    ident_str = str(identificador).strip()
+    
+    if ident_str.isdigit():
+        miembro = conn.execute('''
+            SELECT m.*, f.color as faccion_color, f.nombre as faccion_nombre, COALESCE(e.logo_url, e.foto_url) as equipo_logo, e.nombre as equipo_nombre
+            FROM Miembro m 
+            JOIN Equipo e ON m.equipo_id = e.id 
+            JOIN Faccion f ON e.faccion_id = f.id 
+            WHERE m.id = ? OR m.token_acceso = ?
+        ''', (int(ident_str), ident_str)).fetchone()
+    else:
+        miembro = conn.execute('''
+            SELECT m.*, f.color as faccion_color, f.nombre as faccion_nombre, COALESCE(e.logo_url, e.foto_url) as equipo_logo, e.nombre as equipo_nombre
+            FROM Miembro m 
+            JOIN Equipo e ON m.equipo_id = e.id 
+            JOIN Faccion f ON e.faccion_id = f.id 
+            WHERE m.token_acceso = ?
+        ''', (ident_str,)).fetchone()
+
     if not miembro:
         conn.close()
         return "Jugador no encontrado", 404
         
-    ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (id,)).fetchone()
-    armas = conn.execute('SELECT * FROM Miembro_Arma WHERE miembro_id = ? ORDER BY id ASC', (id,)).fetchall()
+    m_id = miembro['id']
+    ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (m_id,)).fetchone()
+    armas = conn.execute('SELECT * FROM Miembro_Arma WHERE miembro_id = ? ORDER BY id ASC', (m_id,)).fetchall()
     conn.close()
+
+    is_admin = session.get('role') == 'admin'
+    is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == miembro['equipo_id'])
+    is_self = (session.get('role') == 'operador' and session.get('miembro_id') == m_id)
+    is_auth = (is_admin or is_owner or is_self)
+    
+    m_dict = dict(miembro)
+    if is_auth:
+        m_dict = crypto_vault.decrypt_miembro_dict(m_dict)
+        ice_dict = crypto_vault.decrypt_ice_dict(dict(ice)) if ice else None
+    else:
+        # Vista pública/QR: Enmascarar DNI según estándar AEPD y ocultar datos civiles
+        raw_dni = m_dict.get('dni')
+        m_dict['dni'] = crypto_vault.mask_dni(raw_dni)
+        m_dict['nombre_apellidos'] = ""
+        m_dict['telefono'] = ""
+        m_dict['email'] = ""
+        m_dict.pop('pin', None)
+        if ice:
+            ice_dict = {
+                'miembro_id': m_id,
+                'grupo_sanguineo': ice['grupo_sanguineo'],
+                'alergias': 'PROTEGIDO (RGPD)',
+                'condiciones_medicas': 'PROTEGIDO (RGPD)',
+                'medicacion_actual': 'PROTEGIDO (RGPD)',
+                'contacto_nombre': 'PROTEGIDO (RGPD)',
+                'contacto_telefono': 'PROTEGIDO (RGPD)',
+                'contacto_parentesco': '',
+                'observaciones': ''
+            }
+        else:
+            ice_dict = None
         
     color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
-    hex_color = color_map.get(miembro['faccion_color'], '#00d2ff')
+    hex_color = color_map.get(m_dict.get('faccion_color'), '#00d2ff')
     
     return render_template(
         'carnet.html',
-        miembro=dict(miembro),
+        miembro=m_dict,
         hex_color=hex_color,
-        ice=dict(ice) if ice else None,
-        armas=[dict(a) for a in armas]
+        ice=ice_dict,
+        armas=[dict(a) for a in armas],
+        is_auth=is_auth
     )
 
 @app.route('/api/miembros/<int:id>/foto', methods=['POST'])
@@ -3867,6 +4041,12 @@ def patch_db():
         except Exception as e:
             print("Error inicializando tabla seguridad_servicio_config:", e)
 
+        # Migración y cifrado de seguridad LOPD / RGPD (Cifrado en reposo AES-256)
+        try:
+            migrate_gdpr_encryption(conn)
+        except Exception as e:
+            print("Error en migración y cifrado LOPD/RGPD:", e)
+
         # Migración: Resolver duplicados históricos de nicks para garantizar unicidad y evitar colisiones de login
         try:
             dup_rows = conn.execute('''
@@ -4101,10 +4281,13 @@ def operador_portal():
     color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
     hex_color = color_map.get(miembro['faccion_color'], '#00d2ff')
     
+    m_dict = crypto_vault.decrypt_miembro_dict(dict(miembro))
+    ice_dict = crypto_vault.decrypt_ice_dict(dict(ice)) if ice else None
+
     return render_template(
         'operador_portal.html',
-        miembro=dict(miembro),
-        ice=dict(ice) if ice else None,
+        miembro=m_dict,
+        ice=ice_dict,
         armas=[dict(a) for a in armas],
         ready_check=dict(ready_check) if ready_check else None,
         is_medic=is_medic,
@@ -4166,7 +4349,7 @@ def api_operador_perfil():
         conn.close()
         if not m:
             return jsonify({'error': 'No encontrado'}), 404
-        return jsonify(dict(m))
+        return jsonify(crypto_vault.decrypt_miembro_dict(dict(m)))
         
     elif request.method == 'POST':
         data = request.json or {}
@@ -4182,9 +4365,14 @@ def api_operador_perfil():
         nvg_categoria = data.get('nvg_categoria', '').strip() if tiene_nvg else ''
         nvg_modelo = data.get('nvg_modelo', '').strip() if tiene_nvg else ''
         
+        c_nom = crypto_vault.encrypt_val(nombre_apellidos)
+        c_dni = crypto_vault.encrypt_val(dni)
+        c_tel = crypto_vault.encrypt_val(telefono)
+        c_email = crypto_vault.encrypt_val(email)
+
         pin = data.get('pin')
         pin_update_sql = ""
-        params = [nombre_apellidos, dni, telefono, email, armamento, tiene_dron, dron_modelo, tiene_nvg, nvg_categoria, nvg_modelo]
+        params = [c_nom, c_dni, c_tel, c_email, armamento, tiene_dron, dron_modelo, tiene_nvg, nvg_categoria, nvg_modelo]
         if pin is not None:
             pin_str = str(pin).strip()
             if pin_str:
@@ -4613,7 +4801,7 @@ def api_operador_ice():
     if request.method == 'GET':
         ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (miembro_id,)).fetchone()
         conn.close()
-        return jsonify(dict(ice) if ice else {})
+        return jsonify(crypto_vault.decrypt_ice_dict(dict(ice)) if ice else {})
         
     elif request.method == 'POST':
         data = request.json or {}
@@ -4625,6 +4813,15 @@ def api_operador_ice():
         c_tel = data.get('contacto_telefono', '').strip()
         c_parentesco = data.get('contacto_parentesco', '').strip()
         obs = data.get('observaciones', '').strip()
+
+        # Cifrado en reposo AES-256 de campos sensibles de salud y contacto
+        c_alergias = crypto_vault.encrypt_val(alergias)
+        c_condiciones = crypto_vault.encrypt_val(condiciones)
+        c_medicacion = crypto_vault.encrypt_val(medicacion)
+        c_cnombre = crypto_vault.encrypt_val(c_nombre)
+        c_ctel = crypto_vault.encrypt_val(c_tel)
+        c_cparent = crypto_vault.encrypt_val(c_parentesco)
+        c_obs = crypto_vault.encrypt_val(obs)
         
         conn.execute('''
             INSERT INTO Miembro_ICE (miembro_id, grupo_sanguineo, alergias, condiciones_medicas,
@@ -4641,10 +4838,10 @@ def api_operador_ice():
                 contacto_parentesco = excluded.contacto_parentesco,
                 observaciones = excluded.observaciones,
                 actualizado_en = excluded.actualizado_en
-        ''', (miembro_id, grupo, alergias, condiciones, medicacion, c_nombre, c_tel, c_parentesco, obs))
+        ''', (miembro_id, grupo, c_alergias, c_condiciones, c_medicacion, c_cnombre, c_ctel, c_cparent, c_obs))
         conn.commit()
         conn.close()
-        return jsonify({'status': 'success', 'message': 'Ficha médica ICE guardada'})
+        return jsonify({'status': 'success', 'message': 'Ficha médica ICE guardada con cifrado RGPD'})
 
 @app.route('/api/miembros/<int:id>/ice', methods=['GET'])
 def api_miembro_ice(id):
@@ -4664,14 +4861,46 @@ def api_miembro_ice(id):
     if not (is_admin or is_tl or is_self):
         conn.close()
         return jsonify({'error': 'No autorizado para consultar estos datos médicos'}), 403
+
+    # Registro de auditoría Break-the-Glass (RGPD Art. 9)
+    try:
+        ensure_gdpr_security_tables(conn)
+        usuario_id = session.get('usuario') or session.get('user') or session.get('role', 'usuario')
+        rol = session.get('role', 'desconocido')
+        motivo = request.args.get('motivo', 'Consulta autorizada desde panel de mando/equipo').strip() or 'Consulta autorizada'
+        ip_origen = request.remote_addr
+        conn.execute('''
+            INSERT INTO AuditoriaAccesoICE (usuario_id, rol, miembro_id, motivo, ip_origen, accedido_en)
+            VALUES (?, ?, ?, ?, ?, datetime('now'))
+        ''', (str(usuario_id), rol, id, motivo, ip_origen))
+        conn.commit()
+    except Exception as e_aud:
+        print("[GDPR] Error registrando auditoria ICE:", e_aud)
         
     ice = conn.execute('SELECT * FROM Miembro_ICE WHERE miembro_id = ?', (id,)).fetchone()
     conn.close()
     
-    res = dict(ice) if ice else {}
+    res = crypto_vault.decrypt_ice_dict(dict(ice)) if ice else {}
     res['nombre_jugador'] = miembro['nombre_jugador']
-    res['nombre_apellidos'] = miembro['nombre_apellidos']
+    res['nombre_apellidos'] = crypto_vault.decrypt_val(miembro['nombre_apellidos'])
     return jsonify(res)
+
+@app.route('/api/admin/seguridad/auditoria_ice')
+def api_admin_seguridad_auditoria_ice():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    conn = get_db_connection()
+    ensure_gdpr_security_tables(conn)
+    rows = conn.execute('''
+        SELECT a.*, m.nombre_jugador, m.uid as miembro_uid, e.nombre as equipo_nombre
+        FROM AuditoriaAccesoICE a
+        JOIN Miembro m ON a.miembro_id = m.id
+        LEFT JOIN Equipo e ON m.equipo_id = e.id
+        ORDER BY a.accedido_en DESC
+        LIMIT 100
+    ''').fetchall()
+    conn.close()
+    return jsonify({'status': 'success', 'data': [dict(r) for r in rows]})
 
 @app.route('/api/ready_check/start', methods=['POST'])
 def api_ready_check_start():

@@ -695,7 +695,7 @@
         <section class="hub-grid">
 
             <!-- Card: Carnet Digital -->
-            <a href="/carnet/{{ miembro.id }}" target="_blank" class="hub-card">
+            <a href="/carnet/{{ miembro.token_acceso if miembro.token_acceso else miembro.id }}" target="_blank" class="hub-card">
                 <div>
                     <span class="material-symbols-outlined hub-card-icon" style="color:#00d2ff;">badge</span>
                     <h2 class="hub-card-title">MI CARNET TÁCTICO</h2>

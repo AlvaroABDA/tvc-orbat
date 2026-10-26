@@ -65,6 +65,7 @@ def init_db():
             tiene_nvg BOOLEAN DEFAULT 0,
             nvg_categoria TEXT,
             nvg_modelo TEXT,
+            token_acceso TEXT UNIQUE,
             FOREIGN KEY (equipo_id) REFERENCES Equipo (id) ON DELETE CASCADE
         )
     ''')
@@ -170,6 +171,19 @@ def init_db():
             gestionado_por TEXT,
             FOREIGN KEY(equipo_id) REFERENCES Equipo(id) ON DELETE CASCADE,
             FOREIGN KEY(faccion_id) REFERENCES Faccion(id)
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS AuditoriaAccesoICE (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id TEXT,
+            rol TEXT,
+            miembro_id INTEGER NOT NULL,
+            motivo TEXT NOT NULL,
+            ip_origen TEXT,
+            accedido_en DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (miembro_id) REFERENCES Miembro (id) ON DELETE CASCADE
         )
     ''')
     
@@ -420,7 +434,8 @@ def init_db():
                 elif old_role == 'Apoyo': armamento = 'Apoyo'
                 
                 uid = str(uuid.uuid4()).split('-')[0].upper()
-                cursor.execute('INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid) VALUES (?, ?, ?, ?, ?)', (team_id, name, rol, armamento, uid))
+                token_acceso = uuid.uuid4().hex
+                cursor.execute('INSERT INTO Miembro (equipo_id, nombre_jugador, rol, armamento, uid, token_acceso) VALUES (?, ?, ?, ?, ?, ?)', (team_id, name, rol, armamento, uid, token_acceso))
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS puntos_control (
             id INTEGER PRIMARY KEY AUTOINCREMENT, 

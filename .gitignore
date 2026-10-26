@@ -25,3 +25,10 @@ ENV/
 static/uploads/documentos_unidad/*.pdf
 !static/uploads/documentos_unidad/.gitkeep
 
+# Security Keys & Instance
+*.key
+.tvc_secret.key
+instance/
+instance/*
+
+
