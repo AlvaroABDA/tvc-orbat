@@ -110,6 +110,39 @@ async function loadDomination() {
     }
 }
 
+// --- VERIFICACIÓN DE BLOQUEO DE SERVICIO (MODO SOLO LECTURA POST-EVENTO) ---
+async function verificarEstadoServicio() {
+    try {
+        const res = await fetch('/api/seguridad/servicio', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        window.servicioBloqueado = Boolean(data.bloqueado);
+        window.servicioConfig = data;
+
+        const banner = document.getElementById('banner-servicio-bloqueado');
+        const bannerTexto = document.getElementById('banner-servicio-bloqueado-texto');
+        if (banner) {
+            if (data.bloqueado) {
+                banner.style.display = 'flex';
+                if (bannerTexto && data.motivo) {
+                    bannerTexto.textContent = data.motivo;
+                }
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        // Si el servicio está bloqueado y el usuario no es admin, ocultar botón de nueva unidad
+        const btnNuevoEquipo = document.getElementById('btn-nuevo-equipo');
+        if (btnNuevoEquipo && window.userRole !== 'admin') {
+            btnNuevoEquipo.style.display = data.bloqueado ? 'none' : '';
+        }
+    } catch (e) {
+        console.error("Error al verificar estado de servicio:", e);
+    }
+}
+window.verificarEstadoServicio = verificarEstadoServicio;
+
 document.addEventListener('DOMContentLoaded', async () => {
     // Detect if we are in the dedicated Mortero app (no ORBAT view present)
     const isMorteroApp = document.getElementById('view-mortero') && !document.getElementById('view-orbat');
@@ -127,6 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     initNavigation();
     initTabs();
     initOrbatMobileFilters();
+    await verificarEstadoServicio();
     await loadFacciones();
     await loadEquipos();
     if(window.userRole === "admin") await loadPOIs();
@@ -1215,6 +1249,11 @@ function initModal() {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        if (window.servicioBloqueado && window.userRole !== 'admin') {
+            alert('SERVICIO BLOQUEADO: El evento ha finalizado y la modificación de unidades está deshabilitada por Dirección.');
+            return;
+        }
+
         const id = document.getElementById('eq-id').value;
         const newPassword = document.getElementById('eq-password') ? document.getElementById('eq-password').value.trim() : '';
 
@@ -1480,6 +1519,38 @@ function openModal(equipo = null) {
         } else {
             addHistorialRow();
         }
+    }
+
+    // APLICAR MODO SOLO LECTURA SI EL SERVICIO ESTÁ BLOQUEADO (POST-EVENTO)
+    const isReadOnly = Boolean(window.servicioBloqueado && window.userRole !== 'admin');
+    const roNotice = document.getElementById('modal-equipo-readonly-notice');
+    const btnGuardar = document.getElementById('btn-guardar-equipo');
+    const btnAddMiembro = document.getElementById('btn-add-miembro');
+    const btnAddHistorial = document.getElementById('btn-add-historial');
+
+    if (roNotice) roNotice.style.display = isReadOnly ? 'inline-flex' : 'none';
+    if (btnGuardar) btnGuardar.style.display = isReadOnly ? 'none' : '';
+    if (btnAddMiembro) btnAddMiembro.style.display = isReadOnly ? 'none' : '';
+    if (btnAddHistorial) btnAddHistorial.style.display = isReadOnly ? 'none' : '';
+
+    if (isReadOnly) {
+        modal.querySelectorAll('input, select, textarea, button.btn-file-upload').forEach(el => {
+            if (!el.classList.contains('btn-close-modal') && el.id !== 'btn-cancel-modal') {
+                el.disabled = true;
+            }
+        });
+        modal.querySelectorAll('.btn-del-miembro, .btn-del-historial, .btn-foto-miembro, .btn-tag').forEach(el => {
+            el.style.display = 'none';
+        });
+    } else {
+        modal.querySelectorAll('input, select, textarea').forEach(el => {
+            if (!coreFields.includes(el.id) || window.userRole === 'admin') {
+                el.disabled = false;
+            }
+        });
+        modal.querySelectorAll('.btn-del-miembro, .btn-del-historial, .btn-foto-miembro, .btn-tag').forEach(el => {
+            el.style.display = '';
+        });
     }
     
     modal.classList.add('active');
@@ -1941,10 +2012,18 @@ function addHistorialRow(h = null) {
 }
 
 document.getElementById('btn-add-miembro')?.addEventListener('click', () => {
+    if (window.servicioBloqueado && window.userRole !== 'admin') {
+        alert("SERVICIO BLOQUEADO: No se pueden añadir nuevos combatientes en modo solo lectura.");
+        return;
+    }
     addMiembroRow();
 });
 
 document.getElementById('btn-add-historial')?.addEventListener('click', () => {
+    if (window.servicioBloqueado && window.userRole !== 'admin') {
+        alert("SERVICIO BLOQUEADO: No se pueden añadir registros al historial en modo solo lectura.");
+        return;
+    }
     addHistorialRow();
 });
 
@@ -2006,6 +2085,8 @@ function renderDocSlot(tipo, doc, canUpload, equipoId = null) {
         return;
     }
 
+    const isReadOnly = Boolean(window.servicioBloqueado && window.userRole !== 'admin');
+
     if (doc) {
         const sizeStr = formatBytes(doc.tamano_bytes);
         const fecha = doc.subido_en ? doc.subido_en.split(' ')[0] : '';
@@ -2017,30 +2098,49 @@ function renderDocSlot(tipo, doc, canUpload, equipoId = null) {
             <div style="color: #94a3b8; font-size: 0.7rem; margin-top: 2px;">${sizeStr} ${fecha ? '• ' + fecha : ''}</div>
         `;
 
-        actionsEl.innerHTML = `
-            <a href="${doc.archivo_url}" target="_blank" class="btn outline btn-sm" style="text-decoration: none;" title="Abrir y visualizar documento PDF">
-                <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span> Ver PDF
-            </a>
-            <label class="btn secondary btn-sm" style="cursor: pointer; margin: 0;" title="Subir nuevo PDF para actualizar">
-                <span class="material-symbols-outlined" style="font-size: 14px;">sync</span> Cambiar
-                <input type="file" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('${tipo}', this)">
-            </label>
-            <button type="button" class="btn danger btn-sm" onclick="deleteEquipoDoc(${doc.id}, '${tipo}')" title="Eliminar archivo">
-                <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
-            </button>
-        `;
+        if (isReadOnly) {
+            actionsEl.innerHTML = `
+                <a href="${doc.archivo_url}" target="_blank" class="btn outline btn-sm" style="text-decoration: none;" title="Abrir y visualizar documento PDF">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span> Ver PDF
+                </a>
+            `;
+        } else {
+            actionsEl.innerHTML = `
+                <a href="${doc.archivo_url}" target="_blank" class="btn outline btn-sm" style="text-decoration: none;" title="Abrir y visualizar documento PDF">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">open_in_new</span> Ver PDF
+                </a>
+                <label class="btn secondary btn-sm" style="cursor: pointer; margin: 0;" title="Subir nuevo PDF para actualizar">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">sync</span> Cambiar
+                    <input type="file" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('${tipo}', this)">
+                </label>
+                <button type="button" class="btn danger btn-sm" onclick="deleteEquipoDoc(${doc.id}, '${tipo}')" title="Eliminar archivo">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">delete</span>
+                </button>
+            `;
+        }
     } else {
-        statusEl.innerHTML = `<span style="color: #e2b938;">🟡 Pendiente de adjuntar</span>`;
-        actionsEl.innerHTML = `
-            <label class="btn outline btn-sm" style="cursor: pointer; margin: 0;">
-                <span class="material-symbols-outlined" style="font-size: 14px;">upload_file</span> Subir Seguro / Exención (PDF)
-                <input type="file" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('${tipo}', this)">
-            </label>
-        `;
+        if (isReadOnly) {
+            statusEl.innerHTML = `<span style="color: #94a3b8;">Sin documento adjunto</span>`;
+            actionsEl.innerHTML = `<span style="font-size: 0.72rem; color: #64748b;">(Modo solo lectura)</span>`;
+        } else {
+            statusEl.innerHTML = `<span style="color: #e2b938;">🟡 Pendiente de adjuntar</span>`;
+            actionsEl.innerHTML = `
+                <label class="btn outline btn-sm" style="cursor: pointer; margin: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">upload_file</span> Subir Seguro / Exención (PDF)
+                    <input type="file" accept=".pdf,application/pdf" style="display: none;" onchange="uploadEquipoDoc('${tipo}', this)">
+                </label>
+            `;
+        }
     }
 }
 
 async function uploadEquipoDoc(tipo, inputEl) {
+    if (window.servicioBloqueado && window.userRole !== 'admin') {
+        alert("SERVICIO BLOQUEADO: No se permite subir documentos en modo solo lectura.");
+        inputEl.value = '';
+        return;
+    }
+
     const eqId = document.getElementById('eq-id').value;
     if (!eqId) {
         alert("Por favor, guarda la unidad antes de subir documentos.");
@@ -2093,6 +2193,11 @@ async function uploadEquipoDoc(tipo, inputEl) {
 }
 
 async function deleteEquipoDoc(docId, tipo) {
+    if (window.servicioBloqueado && window.userRole !== 'admin') {
+        alert("SERVICIO BLOQUEADO: No se permite eliminar documentos en modo solo lectura.");
+        return;
+    }
+
     const tipoLabel = 'el documento de Seguro / Exención';
     if (!confirm(`¿Eliminar ${tipoLabel} de esta unidad?`)) return;
 

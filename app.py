@@ -360,6 +360,74 @@ def get_evento_alerta(conn=None):
         if close_at_end:
             conn.close()
 
+# -------------------------------------------------------------
+# CONTROL Y BLOQUEO DE SERVICIO (POST-EVENTO / READ-ONLY)
+# -------------------------------------------------------------
+def ensure_seguridad_servicio_tables(conn):
+    try:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS seguridad_servicio_config (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                bloqueado INTEGER DEFAULT 0,
+                motivo TEXT DEFAULT 'Evento finalizado. El censo y las unidades están en modo solo lectura.',
+                bloqueado_en DATETIME,
+                bloqueado_por TEXT DEFAULT 'ADMIN',
+                fase_inscripcion TEXT DEFAULT 'CERRADAS'
+            )
+        ''')
+        row = conn.execute('SELECT id FROM seguridad_servicio_config WHERE id = 1').fetchone()
+        if not row:
+            conn.execute('''
+                INSERT INTO seguridad_servicio_config (id, bloqueado, motivo, bloqueado_en, bloqueado_por, fase_inscripcion)
+                VALUES (1, 0, 'Evento finalizado. El censo y las unidades están en modo solo lectura.', CURRENT_TIMESTAMP, 'ADMIN', 'CERRADAS')
+            ''')
+        conn.commit()
+    except Exception as e:
+        print("Error en ensure_seguridad_servicio_tables:", e)
+
+def get_seguridad_servicio_config(conn=None):
+    close_at_end = False
+    if conn is None:
+        conn = get_db_connection()
+        close_at_end = not has_app_context()
+    try:
+        ensure_seguridad_servicio_tables(conn)
+        row = conn.execute('SELECT * FROM seguridad_servicio_config WHERE id = 1').fetchone()
+        if row:
+            return {
+                'bloqueado': bool(row['bloqueado']),
+                'motivo': row['motivo'] or 'Evento finalizado. El censo y las unidades están en modo solo lectura.',
+                'bloqueado_en': str(row['bloqueado_en']) if row['bloqueado_en'] else '',
+                'bloqueado_por': row['bloqueado_por'] or 'ADMIN',
+                'fase_inscripcion': row['fase_inscripcion'] or 'CERRADAS'
+            }
+        return {
+            'bloqueado': False,
+            'motivo': 'Evento finalizado. El censo y las unidades están en modo solo lectura.',
+            'bloqueado_en': '',
+            'bloqueado_por': 'ADMIN',
+            'fase_inscripcion': 'CERRADAS'
+        }
+    except Exception as e:
+        print("Error obteniendo seguridad_servicio_config:", e)
+        return {
+            'bloqueado': False,
+            'motivo': 'Evento finalizado. El censo y las unidades están en modo solo lectura.',
+            'bloqueado_en': '',
+            'bloqueado_por': 'ADMIN',
+            'fase_inscripcion': 'CERRADAS'
+        }
+    finally:
+        if close_at_end:
+            conn.close()
+
+def is_servicio_bloqueado():
+    try:
+        cfg = get_seguridad_servicio_config()
+        return cfg.get('bloqueado', False)
+    except Exception:
+        return False
+
 def get_all_juegos_config(conn=None):
     close_at_end = False
     if conn is None:
@@ -1208,6 +1276,9 @@ def manage_equipos():
         cursor = conn.cursor()
         
         is_admin = session.get('role') == 'admin'
+        if not is_admin and is_servicio_bloqueado():
+            conn.close()
+            return jsonify({'error': 'SERVICIO BLOQUEADO: El evento ha finalizado y el censo está sellado por Dirección. No se permite registrar nuevas unidades.'}), 403
         alerta_doctrina_medicos = None
         if 'miembros' in data and isinstance(data['miembros'], list):
             tot_m = len(data['miembros'])
@@ -1276,6 +1347,8 @@ def upload_equipo_logo(id):
     is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == id)
     if not (is_admin or is_owner):
         return jsonify({'error': 'Unauthorized'}), 403
+    if not is_admin and is_servicio_bloqueado():
+        return jsonify({'error': 'SERVICIO BLOQUEADO: No se permite modificar logotipos de unidad.'}), 403
     if 'logo' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -1323,6 +1396,8 @@ def upload_equipo_foto(id):
     is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == id)
     if not (is_admin or is_owner):
         return jsonify({'error': 'Unauthorized'}), 403
+    if not is_admin and is_servicio_bloqueado():
+        return jsonify({'error': 'SERVICIO BLOQUEADO: No se permite modificar fotos de unidad.'}), 403
     if 'foto' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -1396,6 +1471,8 @@ def upload_equipo_documento(id):
     is_owner = (session.get('role') == 'equipo' and session.get('equipo_id') == id)
     if not (is_admin or is_owner):
         return jsonify({'error': 'Unauthorized'}), 403
+    if not is_admin and is_servicio_bloqueado():
+        return jsonify({'error': 'SERVICIO BLOQUEADO: La subida de documentación está bloqueada por Dirección.'}), 403
 
     if 'file' not in request.files:
         return jsonify({'error': 'No se ha subido ningún archivo'}), 400
@@ -1472,6 +1549,9 @@ def delete_equipo_documento(doc_id):
     if not (is_admin or is_owner):
         conn.close()
         return jsonify({'error': 'Unauthorized'}), 403
+    if not is_admin and is_servicio_bloqueado():
+        conn.close()
+        return jsonify({'error': 'SERVICIO BLOQUEADO: No se permite eliminar documentación.'}), 403
 
     try:
         if doc['archivo_path'] and os.path.isfile(doc['archivo_path']):
@@ -1495,6 +1575,9 @@ def update_delete_equipo(id):
         if not (is_admin or is_owner):
             conn.close()
             return jsonify({'error': 'Unauthorized'}), 403
+        if not is_admin and is_servicio_bloqueado():
+            conn.close()
+            return jsonify({'error': 'SERVICIO BLOQUEADO: El evento ha finalizado. La modificación de unidades y combatientes está bloqueada por Dirección.'}), 403
 
         data = request.json
         alerta_doctrina_medicos = None
@@ -3759,6 +3842,12 @@ def patch_db():
         except Exception as e:
             print("Error inicializando tabla evento_alerta:", e)
 
+        # Inicializar tabla de control y bloqueo de servicio (Post-evento / LOPD)
+        try:
+            ensure_seguridad_servicio_tables(conn)
+        except Exception as e:
+            print("Error inicializando tabla seguridad_servicio_config:", e)
+
         # Migración: Resolver duplicados históricos de nicks para garantizar unicidad y evitar colisiones de login
         try:
             dup_rows = conn.execute('''
@@ -4385,6 +4474,8 @@ def api_admin_miembro_por_uid(uid=''):
 def api_admin_miembro_tactico(id):
     if session.get('role') not in ['admin', 'equipo']:
         return jsonify({'error': 'No autorizado'}), 403
+    if session.get('role') != 'admin' and is_servicio_bloqueado():
+        return jsonify({'error': 'SERVICIO BLOQUEADO: No se permite modificar capacidades tácticas.'}), 403
     data = request.json or {}
     tiene_dron = 1 if data.get('tiene_dron') else 0
     dron_modelo = (data.get('dron_modelo') or '').strip()
@@ -4406,6 +4497,8 @@ def api_admin_miembro_tactico(id):
 def api_crono_arma_nueva():
     if session.get('role') not in ['admin', 'equipo']:
         return jsonify({'error': 'No autorizado'}), 403
+    if session.get('role') != 'admin' and is_servicio_bloqueado():
+        return jsonify({'error': 'SERVICIO BLOQUEADO: El registro de réplicas está cerrado por Dirección.'}), 403
         
     data = request.json or {}
     miembro_id = data.get('miembro_id')
@@ -5338,6 +5431,46 @@ def api_admin_evento_alerta_post():
         return jsonify({'status': 'success', 'data': updated})
     except Exception as e:
         print("Error actualizando evento_alerta:", e)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    finally:
+        if not has_app_context():
+            conn.close()
+
+# -------------------------------------------------------------
+# RUTAS DE CONTROL DE BLOQUEO DE SERVICIO (POST-EVENTO / LOPD)
+# -------------------------------------------------------------
+@app.route('/api/seguridad/servicio', methods=['GET'])
+def api_seguridad_servicio_get():
+    cfg = get_seguridad_servicio_config()
+    cfg['is_admin'] = (session.get('role') == 'admin')
+    return jsonify(cfg)
+
+@app.route('/api/admin/seguridad/servicio', methods=['POST'])
+def api_admin_seguridad_servicio_post():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    data = request.json or {}
+    bloqueado = 1 if data.get('bloqueado', False) else 0
+    motivo = str(data.get('motivo', 'Evento finalizado. El censo y las unidades están en modo solo lectura.')).strip()
+    fase = str(data.get('fase_inscripcion', 'CERRADAS')).strip().upper()
+    if fase not in ['ABIERTAS', 'REVISION', 'CERRADAS']:
+        fase = 'CERRADAS'
+    
+    admin_user = session.get('username') or session.get('user') or 'ADMIN'
+    
+    conn = get_db_connection()
+    try:
+        ensure_seguridad_servicio_tables(conn)
+        conn.execute('''
+            UPDATE seguridad_servicio_config
+            SET bloqueado = ?, motivo = ?, bloqueado_en = CURRENT_TIMESTAMP, bloqueado_por = ?, fase_inscripcion = ?
+            WHERE id = 1
+        ''', (bloqueado, motivo, admin_user, fase))
+        conn.commit()
+        updated = get_seguridad_servicio_config(conn)
+        return jsonify({'status': 'success', 'data': updated})
+    except Exception as e:
+        print("Error actualizando seguridad_servicio_config:", e)
         return jsonify({'status': 'error', 'message': str(e)}), 500
     finally:
         if not has_app_context():
