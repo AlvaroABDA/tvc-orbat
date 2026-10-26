@@ -1820,6 +1820,37 @@ def update_delete_equipo(id):
                     (id, h.get('operacion', ''), h.get('mision_id', None), h.get('grupo_rol', ''), h.get('valoracion', ''), h.get('faccion_id', None))
                 )
 
+        # Sincronizar censo activo en inscripciones si la escuadra ya tiene solicitud tramitada
+        try:
+            ensure_seguridad_servicio_tables(conn)
+            existing_insc = cursor.execute('SELECT id, estado_admision FROM inscripciones_equipo WHERE equipo_id = ?', (id,)).fetchone()
+            if existing_insc:
+                activos_rows = cursor.execute('''
+                    SELECT id, nombre_jugador, nombre_apellidos, dni, rol, armamento, telefono, email, tiene_nvg, tiene_dron, listo_combate
+                    FROM Miembro 
+                    WHERE equipo_id = ? AND (activo = 1 OR activo IS NULL)
+                ''', (id,)).fetchall()
+                num_act_sync = len(activos_rows)
+                snap_sync = [{
+                    'id': m['id'],
+                    'nombre_jugador': m['nombre_jugador'],
+                    'nombre_apellidos': m['nombre_apellidos'] or '',
+                    'dni': m['dni'] or '',
+                    'rol': m['rol'] or 'Operador',
+                    'armamento': m['armamento'] or 'Fusilero',
+                    'telefono': m['telefono'] or '',
+                    'email': m['email'] or '',
+                    'tiene_nvg': bool(m['tiene_nvg']),
+                    'tiene_dron': bool(m['tiene_dron'])
+                } for m in activos_rows]
+                cursor.execute('''
+                    UPDATE inscripciones_equipo
+                    SET num_activos = ?, miembros_snapshot = ?, fecha_solicitud = CURRENT_TIMESTAMP
+                    WHERE equipo_id = ?
+                ''', (num_act_sync, json.dumps(snap_sync), id))
+        except Exception as e_sync:
+            print("Error sincronizando inscripcion tras actualizar miembros:", e_sync)
+
         conn.commit()
         conn.close()
         return jsonify({'status': 'success', 'alerta_medicos': alerta_doctrina_medicos})
@@ -5729,10 +5760,14 @@ def api_admin_seguridad_servicio_post():
 # -------------------------------------------------------------
 @app.route('/api/inscripciones/mi-estado', methods=['GET'])
 def api_inscripciones_mi_estado():
-    is_admin = session.get('role') == 'admin'
-    target_equipo_id = request.args.get('equipo_id', type=int) if is_admin else None
-    if not target_equipo_id:
-        target_equipo_id = session.get('equipo_id')
+    role = str(session.get('role', '')).lower()
+    is_admin = (role == 'admin')
+    
+    raw_id = request.args.get('equipo_id') or session.get('equipo_id')
+    try:
+        target_equipo_id = int(raw_id) if raw_id is not None else None
+    except (ValueError, TypeError):
+        target_equipo_id = None
     
     if not target_equipo_id:
         return jsonify({'error': 'No se especificó equipo o no hay sesión de escuadra activa'}), 400
@@ -5790,12 +5825,23 @@ def api_inscripciones_mi_estado():
 
 @app.route('/api/inscripciones/enviar', methods=['POST'])
 def api_inscripciones_enviar():
-    is_admin = session.get('role') == 'admin'
+    role = str(session.get('role', '')).lower()
+    is_admin = (role == 'admin')
     data = request.json or {}
     
-    target_equipo_id = data.get('equipo_id') if is_admin else session.get('equipo_id')
+    raw_id = data.get('equipo_id') or session.get('equipo_id')
+    try:
+        target_equipo_id = int(raw_id) if raw_id is not None else None
+    except (ValueError, TypeError):
+        target_equipo_id = None
+        
     if not target_equipo_id:
         return jsonify({'error': 'No hay sesión de escuadra activa para tramitar la inscripción'}), 403
+        
+    if not is_admin:
+        sess_eq_id = session.get('equipo_id')
+        if sess_eq_id is not None and int(sess_eq_id) != target_equipo_id:
+            return jsonify({'error': 'No tienes permisos para tramitar la inscripción de otra escuadra'}), 403
         
     conn = get_db_connection()
     try:
@@ -5838,6 +5884,7 @@ def api_inscripciones_enviar():
             })
             
         notas_tl = str(data.get('notas_tl', '')).strip()
+        faccion_id = eq['faccion_id'] or 1
         existing = conn.execute('SELECT id, estado_admision, estado_pago, monto_total FROM inscripciones_equipo WHERE equipo_id = ?', (target_equipo_id,)).fetchone()
         
         if existing:
@@ -5846,7 +5893,7 @@ def api_inscripciones_enviar():
                 UPDATE inscripciones_equipo
                 SET num_activos = ?, miembros_snapshot = ?, notas_tl = ?, fecha_solicitud = CURRENT_TIMESTAMP, estado_admision = ?, faccion_id = ?
                 WHERE equipo_id = ?
-            ''', (num_activos, json.dumps(snapshot), notas_tl, nuevo_estado_adm, eq['faccion_id'], target_equipo_id))
+            ''', (num_activos, json.dumps(snapshot), notas_tl, nuevo_estado_adm, faccion_id, target_equipo_id))
             inscripcion_id = existing['id']
             estado_admision = nuevo_estado_adm
             estado_pago = existing['estado_pago']
@@ -5854,7 +5901,7 @@ def api_inscripciones_enviar():
             cursor = conn.execute('''
                 INSERT INTO inscripciones_equipo (equipo_id, faccion_id, num_activos, miembros_snapshot, estado_admision, estado_pago, notas_tl, fecha_solicitud)
                 VALUES (?, ?, ?, ?, 'PENDIENTE', 'PENDIENTE', ?, CURRENT_TIMESTAMP)
-            ''', (target_equipo_id, eq['faccion_id'], num_activos, json.dumps(snapshot), notas_tl))
+            ''', (target_equipo_id, faccion_id, num_activos, json.dumps(snapshot), notas_tl))
             inscripcion_id = cursor.lastrowid
             estado_admision = 'PENDIENTE'
             estado_pago = 'PENDIENTE'
@@ -5892,8 +5939,8 @@ def api_admin_inscripciones_list():
                    e.nombre as equipo_nombre, e.codigo as equipo_codigo, e.logo_url as equipo_logo,
                    f.nombre as faccion_nombre
             FROM inscripciones_equipo i
-            JOIN Equipo e ON i.equipo_id = e.id
-            JOIN Faccion f ON i.faccion_id = f.id
+            LEFT JOIN Equipo e ON i.equipo_id = e.id
+            LEFT JOIN Faccion f ON COALESCE(i.faccion_id, e.faccion_id) = f.id
             ORDER BY i.fecha_solicitud DESC
         ''').fetchall()
         
@@ -5960,11 +6007,11 @@ def api_admin_inscripciones_list():
             inscripciones.append({
                 'id': r['id'],
                 'equipo_id': r['equipo_id'],
-                'equipo_nombre': r['equipo_nombre'],
+                'equipo_nombre': r['equipo_nombre'] or f"Escuadra #{r['equipo_id']}",
                 'equipo_codigo': r['equipo_codigo'] or '',
                 'equipo_logo': r['equipo_logo'] or '',
-                'faccion_id': r['faccion_id'],
-                'faccion_nombre': r['faccion_nombre'],
+                'faccion_id': r['faccion_id'] or 1,
+                'faccion_nombre': r['faccion_nombre'] or 'Sin facción',
                 'num_activos': pax,
                 'miembros_snapshot': snapshot,
                 'estado_admision': adm,

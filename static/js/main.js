@@ -1411,6 +1411,9 @@ function initModal() {
         if(window.userRole === "admin") loadPOIs();
         await loadORBAT();
         initMortero();
+        if (typeof window.cargarAdminInscripciones === 'function') {
+            window.cargarAdminInscripciones();
+        }
     });
 }
 
@@ -2197,6 +2200,9 @@ async function enviarInscripcionActual(equipoId) {
             alert(data.message || 'Inscripción transmitida con éxito a Dirección.');
             await cargarEstadoInscripcionEquipo(equipoId);
             if (typeof loadORBAT === 'function') loadORBAT();
+            if (typeof window.cargarAdminInscripciones === 'function') {
+                window.cargarAdminInscripciones();
+            }
         } else {
             alert('Error al tramitar inscripción: ' + (data.error || 'Error del servidor'));
             await cargarEstadoInscripcionEquipo(equipoId);

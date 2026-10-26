@@ -158,5 +158,12 @@ class TestInscripcionesFlow(unittest.TestCase):
         self.assertIn('CERRADAS', res_closed.get_json()['error'])
         print("Bloqueo de fase CERRADAS verificado correctamente para TL:", res_closed.get_json()['error'])
 
+    def tearDown(self):
+        # Always restore registrations to ABIERTAS and service unlocked
+        conn = flask_app.get_db_connection()
+        conn.execute("UPDATE seguridad_servicio_config SET fase_inscripcion='ABIERTAS', bloqueado=0 WHERE id=1")
+        conn.commit()
+
 if __name__ == '__main__':
     unittest.main()
+

@@ -1555,6 +1555,26 @@
                                 </table>
                             </div>
                         </div>
+
+                        <!-- ZAFARRANCHO DE COMBATE Y PURGA DE REDES -->
+                        <div id="seccion-zafarrancho" style="margin-top: 1.8rem; background: rgba(163, 42, 42, 0.12); border: 2px solid #a32a2a; border-radius: 6px; padding: 18px 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+                                <h3 style="color: #ff4d4d; margin: 0; font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                                    <span class="material-symbols-outlined" style="font-size: 24px;">warning</span>
+                                    ZAFARRANCHO DE COMBATE // PURGA Y REINICIO TÁCTICO
+                                </h3>
+                                <span style="font-size: 0.74rem; background: rgba(255,51,68,0.2); color: #ff6b81; border: 1px solid rgba(255,51,68,0.4); padding: 2px 8px; border-radius: 3px; font-weight: bold; font-family: 'Orbitron', monospace;">
+                                    ACCIÓN DESTRUCTIVA
+                                </span>
+                            </div>
+                            <p style="color: #cbd5e1; margin-bottom: 1.2rem; font-size: 0.86rem; line-height: 1.5;">
+                                <strong style="color: #ff6b81;">ATENCIÓN:</strong> Esto eliminará TODO el historial de capturas de Puntos de Control, todos los registros de Respawn y todas las <strong>intervenciones y usos médicos de campo</strong> de forma irreversible. Además, desasignará todas las misiones activas, liberará todos los PCs y restablecerá los botiquines de los sanitarios según doctrina TVC. Utilizar únicamente al inicio de la partida o para reiniciar un evento desde cero.
+                            </p>
+                            <button id="btn-zafarrancho" class="btn btn-outline" style="background: rgba(255,0,0,0.22); color: #ff4d4d; border: 2px solid #ff4d4d; width: 100%; font-weight: bold; font-family: var(--font-mono); font-size: 1.05rem; padding: 14px; border-radius: 4px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,0,0,0.4)'" onmouseout="this.style.background='rgba(255,0,0,0.22)'">
+                                <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 20px; margin-right: 6px;">delete_forever</span>
+                                PURGAR REDES Y REINICIAR (WIPE)
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1665,26 +1685,33 @@
                     </div>
                 </div>
 
-                <div id="tab-zafarrancho" class="admin-tab-content" style="display: none;">
-                    <!-- REINICIO DE ESTADISTICAS -->
-                    <div class="panel management-panel" style="border: 2px solid #a32a2a;">
-                        <h3 style="color: #ff4d4d; display: flex; align-items: center; gap: 0.5rem;"><span class="material-symbols-outlined">warning</span> ZAFARRANCHO DE COMBATE</h3>
-                        <p style="color: #aaa; margin-bottom: 1.5rem; font-size: 0.9rem;">
-                            <strong>ATENCIÓN:</strong> Esto eliminará TODO el historial de capturas de Puntos de Control, todos los registros de Respawn y todas las <strong>intervenciones y usos médicos de campo</strong> de forma irreversible. Además, desasignará todas las misiones activas, liberará todos los PCs y restablecerá los botiquines de los sanitarios según doctrina TVC. Utilizar únicamente al inicio de la partida o para reiniciar un evento desde cero.
-                        </p>
-                        <button id="btn-zafarrancho" class="btn btn-outline" style="background: rgba(255,0,0,0.2); color: #ff4d4d; border-color: #ff4d4d; width: 100%; font-weight: bold; font-family: var(--font-mono); font-size: 1.2rem; padding: 15px;">PURGAR REDES Y REINICIAR (WIPE)</button>
-                    </div>
-                </div>
             </div>
             <script>
                 document.querySelectorAll('.admin-tab-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
+                        const targetId = btn.getAttribute('data-tab');
+
+                        if (targetId === 'tab-zafarrancho') {
+                            document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
+                            document.querySelector('.admin-tab-btn[data-tab="tab-bloqueo"]')?.classList.add('active');
+                            document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
+                            const bTab = document.getElementById('tab-bloqueo');
+                            if (bTab) {
+                                bTab.style.display = 'block';
+                                cargarAdminSeguridadServicio();
+                                setTimeout(() => {
+                                    document.getElementById('seccion-zafarrancho')?.scrollIntoView({ behavior: 'smooth' });
+                                }, 80);
+                            }
+                            return;
+                        }
+
                         document.querySelectorAll('.admin-tab-btn').forEach(b => b.classList.remove('active'));
                         document.querySelectorAll('.admin-tab-content').forEach(c => c.style.display = 'none');
                         
                         btn.classList.add('active');
-                        const targetId = btn.getAttribute('data-tab');
-                        document.getElementById(targetId).style.display = 'block';
+                        const targetEl = document.getElementById(targetId);
+                        if (targetEl) targetEl.style.display = 'block';
 
                         if (targetId === 'tab-medicos') {
                             cargarAdminMedicos();
@@ -2011,6 +2038,7 @@
                         if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #ff5566; padding: 20px;">Error al cargar datos: ${err.message}</td></tr>`;
                     }
                 }
+                window.cargarAdminInscripciones = cargarAdminInscripciones;
 
                 function renderAdminInscripcionesTabla() {
                     const data = window.adminInscripcionesData;
