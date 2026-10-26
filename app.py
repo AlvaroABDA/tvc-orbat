@@ -381,6 +381,25 @@ def ensure_seguridad_servicio_tables(conn):
                 INSERT INTO seguridad_servicio_config (id, bloqueado, motivo, bloqueado_en, bloqueado_por, fase_inscripcion)
                 VALUES (1, 0, 'Evento finalizado. El censo y las unidades están en modo solo lectura.', CURRENT_TIMESTAMP, 'ADMIN', 'CERRADAS')
             ''')
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS inscripciones_equipo (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                equipo_id INTEGER NOT NULL UNIQUE,
+                faccion_id INTEGER NOT NULL,
+                num_activos INTEGER NOT NULL DEFAULT 0,
+                miembros_snapshot TEXT DEFAULT '[]',
+                estado_admision TEXT NOT NULL DEFAULT 'PENDIENTE',
+                estado_pago TEXT NOT NULL DEFAULT 'PENDIENTE',
+                monto_total REAL DEFAULT 0.0,
+                observaciones TEXT DEFAULT '',
+                notas_tl TEXT DEFAULT '',
+                fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                fecha_resolucion TIMESTAMP,
+                gestionado_por TEXT,
+                FOREIGN KEY(equipo_id) REFERENCES Equipo(id) ON DELETE CASCADE,
+                FOREIGN KEY(faccion_id) REFERENCES Faccion(id)
+            )
+        ''')
         conn.commit()
     except Exception as e:
         print("Error en ensure_seguridad_servicio_tables:", e)
@@ -5472,6 +5491,420 @@ def api_admin_seguridad_servicio_post():
     except Exception as e:
         print("Error actualizando seguridad_servicio_config:", e)
         return jsonify({'status': 'error', 'message': str(e)}), 500
+    finally:
+        if not has_app_context():
+            conn.close()
+
+# -------------------------------------------------------------
+# RUTAS DE GESTIÓN Y CICLO DE INSCRIPCIONES (EQUIPOS & ADMIN)
+# -------------------------------------------------------------
+@app.route('/api/inscripciones/mi-estado', methods=['GET'])
+def api_inscripciones_mi_estado():
+    is_admin = session.get('role') == 'admin'
+    target_equipo_id = request.args.get('equipo_id', type=int) if is_admin else None
+    if not target_equipo_id:
+        target_equipo_id = session.get('equipo_id')
+    
+    if not target_equipo_id:
+        return jsonify({'error': 'No se especificó equipo o no hay sesión de escuadra activa'}), 400
+        
+    conn = get_db_connection()
+    try:
+        ensure_seguridad_servicio_tables(conn)
+        cfg = get_seguridad_servicio_config(conn)
+        
+        eq = conn.execute('SELECT id, nombre, faccion_id, codigo FROM Equipo WHERE id = ?', (target_equipo_id,)).fetchone()
+        if not eq:
+            return jsonify({'error': 'Equipo no encontrado'}), 404
+            
+        activos_rows = conn.execute('''
+            SELECT id, nombre_jugador, nombre_apellidos, dni, rol, armamento, telefono, email, tiene_nvg, tiene_dron, listo_combate
+            FROM Miembro 
+            WHERE equipo_id = ? AND (activo = 1 OR activo IS NULL)
+        ''', (target_equipo_id,)).fetchall()
+        num_activos_actuales = len(activos_rows)
+        
+        inscripcion_row = conn.execute('''
+            SELECT * FROM inscripciones_equipo WHERE equipo_id = ?
+        ''', (target_equipo_id,)).fetchone()
+        
+        inscripcion_data = None
+        if inscripcion_row:
+            inscripcion_data = {
+                'id': inscripcion_row['id'],
+                'equipo_id': inscripcion_row['equipo_id'],
+                'faccion_id': inscripcion_row['faccion_id'],
+                'num_activos': inscripcion_row['num_activos'],
+                'estado_admision': inscripcion_row['estado_admision'],
+                'estado_pago': inscripcion_row['estado_pago'],
+                'monto_total': inscripcion_row['monto_total'],
+                'observaciones': inscripcion_row['observaciones'] or '',
+                'notas_tl': inscripcion_row['notas_tl'] or '',
+                'fecha_solicitud': str(inscripcion_row['fecha_solicitud']) if inscripcion_row['fecha_solicitud'] else '',
+                'fecha_resolucion': str(inscripcion_row['fecha_resolucion']) if inscripcion_row['fecha_resolucion'] else '',
+                'gestionado_por': inscripcion_row['gestionado_por'] or ''
+            }
+            
+        return jsonify({
+            'status': 'success',
+            'fase_inscripcion': cfg['fase_inscripcion'],
+            'bloqueado': cfg['bloqueado'],
+            'equipo_id': target_equipo_id,
+            'equipo_nombre': eq['nombre'],
+            'faccion_id': eq['faccion_id'],
+            'num_activos_actuales': num_activos_actuales,
+            'inscripcion': inscripcion_data
+        })
+    finally:
+        if not has_app_context():
+            conn.close()
+
+@app.route('/api/inscripciones/enviar', methods=['POST'])
+def api_inscripciones_enviar():
+    is_admin = session.get('role') == 'admin'
+    data = request.json or {}
+    
+    target_equipo_id = data.get('equipo_id') if is_admin else session.get('equipo_id')
+    if not target_equipo_id:
+        return jsonify({'error': 'No hay sesión de escuadra activa para tramitar la inscripción'}), 403
+        
+    conn = get_db_connection()
+    try:
+        ensure_seguridad_servicio_tables(conn)
+        cfg = get_seguridad_servicio_config(conn)
+        
+        if not is_admin:
+            if cfg['fase_inscripcion'] == 'CERRADAS':
+                return jsonify({'error': 'Las inscripciones están actualmente CERRADAS por Dirección.'}), 403
+            if cfg['bloqueado']:
+                return jsonify({'error': 'SERVICIO BLOQUEADO: No se pueden realizar trámites en modo solo lectura.'}), 403
+                
+        eq = conn.execute('SELECT id, nombre, faccion_id FROM Equipo WHERE id = ?', (target_equipo_id,)).fetchone()
+        if not eq:
+            return jsonify({'error': 'Equipo no encontrado'}), 404
+            
+        activos_rows = conn.execute('''
+            SELECT id, nombre_jugador, nombre_apellidos, dni, rol, armamento, telefono, email, tiene_nvg, tiene_dron, listo_combate
+            FROM Miembro
+            WHERE equipo_id = ? AND (activo = 1 OR activo IS NULL)
+        ''', (target_equipo_id,)).fetchall()
+        
+        if not activos_rows:
+            return jsonify({'error': 'No hay ningún combatiente marcado como ACTIVO en el censo. Marca al menos un jugador activo antes de tramitar la inscripción.'}), 400
+            
+        num_activos = len(activos_rows)
+        snapshot = []
+        for m in activos_rows:
+            snapshot.append({
+                'id': m['id'],
+                'nombre_jugador': m['nombre_jugador'],
+                'nombre_apellidos': m['nombre_apellidos'] or '',
+                'dni': m['dni'] or '',
+                'rol': m['rol'] or 'Operador',
+                'armamento': m['armamento'] or 'Fusilero',
+                'telefono': m['telefono'] or '',
+                'email': m['email'] or '',
+                'tiene_nvg': bool(m['tiene_nvg']),
+                'tiene_dron': bool(m['tiene_dron'])
+            })
+            
+        notas_tl = str(data.get('notas_tl', '')).strip()
+        existing = conn.execute('SELECT id, estado_admision, estado_pago, monto_total FROM inscripciones_equipo WHERE equipo_id = ?', (target_equipo_id,)).fetchone()
+        
+        if existing:
+            nuevo_estado_adm = 'EN_REVISION' if existing['estado_admision'] == 'APROBADA' else ('PENDIENTE' if existing['estado_admision'] == 'RECHAZADA' else existing['estado_admision'])
+            conn.execute('''
+                UPDATE inscripciones_equipo
+                SET num_activos = ?, miembros_snapshot = ?, notas_tl = ?, fecha_solicitud = CURRENT_TIMESTAMP, estado_admision = ?, faccion_id = ?
+                WHERE equipo_id = ?
+            ''', (num_activos, json.dumps(snapshot), notas_tl, nuevo_estado_adm, eq['faccion_id'], target_equipo_id))
+            inscripcion_id = existing['id']
+            estado_admision = nuevo_estado_adm
+            estado_pago = existing['estado_pago']
+        else:
+            cursor = conn.execute('''
+                INSERT INTO inscripciones_equipo (equipo_id, faccion_id, num_activos, miembros_snapshot, estado_admision, estado_pago, notas_tl, fecha_solicitud)
+                VALUES (?, ?, ?, ?, 'PENDIENTE', 'PENDIENTE', ?, CURRENT_TIMESTAMP)
+            ''', (target_equipo_id, eq['faccion_id'], num_activos, json.dumps(snapshot), notas_tl))
+            inscripcion_id = cursor.lastrowid
+            estado_admision = 'PENDIENTE'
+            estado_pago = 'PENDIENTE'
+            
+        conn.commit()
+        return jsonify({
+            'status': 'success',
+            'message': f'Inscripción de "{eq["nombre"]}" transmitida a Dirección con {num_activos} combatientes activos.',
+            'inscripcion': {
+                'id': inscripcion_id,
+                'equipo_id': target_equipo_id,
+                'num_activos': num_activos,
+                'estado_admision': estado_admision,
+                'estado_pago': estado_pago
+            }
+        })
+    finally:
+        if not has_app_context():
+            conn.close()
+
+@app.route('/api/admin/inscripciones', methods=['GET'])
+def api_admin_inscripciones_list():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    conn = get_db_connection()
+    try:
+        ensure_seguridad_servicio_tables(conn)
+        cfg = get_seguridad_servicio_config(conn)
+        
+        rows = conn.execute('''
+            SELECT i.id, i.equipo_id, i.faccion_id, i.num_activos, i.miembros_snapshot, 
+                   i.estado_admision, i.estado_pago, i.monto_total, i.observaciones, i.notas_tl,
+                   i.fecha_solicitud, i.fecha_resolucion, i.gestionado_por,
+                   e.nombre as equipo_nombre, e.codigo as equipo_codigo, e.logo_url as equipo_logo,
+                   f.nombre as faccion_nombre
+            FROM inscripciones_equipo i
+            JOIN Equipo e ON i.equipo_id = e.id
+            JOIN Faccion f ON i.faccion_id = f.id
+            ORDER BY i.fecha_solicitud DESC
+        ''').fetchall()
+        
+        inscripciones = []
+        registered_equipo_ids = set()
+        
+        total_solicitados_pax = 0
+        total_aprobados_pax = 0
+        aprobadas_count = 0
+        pendientes_count = 0
+        en_revision_count = 0
+        rechazadas_count = 0
+        pagadas_count = 0
+        pendientes_pago_count = 0
+        
+        faccion_stats = {}
+        for fac in conn.execute('SELECT id, nombre FROM Faccion').fetchall():
+            faccion_stats[fac['id']] = {
+                'id': fac['id'],
+                'nombre': fac['nombre'],
+                'escuadras_inscritas': 0,
+                'escuadras_aprobadas': 0,
+                'pax_solicitados': 0,
+                'pax_aprobados': 0
+            }
+            
+        for r in rows:
+            registered_equipo_ids.add(r['equipo_id'])
+            pax = r['num_activos'] or 0
+            adm = r['estado_admision']
+            pago = r['estado_pago']
+            
+            total_solicitados_pax += pax
+            if adm == 'APROBADA':
+                total_aprobados_pax += pax
+                aprobadas_count += 1
+            elif adm == 'EN_REVISION':
+                en_revision_count += 1
+            elif adm == 'RECHAZADA':
+                rechazadas_count += 1
+            else:
+                pendientes_count += 1
+                
+            if pago == 'PAGADO':
+                pagadas_count += 1
+            elif pago == 'PENDIENTE':
+                pendientes_pago_count += 1
+                
+            fac_id = r['faccion_id']
+            if fac_id in faccion_stats:
+                faccion_stats[fac_id]['escuadras_inscritas'] += 1
+                faccion_stats[fac_id]['pax_solicitados'] += pax
+                if adm == 'APROBADA':
+                    faccion_stats[fac_id]['escuadras_aprobadas'] += 1
+                    faccion_stats[fac_id]['pax_aprobados'] += pax
+                    
+            snapshot = []
+            try:
+                if r['miembros_snapshot']:
+                    snapshot = json.loads(r['miembros_snapshot'])
+            except Exception:
+                pass
+                
+            inscripciones.append({
+                'id': r['id'],
+                'equipo_id': r['equipo_id'],
+                'equipo_nombre': r['equipo_nombre'],
+                'equipo_codigo': r['equipo_codigo'] or '',
+                'equipo_logo': r['equipo_logo'] or '',
+                'faccion_id': r['faccion_id'],
+                'faccion_nombre': r['faccion_nombre'],
+                'num_activos': pax,
+                'miembros_snapshot': snapshot,
+                'estado_admision': adm,
+                'estado_pago': pago,
+                'monto_total': r['monto_total'] or 0.0,
+                'observaciones': r['observaciones'] or '',
+                'notas_tl': r['notas_tl'] or '',
+                'fecha_solicitud': str(r['fecha_solicitud']) if r['fecha_solicitud'] else '',
+                'fecha_resolucion': str(r['fecha_resolucion']) if r['fecha_resolucion'] else '',
+                'gestionado_por': r['gestionado_por'] or ''
+            })
+            
+        all_equipos = conn.execute('''
+            SELECT e.id, e.nombre, e.codigo, e.faccion_id, f.nombre as faccion_nombre,
+                   (SELECT COUNT(*) FROM Miembro m WHERE m.equipo_id = e.id AND (m.activo = 1 OR m.activo IS NULL)) as num_activos_censo
+            FROM Equipo e
+            JOIN Faccion f ON e.faccion_id = f.id
+            ORDER BY e.faccion_id ASC, e.nombre ASC
+        ''').fetchall()
+        
+        equipos_sin_inscribir = []
+        for eq in all_equipos:
+            if eq['id'] not in registered_equipo_ids:
+                equipos_sin_inscribir.append({
+                    'id': eq['id'],
+                    'nombre': eq['nombre'],
+                    'codigo': eq['codigo'] or '',
+                    'faccion_id': eq['faccion_id'],
+                    'faccion_nombre': eq['faccion_nombre'],
+                    'num_activos_censo': eq['num_activos_censo']
+                })
+                
+        return jsonify({
+            'status': 'success',
+            'fase_inscripcion': cfg['fase_inscripcion'],
+            'bloqueado': cfg['bloqueado'],
+            'kpis': {
+                'total_solicitados_pax': total_solicitados_pax,
+                'total_aprobados_pax': total_aprobados_pax,
+                'total_inscripciones': len(inscripciones),
+                'aprobadas_count': aprobadas_count,
+                'pendientes_count': pendientes_count,
+                'en_revision_count': en_revision_count,
+                'rechazadas_count': rechazadas_count,
+                'pagadas_count': pagadas_count,
+                'pendientes_pago_count': pendientes_pago_count,
+                'equipos_sin_inscribir_count': len(equipos_sin_inscribir),
+                'facciones': list(faccion_stats.values())
+            },
+            'inscripciones': inscripciones,
+            'equipos_sin_inscribir': equipos_sin_inscribir
+        })
+    finally:
+        if not has_app_context():
+            conn.close()
+
+@app.route('/api/admin/inscripciones/<int:id>/estado', methods=['POST'])
+def api_admin_inscripciones_estado_post(id):
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    data = request.json or {}
+    estado_admision = data.get('estado_admision')
+    estado_pago = data.get('estado_pago')
+    monto_total = data.get('monto_total')
+    observaciones = data.get('observaciones')
+    
+    if estado_admision and estado_admision not in ['PENDIENTE', 'EN_REVISION', 'APROBADA', 'RECHAZADA']:
+        return jsonify({'error': f'Estado de admisión no válido: {estado_admision}'}), 400
+    if estado_pago and estado_pago not in ['PENDIENTE', 'PAGADO', 'PARCIAL', 'EXENTO']:
+        return jsonify({'error': f'Estado de pago no válido: {estado_pago}'}), 400
+        
+    admin_user = session.get('username') or session.get('user') or 'ADMIN'
+    
+    conn = get_db_connection()
+    try:
+        ensure_seguridad_servicio_tables(conn)
+        row = conn.execute('SELECT * FROM inscripciones_equipo WHERE id = ?', (id,)).fetchone()
+        if not row:
+            return jsonify({'error': 'Inscripción no encontrada'}), 404
+            
+        new_adm = estado_admision if estado_admision is not None else row['estado_admision']
+        new_pago = estado_pago if estado_pago is not None else row['estado_pago']
+        new_monto = float(monto_total) if monto_total is not None else row['monto_total']
+        new_obs = str(observaciones) if observaciones is not None else row['observaciones']
+        
+        conn.execute('''
+            UPDATE inscripciones_equipo
+            SET estado_admision = ?, estado_pago = ?, monto_total = ?, observaciones = ?, fecha_resolucion = CURRENT_TIMESTAMP, gestionado_por = ?
+            WHERE id = ?
+        ''', (new_adm, new_pago, new_monto, new_obs, admin_user, id))
+        conn.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Estado de inscripción actualizado correctamente.',
+            'inscripcion': {
+                'id': id,
+                'estado_admision': new_adm,
+                'estado_pago': new_pago,
+                'monto_total': new_monto,
+                'observaciones': new_obs,
+                'gestionado_por': admin_user
+            }
+        })
+    finally:
+        if not has_app_context():
+            conn.close()
+
+@app.route('/api/admin/inscripciones/inscribir_de_oficio', methods=['POST'])
+def api_admin_inscripciones_de_oficio():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    data = request.json or {}
+    equipo_id = data.get('equipo_id')
+    if not equipo_id:
+        return jsonify({'error': 'Falta equipo_id'}), 400
+        
+    admin_user = session.get('username') or session.get('user') or 'ADMIN'
+    conn = get_db_connection()
+    try:
+        ensure_seguridad_servicio_tables(conn)
+        eq = conn.execute('SELECT id, nombre, faccion_id FROM Equipo WHERE id = ?', (equipo_id,)).fetchone()
+        if not eq:
+            return jsonify({'error': 'Equipo no encontrado'}), 404
+            
+        activos_rows = conn.execute('''
+            SELECT id, nombre_jugador, nombre_apellidos, dni, rol, armamento, telefono, email, tiene_nvg, tiene_dron, listo_combate
+            FROM Miembro
+            WHERE equipo_id = ? AND (activo = 1 OR activo IS NULL)
+        ''', (equipo_id,)).fetchall()
+        
+        snapshot = []
+        for m in activos_rows:
+            snapshot.append({
+                'id': m['id'],
+                'nombre_jugador': m['nombre_jugador'],
+                'nombre_apellidos': m['nombre_apellidos'] or '',
+                'dni': m['dni'] or '',
+                'rol': m['rol'] or 'Operador',
+                'armamento': m['armamento'] or 'Fusilero',
+                'telefono': m['telefono'] or '',
+                'email': m['email'] or '',
+                'tiene_nvg': bool(m['tiene_nvg']),
+                'tiene_dron': bool(m['tiene_dron'])
+            })
+            
+        num_activos = len(snapshot)
+        estado_admision = data.get('estado_admision', 'APROBADA')
+        estado_pago = data.get('estado_pago', 'PENDIENTE')
+        
+        conn.execute('''
+            INSERT INTO inscripciones_equipo (equipo_id, faccion_id, num_activos, miembros_snapshot, estado_admision, estado_pago, observaciones, fecha_solicitud, fecha_resolucion, gestionado_por)
+            VALUES (?, ?, ?, ?, ?, ?, 'Inscrito de oficio por Administración', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, ?)
+            ON CONFLICT(equipo_id) DO UPDATE SET
+                num_activos = excluded.num_activos,
+                miembros_snapshot = excluded.miembros_snapshot,
+                estado_admision = excluded.estado_admision,
+                estado_pago = excluded.estado_pago,
+                fecha_resolucion = CURRENT_TIMESTAMP,
+                gestionado_por = excluded.gestionado_por
+        ''', (equipo_id, eq['faccion_id'], num_activos, json.dumps(snapshot), estado_admision, estado_pago, admin_user))
+        conn.commit()
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'Escuadra "{eq["nombre"]}" inscrita de oficio con {num_activos} combatientes activos.'
+        })
     finally:
         if not has_app_context():
             conn.close()

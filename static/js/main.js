@@ -1557,6 +1557,9 @@ function openModal(equipo = null) {
     if (typeof cargarEquipoDocumentos === 'function') {
         cargarEquipoDocumentos(equipo ? equipo.id : null, equipo ? equipo.documentos : null);
     }
+    if (typeof cargarEstadoInscripcionEquipo === 'function') {
+        cargarEstadoInscripcionEquipo(equipo ? equipo.id : null);
+    }
     if (equipo && equipo.id && typeof startEquipoReadinessPolling === 'function') {
         startEquipoReadinessPolling(equipo.id);
     }
@@ -1631,6 +1634,10 @@ function updateJugadoresCount() {
     const activos = validRows.filter(r => r.querySelector('.miembro-activo').checked).length;
     if (!isManual) {
         document.getElementById('eq-jugadores').value = `${activos} / ${total}`;
+    }
+    const paxCountEl = document.getElementById('btn-inscripcion-pax-count');
+    if (paxCountEl) {
+        paxCountEl.textContent = activos;
     }
     updateDoctrinaMedicosFeedback(total, validRows);
 }
@@ -2034,6 +2041,171 @@ function closeModal() {
     document.getElementById('form-equipo').reset();
     document.getElementById('miembros-container').innerHTML = '';
 }
+
+// --- GESTIÓN DE INSCRIPCIONES PARA EQUIPOS ---
+async function cargarEstadoInscripcionEquipo(equipoId) {
+    const box = document.getElementById('box-tramitar-inscripcion');
+    if (!box) return;
+
+    if (!equipoId) {
+        box.style.display = 'none';
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/inscripciones/mi-estado?equipo_id=${equipoId}`);
+        if (!res.ok) {
+            box.style.display = 'none';
+            return;
+        }
+        const data = await res.json();
+        box.style.display = 'flex';
+
+        const estBadge = document.getElementById('inscripcion-estado-badge');
+        const pagoBadge = document.getElementById('inscripcion-pago-badge');
+        const infoTxt = document.getElementById('inscripcion-info-texto');
+        const notasWrap = document.getElementById('inscripcion-notas-direccion-wrap');
+        const notasTxt = document.getElementById('inscripcion-notas-direccion-txt');
+        const actContainer = document.getElementById('inscripcion-action-container');
+
+        const insc = data.inscripcion;
+        const activosCount = document.querySelectorAll('#miembros-container .miembro-activo:checked').length || data.num_activos_actuales || 0;
+
+        if (insc) {
+            // Estado admisión
+            if (insc.estado_admision === 'APROBADA') {
+                estBadge.textContent = '🟢 ADMITIDA / APROBADA';
+                estBadge.style.background = 'rgba(46, 204, 113, 0.2)';
+                estBadge.style.color = '#2ecc71';
+                estBadge.style.border = '1px solid #2ecc71';
+            } else if (insc.estado_admision === 'EN_REVISION') {
+                estBadge.textContent = '🟠 MODIFICADA (EN REVISIÓN)';
+                estBadge.style.background = 'rgba(249, 115, 22, 0.2)';
+                estBadge.style.color = '#f97316';
+                estBadge.style.border = '1px solid #f97316';
+            } else if (insc.estado_admision === 'RECHAZADA') {
+                estBadge.textContent = '🔴 RECHAZADA / SUBSANAR';
+                estBadge.style.background = 'rgba(255, 51, 68, 0.2)';
+                estBadge.style.color = '#ff5566';
+                estBadge.style.border = '1px solid #ff5566';
+            } else {
+                estBadge.textContent = '🟡 PENDIENTE DE REVISIÓN';
+                estBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+                estBadge.style.color = '#f59e0b';
+                estBadge.style.border = '1px solid #f59e0b';
+            }
+
+            // Estado pago
+            if (insc.estado_pago === 'PAGADO') {
+                pagoBadge.textContent = '🟢 PAGADO';
+                pagoBadge.style.background = 'rgba(16, 185, 129, 0.2)';
+                pagoBadge.style.color = '#10b981';
+                pagoBadge.style.border = '1px solid #10b981';
+            } else if (insc.estado_pago === 'PARCIAL') {
+                pagoBadge.textContent = '🔵 PAGO PARCIAL';
+                pagoBadge.style.background = 'rgba(0, 240, 255, 0.2)';
+                pagoBadge.style.color = '#00f0ff';
+                pagoBadge.style.border = '1px solid #00f0ff';
+            } else if (insc.estado_pago === 'EXENTO') {
+                pagoBadge.textContent = '⚪ EXENTO';
+                pagoBadge.style.background = 'rgba(148, 163, 184, 0.2)';
+                pagoBadge.style.color = '#94a3b8';
+                pagoBadge.style.border = '1px solid #94a3b8';
+            } else {
+                pagoBadge.textContent = '🟡 PAGO PENDIENTE';
+                pagoBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+                pagoBadge.style.color = '#f59e0b';
+                pagoBadge.style.border = '1px solid #f59e0b';
+            }
+
+            infoTxt.innerHTML = `Inscripción remitida formalmente con <b>${insc.num_activos} combatientes activos</b> el ${insc.fecha_solicitud}. En censo actual hay <b>${activosCount} activos</b> seleccionados.`;
+
+            if (insc.observaciones) {
+                notasWrap.style.display = 'block';
+                notasTxt.textContent = insc.observaciones;
+            } else {
+                notasWrap.style.display = 'none';
+            }
+        } else {
+            estBadge.textContent = '🟡 SIN ENVIAR (BORRADOR)';
+            estBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+            estBadge.style.color = '#f59e0b';
+            estBadge.style.border = '1px solid #f59e0b';
+
+            pagoBadge.textContent = '🟡 PAGO PENDIENTE';
+            pagoBadge.style.background = 'rgba(245, 158, 11, 0.2)';
+            pagoBadge.style.color = '#f59e0b';
+            pagoBadge.style.border = '1px solid #f59e0b';
+
+            infoTxt.innerHTML = `Tienes <b>${activosCount} combatientes activos</b> listados en tu censo. Pulsa el botón para tramitar la inscripción oficial a Dirección.`;
+            notasWrap.style.display = 'none';
+        }
+
+        // Action button
+        if (data.fase_inscripcion === 'CERRADAS' && window.userRole !== 'admin') {
+            actContainer.innerHTML = '<span style="color: #94a3b8; font-size: 0.8rem; font-style: italic;">Inscripciones cerradas por Dirección</span>';
+        } else if (data.bloqueado && window.userRole !== 'admin') {
+            actContainer.innerHTML = '<span style="color: #ff5566; font-size: 0.8rem; font-style: italic;">Servicio bloqueado (Solo lectura)</span>';
+        } else {
+            const btnColor = insc ? '#00f0ff' : '#00ff88';
+            const btnIcon = insc ? 'sync' : 'send';
+            const btnText = insc ? 'ACTUALIZAR INSCRIPCIÓN' : 'ENVIAR INSCRIPCIÓN';
+
+            actContainer.innerHTML = `
+                <button type="button" class="btn primary" id="btn-enviar-inscripcion" onclick="enviarInscripcionActual(${equipoId})" style="padding: 7px 16px; font-size: 0.84rem; font-weight: 700; background: ${btnColor}; color: #000; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; border-radius: 4px; box-shadow: 0 0 10px rgba(0,240,255,0.25);">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">${btnIcon}</span>
+                    ${btnText} (<span id="btn-inscripcion-pax-count">${activosCount}</span> PAX)
+                </button>
+            `;
+        }
+    } catch (err) {
+        console.error('Error al cargar estado de inscripción de escuadra:', err);
+    }
+}
+window.cargarEstadoInscripcionEquipo = cargarEstadoInscripcionEquipo;
+
+async function enviarInscripcionActual(equipoId) {
+    if (!equipoId) return;
+    const activosChecked = document.querySelectorAll('#miembros-container .miembro-activo:checked').length;
+    if (activosChecked === 0) {
+        alert("Debes marcar al menos un combatiente como ACTIVO en el censo para tramitar la inscripción.");
+        return;
+    }
+
+    const notas = prompt(`Vas a tramitar la inscripción oficial para ${activosChecked} combatientes activos.\n\n¿Deseas incluir alguna observación o comentario para Dirección? (Opcional):`, "") || "";
+    if (notas === null) return; // User cancelled prompt
+
+    try {
+        const btn = document.getElementById('btn-enviar-inscripcion');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 16px;">hourglass_top</span> Transmitiendo...';
+        }
+
+        const res = await fetch('/api/inscripciones/enviar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                equipo_id: equipoId,
+                notas_tl: notas
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+            alert(data.message || 'Inscripción transmitida con éxito a Dirección.');
+            await cargarEstadoInscripcionEquipo(equipoId);
+            if (typeof loadORBAT === 'function') loadORBAT();
+        } else {
+            alert('Error al tramitar inscripción: ' + (data.error || 'Error del servidor'));
+            await cargarEstadoInscripcionEquipo(equipoId);
+        }
+    } catch (err) {
+        alert('Error de red al conectar con el servidor para tramitar la inscripción.');
+        await cargarEstadoInscripcionEquipo(equipoId);
+    }
+}
+window.enviarInscripcionActual = enviarInscripcionActual;
 
 // --- DOCUMENTACIÓN OFICIAL PDF DE UNIDAD ---
 async function cargarEquipoDocumentos(equipoId, docsPreloaded = null) {

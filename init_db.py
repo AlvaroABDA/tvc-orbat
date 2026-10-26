@@ -141,6 +141,37 @@ def init_db():
             FOREIGN KEY (mision_id) REFERENCES Mision (id)
         )
     ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS seguridad_servicio_config (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            bloqueado INTEGER DEFAULT 0,
+            motivo TEXT DEFAULT 'Evento finalizado. El censo y las unidades están en modo solo lectura.',
+            bloqueado_en DATETIME,
+            bloqueado_por TEXT DEFAULT 'ADMIN',
+            fase_inscripcion TEXT DEFAULT 'CERRADAS'
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS inscripciones_equipo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            equipo_id INTEGER NOT NULL UNIQUE,
+            faccion_id INTEGER NOT NULL,
+            num_activos INTEGER NOT NULL DEFAULT 0,
+            miembros_snapshot TEXT DEFAULT '[]',
+            estado_admision TEXT NOT NULL DEFAULT 'PENDIENTE',
+            estado_pago TEXT NOT NULL DEFAULT 'PENDIENTE',
+            monto_total REAL DEFAULT 0.0,
+            observaciones TEXT DEFAULT '',
+            notas_tl TEXT DEFAULT '',
+            fecha_solicitud TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            fecha_resolucion TIMESTAMP,
+            gestionado_por TEXT,
+            FOREIGN KEY(equipo_id) REFERENCES Equipo(id) ON DELETE CASCADE,
+            FOREIGN KEY(faccion_id) REFERENCES Faccion(id)
+        )
+    ''')
     
     # Updated Grupo_Batalla table
     cursor.execute('''

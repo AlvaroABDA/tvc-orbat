@@ -912,6 +912,7 @@
             <div style="width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 10px;">
                 <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
                     <button class="btn admin-tab-btn" data-tab="tab-bloqueo" style="color: #ff3344; border-color: rgba(255,51,68,0.5); padding: 5px 14px; font-size: 0.82rem; font-weight: bold; background: rgba(255,51,68,0.08); display: inline-flex; align-items: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 16px;">lock</span> BLOQUEO DE SERVICIO</button>
+                    <button class="btn admin-tab-btn" data-tab="tab-inscripciones" style="color: #00f0ff; border-color: rgba(0,240,255,0.5); padding: 5px 14px; font-size: 0.82rem; font-weight: bold; background: rgba(0,240,255,0.08); display: inline-flex; align-items: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 16px;">how_to_reg</span> GESTIÓN INSCRIPCIONES</button>
                     <button class="btn admin-tab-btn active" data-tab="tab-armas" style="color: #e2b938; border-color: rgba(226,185,56,0.4); padding: 5px 14px; font-size: 0.82rem;">RÉPLICAS</button>
                     <button class="btn admin-tab-btn" data-tab="tab-medicos" style="color: #2ecc71; border-color: rgba(46,204,113,0.4); padding: 5px 14px; font-size: 0.82rem;">✚ MÉDICOS</button>
                     <button class="btn admin-tab-btn" data-tab="tab-juegos" style="color: #00f0ff; border-color: rgba(0,240,255,0.4); padding: 5px 14px; font-size: 0.82rem;">🎮 GESTIÓN DE JUEGOS</button>
@@ -1523,6 +1524,113 @@
                     </div>
                 </div>
 
+                <div id="tab-inscripciones" class="admin-tab-content" style="display: none;">
+                    <!-- PANEL DASHBOARD DE GESTIÓN DE INSCRIPCIONES Y CENSO -->
+                    <div class="panel management-panel" style="border: 1px solid rgba(0, 240, 255, 0.45); background: rgba(9, 14, 22, 0.96); box-shadow: 0 4px 25px rgba(0,0,0,0.6);">
+                        <!-- CABECERA -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.4rem; flex-wrap: wrap; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 14px;">
+                            <div>
+                                <h3 style="color: #00f0ff; margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px;">
+                                    <span class="material-symbols-outlined" style="color: #00f0ff; font-size: 26px;">how_to_reg</span>
+                                    DASHBOARD DE INSCRIPCIONES, ADMISIÓN Y CENSO
+                                </h3>
+                                <p style="color: #94a3b8; margin: 6px 0 0 0; font-size: 0.86rem; line-height: 1.4;">
+                                    Control de cupos, validación de combatientes activos y estado de pago por escuadra. Fase actual: <b id="inscripciones-fase-badge" style="color: #00ff88; font-family: 'Orbitron', monospace;">--</b>.
+                                </p>
+                            </div>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                                <button type="button" class="btn outline btn-sm" onclick="cargarAdminInscripciones()" style="border-color: #00f0ff; color: #00f0ff; font-weight: 600; padding: 6px 14px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">sync</span> Actualizar Dashboard
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KPIS DE INSCRIPCIONES -->
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 1.6rem;">
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #00f0ff; padding: 12px 14px; border-radius: 6px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Efectivos Aprobados</div>
+                                <div id="kpi-pax-aprobados" style="font-size: 1.35rem; font-weight: 800; color: #00ff88; font-family: 'Orbitron', monospace; margin-top: 4px;">0 pax</div>
+                                <div id="kpi-pax-solicitados" style="font-size: 0.74rem; color: #94a3b8; margin-top: 2px;">de 0 pax solicitados</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #00ff88; padding: 12px 14px; border-radius: 6px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Escuadras Aprobadas</div>
+                                <div id="kpi-squads-aprobadas" style="font-size: 1.35rem; font-weight: 800; color: #00f0ff; font-family: 'Orbitron', monospace; margin-top: 4px;">0 / 0</div>
+                                <div id="kpi-squads-pendientes" style="font-size: 0.74rem; color: #f59e0b; margin-top: 2px;">0 pendientes de revisión</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #f59e0b; padding: 12px 14px; border-radius: 6px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Estado de Pagos</div>
+                                <div id="kpi-pagadas-count" style="font-size: 1.35rem; font-weight: 800; color: #e2b938; font-family: 'Orbitron', monospace; margin-top: 4px;">0 Pagadas</div>
+                                <div id="kpi-pendientes-pago" style="font-size: 0.74rem; color: #ff5566; margin-top: 2px;">0 pendientes de abono</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-left: 4px solid #a855f7; padding: 12px 14px; border-radius: 6px;">
+                                <div style="font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Balance por Facción</div>
+                                <div id="kpi-balance-facciones" style="font-size: 0.8rem; font-family: monospace; color: #e2e8f0; margin-top: 4px; line-height: 1.3;">
+                                    Cargando...
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- FILTROS DE TABLA -->
+                        <div style="display: flex; gap: 10px; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.06);">
+                            <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600; text-transform: uppercase;">Filtrar por:</span>
+                            <select id="filtro-inscripcion-faccion" onchange="renderAdminInscripcionesTabla()" style="background: #090e17; border: 1px solid #334155; color: #fff; padding: 4px 8px; border-radius: 3px; font-size: 0.82rem;">
+                                <option value="">Todas las Facciones</option>
+                                <option value="1">Syldavia</option>
+                                <option value="2">Volkovia</option>
+                                <option value="3">Khemed</option>
+                            </select>
+                            <select id="filtro-inscripcion-admision" onchange="renderAdminInscripcionesTabla()" style="background: #090e17; border: 1px solid #334155; color: #fff; padding: 4px 8px; border-radius: 3px; font-size: 0.82rem;">
+                                <option value="">Todos los Estados Admisión</option>
+                                <option value="PENDIENTE">Pendientes de Revisión</option>
+                                <option value="EN_REVISION">En Revisión / Modificadas</option>
+                                <option value="APROBADA">Aprobadas</option>
+                                <option value="RECHAZADA">Rechazadas</option>
+                            </select>
+                            <select id="filtro-inscripcion-pago" onchange="renderAdminInscripcionesTabla()" style="background: #090e17; border: 1px solid #334155; color: #fff; padding: 4px 8px; border-radius: 3px; font-size: 0.82rem;">
+                                <option value="">Todos los Estados Pago</option>
+                                <option value="PENDIENTE">Pago Pendiente</option>
+                                <option value="PAGADO">Pagado</option>
+                                <option value="PARCIAL">Pago Parcial</option>
+                                <option value="EXENTO">Exento</option>
+                            </select>
+                        </div>
+
+                        <!-- TABLA PRINCIPAL DE INSCRIPCIONES RECIBIDAS -->
+                        <div class="table-container" style="overflow-x: auto; margin-bottom: 2rem;">
+                            <table class="table" style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #334155; background: rgba(0,0,0,0.4); text-align: left; font-size: 0.78rem; text-transform: uppercase; color: #94a3b8;">
+                                        <th style="padding: 10px 8px;">Escuadra</th>
+                                        <th style="padding: 10px 8px;">Facción</th>
+                                        <th style="padding: 10px 8px; text-align: center;">Combatientes Activos</th>
+                                        <th style="padding: 10px 8px; text-align: center;">Estado Admisión</th>
+                                        <th style="padding: 10px 8px; text-align: center;">Estado Pago</th>
+                                        <th style="padding: 10px 8px;">Notas Dirección</th>
+                                        <th style="padding: 10px 8px;">Fecha Trámite</th>
+                                        <th style="padding: 10px 8px; text-align: center;">Acciones Rápidas</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-admin-inscripciones">
+                                    <tr><td colspan="8" style="text-align: center; color: #888; padding: 20px;">Cargando inscripciones...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- SECCIÓN DE ESCUADRAS SIN INSCRIBIR -->
+                        <div style="background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 14px 16px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h4 style="margin: 0; color: #f59e0b; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">pending_actions</span>
+                                    ESCUADRAS REGISTRADAS EN CENSO SIN TRÁMITE DE INSCRIPCIÓN ENVIADO (<span id="count-sin-inscribir">0</span>)
+                                </h4>
+                            </div>
+                            <div id="container-sin-inscribir" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <!-- Unregistered squads badges -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="tab-zafarrancho" class="admin-tab-content" style="display: none;">
                     <!-- REINICIO DE ESTADISTICAS -->
                     <div class="panel management-panel" style="border: 2px solid #a32a2a;">
@@ -1556,6 +1664,8 @@
                             cargarAdminEventoAlerta();
                         } else if (targetId === 'tab-bloqueo') {
                             cargarAdminSeguridadServicio();
+                        } else if (targetId === 'tab-inscripciones') {
+                            cargarAdminInscripciones();
                         }
                     });
                 });
@@ -1780,6 +1890,342 @@
                     } catch (err) {
                         alert('Error de conexión con el servidor al actualizar seguridad.');
                     }
+                }
+
+                // --- DASHBOARD DE GESTIÓN DE INSCRIPCIONES (ADMIN) ---
+                window.adminInscripcionesData = null;
+
+                async function cargarAdminInscripciones() {
+                    try {
+                        const tbody = document.getElementById('tbody-admin-inscripciones');
+                        if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #00f0ff; padding: 20px;">⏳ Cargando inscripciones del censo...</td></tr>';
+
+                        const res = await fetch('/api/admin/inscripciones', { cache: 'no-store' });
+                        if (!res.ok) throw new Error('Error de respuesta del servidor');
+                        const data = await res.json();
+                        window.adminInscripcionesData = data;
+
+                        // Actualizar fase
+                        const faseBadge = document.getElementById('inscripciones-fase-badge');
+                        if (faseBadge) {
+                            faseBadge.textContent = data.fase_inscripcion || 'CERRADAS';
+                            if (data.fase_inscripcion === 'ABIERTAS') faseBadge.style.color = '#00ff88';
+                            else if (data.fase_inscripcion === 'REVISION') faseBadge.style.color = '#f59e0b';
+                            else faseBadge.style.color = '#ff4765';
+                        }
+
+                        // Actualizar KPIs
+                        const kpis = data.kpis || {};
+                        const paxAprEl = document.getElementById('kpi-pax-aprobados');
+                        const paxSolEl = document.getElementById('kpi-pax-solicitados');
+                        const sqAprEl = document.getElementById('kpi-squads-aprobadas');
+                        const sqPenEl = document.getElementById('kpi-squads-pendientes');
+                        const pagEl = document.getElementById('kpi-pagadas-count');
+                        const pendPagEl = document.getElementById('kpi-pendientes-pago');
+                        const balFacEl = document.getElementById('kpi-balance-facciones');
+
+                        if (paxAprEl) paxAprEl.textContent = `${kpis.total_aprobados_pax || 0} pax`;
+                        if (paxSolEl) paxSolEl.textContent = `de ${kpis.total_solicitados_pax || 0} pax solicitados`;
+                        if (sqAprEl) sqAprEl.textContent = `${kpis.aprobadas_count || 0} / ${kpis.total_inscripciones || 0}`;
+                        if (sqPenEl) sqPenEl.textContent = `${(kpis.pendientes_count || 0) + (kpis.en_revision_count || 0)} en revisión/pendientes`;
+                        if (pagEl) pagEl.textContent = `${kpis.pagadas_count || 0} Pagadas`;
+                        if (pendPagEl) pendPagEl.textContent = `${kpis.pendientes_pago_count || 0} pendientes de abono`;
+
+                        if (balFacEl && kpis.facciones) {
+                            balFacEl.innerHTML = kpis.facciones.map(f => {
+                                const col = f.id === 1 ? '#00f0ff' : (f.id === 2 ? '#ff3344' : '#e2b938');
+                                return `<div style="display: flex; justify-content: space-between; gap: 4px; margin-bottom: 2px;">
+                                    <span style="color: ${col}; font-weight: bold;">${f.nombre}:</span>
+                                    <span>${f.escuadras_aprobadas} esc (${f.pax_aprobados} pax)</span>
+                                </div>`;
+                            }).join('');
+                        }
+
+                        renderAdminInscripcionesTabla();
+                    } catch (err) {
+                        console.error('Error al cargar admin inscripciones:', err);
+                        const tbody = document.getElementById('tbody-admin-inscripciones');
+                        if (tbody) tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #ff5566; padding: 20px;">Error al cargar datos: ${err.message}</td></tr>`;
+                    }
+                }
+
+                function renderAdminInscripcionesTabla() {
+                    const data = window.adminInscripcionesData;
+                    if (!data) return;
+
+                    const fFaccion = document.getElementById('filtro-inscripcion-faccion')?.value || '';
+                    const fAdm = document.getElementById('filtro-inscripcion-admision')?.value || '';
+                    const fPago = document.getElementById('filtro-inscripcion-pago')?.value || '';
+
+                    let list = data.inscripciones || [];
+                    if (fFaccion) list = list.filter(i => String(i.faccion_id) === fFaccion);
+                    if (fAdm) list = list.filter(i => i.estado_admision === fAdm);
+                    if (fPago) list = list.filter(i => i.estado_pago === fPago);
+
+                    const tbody = document.getElementById('tbody-admin-inscripciones');
+                    if (!tbody) return;
+
+                    if (list.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: #94a3b8; padding: 20px;">No hay inscripciones que coincidan con los filtros.</td></tr>';
+                    } else {
+                        tbody.innerHTML = list.map(i => {
+                            const facColor = i.faccion_id === 1 ? '#00f0ff' : (i.faccion_id === 2 ? '#ff3344' : '#e2b938');
+                            
+                            // Badge colores admisión
+                            let admBg = 'rgba(245, 158, 11, 0.2)';
+                            let admCol = '#f59e0b';
+                            if (i.estado_admision === 'APROBADA') { admBg = 'rgba(46, 204, 113, 0.2)'; admCol = '#2ecc71'; }
+                            else if (i.estado_admision === 'EN_REVISION') { admBg = 'rgba(249, 115, 22, 0.2)'; admCol = '#f97316'; }
+                            else if (i.estado_admision === 'RECHAZADA') { admBg = 'rgba(255, 51, 68, 0.2)'; admCol = '#ff5566'; }
+
+                            // Badge colores pago
+                            let pagoBg = 'rgba(245, 158, 11, 0.2)';
+                            let pagoCol = '#f59e0b';
+                            if (i.estado_pago === 'PAGADO') { pagoBg = 'rgba(16, 185, 129, 0.2)'; pagoCol = '#10b981'; }
+                            else if (i.estado_pago === 'PARCIAL') { pagoBg = 'rgba(0, 240, 255, 0.2)'; pagoCol = '#00f0ff'; }
+                            else if (i.estado_pago === 'EXENTO') { pagoBg = 'rgba(148, 163, 184, 0.2)'; pagoCol = '#94a3b8'; }
+
+                            const logoImg = i.equipo_logo ? `<img src="${i.equipo_logo}" style="width: 26px; height: 26px; object-fit: contain; border-radius: 2px;">` : `<span class="material-symbols-outlined" style="font-size: 24px; color: #64748b;">shield</span>`;
+
+                            return `
+                                <tr style="border-bottom: 1px solid rgba(255,255,255,0.06); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+                                    <td style="padding: 10px 8px;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            ${logoImg}
+                                            <div>
+                                                <div style="font-weight: 700; color: #fff; font-size: 0.92rem;">${i.equipo_nombre}</div>
+                                                <div style="font-size: 0.72rem; color: #94a3b8; font-family: monospace;">Cod: ${i.equipo_codigo || 'N/A'}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 10px 8px;">
+                                        <span style="color: ${facColor}; font-weight: 700; font-size: 0.84rem;">${i.faccion_nombre}</span>
+                                    </td>
+                                    <td style="padding: 10px 8px; text-align: center;">
+                                        <div style="font-weight: 800; font-family: 'Orbitron', monospace; font-size: 1rem; color: #fff;">${i.num_activos} pax</div>
+                                        <button type="button" class="btn outline btn-sm" onclick="verDetalleInscripcion(${i.id})" style="padding: 2px 7px; font-size: 0.72rem; margin-top: 3px; border-color: #00f0ff; color: #00f0ff; cursor: pointer;">
+                                            <span class="material-symbols-outlined" style="font-size: 12px; vertical-align: middle;">visibility</span> Ver Censo
+                                        </button>
+                                    </td>
+                                    <td style="padding: 10px 8px; text-align: center;">
+                                        <select onchange="cambiarAdmisionInscripcion(${i.id}, this.value)" style="background: ${admBg}; color: ${admCol}; border: 1px solid ${admCol}; border-radius: 4px; padding: 4px 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                                            <option value="PENDIENTE" ${i.estado_admision === 'PENDIENTE' ? 'selected' : ''}>🟡 PENDIENTE</option>
+                                            <option value="EN_REVISION" ${i.estado_admision === 'EN_REVISION' ? 'selected' : ''}>🟠 EN REVISIÓN</option>
+                                            <option value="APROBADA" ${i.estado_admision === 'APROBADA' ? 'selected' : ''}>🟢 APROBADA</option>
+                                            <option value="RECHAZADA" ${i.estado_admision === 'RECHAZADA' ? 'selected' : ''}>🔴 RECHAZADA</option>
+                                        </select>
+                                    </td>
+                                    <td style="padding: 10px 8px; text-align: center;">
+                                        <select onchange="cambiarPagoInscripcion(${i.id}, this.value)" style="background: ${pagoBg}; color: ${pagoCol}; border: 1px solid ${pagoCol}; border-radius: 4px; padding: 4px 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+                                            <option value="PENDIENTE" ${i.estado_pago === 'PENDIENTE' ? 'selected' : ''}>🟡 PENDIENTE</option>
+                                            <option value="PAGADO" ${i.estado_pago === 'PAGADO' ? 'selected' : ''}>🟢 PAGADO</option>
+                                            <option value="PARCIAL" ${i.estado_pago === 'PARCIAL' ? 'selected' : ''}>🔵 PARCIAL</option>
+                                            <option value="EXENTO" ${i.estado_pago === 'EXENTO' ? 'selected' : ''}>⚪ EXENTO</option>
+                                        </select>
+                                    </td>
+                                    <td style="padding: 10px 8px;">
+                                        <input type="text" value="${i.observaciones.replace(/"/g, '&quot;')}" placeholder="Observaciones / notas..." onblur="guardarNotasInscripcion(${i.id}, this.value)" style="width: 100%; min-width: 140px; background: rgba(0,0,0,0.4); border: 1px solid #334155; color: #e2e8f0; font-size: 0.8rem; padding: 4px 8px; border-radius: 3px;">
+                                    </td>
+                                    <td style="padding: 10px 8px; font-size: 0.76rem; color: #94a3b8; font-family: monospace;">
+                                        ${i.fecha_solicitud.split(' ')[0] || '--'}
+                                        ${i.gestionado_por ? `<div style="font-size: 0.68rem; color: #64748b;">Resp: ${i.gestionado_por}</div>` : ''}
+                                    </td>
+                                    <td style="padding: 10px 8px; text-align: center;">
+                                        <div style="display: flex; gap: 4px; justify-content: center;">
+                                            <button type="button" class="btn btn-sm" onclick="cambiarAdmisionInscripcion(${i.id}, 'APROBADA')" title="Aprobar Inscripción" style="background: rgba(46,204,113,0.15); border: 1px solid #2ecc71; color: #2ecc71; padding: 3px 7px; cursor: pointer;">
+                                                <span class="material-symbols-outlined" style="font-size: 14px;">check</span>
+                                            </button>
+                                            <button type="button" class="btn btn-sm" onclick="cambiarPagoInscripcion(${i.id}, 'PAGADO')" title="Marcar como Pagado" style="background: rgba(0,240,255,0.15); border: 1px solid #00f0ff; color: #00f0ff; padding: 3px 7px; cursor: pointer;">
+                                                <span class="material-symbols-outlined" style="font-size: 14px;">payments</span>
+                                            </button>
+                                            <button type="button" class="btn btn-sm" onclick="rechazarConMotivo(${i.id})" title="Rechazar Inscripción" style="background: rgba(255,51,68,0.15); border: 1px solid #ff3344; color: #ff5566; padding: 3px 7px; cursor: pointer;">
+                                                <span class="material-symbols-outlined" style="font-size: 14px;">close</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('');
+                    }
+
+                    // Render escuadras sin inscribir
+                    const sinInscribir = data.equipos_sin_inscribir || [];
+                    const countEl = document.getElementById('count-sin-inscribir');
+                    const contEl = document.getElementById('container-sin-inscribir');
+                    if (countEl) countEl.textContent = sinInscribir.length;
+
+                    if (contEl) {
+                        if (sinInscribir.length === 0) {
+                            contEl.innerHTML = '<span style="color: #00ff88; font-size: 0.82rem;">Todas las escuadras registradas han remitido su solicitud de inscripción.</span>';
+                        } else {
+                            contEl.innerHTML = sinInscribir.map(eq => {
+                                const facColor = eq.faccion_id === 1 ? '#00f0ff' : (eq.faccion_id === 2 ? '#ff3344' : '#e2b938');
+                                return `
+                                    <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-left: 3px solid ${facColor}; padding: 6px 10px; border-radius: 4px; display: inline-flex; align-items: center; gap: 8px;">
+                                        <div>
+                                            <div style="font-weight: bold; color: #fff; font-size: 0.84rem;">${eq.nombre}</div>
+                                            <div style="font-size: 0.7rem; color: #94a3b8;">${eq.num_activos_censo} activos en censo</div>
+                                        </div>
+                                        <button type="button" class="btn outline btn-sm" onclick="inscribirDeOficio(${eq.id}, '${eq.nombre.replace(/'/g, "\\'")}')" style="padding: 2px 7px; font-size: 0.72rem; border-color: #2ecc71; color: #2ecc71; cursor: pointer;" title="Inscribir de Oficio">
+                                            + Inscribir
+                                        </button>
+                                    </div>
+                                `;
+                            }).join('');
+                        }
+                    }
+                }
+
+                async function cambiarAdmisionInscripcion(id, nuevoEstado) {
+                    try {
+                        const res = await fetch(`/api/admin/inscripciones/${id}/estado`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ estado_admision: nuevoEstado })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            cargarAdminInscripciones();
+                        } else {
+                            alert('Error: ' + (data.error || 'No se pudo actualizar'));
+                        }
+                    } catch (err) {
+                        alert('Error de conexión');
+                    }
+                }
+
+                async function cambiarPagoInscripcion(id, nuevoPago) {
+                    try {
+                        const res = await fetch(`/api/admin/inscripciones/${id}/estado`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ estado_pago: nuevoPago })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            cargarAdminInscripciones();
+                        } else {
+                            alert('Error: ' + (data.error || 'No se pudo actualizar'));
+                        }
+                    } catch (err) {
+                        alert('Error de conexión');
+                    }
+                }
+
+                async function guardarNotasInscripcion(id, notas) {
+                    try {
+                        await fetch(`/api/admin/inscripciones/${id}/estado`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ observaciones: notas })
+                        });
+                    } catch (err) {
+                        console.error('Error guardando notas:', err);
+                    }
+                }
+
+                async function rechazarConMotivo(id) {
+                    const motivo = prompt('Introduce el motivo o causa del rechazo / subsanación para el equipo:');
+                    if (motivo === null) return;
+                    try {
+                        const res = await fetch(`/api/admin/inscripciones/${id}/estado`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ estado_admision: 'RECHAZADA', observaciones: motivo })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            cargarAdminInscripciones();
+                        }
+                    } catch (err) {
+                        alert('Error de conexión');
+                    }
+                }
+
+                async function inscribirDeOficio(equipoId, equipoNombre) {
+                    if (!confirm(`¿Inscribir de oficio a la escuadra "${equipoNombre}" con los combatientes actualmente marcados como activos?`)) return;
+                    try {
+                        const res = await fetch('/api/admin/inscripciones/inscribir_de_oficio', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ equipo_id: equipoId })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            alert(data.message);
+                            cargarAdminInscripciones();
+                        } else {
+                            alert('Error: ' + (data.error || 'No se pudo inscribir'));
+                        }
+                    } catch (err) {
+                        alert('Error de conexión al inscribir de oficio');
+                    }
+                }
+
+                function verDetalleInscripcion(id) {
+                    const data = window.adminInscripcionesData;
+                    if (!data) return;
+                    const insc = (data.inscripciones || []).find(x => x.id === id);
+                    if (!insc) return;
+
+                    const tituloEl = document.getElementById('modal-detalle-inscripcion-titulo');
+                    const subEl = document.getElementById('modal-detalle-inscripcion-sub');
+                    const bodyEl = document.getElementById('modal-detalle-inscripcion-body');
+                    const footerEl = document.getElementById('modal-detalle-inscripcion-footer-stats');
+
+                    if (tituloEl) tituloEl.innerHTML = `<span class="material-symbols-outlined" style="font-size: 26px;">badge</span> CENSO INSCRITO: ${insc.equipo_nombre}`;
+                    if (subEl) subEl.innerHTML = `Facción: <b style="color: #00f0ff;">${insc.faccion_nombre}</b> • Estado: <b>${insc.estado_admision}</b> • Pago: <b>${insc.estado_pago}</b> • Solicitado el ${insc.fecha_solicitud}`;
+
+                    const miembros = insc.miembros_snapshot || [];
+                    if (miembros.length === 0) {
+                        bodyEl.innerHTML = '<p style="color: #aaa; text-align: center; padding: 20px;">Sin miembros registrados en esta inscripción.</p>';
+                    } else {
+                        bodyEl.innerHTML = `
+                            <table class="table" style="width: 100%; border-collapse: collapse; font-size: 0.82rem;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid #334155; text-align: left; color: #94a3b8; font-size: 0.75rem; text-transform: uppercase;">
+                                        <th style="padding: 6px;">#</th>
+                                        <th style="padding: 6px;">Nick</th>
+                                        <th style="padding: 6px;">Nombre Completo</th>
+                                        <th style="padding: 6px;">DNI / NIE</th>
+                                        <th style="padding: 6px;">Rol</th>
+                                        <th style="padding: 6px;">Armamento</th>
+                                        <th style="padding: 6px;">Teléfono</th>
+                                        <th style="padding: 6px;">Email</th>
+                                        <th style="padding: 6px; text-align: center;">Extras</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${miembros.map((m, idx) => `
+                                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                            <td style="padding: 6px; color: #64748b;">${idx + 1}</td>
+                                            <td style="padding: 6px; font-weight: bold; color: #fff;">${m.nombre_jugador || '--'}</td>
+                                            <td style="padding: 6px; color: #e2e8f0;">${m.nombre_apellidos || '--'}</td>
+                                            <td style="padding: 6px; font-family: monospace; color: #94a3b8;">${m.dni || '--'}</td>
+                                            <td style="padding: 6px; color: #38bdf8;">${m.rol || 'Operador'}</td>
+                                            <td style="padding: 6px; color: #e2e8f0;">${m.armamento || 'Fusilero'}</td>
+                                            <td style="padding: 6px; font-family: monospace;">${m.telefono || '--'}</td>
+                                            <td style="padding: 6px; font-size: 0.78rem; color: #cbd5e1;">${m.email || '--'}</td>
+                                            <td style="padding: 6px; text-align: center;">
+                                                ${m.tiene_nvg ? '<span style="font-size:0.68rem; background:rgba(0,240,255,0.15); border:1px solid #00f0ff; color:#00f0ff; padding:1px 4px; border-radius:2px; margin-right:2px;">NVG</span>' : ''}
+                                                ${m.tiene_dron ? '<span style="font-size:0.68rem; background:rgba(0,255,136,0.15); border:1px solid #00ff88; color:#00ff88; padding:1px 4px; border-radius:2px;">DRON</span>' : ''}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        `;
+                    }
+
+                    if (footerEl) footerEl.textContent = `Total combatientes activos remitidos: ${miembros.length} efectivos.`;
+
+                    const modal = document.getElementById('modal-detalle-inscripcion');
+                    if (modal) modal.style.display = 'flex';
+                }
+
+                function cerrarModalDetalleInscripcion() {
+                    const modal = document.getElementById('modal-detalle-inscripcion');
+                    if (modal) modal.style.display = 'none';
                 }
 
                 function stepQuota(sanitarioId, delta) {
@@ -2354,6 +2800,28 @@
             <form id="form-equipo" style="display: flex; flex-direction: column; gap: 2rem;">
                 <input type="hidden" id="eq-id">
                 
+                <!-- TARJETA TÁCTICA DE ESTADO Y ENVÍO DE INSCRIPCIÓN -->
+                <div id="box-tramitar-inscripcion" style="display: none; background: rgba(0, 240, 255, 0.05); border: 1px solid rgba(0, 240, 255, 0.35); border-left: 4px solid #00f0ff; border-radius: 4px; padding: 14px 18px; margin-bottom: 0.5rem; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+                    <div style="display: flex; align-items: flex-start; gap: 12px; flex: 1; min-width: 280px;">
+                        <span class="material-symbols-outlined" style="font-size: 30px; color: #00f0ff; margin-top: 2px;">how_to_reg</span>
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <span style="font-size: 0.76rem; text-transform: uppercase; color: #94a3b8; font-weight: 700; letter-spacing: 0.5px;">ESTADO DE INSCRIPCIÓN AL EVENTO:</span>
+                                <span id="inscripcion-estado-badge" style="font-size: 0.8rem; font-weight: 800; padding: 2px 8px; border-radius: 3px; font-family: 'Orbitron', monospace;">--</span>
+                                <span id="inscripcion-pago-badge" style="font-size: 0.78rem; font-weight: 700; padding: 2px 7px; border-radius: 3px; font-family: monospace;">--</span>
+                            </div>
+                            <div id="inscripcion-info-texto" style="font-size: 0.84rem; color: #cbd5e1; margin-top: 5px; line-height: 1.4;">
+                                Cargando estado de inscripción...
+                            </div>
+                            <div id="inscripcion-notas-direccion-wrap" style="display: none; margin-top: 6px; font-size: 0.8rem; background: rgba(255, 153, 0, 0.12); border: 1px solid rgba(255,153,0,0.3); padding: 4px 8px; border-radius: 3px; color: #fbc02d;">
+                                <strong>Indicaciones de Dirección:</strong> <span id="inscripcion-notas-direccion-txt"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="inscripcion-action-container" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                        <!-- JS renders button [ENVIAR INSCRIPCIÓN (X ACTIVOS)] -->
+                    </div>
+                </div>
 
                 <!-- Fila 1: Datos Básicos -->
                 <div style="background: transparent; padding: 0; margin-bottom: 1rem; border: none;">
@@ -3282,6 +3750,31 @@
 
             <div style="text-align: right; margin-top: 12px;">
                 <button type="button" class="btn outline btn-sm" onclick="cerrarModalArmas()" style="padding: 4px 12px; font-size: 0.78rem;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DETALLE DE COMBATIENTES INSCRITOS -->
+    <div id="modal-detalle-inscripcion" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 10005; align-items: center; justify-content: center; padding: 15px; backdrop-filter: blur(8px);">
+        <div class="panel management-panel" style="max-width: 950px; width: 95%; max-height: 85vh; overflow-y: auto; background: rgba(13, 17, 23, 0.98); border: 1px solid rgba(0, 240, 255, 0.4); box-shadow: 0 10px 40px rgba(0,0,0,0.8); border-radius: 6px; padding: 22px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 16px;">
+                <div>
+                    <h3 id="modal-detalle-inscripcion-titulo" style="margin: 0; color: #00f0ff; font-size: 1.25rem; font-family: 'Orbitron', monospace; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 26px;">badge</span>
+                        CENSO TÁCTICO DE INSCRIPCIÓN
+                    </h3>
+                    <div id="modal-detalle-inscripcion-sub" style="font-size: 0.84rem; color: #94a3b8; margin-top: 5px;">--</div>
+                </div>
+                <button type="button" class="btn-close-modal" onclick="cerrarModalDetalleInscripcion()" style="background: none; border: none; color: #aaa; font-size: 28px; cursor: pointer; line-height: 1;">&times;</button>
+            </div>
+            
+            <div id="modal-detalle-inscripcion-body" style="overflow-x: auto; margin-bottom: 16px;">
+                <!-- Table rendered by JS -->
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 14px;">
+                <div id="modal-detalle-inscripcion-footer-stats" style="font-size: 0.82rem; color: #94a3b8; font-family: monospace;"></div>
+                <button type="button" class="btn outline btn-sm" onclick="cerrarModalDetalleInscripcion()" style="padding: 6px 16px;">Cerrar</button>
             </div>
         </div>
     </div>
