@@ -2297,12 +2297,20 @@
                         <div style="flex: 1; min-width: 300px;">
                             <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
                                 <label style="color: #f55; margin: 0;">Calificación / Etiquetas</label>
-                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                    <label style="color: #f55; font-size: 0.8rem; margin: 0;">Registro Sanciones:</label>
-                                    <select id="eq-estado-sancion" style="font-size: 0.9rem; padding: 0.25rem; background: rgba(0,0,0,0.5); color: white; border: 1px solid #f55;">
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                    <label style="color: #f55; font-size: 0.8rem; margin: 0;">Sanciones:</label>
+                                    <select id="eq-estado-sancion" style="font-size: 0.85rem; padding: 0.25rem; background: rgba(0,0,0,0.5); color: white; border: 1px solid #f55;">
                                         <option value="Autorizado">Autorizado</option>
                                         <option value="Penalizado (1 evento)">Penalizado (1 evento)</option>
                                         <option value="Expulsado">Expulsado</option>
+                                    </select>
+                                    <label style="color: #ffaa00; font-size: 0.8rem; margin: 0; margin-left: 6px;">Valoración Unidad:</label>
+                                    <select id="eq-valoracion" style="font-size: 0.85rem; padding: 0.25rem; background: rgba(0,0,0,0.5); color: #ffaa00; border: 1px solid #ffaa00;">
+                                        <option value="">Sin Valoración</option>
+                                        <option value="A (Élite / Veterano)">A (Élite / Veterano)</option>
+                                        <option value="B (Avanzado)">B (Avanzado)</option>
+                                        <option value="C (Estándar)">C (Estándar)</option>
+                                        <option value="D (En Observación)">D (En Observación)</option>
                                     </select>
                                 </div>
                             </div>

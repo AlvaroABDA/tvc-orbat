@@ -3617,6 +3617,16 @@ def patch_db():
         except Exception:
             pass
         try:
+            conn.execute('ALTER TABLE Historial_Equipo ADD COLUMN valoracion TEXT;')
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute('ALTER TABLE Historial_Equipo ADD COLUMN faccion_id INTEGER;')
+            conn.commit()
+        except Exception:
+            pass
+        try:
             conn.execute("ALTER TABLE Miembro ADD COLUMN foto_url TEXT;")
             conn.commit()
         except Exception:

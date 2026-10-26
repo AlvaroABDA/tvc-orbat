@@ -135,6 +135,8 @@ def init_db():
             operacion TEXT,
             mision_id INTEGER,
             grupo_rol TEXT,
+            valoracion TEXT,
+            faccion_id INTEGER,
             FOREIGN KEY (equipo_id) REFERENCES Equipo (id) ON DELETE CASCADE,
             FOREIGN KEY (mision_id) REFERENCES Mision (id)
         )

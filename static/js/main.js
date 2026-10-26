@@ -1237,6 +1237,7 @@ function initModal() {
             tags_comportamiento: document.getElementById('eq-tags') ? document.getElementById('eq-tags').value : '[]',
             estado_medalla: document.getElementById('eq-estado-medalla') ? document.getElementById('eq-estado-medalla').value : 'verde',
             estado_sancion: document.getElementById('eq-estado-sancion') ? document.getElementById('eq-estado-sancion').value : 'Autorizado',
+            valoracion: document.getElementById('eq-valoracion') ? document.getElementById('eq-valoracion').value : '',
             miembros: [],
             historial: []
         };
@@ -1250,8 +1251,14 @@ function initModal() {
                 const grp = row.querySelector('.historial-grupo').value;
                 const fac = row.querySelector('.historial-faccion') ? row.querySelector('.historial-faccion').value : null;
                 const val = row.querySelector('.historial-val') ? row.querySelector('.historial-val').value.trim() : '';
-                if (op) {
-                    payload.historial.push({ operacion: op, mision_id: ms_id || null, grupo_rol: grp, valoracion: val, faccion_id: fac || null });
+                if (op || ms_id || val) {
+                    payload.historial.push({
+                        operacion: op || (ms_id ? 'Misión Oficial' : 'Evaluación General'),
+                        mision_id: ms_id || null,
+                        grupo_rol: grp,
+                        valoracion: val,
+                        faccion_id: fac || null
+                    });
                 }
             });
         }
@@ -1383,6 +1390,7 @@ function openModal(equipo = null) {
     setVal('eq-tipo', equipo ? equipo.tipo : 'GAD');
     setVal('eq-misiones-preferidas', equipo ? (equipo.misiones_preferidas || '') : '');
     setVal('eq-codigo', equipo ? (equipo.codigo || '') : '');
+    setVal('eq-valoracion', equipo ? (equipo.valoracion || '') : '');
     setVal('eq-password', '');
     
     const logoPreview = document.getElementById('eq-logo-preview');
