@@ -655,6 +655,120 @@
                     </tfoot>
                 </table>
             </div>
+        <!-- ROW 4: ANÁLISIS POST-MORTEM (CURAS VS RESPAWN) -->
+        <div class="panel management-panel" style="grid-column: 1 / -1; display: flex; flex-direction: column; border-top: 3px solid #00f0ff; margin-top: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <h3 style="margin: 0; color: #00f0ff; text-transform: uppercase; letter-spacing: 2px; font-size: 1.3rem; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 26px; color: #00f0ff;">monitor_heart</span>
+                        AUDITORÍA POST-MORTEM // BALANCE MÉDICO VS RESPAWN
+                    </h3>
+                    <p style="color: #94a3b8; font-size: 0.85rem; margin: 6px 0 0 0;">
+                        Diagnóstico integral de desgaste, asimetría de facciones y trazabilidad entre curaciones de campo y acudidas al punto de despliegue.
+                    </p>
+                </div>
+                <button class="btn btn-outline" onclick="loadMedicRespawnAnalytics()" style="font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 1px; padding: 6px 14px; border-color: #00f0ff; color: #00f0ff; display: inline-flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> ACTUALIZAR AUDITORÍA
+                </button>
+            </div>
+
+            <!-- DIAGNÓSTICO EJECUTIVO GLOBAL -->
+            <div id="pm-diagnostico-container" style="margin-bottom: 1.5rem; display: none;">
+                <div style="background: rgba(255, 51, 68, 0.08); border: 1px solid rgba(255, 51, 68, 0.35); border-left: 5px solid #ff3344; border-radius: 6px; padding: 14px 18px;">
+                    <div style="color: #ff5566; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">report</span>
+                        DIAGNÓSTICO AUTOMÁTICO DE ANOMALÍAS Y DESBALANCE DEL EVENTO
+                    </div>
+                    <ul id="pm-diagnostico-list" style="margin: 0; padding-left: 20px; color: #cbd5e1; font-size: 0.88rem; line-height: 1.5;">
+                        <!-- JS injected -->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- CARA A CARA DE FACCIONES (CARDS) -->
+            <h4 style="margin: 0 0 12px 0; color: #fff; font-size: 0.88rem; letter-spacing: 1px; text-transform: uppercase;">
+                1. Balance Global por Facción
+            </h4>
+            <div id="pm-facciones-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                <!-- JS populated -->
+            </div>
+
+            <!-- RADAR DE ANOMALÍAS Y ALERTAS -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4 style="margin: 0; color: #fff; font-size: 0.88rem; letter-spacing: 1px; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #ffaa00;">warning</span>
+                    2. Radar de Anomalías e Irregularidades
+                </h4>
+                <span id="pm-anomalias-badge" style="font-size: 0.76rem; font-weight: bold; padding: 3px 8px; border-radius: 4px; background: rgba(255,255,255,0.1); color: #fff;">0 Alertas</span>
+            </div>
+            <div id="pm-anomalias-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 10px; margin-bottom: 2rem;">
+                <!-- JS populated -->
+            </div>
+
+            <!-- MATRIZ TÁCTICA DE ESCUADRAS -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px;">
+                <h4 style="margin: 0; color: #fff; font-size: 0.88rem; letter-spacing: 1px; text-transform: uppercase;">
+                    3. Matriz de Rendimiento y Desgaste por Escuadra
+                </h4>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="pm-filter-search" oninput="filtrarMatrizPostMortem()" placeholder="Filtrar por escuadra..." style="background: #090c12; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 10px; font-size: 0.82rem; border-radius: 4px; width: 170px;">
+                    <select id="pm-filter-faccion" onchange="filtrarMatrizPostMortem()" style="background: #090c12; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 10px; font-size: 0.82rem; border-radius: 4px;">
+                        <option value="">Todas las facciones</option>
+                        <option value="Syldavia">Syldavia</option>
+                        <option value="Volkovia">Volkovia</option>
+                        <option value="Khemed">Khemed</option>
+                    </select>
+                    <label style="font-size: 0.78rem; color: #ffaa00; cursor: pointer; display: flex; align-items: center; gap: 4px; background: rgba(255,170,0,0.1); padding: 5px 8px; border-radius: 4px; border: 1px solid rgba(255,170,0,0.25);">
+                        <input type="checkbox" id="pm-filter-solo-anomalias" onchange="filtrarMatrizPostMortem()" style="accent-color: #ffaa00;">
+                        Solo con anomalías
+                    </label>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); border-radius: 6px; margin-bottom: 2rem;">
+                <table class="table-tactical" style="min-width: 950px;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; width: 200px;">ESCUADRA // UNIDAD</th>
+                            <th style="text-align: left; width: 130px;">FACCIÓN</th>
+                            <th style="text-align: center; width: 110px;">PAX / MED</th>
+                            <th style="text-align: center; width: 100px;">CUPO/CICLO</th>
+                            <th style="text-align: center; width: 110px;">CURAS</th>
+                            <th style="text-align: center; width: 100px;">RESPAWNS</th>
+                            <th style="text-align: center; width: 100px;">BAJAS EST.</th>
+                            <th style="text-align: center; width: 120px;">RETENCIÓN</th>
+                            <th style="text-align: center; width: 110px;">MÁX DOCTRINA</th>
+                            <th style="text-align: left; width: 220px;">ESTADO // AUDITORÍA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pm-equipos-tbody">
+                        <tr><td colspan="10" style="text-align:center; padding: 20px; color: #888;">Cargando datos post-mortem...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TIMELINE DE COMBATE (HISTOGRAMA POR HORAS) -->
+            <div id="pm-timeline-wrapper" style="display: none; flex-direction: column;">
+                <h4 style="margin: 0 0 10px 0; color: #fff; font-size: 0.88rem; letter-spacing: 1px; text-transform: uppercase;">
+                    4. Distribución Temporal del Combate (Curas vs Respawns por Hora)
+                </h4>
+                <div style="overflow-x: auto; width: 100%; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.3); border-radius: 6px;">
+                    <table class="table-tactical" style="text-align: center; min-width: 600px;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: center;">FRANJA HORARIA</th>
+                                <th style="text-align: center; color: #2ecc71;">TOTAL CURAS</th>
+                                <th style="text-align: center; color: #ff5566;">TOTAL RESPAWNS</th>
+                                <th style="text-align: center; color: var(--color-syldavia);">CURAS SYL</th>
+                                <th style="text-align: center; color: var(--color-syldavia);">RESP. SYL</th>
+                                <th style="text-align: center; color: var(--color-volkovia);">CURAS VOL</th>
+                                <th style="text-align: center; color: var(--color-volkovia);">RESP. VOL</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pm-timeline-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
         
     </div>

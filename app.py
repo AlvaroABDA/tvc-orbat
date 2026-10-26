@@ -2948,6 +2948,23 @@ def get_analytics():
         conn.close()
 
 
+@app.route('/api/analytics/medics_respawn', methods=['GET'])
+def api_analytics_medics_respawn():
+    """
+    Endpoint de analítica post-mortem: cruza atenciones médicas con respawns,
+    evalúa la doctrina táctica y detecta anomalías sin añadir nuevas tablas.
+    """
+    conn = get_db_connection()
+    try:
+        data = medic_engine.get_post_mortem_analytics(conn)
+        return jsonify(data)
+    except Exception as e:
+        print("[Analytics Post-Mortem] Error:", e)
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+    finally:
+        conn.close()
+
+
 @app.route('/api/admin/reset', methods=['POST'])
 def admin_reset():
     if session.get('role') != 'admin':

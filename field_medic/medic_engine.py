@@ -851,3 +851,290 @@ def process_respawn_recharge(conn, token_qr, sanitario_id, user_lat=None, user_l
     }, 200
 
 
+def get_post_mortem_analytics(conn):
+    """
+    Genera el informe analítico post-evento cruzando atenciones médicas (EpisodioMedico)
+    con inserciones en base (respawn), evaluando la doctrina táctica y detectando anomalías
+    sin necesidad de añadir nuevas tablas a la base de datos.
+    """
+    cursor = conn.cursor()
+
+    # 1. Equipos con desglose de efectivos y sanitarios
+    equipos_rows = cursor.execute("""
+        SELECT e.id as equipo_id, e.nombre as equipo_nombre, e.faccion_id, f.nombre as faccion_nombre,
+               COUNT(m.id) as total_miembros,
+               SUM(CASE WHEN LOWER(m.rol) LIKE '%medico%' OR LOWER(m.rol) LIKE '%sanitario%' OR LOWER(m.rol) LIKE '%medic%' THEN 1 ELSE 0 END) as total_medicos
+        FROM Equipo e
+        LEFT JOIN Faccion f ON e.faccion_id = f.id
+        LEFT JOIN Miembro m ON m.equipo_id = e.id
+        GROUP BY e.id, e.nombre, e.faccion_id, f.nombre
+        ORDER BY e.faccion_id, e.nombre
+    """).fetchall()
+
+    teams_dict = {}
+    for r in equipos_rows:
+        eq_id = r[0]
+        eq_nom = r[1]
+        fac_id = r[2]
+        fac_nom = r[3] or 'Neutral / Global'
+        miembros = r[4] or 0
+        meds = r[5] or 0
+
+        # Doctrina TVC: cupo = miembros // medicos (si hay médico)
+        cupo_ciclo = calcular_curas_por_medico(miembros, meds) if meds > 0 else 0
+
+        teams_dict[eq_id] = {
+            "equipo_id": eq_id,
+            "equipo_nombre": eq_nom,
+            "faccion_id": fac_id,
+            "faccion_nombre": fac_nom,
+            "total_miembros": miembros,
+            "total_medicos": meds,
+            "cupo_ciclo": cupo_ciclo,
+            "curas_exitos": 0,
+            "curas_fallos": 0,
+            "curas_total": 0,
+            "duraciones": [],
+            "flags_anomalias": [],
+            "respawns_total": 0,
+            "anomalias": []
+        }
+
+    # 2. Respawns por equipo y registro temporal
+    timeline_map = {}
+    try:
+        respawn_rows = cursor.execute("""
+            SELECT r.equipo_id, r.faccion_id, r.timestamp, f.nombre as faccion_nombre
+            FROM respawn r
+            LEFT JOIN Faccion f ON r.faccion_id = f.id
+        """).fetchall()
+
+        for r in respawn_rows:
+            eq_id = r[0]
+            fac_id = r[1]
+            ts = r[2]
+            if eq_id in teams_dict:
+                teams_dict[eq_id]["respawns_total"] += 1
+
+            # Desglose temporal (hora)
+            if ts:
+                hora_str = str(ts)[11:13] + ":00" if len(str(ts)) >= 13 else "00:00"
+                if hora_str not in timeline_map:
+                    timeline_map[hora_str] = {"hora": hora_str, "curas": 0, "respawns": 0, "curas_syl": 0, "curas_vol": 0, "resp_syl": 0, "resp_vol": 0}
+                timeline_map[hora_str]["respawns"] += 1
+                if fac_id == 1:
+                    timeline_map[hora_str]["resp_syl"] += 1
+                elif fac_id == 2:
+                    timeline_map[hora_str]["resp_vol"] += 1
+    except Exception as e:
+        print("[Post-Mortem] Error leyendo respawn:", e)
+
+    # 3. Episodios Médicos (Curaciones registradas)
+    try:
+        ep_rows = cursor.execute("""
+            SELECT em.id, em.resultado_final, em.duracion_total_segundos, em.discrepancias_flags,
+                   em.paciente_uid, em.medico_uid, em.sanitario_id,
+                   m_pac.equipo_id as pac_equipo_id,
+                   m_med.equipo_id as med_equipo_id,
+                   em.sincronizado_en, em.hora_inicio,
+                   em.paciente_faccion, em.medico_faccion
+            FROM EpisodioMedico em
+            LEFT JOIN Miembro m_pac ON em.paciente_uid = m_pac.uid
+            LEFT JOIN Miembro m_med ON em.medico_uid = m_med.uid
+        """).fetchall()
+
+        for ep in ep_rows:
+            resultado = ep[1]
+            duracion = ep[2] or 0
+            flags_raw = ep[3] or '[]'
+            pac_eq = ep[7]
+            med_eq = ep[8]
+            ts = ep[9] or ep[10]
+            fac_str = str(ep[11] or ep[12] or '').lower()
+
+            # Asignar al equipo del paciente o del médico
+            eq_id = pac_eq or med_eq
+            if not eq_id and ep[6] and str(ep[6]).startswith("MED-"):
+                try:
+                    eq_id = int(str(ep[6]).replace("MED-", ""))
+                except Exception:
+                    pass
+
+            if eq_id and eq_id in teams_dict:
+                t = teams_dict[eq_id]
+                t["curas_total"] += 1
+                if resultado == 'EXITO':
+                    t["curas_exitos"] += 1
+                else:
+                    t["curas_fallos"] += 1
+
+                if duracion > 0:
+                    t["duraciones"].append(float(duracion))
+
+                try:
+                    flags = json.loads(flags_raw)
+                    if isinstance(flags, list):
+                        for f in flags:
+                            if f != 'BUDDY_AID':
+                                t["flags_anomalias"].append(f)
+                except Exception:
+                    pass
+
+            # Desglose temporal
+            if ts:
+                hora_str = str(ts)[11:13] + ":00" if len(str(ts)) >= 13 else "00:00"
+                if hora_str not in timeline_map:
+                    timeline_map[hora_str] = {"hora": hora_str, "curas": 0, "respawns": 0, "curas_syl": 0, "curas_vol": 0, "resp_syl": 0, "resp_vol": 0}
+                timeline_map[hora_str]["curas"] += 1
+                if 'syl' in fac_str:
+                    timeline_map[hora_str]["curas_syl"] += 1
+                elif 'vol' in fac_str:
+                    timeline_map[hora_str]["curas_vol"] += 1
+    except Exception as e:
+        print("[Post-Mortem] Error leyendo EpisodioMedico:", e)
+
+    # 4. Evaluación de Métricas y Detección Automática de Anomalías
+    alertas_globales = []
+
+    for eq_id, t in teams_dict.items():
+        curas = t["curas_exitos"]
+        respawns = t["respawns_total"]
+        bajas = curas + respawns
+        cupo = t["cupo_ciclo"]
+        meds = t["total_medicos"]
+        miembros = t["total_miembros"]
+
+        # Tasa de Retención en Frente
+        if bajas > 0:
+            retencion = round((curas / bajas) * 100, 1)
+            ratio_cr = round(curas / respawns, 2) if respawns > 0 else float(curas)
+        else:
+            retencion = 0.0
+            ratio_cr = 0.0
+
+        t["bajas_estimadas"] = bajas
+        t["tasa_retencion"] = retencion
+        t["ratio_cr"] = ratio_cr
+        t["duracion_media"] = round(sum(t["duraciones"]) / len(t["duraciones"]), 1) if t["duraciones"] else 0.0
+
+        # Límite teórico de curas = (Respawns + 1) * Cupo
+        limite_teorico = (respawns + 1) * cupo if cupo > 0 else 0
+        t["limite_teorico"] = limite_teorico
+
+        # --- DETECCIÓN DE ANOMALÍAS ---
+        # 1. Exceso de Cupo Doctrinal
+        if cupo > 0 and curas > limite_teorico and curas >= 3:
+            exceso = curas - limite_teorico
+            msg = f"Exceso de Cupo: {curas} curas realizadas (máx teórico {limite_teorico} para {respawns} paso(s) por respawn). Superávit irregular: +{exceso} curas."
+            t["anomalias"].append({"tipo": "CRITICAL", "codigo": "CUPO_EXCEDIDO", "mensaje": msg})
+            alertas_globales.append({"equipo": t["equipo_nombre"], "faccion": t["faccion_nombre"], "tipo": "CRITICAL", "codigo": "CUPO_EXCEDIDO", "mensaje": msg})
+
+        # 2. Escuadra desprovista de Sanitario
+        if meds == 0 and miembros >= 4:
+            msg = f"Escuadra sin Sanitario: {miembros} operadores sin médico asignado. El 100% de sus heridos se vio forzado a caminar a base."
+            t["anomalias"].append({"tipo": "WARNING", "codigo": "SIN_MEDICO", "mensaje": msg})
+            alertas_globales.append({"equipo": t["equipo_nombre"], "faccion": t["faccion_nombre"], "tipo": "WARNING", "codigo": "SIN_MEDICO", "mensaje": msg})
+
+        # 3. Sanitario Inactivo / Fuga de Bajas
+        if meds > 0 and respawns >= 5 and curas == 0:
+            msg = f"Sanitario Inactivo: La escuadra acumuló {respawns} respawns sin registrar ninguna atención médica en combate."
+            t["anomalias"].append({"tipo": "WARNING", "codigo": "MEDICO_INACTIVO", "mensaje": msg})
+            alertas_globales.append({"equipo": t["equipo_nombre"], "faccion": t["faccion_nombre"], "tipo": "WARNING", "codigo": "MEDICO_INACTIVO", "mensaje": msg})
+
+        # 4. Curas Sospechosamente Aceleradas
+        if t["duracion_media"] > 0 and t["duracion_media"] < 8.0 and curas >= 3:
+            msg = f"Procedimiento Acelerado: Duración clínica media de {t['duracion_media']}s (protocolo TVC exige >12s con carnet)."
+            t["anomalias"].append({"tipo": "WARNING", "codigo": "CURAS_RAPIDAS", "mensaje": msg})
+            alertas_globales.append({"equipo": t["equipo_nombre"], "faccion": t["faccion_nombre"], "tipo": "WARNING", "codigo": "CURAS_RAPIDAS", "mensaje": msg})
+
+        # 5. Discrepancias auditadas por la app
+        if len(t["flags_anomalias"]) > 0:
+            flags_unique = list(set(t["flags_anomalias"]))
+            msg = f"Alertas de Seguridad: {len(t['flags_anomalias'])} discrepancias ({', '.join(flags_unique[:3])})."
+            t["anomalias"].append({"tipo": "INFO", "codigo": "FLAGS_APP", "mensaje": msg})
+
+    # 5. Consolidación por Facción
+    facciones_dict = {}
+    for eq_id, t in teams_dict.items():
+        fac_nom = t["faccion_nombre"]
+        if fac_nom not in facciones_dict:
+            facciones_dict[fac_nom] = {
+                "faccion_nombre": fac_nom,
+                "faccion_id": t["faccion_id"],
+                "total_equipos": 0,
+                "total_jugadores": 0,
+                "total_medicos": 0,
+                "curas_exitos": 0,
+                "curas_fallos": 0,
+                "curas_total": 0,
+                "respawns_total": 0,
+                "bajas_totales": 0
+            }
+        f = facciones_dict[fac_nom]
+        f["total_equipos"] += 1
+        f["total_jugadores"] += t["total_miembros"]
+        f["total_medicos"] += t["total_medicos"]
+        f["curas_exitos"] += t["curas_exitos"]
+        f["curas_fallos"] += t["curas_fallos"]
+        f["curas_total"] += t["curas_total"]
+        f["respawns_total"] += t["respawns_total"]
+        f["bajas_totales"] += t["bajas_estimadas"]
+
+    for fac_nom, f in facciones_dict.items():
+        bajas = f["bajas_totales"]
+        curas = f["curas_exitos"]
+        resp = f["respawns_total"]
+        meds = f["total_medicos"]
+        pax = f["total_jugadores"]
+        f["tasa_retencion"] = round((curas / bajas) * 100, 1) if bajas > 0 else 0.0
+        f["ratio_cr"] = round(curas / resp, 2) if resp > 0 else float(curas)
+        f["ratio_pax_medico"] = round(pax / meds, 1) if meds > 0 else 0.0
+
+    # Diagnóstico automático general
+    diagnostico_global = []
+    syl = facciones_dict.get('Syldavia')
+    vol = facciones_dict.get('Volkovia')
+    if syl and vol:
+        if syl['total_medicos'] > 0 and vol['total_medicos'] > 0:
+            diff_meds = syl['ratio_pax_medico'] - vol['ratio_pax_medico']
+            if abs(diff_meds) >= 8.0:
+                peor = 'Volkovia' if vol['ratio_pax_medico'] > syl['ratio_pax_medico'] else 'Syldavia'
+                mejor = 'Syldavia' if peor == 'Volkovia' else 'Volkovia'
+                pax_peor = vol['ratio_pax_medico'] if peor == 'Volkovia' else syl['ratio_pax_medico']
+                pax_mejor = syl['ratio_pax_medico'] if peor == 'Volkovia' else vol['ratio_pax_medico']
+                diagnostico_global.append(
+                    f"Desbalance médico estructural: {peor} contó con 1 sanitario cada {pax_peor} combatientes, frente a 1 cada {pax_mejor} en {mejor}. Esto obligó a {peor} a sufrir una fuga de bajas hacia base muy superior."
+                )
+        elif syl['total_medicos'] == 0 or vol['total_medicos'] == 0:
+            sin = 'Syldavia' if syl['total_medicos'] == 0 else 'Volkovia'
+            diagnostico_global.append(f"Colapso sanitario en {sin}: No se dieron de alta sanitarios activos para toda la facción.")
+
+    criticas_count = sum(1 for a in alertas_globales if a["tipo"] == "CRITICAL")
+    warnings_count = sum(1 for a in alertas_globales if a["tipo"] == "WARNING")
+    if criticas_count > 0:
+        diagnostico_global.append(f"Se registraron {criticas_count} violaciones graves de cupo de reanimación (curas realizadas sin paso por punto de recarga).")
+    if warnings_count > 0:
+        diagnostico_global.append(f"Se detectaron {warnings_count} advertencias de escuadras con desconexión sanitaria o sin médico asignado.")
+
+    # Timeline ordenado
+    timeline_sorted = [timeline_map[k] for k in sorted(timeline_map.keys())]
+
+    teams_list = sorted(list(teams_dict.values()), key=lambda x: (x["faccion_id"] or 99, -(x["bajas_estimadas"])))
+    facciones_list = sorted(list(facciones_dict.values()), key=lambda x: (x["faccion_id"] or 99))
+
+    return {
+        "status": "success",
+        "facciones": facciones_list,
+        "equipos": teams_list,
+        "alertas": alertas_globales,
+        "diagnostico": diagnostico_global,
+        "timeline": timeline_sorted,
+        "stats_resumen": {
+            "total_equipos": len(teams_list),
+            "alertas_criticas": criticas_count,
+            "advertencias": warnings_count
+        }
+    }
+
+
+

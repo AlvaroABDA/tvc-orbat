@@ -2744,11 +2744,294 @@ async function loadAnalytics() {
             if(document.getElementById('koronnas-syl-total')) document.getElementById('koronnas-syl-total').innerText = totalSylK.toLocaleString();
             if(document.getElementById('koronnas-vol-total')) document.getElementById('koronnas-vol-total').innerText = totalVolK.toLocaleString();
         }
+
+        // Cargar auditoría post-mortem de curas vs respawn
+        if (typeof loadMedicRespawnAnalytics === 'function') {
+            loadMedicRespawnAnalytics();
+        }
         
     } catch (e) {
         console.error("Error loading analytics", e);
     }
 }
+
+// ==========================================
+// AUDITORÍA POST-MORTEM: CURAS VS RESPAWN
+// ==========================================
+let allPostMortemTeams = [];
+
+async function loadMedicRespawnAnalytics() {
+    try {
+        const res = await fetch('/api/analytics/medics_respawn');
+        const data = await res.json();
+        if (data.status !== 'success') {
+            console.error("Error fetching post-mortem data:", data);
+            return;
+        }
+
+        allPostMortemTeams = data.equipos || [];
+
+        // 1. Diagnóstico Automático Global
+        const diagContainer = document.getElementById('pm-diagnostico-container');
+        const diagList = document.getElementById('pm-diagnostico-list');
+        if (diagContainer && diagList) {
+            if (data.diagnostico && data.diagnostico.length > 0) {
+                diagList.innerHTML = data.diagnostico.map(d => `<li style="margin-bottom: 6px;">${d}</li>`).join('');
+                diagContainer.style.display = 'block';
+            } else {
+                diagContainer.style.display = 'none';
+            }
+        }
+
+        // 2. Facciones (Cards)
+        const facGrid = document.getElementById('pm-facciones-grid');
+        if (facGrid) {
+            facGrid.innerHTML = '';
+            (data.facciones || []).forEach(f => {
+                const facLower = (f.faccion_nombre || '').toLowerCase();
+                let borderColor = '#94a3b8';
+                let accentColor = '#94a3b8';
+                let badgeClass = 'med-badge-neutral';
+                if (facLower.includes('syl')) {
+                    borderColor = 'rgba(241, 196, 15, 0.4)';
+                    accentColor = 'var(--color-syldavia, #f1c40f)';
+                    badgeClass = 'med-badge-syldavia';
+                } else if (facLower.includes('vol')) {
+                    borderColor = 'rgba(93, 173, 226, 0.4)';
+                    accentColor = 'var(--color-volkovia, #5dade2)';
+                    badgeClass = 'med-badge-volkovia';
+                } else if (facLower.includes('khem')) {
+                    borderColor = 'rgba(46, 204, 113, 0.4)';
+                    accentColor = '#2ecc71';
+                }
+
+                const retencion = f.tasa_retencion || 0;
+                let retColor = retencion >= 50 ? '#2ecc71' : (retencion >= 25 ? '#ffaa00' : '#ff3344');
+
+                const card = document.createElement('div');
+                card.style.cssText = `background: #141822; border: 1px solid ${borderColor}; border-top: 4px solid ${accentColor}; border-radius: 8px; padding: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 12px;`;
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="med-badge-faction ${badgeClass}" style="font-size: 0.82rem; padding: 4px 10px;">${f.faccion_nombre}</span>
+                        <span style="font-family: var(--font-mono); font-size: 0.8rem; color: #94a3b8;">${f.total_equipos} escuadras</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px;">
+                        <div>
+                            <div style="font-size: 0.72rem; color: #888; text-transform: uppercase;">Efectivos / Médicos</div>
+                            <div style="font-family: var(--font-mono); font-size: 1.05rem; font-weight: bold; color: #fff; margin-top: 2px;">
+                                ${f.total_jugadores} <span style="font-size: 0.8rem; color: #888;">pax</span> / <span style="color: #00f0ff;">${f.total_medicos} med</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.72rem; color: #888; text-transform: uppercase;">Ratio Pax/Médico</div>
+                            <div style="font-family: var(--font-mono); font-size: 1.05rem; font-weight: bold; color: ${f.ratio_pax_medico > 15 ? '#ff5566' : '#2ecc71'}; margin-top: 2px;">
+                                1 : ${f.ratio_pax_medico || '--'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div style="background: rgba(46, 204, 113, 0.08); border-left: 3px solid #2ecc71; padding: 8px 10px; border-radius: 4px;">
+                            <div style="font-size: 0.7rem; color: #2ecc71; font-weight: bold;">CURAS EN CAMPO</div>
+                            <div style="font-family: var(--font-mono); font-size: 1.25rem; font-weight: bold; color: #fff; margin-top: 2px;">${f.curas_exitos}</div>
+                            <div style="font-size: 0.7rem; color: #888;">${f.curas_fallos} fallos</div>
+                        </div>
+                        <div style="background: rgba(255, 51, 68, 0.08); border-left: 3px solid #ff3344; padding: 8px 10px; border-radius: 4px;">
+                            <div style="font-size: 0.7rem; color: #ff5566; font-weight: bold;">RESPAWNS (BASE)</div>
+                            <div style="font-family: var(--font-mono); font-size: 1.25rem; font-weight: bold; color: #fff; margin-top: 2px;">${f.respawns_total}</div>
+                            <div style="font-size: 0.7rem; color: #888;">bajas forzadas</div>
+                        </div>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
+                            <span style="color: #94a3b8;">Tasa de Retención en Frente:</span>
+                            <span style="color: ${retColor}; font-weight: bold; font-family: var(--font-mono); font-size: 0.95rem;">${retencion}%</span>
+                        </div>
+                        <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                            <div style="width: ${retencion}%; height: 100%; background: ${retColor}; transition: width 0.4s ease;"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: #888; margin-top: 4px;">
+                            <span>Ratio Curas/Respawn: <b style="color: #fff; font-family: var(--font-mono);">${f.ratio_cr}x</b></span>
+                            <span>Bajas Totales: <b style="color: #fff; font-family: var(--font-mono);">${f.bajas_totales}</b></span>
+                        </div>
+                    </div>
+                `;
+                facGrid.appendChild(card);
+            });
+        }
+
+        // 3. Radar de Anomalías
+        const anomGrid = document.getElementById('pm-anomalias-grid');
+        const anomBadge = document.getElementById('pm-anomalias-badge');
+        const alertas = data.alertas || [];
+        if (anomBadge) {
+            anomBadge.textContent = `${alertas.length} Anomalía(s)`;
+            anomBadge.style.background = alertas.length > 0 ? 'rgba(255, 51, 68, 0.2)' : 'rgba(46, 204, 113, 0.2)';
+            anomBadge.style.color = alertas.length > 0 ? '#ff5566' : '#2ecc71';
+        }
+        if (anomGrid) {
+            anomGrid.innerHTML = '';
+            if (alertas.length === 0) {
+                anomGrid.innerHTML = `
+                    <div style="grid-column: 1 / -1; background: rgba(46, 204, 113, 0.08); border: 1px solid rgba(46, 204, 113, 0.3); border-radius: 6px; padding: 14px; text-align: center; color: #2ecc71; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        No se han detectado anomalías reglamentarias ni desbalance crítico en las escuadras.
+                    </div>
+                `;
+            } else {
+                alertas.forEach(a => {
+                    const isCrit = a.tipo === 'CRITICAL';
+                    const borderCol = isCrit ? '#ff3344' : '#ffaa00';
+                    const bgCol = isCrit ? 'rgba(255, 51, 68, 0.08)' : 'rgba(255, 170, 0, 0.08)';
+                    const icon = isCrit ? 'error' : 'warning';
+
+                    const item = document.createElement('div');
+                    item.style.cssText = `background: ${bgCol}; border: 1px solid ${borderCol}; border-left: 4px solid ${borderCol}; border-radius: 6px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; font-family: 'Inter', sans-serif;`;
+                    item.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 700; color: #fff; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                                <span class="material-symbols-outlined" style="font-size: 16px; color: ${borderCol};">${icon}</span>
+                                ${a.equipo}
+                            </div>
+                            <span style="font-size: 0.7rem; color: #94a3b8; text-transform: uppercase;">${a.faccion}</span>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #cbd5e1; line-height: 1.4;">${a.mensaje}</div>
+                    `;
+                    anomGrid.appendChild(item);
+                });
+            }
+        }
+
+        // 4. Matriz de Escuadras
+        filtrarMatrizPostMortem();
+
+        // 5. Timeline
+        const timeWrapper = document.getElementById('pm-timeline-wrapper');
+        const timeTbody = document.getElementById('pm-timeline-tbody');
+        if (timeWrapper && timeTbody) {
+            const tl = data.timeline || [];
+            if (tl.length > 0) {
+                timeTbody.innerHTML = '';
+                tl.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="font-family: var(--font-mono); font-size: 1rem; color: #ddd; font-weight: bold;">${row.hora}</td>
+                        <td style="font-family: var(--font-mono); font-size: 1.15rem; color: #2ecc71; font-weight: bold;">${row.curas}</td>
+                        <td style="font-family: var(--font-mono); font-size: 1.15rem; color: #ff5566; font-weight: bold;">${row.respawns}</td>
+                        <td style="font-family: var(--font-mono); font-size: 1rem; color: var(--color-syldavia);">${row.curas_syl}</td>
+                        <td style="font-family: var(--font-mono); font-size: 1rem; color: var(--color-syldavia);">${row.resp_syl}</td>
+                        <td style="font-family: var(--font-mono); font-size: 1rem; color: var(--color-volkovia);">${row.curas_vol}</td>
+                        <td style="font-family: var(--font-mono); font-size: 1rem; color: var(--color-volkovia);">${row.resp_vol}</td>
+                    `;
+                    timeTbody.appendChild(tr);
+                });
+                timeWrapper.style.display = 'flex';
+            } else {
+                timeWrapper.style.display = 'none';
+            }
+        }
+
+    } catch (e) {
+        console.error("Error al cargar analítica post-mortem:", e);
+        const tbody = document.getElementById('pm-equipos-tbody');
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px; color: #ff4444;">Error de conexión al cargar la auditoría post-mortem.</td></tr>';
+    }
+}
+
+function filtrarMatrizPostMortem() {
+    const tbody = document.getElementById('pm-equipos-tbody');
+    if (!tbody) return;
+
+    const searchInput = (document.getElementById('pm-filter-search')?.value || '').toLowerCase();
+    const faccionSelect = (document.getElementById('pm-filter-faccion')?.value || '').toLowerCase();
+    const soloAnomalias = document.getElementById('pm-filter-solo-anomalias')?.checked || false;
+
+    const filtered = allPostMortemTeams.filter(t => {
+        const nom = (t.equipo_nombre || '').toLowerCase();
+        const fac = (t.faccion_nombre || '').toLowerCase();
+        if (searchInput && !nom.includes(searchInput)) return false;
+        if (faccionSelect && !fac.includes(faccionSelect)) return false;
+        if (soloAnomalias && (!t.anomalias || t.anomalias.length === 0)) return false;
+        return true;
+    });
+
+    tbody.innerHTML = '';
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px; color: #888;">No se encontraron escuadras con los filtros seleccionados.</td></tr>';
+        return;
+    }
+
+    filtered.forEach(t => {
+        const tr = document.createElement('tr');
+        const facLower = (t.faccion_nombre || '').toLowerCase();
+        let facBadgeClass = 'med-badge-neutral';
+        let accentBorder = '#94a3b8';
+        if (facLower.includes('syl')) {
+            facBadgeClass = 'med-badge-syldavia';
+            accentBorder = 'var(--color-syldavia, #f1c40f)';
+        } else if (facLower.includes('vol')) {
+            facBadgeClass = 'med-badge-volkovia';
+            accentBorder = 'var(--color-volkovia, #5dade2)';
+        } else if (facLower.includes('khem')) {
+            accentBorder = '#2ecc71';
+        }
+
+        const ret = t.tasa_retencion || 0;
+        let retColor = ret >= 50 ? '#2ecc71' : (ret >= 25 ? '#ffaa00' : (t.bajas_estimadas > 0 ? '#ff3344' : '#888'));
+
+        let estadoHtml = '';
+        if (t.anomalias && t.anomalias.length > 0) {
+            estadoHtml = t.anomalias.map(a => {
+                const color = a.tipo === 'CRITICAL' ? '#ff3344' : '#ffaa00';
+                return `<div style="color: ${color}; font-size: 0.74rem; font-weight: bold; margin-bottom: 2px;">• ${a.codigo}: ${a.mensaje}</div>`;
+            }).join('');
+        } else if (t.bajas_estimadas > 0) {
+            estadoHtml = `<span style="color: #2ecc71; font-size: 0.78rem; font-weight: bold; display: inline-flex; align-items: center; gap: 4px;"><span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> DOCTRINA OK</span>`;
+        } else {
+            estadoHtml = `<span style="color: #64748b; font-size: 0.76rem;">Sin actividad de combate</span>`;
+        }
+
+        tr.innerHTML = `
+            <td style="border-left-color: ${accentBorder} !important; font-weight: 700; color: #fff;">
+                ${t.equipo_nombre}
+            </td>
+            <td>
+                <span class="med-badge-faction ${facBadgeClass}">${t.faccion_nombre}</span>
+            </td>
+            <td style="text-align: center; font-family: var(--font-mono);">
+                <span style="color: #fff; font-weight: bold;">${t.total_miembros}</span> / 
+                <span style="color: ${t.total_medicos === 0 ? '#ff5566' : '#00f0ff'}; font-weight: bold;">${t.total_medicos} med</span>
+            </td>
+            <td style="text-align: center; font-family: var(--font-mono); font-weight: bold; color: #cbd5e1;">
+                ${t.cupo_ciclo > 0 ? t.cupo_ciclo + ' curas' : '<span style="color: #ff5566;">0</span>'}
+            </td>
+            <td style="text-align: center;">
+                <div style="font-family: var(--font-mono); font-size: 1.15rem; font-weight: bold; color: #2ecc71;">${t.curas_exitos}</div>
+                ${t.curas_fallos > 0 ? `<div style="font-size: 0.72rem; color: #888;">${t.curas_fallos} fallos</div>` : ''}
+            </td>
+            <td style="text-align: center; font-family: var(--font-mono); font-size: 1.15rem; font-weight: bold; color: #ff5566;">
+                ${t.respawns_total}
+            </td>
+            <td style="text-align: center; font-family: var(--font-mono); font-size: 1.05rem; font-weight: bold; color: #fff;">
+                ${t.bajas_estimadas}
+            </td>
+            <td style="text-align: center;">
+                <div style="font-family: var(--font-mono); font-weight: bold; font-size: 1.05rem; color: ${retColor};">${ret}%</div>
+                <div style="font-size: 0.72rem; color: #888;">${t.ratio_cr}x C/R</div>
+            </td>
+            <td style="text-align: center; font-family: var(--font-mono); color: #94a3b8;">
+                ${t.limite_teorico > 0 ? `≤ ${t.limite_teorico} curas` : '--'}
+            </td>
+            <td style="font-size: 0.8rem; line-height: 1.3;">
+                ${estadoHtml}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
 
 // Intercept tab changes
 document.querySelectorAll('.nav-icon-btn').forEach(btn => {
