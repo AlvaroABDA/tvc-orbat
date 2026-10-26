@@ -1,0 +1,495 @@
+/* ==========================================================================
+   TVC CYBER GLASS HUD - TACTICAL SCI-FI THEME (FUI / SCI-FI MILITARY HUD)
+   Inspirado en interfaces tácticas militares, Star Citizen & Cyberpunk FUI
+   Activado exclusivamente mediante la clase .theme-cyber-glass en <body>
+   ========================================================================== */
+
+/* ---------- VARIABLES ESPECÍFICAS DE CYBER GLASS ---------- */
+body.theme-cyber-glass {
+    --cg-bg-space: #060a0e;
+    --cg-glass-bg: rgba(11, 18, 25, 0.72);
+    --cg-glass-bg-hover: rgba(16, 26, 36, 0.85);
+    --cg-glass-header: rgba(7, 12, 18, 0.88);
+    --cg-glass-card: rgba(13, 22, 30, 0.65);
+    --cg-border-cyan: rgba(0, 240, 255, 0.28);
+    --cg-border-cyan-bright: #00f0ff;
+    --cg-border-mint: rgba(0, 255, 136, 0.35);
+    --cg-border-red: rgba(255, 42, 75, 0.45);
+    --cg-neon-cyan: #00f0ff;
+    --cg-neon-mint: #00ff88;
+    --cg-neon-red: #ff2a4b;
+    --cg-neon-gold: #e2b938;
+    --cg-text-main: #e2edf5;
+    --cg-text-dim: #7991a4;
+    --cg-font-mono: 'Share Tech Mono', 'Orbitron', monospace;
+    --cg-font-ui: 'Rajdhani', 'Inter', sans-serif;
+
+    /* Overrides de variables base */
+    --bg-dark: #060a0e;
+    --bg-panel: rgba(11, 18, 25, 0.72);
+    --bg-panel-hover: rgba(16, 26, 36, 0.85);
+    --border-color: rgba(0, 240, 255, 0.22);
+    --text-main: #e2edf5;
+    --text-muted: #7991a4;
+}
+
+/* ---------- FONDO TÁCTICO CYBER MATRIX CON HAZARD STRIPES ---------- */
+body.theme-cyber-glass {
+    background-color: var(--cg-bg-space) !important;
+    background-image: 
+        radial-gradient(circle at 50% 12%, rgba(0, 240, 255, 0.07) 0%, transparent 65%),
+        radial-gradient(circle at 85% 85%, rgba(255, 42, 75, 0.04) 0%, transparent 55%),
+        repeating-linear-gradient(135deg, rgba(0, 240, 255, 0.015) 0px, rgba(0, 240, 255, 0.015) 18px, transparent 18px, transparent 36px),
+        linear-gradient(rgba(0, 240, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.035) 1px, transparent 1px) !important;
+    background-size: auto, auto, auto, 40px 40px, 40px 40px !important;
+    color: var(--cg-text-main) !important;
+    font-family: var(--cg-font-ui) !important;
+    letter-spacing: 0.3px;
+    position: relative;
+}
+
+/* Marco HUD perimetral de coordenadas y retículas tácticas */
+body.theme-cyber-glass::before {
+    content: "FN03 GEO // SYS.ONLINE 360-WAVE";
+    position: fixed;
+    top: 6px;
+    left: 78px;
+    font-family: var(--cg-font-mono);
+    font-size: 0.65rem;
+    color: rgba(0, 240, 255, 0.45);
+    letter-spacing: 2px;
+    z-index: 999;
+    pointer-events: none;
+    text-transform: uppercase;
+}
+
+body.theme-cyber-glass::after {
+    content: "SEC_LEVEL // TAC-GRID [41.95N // -6.25W]";
+    position: fixed;
+    bottom: 6px;
+    right: 20px;
+    font-family: var(--cg-font-mono);
+    font-size: 0.62rem;
+    color: rgba(0, 240, 255, 0.35);
+    letter-spacing: 1.5px;
+    z-index: 999;
+    pointer-events: none;
+}
+
+/* ---------- TOP BAR GLASS HUD ---------- */
+body.theme-cyber-glass .top-bar {
+    background: rgba(8, 14, 20, 0.78) !important;
+    backdrop-filter: blur(24px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.25) !important;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(0, 240, 255, 0.15) !important;
+    padding: 0.6rem 1.2rem !important;
+}
+
+/* Pestañas de Facción con Chaflán Táctico */
+body.theme-cyber-glass .faction-tab {
+    background: rgba(12, 20, 28, 0.65) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+    font-family: var(--cg-font-mono) !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 1.2px !important;
+    text-transform: uppercase !important;
+    padding: 6px 16px !important;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    transition: all 0.2s ease !important;
+}
+
+body.theme-cyber-glass .faction-tab:hover {
+    color: #fff !important;
+    background: rgba(0, 240, 255, 0.15) !important;
+    border-color: rgba(0, 240, 255, 0.4) !important;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.2) !important;
+}
+
+body.theme-cyber-glass .faction-tab.active {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.22) 0%, rgba(0, 240, 255, 0.08) 100%) !important;
+    border-color: var(--cg-border-cyan-bright) !important;
+    color: #00f0ff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.35), inset 0 0 10px rgba(0, 240, 255, 0.15) !important;
+    text-shadow: 0 0 8px rgba(0, 240, 255, 0.6);
+}
+
+/* ---------- SIDEBAR NAVIGATION GLASS ---------- */
+body.theme-cyber-glass .sidebar-nav {
+    background: rgba(8, 14, 20, 0.8) !important;
+    backdrop-filter: blur(24px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+    border: 1px solid rgba(0, 240, 255, 0.2) !important;
+    border-radius: 4px !important;
+    box-shadow: 0 10px 35px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 15px rgba(0, 240, 255, 0.08) !important;
+}
+
+body.theme-cyber-glass .logo-min {
+    color: #00f0ff !important;
+    text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
+    font-family: var(--cg-font-mono) !important;
+}
+
+body.theme-cyber-glass .nav-icon-btn {
+    border-radius: 4px !important;
+    color: #8da4b8 !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+}
+
+body.theme-cyber-glass .nav-icon-btn:hover {
+    background: rgba(0, 240, 255, 0.14) !important;
+    color: #00f0ff !important;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}
+
+body.theme-cyber-glass .nav-icon-btn.active {
+    background: rgba(0, 240, 255, 0.22) !important;
+    color: #00f0ff !important;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.45), inset 0 0 8px rgba(0, 240, 255, 0.25) !important;
+    border-left: 3px solid #00f0ff !important;
+}
+
+/* ---------- VENTANAS Y PANELES GLASS (ESTILO FN03 / H4 / R4) ---------- */
+body.theme-cyber-glass .panel,
+body.theme-cyber-glass .management-panel,
+body.theme-cyber-glass .orbat-card,
+body.theme-cyber-glass .modal-content,
+body.theme-cyber-glass .sidebar-panel {
+    background: linear-gradient(180deg, rgba(13, 21, 29, 0.75) 0%, rgba(7, 13, 18, 0.88) 100%) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(0, 240, 255, 0.22) !important;
+    border-radius: 4px !important;
+    box-shadow: 
+        0 16px 45px rgba(0, 0, 0, 0.75), 
+        inset 0 1px 0 rgba(255, 255, 255, 0.08), 
+        0 0 20px rgba(0, 240, 255, 0.06) !important;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Retículas de esquina táctica en los paneles [+] */
+body.theme-cyber-glass .management-panel::before {
+    content: "┌";
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    font-family: var(--cg-font-mono);
+    color: #00f0ff;
+    font-size: 1rem;
+    line-height: 1;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+body.theme-cyber-glass .management-panel::after {
+    content: "┘";
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-family: var(--cg-font-mono);
+    color: #00f0ff;
+    font-size: 1rem;
+    line-height: 1;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+/* Cabeceras de Panel tipo Ventana Militar HUD */
+body.theme-cyber-glass .panel-header {
+    background: rgba(5, 10, 15, 0.8) !important;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.25) !important;
+    padding: 10px 14px !important;
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Decoración con rayas diagonales de aviso estilo UI HUD */
+body.theme-cyber-glass .panel-header::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 120px;
+    width: 60px;
+    height: 100%;
+    background: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.04) 4px, transparent 4px, transparent 8px);
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+body.theme-cyber-glass .panel-header h2,
+body.theme-cyber-glass .panel-header h3 {
+    font-family: var(--cg-font-mono) !important;
+    font-size: 0.96rem !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase !important;
+    color: #e2f1fd !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+body.theme-cyber-glass .panel-header h2::before {
+    content: "H4";
+    background: rgba(0, 240, 255, 0.15);
+    color: #00f0ff;
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    font-size: 0.68rem;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-family: var(--cg-font-mono);
+    font-weight: 700;
+}
+
+/* ---------- TABLAS GLASS TÁCTICAS ---------- */
+body.theme-cyber-glass .table-container,
+body.theme-cyber-glass .table-tactical {
+    background: transparent !important;
+}
+
+body.theme-cyber-glass .table-tactical thead tr th,
+body.theme-cyber-glass .data-table thead tr th {
+    background: rgba(5, 10, 16, 0.95) !important;
+    color: #00f0ff !important;
+    font-family: var(--cg-font-mono) !important;
+    font-size: 0.74rem !important;
+    letter-spacing: 1.4px !important;
+    text-transform: uppercase !important;
+    border-bottom: 2px solid #00f0ff !important;
+    border-top: none !important;
+    padding: 10px 14px !important;
+    text-shadow: 0 0 6px rgba(0, 240, 255, 0.4);
+}
+
+body.theme-cyber-glass .table-tactical tbody tr td,
+body.theme-cyber-glass .data-table tbody tr td {
+    background: rgba(11, 18, 26, 0.65) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border-top: 1px solid rgba(0, 240, 255, 0.1) !important;
+    border-bottom: 1px solid rgba(0, 240, 255, 0.1) !important;
+    color: #d8e5f2 !important;
+    font-family: var(--cg-font-mono) !important;
+    font-size: 0.85rem !important;
+    padding: 12px 14px !important;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+body.theme-cyber-glass .table-tactical tbody tr:hover td,
+body.theme-cyber-glass .data-table tbody tr:hover td {
+    background: rgba(0, 240, 255, 0.1) !important;
+    border-color: rgba(0, 240, 255, 0.3) !important;
+}
+
+/* ---------- BOTONES CYBER CHAFLANADOS CON GLOW ---------- */
+body.theme-cyber-glass .btn {
+    font-family: var(--cg-font-mono) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    border-radius: 0 !important;
+    clip-path: polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 6px 100%, 0 calc(100% - 6px));
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+}
+
+body.theme-cyber-glass .btn.primary {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.25) 0%, rgba(0, 240, 255, 0.1) 100%) !important;
+    border: 1px solid #00f0ff !important;
+    color: #00f0ff !important;
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.25), inset 0 0 8px rgba(0, 240, 255, 0.15) !important;
+}
+
+body.theme-cyber-glass .btn.primary:hover {
+    background: rgba(0, 240, 255, 0.32) !important;
+    color: #fff !important;
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.5) !important;
+}
+
+body.theme-cyber-glass .btn.warning {
+    background: linear-gradient(135deg, rgba(226, 185, 56, 0.25) 0%, rgba(226, 185, 56, 0.08) 100%) !important;
+    border: 1px solid #e2b938 !important;
+    color: #e2b938 !important;
+    box-shadow: 0 0 14px rgba(226, 185, 56, 0.25) !important;
+}
+
+body.theme-cyber-glass .btn.warning:hover {
+    background: rgba(226, 185, 56, 0.32) !important;
+    color: #fff !important;
+    box-shadow: 0 0 20px rgba(226, 185, 56, 0.5) !important;
+}
+
+body.theme-cyber-glass .btn.outline {
+    background: rgba(14, 23, 32, 0.6) !important;
+    backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(0, 240, 255, 0.35) !important;
+    color: #e2edf5 !important;
+}
+
+body.theme-cyber-glass .btn.outline:hover {
+    border-color: #00f0ff !important;
+    color: #00f0ff !important;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3) !important;
+}
+
+/* ---------- ETIQUETAS Y BADGES MILITARES HUD ---------- */
+body.theme-cyber-glass .med-uid-tag,
+body.theme-cyber-glass .card-tag {
+    background: rgba(0, 240, 255, 0.08) !important;
+    border: 1px solid rgba(0, 240, 255, 0.35) !important;
+    color: #00f0ff !important;
+    font-family: var(--cg-font-mono) !important;
+    border-radius: 2px !important;
+    letter-spacing: 0.8px;
+}
+
+body.theme-cyber-glass .med-badge-syldavia {
+    background: rgba(226, 185, 56, 0.15) !important;
+    border: 1px solid rgba(226, 185, 56, 0.5) !important;
+    color: #e2b938 !important;
+    box-shadow: 0 0 8px rgba(226, 185, 56, 0.2) !important;
+}
+
+body.theme-cyber-glass .med-badge-volkovia {
+    background: rgba(67, 136, 204, 0.15) !important;
+    border: 1px solid rgba(67, 136, 204, 0.5) !important;
+    color: #5dade2 !important;
+    box-shadow: 0 0 8px rgba(67, 136, 204, 0.2) !important;
+}
+
+/* ---------- INPUTS Y SELECTS GLASS FORM ---------- */
+body.theme-cyber-glass input[type="text"],
+body.theme-cyber-glass input[type="number"],
+body.theme-cyber-glass input[type="password"],
+body.theme-cyber-glass select,
+body.theme-cyber-glass textarea {
+    background: rgba(7, 12, 17, 0.85) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(0, 240, 255, 0.25) !important;
+    color: #00f0ff !important;
+    font-family: var(--cg-font-mono) !important;
+    border-radius: 3px !important;
+    transition: all 0.2s ease;
+}
+
+body.theme-cyber-glass input:focus,
+body.theme-cyber-glass select:focus,
+body.theme-cyber-glass textarea:focus {
+    border-color: #00f0ff !important;
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.4), inset 0 0 6px rgba(0, 240, 255, 0.2) !important;
+    outline: none !important;
+}
+
+/* ---------- RELOJ DIGITAL HUD (ESTILO 00:11:32:016 DE LA IMAGEN) ---------- */
+.hud-digital-clock-badge {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 42, 75, 0.14);
+    border: 1px solid #ff2a4b;
+    color: #ff4765;
+    font-family: var(--cg-font-mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 2px;
+    box-shadow: 0 0 12px rgba(255, 42, 75, 0.35);
+    letter-spacing: 1px;
+}
+
+body.theme-cyber-glass .hud-digital-clock-badge {
+    display: inline-flex !important;
+}
+
+.hud-pulse-dot {
+    width: 7px;
+    height: 7px;
+    background-color: #ff2a4b;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #ff2a4b;
+    animation: hudPulse 1.2s infinite;
+}
+
+@keyframes hudPulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.2; transform: scale(0.7); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* ---------- SELECTOR DE TEMA TÁCTICO FLOTANTE / HEADER ---------- */
+.tvc-theme-switch-control {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    padding: 2px;
+    gap: 2px;
+}
+
+body.theme-cyber-glass .tvc-theme-switch-control {
+    background: rgba(8, 14, 20, 0.85);
+    border-color: rgba(0, 240, 255, 0.35);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.15);
+}
+
+.theme-switch-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 3px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.theme-switch-btn:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.theme-switch-btn.active {
+    background: rgba(0, 240, 255, 0.18);
+    color: #00f0ff;
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);
+}
+
+body:not(.theme-cyber-glass) #btn-theme-classic.active {
+    background: rgba(226, 185, 56, 0.2);
+    color: #e2b938;
+    border: 1px solid rgba(226, 185, 56, 0.4);
+    box-shadow: 0 0 8px rgba(226, 185, 56, 0.3);
+}
+
+/* ---------- SCROLLBARS CYBER GLASS ---------- */
+body.theme-cyber-glass ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+body.theme-cyber-glass ::-webkit-scrollbar-track {
+    background: rgba(5, 9, 13, 0.8);
+    border-left: 1px solid rgba(0, 240, 255, 0.1);
+}
+body.theme-cyber-glass ::-webkit-scrollbar-thumb {
+    background: rgba(0, 240, 255, 0.35);
+    border-radius: 2px;
+}
+body.theme-cyber-glass ::-webkit-scrollbar-thumb:hover {
+    background: #00f0ff;
+    box-shadow: 0 0 8px #00f0ff;
+}
