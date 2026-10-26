@@ -2760,6 +2760,29 @@ async function loadAnalytics() {
 // ==========================================
 let allPostMortemTeams = [];
 
+function irAPostMortem() {
+    // 1. Activar la vista de estadísticas
+    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-icon-btn').forEach(b => b.classList.remove('active'));
+    
+    const statsSec = document.getElementById('view-stats');
+    if (statsSec) statsSec.classList.add('active');
+    
+    const statsBtn = document.querySelector('.nav-icon-btn[data-target="view-stats"]');
+    if (statsBtn) statsBtn.classList.add('active');
+    
+    // 2. Cargar datos actualizados
+    if (typeof loadAnalytics === 'function') loadAnalytics();
+    if (typeof loadMedicRespawnAnalytics === 'function') loadMedicRespawnAnalytics();
+    
+    // 3. Scroll suave directo al panel
+    setTimeout(() => {
+        const pmPanel = document.getElementById('pm-post-mortem-panel');
+        if (pmPanel) pmPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+window.irAPostMortem = irAPostMortem;
+
 async function loadMedicRespawnAnalytics() {
     try {
         const res = await fetch('/api/analytics/medics_respawn');

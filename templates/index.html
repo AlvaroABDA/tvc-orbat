@@ -258,7 +258,10 @@
                     <button class="faction-tab {% if user_faction == 'Khemed' and user_role != 'admin' %}active{% endif %}" data-faction="Khemed">Khemed</button>
                     {% endif %}
                 </div>
-                <div style="display: flex; gap: 1rem;">
+                <div style="display: flex; gap: 0.8rem; align-items: center;">
+                    <button class="btn" id="btn-top-postmortem" onclick="irAPostMortem()" style="padding: 0 1rem; border: 1px solid #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.12); font-weight: 700; font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 12px rgba(0,240,255,0.25); cursor: pointer;" title="Abrir análisis y auditoría post-mortem de curas vs respawns">
+                        <span class="material-symbols-outlined" style="font-size: 1.15rem; color: #00f0ff;">monitor_heart</span> POST-MORTEM
+                    </button>
                     <button class="btn warning" id="btn-mi-expediente" style="padding: 0 1rem;" title="Gestionar miembros y datos de unidad">
                         <span class="material-symbols-outlined" style="font-size: 1.2rem; margin-right: 5px; vertical-align: middle;">groups</span> {{ 'Gestión de Unidades' if user_role == 'admin' else 'Gestionar unidad' }}
                     </button>
@@ -587,87 +590,19 @@
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; width: 100%; padding-bottom: 3rem;">
         
-        <!-- ROW 1: Logs -->
-        <div class="panel management-panel" style="display: flex; flex-direction: column;">
-            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">LOG DE INCURSIONES (CAPTURAS)</h3>
-            <div style="padding-right: 5px;">
-                <table class="table-tactical">
-                    <thead><tr><th style="text-align: left;">H-TIEMPO</th><th style="text-align: left;">SECTOR</th><th style="text-align: left;">FACC.</th></tr></thead>
-                    <tbody id="dom-log-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="panel management-panel" style="display: flex; flex-direction: column;">
-            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">TELEMETRÍA DE INSERCIONES (RESPAWN)</h3>
-            <div style="padding-right: 5px;">
-                <table class="table-tactical">
-                    <thead><tr><th style="text-align: left;">H-TIEMPO</th><th style="text-align: left;">SECTOR</th><th style="text-align: left;">UNIDAD</th></tr></thead>
-                    <tbody id="dom-respawns-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- ROW 2: Rankings -->
-        <div class="panel management-panel" style="display: flex; flex-direction: column;">
-            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">TOP UNIDADES INCURSORAS</h3>
-            <div>
-                <table class="table-tactical">
-                    <thead><tr><th style="text-align: left;">UNIDAD</th><th style="text-align: left;">FACC.</th><th style="text-align: center;">CAPTURAS</th></tr></thead>
-                    <tbody id="stats-capturas-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <div class="panel management-panel" style="display: flex; flex-direction: column;">
-            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">TOP UNIDADES DESPLEGADAS</h3>
-            <div>
-                <table class="table-tactical">
-                    <thead><tr><th style="text-align: left;">UNIDAD</th><th style="text-align: left;">FACC.</th><th style="text-align: center;">RESPAWNS</th></tr></thead>
-                    <tbody id="stats-respawns-tbody"></tbody>
-                </table>
-            </div>
-        </div>
-        
-        <!-- ROW 3: Recursos (Koronnas) -->
-        <div class="panel management-panel" style="grid-column: 1 / -1; display: flex; flex-direction: column;">
-            <h3 style="margin-bottom: 1rem; color: #fff; text-transform: uppercase; letter-spacing: 3px; text-align: center;">Generación de Recursos (Koronnas)</h3>
-            <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 20px; text-align: center;">Cálculo: Minutos controlados por hora × 10 Koronnas</p>
-            
-            <div style="overflow-x: auto;">
-                <table class="table-tactical" style="text-align: center;">
-                    <thead>
-                        <tr>
-                            <th style="text-align: center; color: #fff;">FRANJA HORARIA</th>
-                            <th style="text-align: center; color: var(--color-syldavia); font-size: 1.1rem;">SYLDAVIA</th>
-                            <th style="text-align: center; color: var(--color-volkovia); font-size: 1.1rem;">VOLKOVIA</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stats-koronnas-tbody">
-                        <!-- Filled by JS -->
-                    </tbody>
-                    <tfoot style="border-top: 2px solid var(--theme-color);">
-                        <tr>
-                            <td style="font-weight: bold; color: #fff;">TOTAL ACUMULADO</td>
-                            <td style="color: var(--color-syldavia); font-weight: bold; font-family: var(--font-mono); font-size: 1.5rem;" id="koronnas-syl-total">0</td>
-                            <td style="color: var(--color-volkovia); font-weight: bold; font-family: var(--font-mono); font-size: 1.5rem;" id="koronnas-vol-total">0</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        <!-- ROW 4: ANÁLISIS POST-MORTEM (CURAS VS RESPAWN) -->
-        <div class="panel management-panel" style="grid-column: 1 / -1; display: flex; flex-direction: column; border-top: 3px solid #00f0ff; margin-top: 1rem;">
+        <!-- ROW 1 (DESTACADO): ANÁLISIS POST-MORTEM (CURAS VS RESPAWN) -->
+        <div id="pm-post-mortem-panel" class="panel management-panel" style="grid-column: 1 / -1; display: flex; flex-direction: column; border-top: 4px solid #00f0ff; box-shadow: 0 0 25px rgba(0,240,255,0.15);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
                 <div>
-                    <h3 style="margin: 0; color: #00f0ff; text-transform: uppercase; letter-spacing: 2px; font-size: 1.3rem; display: flex; align-items: center; gap: 8px;">
-                        <span class="material-symbols-outlined" style="font-size: 26px; color: #00f0ff;">monitor_heart</span>
+                    <h3 style="margin: 0; color: #00f0ff; text-transform: uppercase; letter-spacing: 2px; font-size: 1.35rem; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="font-size: 28px; color: #00f0ff;">monitor_heart</span>
                         AUDITORÍA POST-MORTEM // BALANCE MÉDICO VS RESPAWN
                     </h3>
-                    <p style="color: #94a3b8; font-size: 0.85rem; margin: 6px 0 0 0;">
+                    <p style="color: #94a3b8; font-size: 0.88rem; margin: 6px 0 0 0;">
                         Diagnóstico integral de desgaste, asimetría de facciones y trazabilidad entre curaciones de campo y acudidas al punto de despliegue.
                     </p>
                 </div>
-                <button class="btn btn-outline" onclick="loadMedicRespawnAnalytics()" style="font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 1px; padding: 6px 14px; border-color: #00f0ff; color: #00f0ff; display: inline-flex; align-items: center; gap: 6px;">
+                <button class="btn btn-outline" onclick="loadMedicRespawnAnalytics()" style="font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 1px; padding: 6px 16px; border-color: #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.08); display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
                     <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> ACTUALIZAR AUDITORÍA
                 </button>
             </div>
@@ -768,6 +703,76 @@
                         <tbody id="pm-timeline-tbody"></tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- ROW 2: Logs -->
+        <div class="panel management-panel" style="display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">LOG DE INCURSIONES (CAPTURAS)</h3>
+            <div style="padding-right: 5px;">
+                <table class="table-tactical">
+                    <thead><tr><th style="text-align: left;">H-TIEMPO</th><th style="text-align: left;">SECTOR</th><th style="text-align: left;">FACC.</th></tr></thead>
+                    <tbody id="dom-log-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel management-panel" style="display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">TELEMETRÍA DE INSERCIONES (RESPAWN)</h3>
+            <div style="padding-right: 5px;">
+                <table class="table-tactical">
+                    <thead><tr><th style="text-align: left;">H-TIEMPO</th><th style="text-align: left;">SECTOR</th><th style="text-align: left;">UNIDAD</th></tr></thead>
+                    <tbody id="dom-respawns-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ROW 3: Rankings -->
+        <div class="panel management-panel" style="display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">TOP UNIDADES INCURSORAS</h3>
+            <div>
+                <table class="table-tactical">
+                    <thead><tr><th style="text-align: left;">UNIDAD</th><th style="text-align: left;">FACC.</th><th style="text-align: center;">CAPTURAS</th></tr></thead>
+                    <tbody id="stats-capturas-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="panel management-panel" style="display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: var(--color-syldavia);">TOP UNIDADES DESPLEGADAS</h3>
+            <div>
+                <table class="table-tactical">
+                    <thead><tr><th style="text-align: left;">UNIDAD</th><th style="text-align: left;">FACC.</th><th style="text-align: center;">RESPAWNS</th></tr></thead>
+                    <tbody id="stats-respawns-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- ROW 4: Recursos (Koronnas) -->
+        <div class="panel management-panel" style="grid-column: 1 / -1; display: flex; flex-direction: column;">
+            <h3 style="margin-bottom: 1rem; color: #fff; text-transform: uppercase; letter-spacing: 3px; text-align: center;">Generación de Recursos (Koronnas)</h3>
+            <p style="color: #aaa; font-size: 0.8rem; margin-bottom: 20px; text-align: center;">Cálculo: Minutos controlados por hora × 10 Koronnas</p>
+            
+            <div style="overflow-x: auto;">
+                <table class="table-tactical" style="text-align: center;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: center; color: #fff;">FRANJA HORARIA</th>
+                            <th style="text-align: center; color: var(--color-syldavia); font-size: 1.1rem;">SYLDAVIA</th>
+                            <th style="text-align: center; color: var(--color-volkovia); font-size: 1.1rem;">VOLKOVIA</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stats-koronnas-tbody">
+                        <!-- Filled by JS -->
+                    </tbody>
+                    <tfoot style="border-top: 2px solid var(--theme-color);">
+                        <tr>
+                            <td style="font-weight: bold; color: #fff;">TOTAL ACUMULADO</td>
+                            <td style="color: var(--color-syldavia); font-weight: bold; font-family: var(--font-mono); font-size: 1.5rem;" id="koronnas-syl-total">0</td>
+                            <td style="color: var(--color-volkovia); font-weight: bold; font-family: var(--font-mono); font-size: 1.5rem;" id="koronnas-vol-total">0</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
         </div>
         
@@ -1069,9 +1074,14 @@
                                     Asigna cupos de reanimación por sanitario y unidad de combate. Los sanitarios en campo recargan sus usos al escanear la baliza QR de <b style="color: #fff;">RESPAWN</b> de su facción.
                                 </p>
                             </div>
-                            <button id="btn-refresh-medicos" class="btn outline btn-sm" onclick="cargarAdminMedicos()" style="font-size: 0.82rem; border-color: #2ecc71; color: #2ecc71; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;">
-                                <span class="material-symbols-outlined" style="font-size: 16px;">sync</span> Actualizar Médicos
-                            </button>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                                <button class="btn btn-sm" onclick="irAPostMortem()" style="font-size: 0.82rem; border: 1px solid #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.12); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.2);" title="Ir al dashboard de análisis de curas vs respawns">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">monitor_heart</span> AUDITORÍA POST-MORTEM
+                                </button>
+                                <button id="btn-refresh-medicos" class="btn outline btn-sm" onclick="cargarAdminMedicos()" style="font-size: 0.82rem; border-color: #2ecc71; color: #2ecc71; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">sync</span> Actualizar Médicos
+                                </button>
+                            </div>
                         </div>
 
                         <!-- DOCTRINA TVC DE ASIGNACIÓN MÉDICA -->
