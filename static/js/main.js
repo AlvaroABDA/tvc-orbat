@@ -3352,6 +3352,9 @@ function filtrarMatrizPostMortem() {
 document.querySelectorAll('.nav-icon-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
         const target = e.currentTarget.getAttribute('data-target');
+        if (target === 'view-metoc' && window.TVC_METOC) {
+            window.TVC_METOC.load('#metoc-team-root', { isAdmin: (window.userRole === 'admin') });
+        }
         if (target === 'view-stats') {
             loadAnalytics();
         }

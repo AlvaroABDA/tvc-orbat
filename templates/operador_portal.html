@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/metoc.css') }}?v=1">
     <style>
         :root {
             --theme-color: {{ hex_color | default('#00d2ff') }};
@@ -773,6 +774,22 @@
                 </a>
             {% endif %}
 
+            <!-- Card: Informe Meteorológico METOC (Bajo demanda desde el día del evento) -->
+            <div class="hub-card" style="grid-column: span 2; border: 1px solid rgba(56, 189, 248, 0.45); background: linear-gradient(135deg, rgba(56, 189, 248, 0.12) 0%, rgba(14, 21, 35, 0.94) 100%);" onclick="openMetocModal()">
+                <div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+                        <span class="material-symbols-outlined hub-card-icon" style="color:#38bdf8;">partly_cloudy_day</span>
+                        <span class="badge" style="background:rgba(56,189,248,0.16); border:1px solid #38bdf8; color:#38bdf8;">METOC // ZONA DE OPERACIONES</span>
+                    </div>
+                    <h2 class="hub-card-title" style="color:#38bdf8; margin-top:4px;">INFORME METEOROLÓGICO // TIEMPO EN EL EVENTO</h2>
+                    <p class="hub-card-desc">Consulta bajo demanda el parte atmosférico en las coordenadas de despliegue partiendo desde el día del evento: lluvia, viento/rachas, frío nocturno, orto/ocaso y luminancia lunar NVG.</p>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; font-family:var(--font-tech); font-size:0.74rem; color:#38bdf8; border-top:1px dashed rgba(56,189,248,0.28); padding-top:6px;">
+                    <span>CONSULTA PUNTUAL BAJO DEMANDA</span>
+                    <span style="font-weight:bold; letter-spacing:1px;">ABRIR PARTE METOC 🡥</span>
+                </div>
+            </div>
+
             <!-- Card: Ficha ICE Real (Punto B) -->
             <div class="hub-card ice-highlight" onclick="openIceModal()">
                 <div>
@@ -1164,6 +1181,27 @@
         </div>
     </div>
 
+    <!-- MODAL: INFORME METEOROLÓGICO BAJO DEMANDA (METOC) -->
+    <div id="modal-metoc" class="modal-overlay">
+        <div class="modal-box" style="max-width: 1120px; border-color: #38bdf8; background: #0a0f1a;">
+            <div class="modal-header">
+                <div class="modal-title" style="color:#38bdf8; display:flex; align-items:center; gap:8px;">
+                    <span class="material-symbols-outlined">partly_cloudy_day</span>
+                    CENTRAL METOC // TIEMPO EN ZONA DEL EVENTO
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <a href="/metoc" class="metoc-btn" style="padding:4px 10px; font-size:0.74rem;" title="Abrir en vista completa">
+                        <span class="material-symbols-outlined" style="font-size:15px;">open_in_full</span> Pantalla Completa
+                    </a>
+                    <button type="button" class="btn-close" onclick="closeMetocModal()">&times;</button>
+                </div>
+            </div>
+            <div id="metoc-operator-root">
+                <!-- Se carga únicamente cuando el operador abre este modal -->
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST NOTIFICATION -->
     <div id="toast">
         <span class="material-symbols-outlined" style="color:var(--theme-color);">info</span>
@@ -1465,5 +1503,21 @@
         };
     </script>
     <script src="{{ url_for('static', filename='js/evento_alerta.js') }}?v=1"></script>
+    <script src="{{ url_for('static', filename='js/metoc.js') }}?v=1"></script>
+    <script>
+        function openMetocModal() {
+            const modal = document.getElementById('modal-metoc');
+            if (modal) {
+                modal.style.display = 'flex';
+                if (window.TVC_METOC) {
+                    window.TVC_METOC.load('#metoc-operator-root', { isAdmin: false });
+                }
+            }
+        }
+        function closeMetocModal() {
+            const modal = document.getElementById('modal-metoc');
+            if (modal) modal.style.display = 'none';
+        }
+    </script>
 </body>
 </html>

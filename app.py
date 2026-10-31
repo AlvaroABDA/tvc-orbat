@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import dynamic_targets_engine
 import imint_engine
 import op_dinamico_engine
+import metoc_engine
 from field_medic import medic_engine
 import math
 import json
@@ -4072,6 +4073,12 @@ def patch_db():
         except Exception as e:
             print("Error inicializando tabla seguridad_servicio_config:", e)
 
+        # Inicializar tabla de configuración meteorológica bajo demanda (METOC)
+        try:
+            metoc_engine.ensure_metoc_table(conn)
+        except Exception as e:
+            print("Error inicializando tabla metoc_config:", e)
+
         # Migración y cifrado de seguridad LOPD / RGPD (Cifrado en reposo AES-256)
         try:
             migrate_gdpr_encryption(conn)
@@ -6181,6 +6188,78 @@ def api_admin_inscripciones_de_oficio():
             'status': 'success',
             'message': f'Escuadra "{eq["nombre"]}" inscrita de oficio con {num_activos} combatientes activos.'
         })
+    finally:
+        if not has_app_context():
+            conn.close()
+
+# -------------------------------------------------------------
+# SISTEMA METEOROLÓGICO TÁCTICO BAJO DEMANDA (METOC)
+# -------------------------------------------------------------
+@app.route('/metoc')
+def metoc_page():
+    if 'role' not in session:
+        return redirect(url_for('login'))
+    user_role = session.get('role', 'operador')
+    user_faction = session.get('faction', 'TVC')
+    faccion_color = session.get('faccion_color', 'Azul')
+    color_map = {'Amarillo': '#f1c40f', 'Azul': '#3498db', 'Verde': '#2ecc71', 'Rojo': '#e74c3c'}
+    hex_color = color_map.get(faccion_color, '#00d2ff')
+    back_url = url_for('operador_portal') if user_role == 'operador' else url_for('index')
+    return render_template(
+        'metoc.html',
+        user_role=user_role,
+        user_faction=user_faction,
+        hex_color=hex_color,
+        back_url=back_url
+    )
+
+@app.route('/api/metoc/config', methods=['GET'])
+def api_metoc_config_get():
+    if 'role' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    is_admin = (session.get('role') == 'admin')
+    conn = get_db_connection()
+    try:
+        cfg = metoc_engine.get_metoc_config(conn, is_admin=is_admin)
+        cfg.pop('_raw_lat', None)
+        cfg.pop('_raw_lng', None)
+        cfg['is_admin'] = is_admin
+        return jsonify(cfg)
+    finally:
+        if not has_app_context():
+            conn.close()
+
+@app.route('/api/admin/metoc/config', methods=['POST'])
+def api_admin_metoc_config_post():
+    if session.get('role') != 'admin':
+        return jsonify({'error': 'No autorizado. Solo Dirección puede modificar la configuración METOC.'}), 403
+    data = request.json or {}
+    conn = get_db_connection()
+    try:
+        updated = metoc_engine.save_metoc_config(conn, data)
+        updated.pop('_raw_lat', None)
+        updated.pop('_raw_lng', None)
+        return jsonify({'status': 'success', 'config': updated})
+    except ValueError as ve:
+        return jsonify({'status': 'error', 'error': str(ve)}), 400
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
+    finally:
+        if not has_app_context():
+            conn.close()
+
+@app.route('/api/metoc/report', methods=['GET'])
+def api_metoc_report_get():
+    if 'role' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    is_admin = (session.get('role') == 'admin')
+    force = (request.args.get('force') == '1')
+    conn = get_db_connection()
+    try:
+        report = metoc_engine.get_metoc_report(conn, is_admin=is_admin, force_refresh=force)
+        return jsonify(report)
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)}), 500
     finally:
         if not has_app_context():
             conn.close()
