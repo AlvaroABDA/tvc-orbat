@@ -9,7 +9,10 @@ from datetime import datetime, timedelta
 import dynamic_targets_engine
 import imint_engine
 import op_dinamico_engine
-import metoc_engine
+try:
+    import metoc_engine
+except ImportError:
+    metoc_engine = None
 from field_medic import medic_engine
 import math
 import json
@@ -4209,10 +4212,11 @@ def patch_db():
             print("Error inicializando tabla seguridad_servicio_config:", e)
 
         # Inicializar tabla de configuración meteorológica bajo demanda (METOC)
-        try:
-            metoc_engine.ensure_metoc_table(conn)
-        except Exception as e:
-            print("Error inicializando tabla metoc_config:", e)
+        if metoc_engine:
+            try:
+                metoc_engine.ensure_metoc_table(conn)
+            except Exception as e:
+                print("Error inicializando tabla metoc_config:", e)
 
         # Migración y cifrado de seguridad LOPD / RGPD (Cifrado en reposo AES-256)
         try:
@@ -6350,6 +6354,8 @@ def metoc_page():
 
 @app.route('/api/metoc/config', methods=['GET'])
 def api_metoc_config_get():
+    if not metoc_engine:
+        return jsonify({'error': 'Módulo METOC no instalado en el servidor'}), 503
     if 'role' not in session:
         return jsonify({'error': 'No autorizado'}), 401
     is_admin = (session.get('role') == 'admin')
@@ -6366,6 +6372,8 @@ def api_metoc_config_get():
 
 @app.route('/api/admin/metoc/config', methods=['POST'])
 def api_admin_metoc_config_post():
+    if not metoc_engine:
+        return jsonify({'error': 'Módulo METOC no instalado en el servidor'}), 503
     if session.get('role') != 'admin':
         return jsonify({'error': 'No autorizado. Solo Dirección puede modificar la configuración METOC.'}), 403
     data = request.json or {}
@@ -6385,6 +6393,8 @@ def api_admin_metoc_config_post():
 
 @app.route('/api/metoc/report', methods=['GET'])
 def api_metoc_report_get():
+    if not metoc_engine:
+        return jsonify({'error': 'Módulo METOC no instalado en el servidor'}), 503
     if 'role' not in session:
         return jsonify({'error': 'No autorizado'}), 401
     is_admin = (session.get('role') == 'admin')

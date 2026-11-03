@@ -1,0 +1,553 @@
+/* ==========================================================================
+   TVC-ORBAT // MÓDULO METOC (INFORME METEOROLÓGICO TÁCTICO BAJO DEMANDA)
+   ========================================================================== */
+
+.metoc-wrapper {
+    width: 100%;
+    max-width: 1260px;
+    margin: 0 auto;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    color: #e2e8f0;
+    box-sizing: border-box;
+}
+
+.metoc-wrapper * {
+    box-sizing: border-box;
+}
+
+/* Cabecera Táctica */
+.metoc-header-card {
+    background: linear-gradient(135deg, rgba(13, 20, 33, 0.96) 0%, rgba(9, 13, 22, 0.98) 100%);
+    border: 1px solid rgba(0, 240, 255, 0.28);
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.55);
+    position: relative;
+    overflow: hidden;
+}
+
+.metoc-header-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #00f0ff;
+    box-shadow: 0 0 12px #00f0ff;
+}
+
+.metoc-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.metoc-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.metoc-title {
+    margin: 0;
+    font-family: 'Orbitron', 'Share Tech Mono', monospace;
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #00f0ff;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.metoc-subtitle-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin-top: 8px;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.metoc-meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 3px 9px;
+    border-radius: 4px;
+    color: #cbd5e1;
+}
+
+.metoc-actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.metoc-btn {
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid rgba(0, 240, 255, 0.4);
+    color: #00f0ff;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 7px 13px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+
+.metoc-btn:hover {
+    background: rgba(0, 240, 255, 0.22);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.3);
+}
+
+.metoc-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.metoc-btn-admin {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.45);
+    color: #fbbf24;
+}
+
+.metoc-btn-admin:hover {
+    background: rgba(245, 158, 11, 0.24);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+}
+
+/* Fase del Evento */
+.metoc-phase-banner {
+    margin-top: 14px;
+    padding: 11px 14px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.42);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.metoc-phase-pill {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.metoc-phase-PRE_VENTANA {
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid #f59e0b;
+    color: #fbbf24;
+}
+
+.metoc-phase-PRE_EVENTO {
+    background: rgba(0, 240, 255, 0.14);
+    border: 1px solid #00f0ff;
+    color: #00f0ff;
+}
+
+.metoc-phase-EN_CURSO {
+    background: rgba(46, 204, 113, 0.18);
+    border: 1px solid #2ecc71;
+    color: #2ecc71;
+    box-shadow: 0 0 12px rgba(46, 204, 113, 0.3);
+}
+
+.metoc-phase-POST_EVENTO {
+    background: rgba(148, 163, 184, 0.16);
+    border: 1px solid #94a3b8;
+    color: #cbd5e1;
+}
+
+/* Directiva de Mando */
+.metoc-hq-note {
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.15) 0%, rgba(20, 25, 36, 0.95) 100%);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    border-left: 4px solid #f59e0b;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+/* Panel Configuración Admin */
+.metoc-admin-panel {
+    background: rgba(16, 20, 30, 0.98);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    border-radius: 8px;
+    padding: 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.65);
+}
+
+.metoc-admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.metoc-field label {
+    display: block;
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #94a3b8;
+    margin-bottom: 5px;
+    font-family: 'Share Tech Mono', monospace;
+}
+
+.metoc-field input,
+.metoc-field select,
+.metoc-field textarea {
+    width: 100%;
+    background: #090d16;
+    border: 1px solid #334155;
+    color: #f8fafc;
+    padding: 8px 10px;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    font-family: 'Inter', sans-serif;
+}
+
+.metoc-field input:focus,
+.metoc-field select:focus,
+.metoc-field textarea:focus {
+    outline: none;
+    border-color: #00f0ff;
+}
+
+/* Tira de Tiempo Actual en Zona */
+.metoc-live-strip {
+    background: rgba(15, 23, 38, 0.9);
+    border: 1px solid rgba(56, 189, 248, 0.25);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.metoc-live-metrics {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.85rem;
+}
+
+/* Pestañas de Días del Evento */
+.metoc-days-tabs {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 16px;
+    scrollbar-width: thin;
+}
+
+.metoc-day-tab {
+    background: rgba(17, 23, 36, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 7px;
+    padding: 10px 14px;
+    min-width: 155px;
+    cursor: pointer;
+    text-align: left;
+    color: #cbd5e1;
+    transition: all 0.18s ease;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.metoc-day-tab:hover {
+    border-color: rgba(0, 240, 255, 0.45);
+    background: rgba(23, 31, 48, 0.96);
+}
+
+.metoc-day-tab.active {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.16) 0%, rgba(15, 23, 38, 0.98) 100%);
+    border-color: #00f0ff;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.22);
+    color: #fff;
+}
+
+.metoc-day-tab-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: #00f0ff;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+}
+
+.metoc-day-tab-date {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #fff;
+}
+
+.metoc-day-tab-temps {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.82rem;
+    color: #94a3b8;
+}
+
+/* KPI Grid del Día Seleccionado */
+.metoc-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(235px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.metoc-kpi-card {
+    background: #121723;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.metoc-kpi-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.73rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+
+.metoc-kpi-main {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.55rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.metoc-kpi-sub {
+    font-size: 0.79rem;
+    color: #94a3b8;
+    line-height: 1.35;
+}
+
+/* Semáforo de Impacto Táctico */
+.metoc-advisories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.metoc-advisory-card {
+    background: rgba(15, 20, 30, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 4px solid #38bdf8;
+    border-radius: 6px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.metoc-advisory-card.lvl-success { border-left-color: #2ecc71; }
+.metoc-advisory-card.lvl-warning { border-left-color: #f59e0b; background: rgba(245, 158, 11, 0.06); }
+.metoc-advisory-card.lvl-danger  { border-left-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+.metoc-advisory-card.lvl-info    { border-left-color: #00f0ff; }
+
+.metoc-advisory-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.lvl-success .metoc-advisory-title { color: #2ecc71; }
+.lvl-warning .metoc-advisory-title { color: #fbbf24; }
+.lvl-danger  .metoc-advisory-title { color: #f87171; }
+.lvl-info    .metoc-advisory-title { color: #00f0ff; }
+
+.metoc-advisory-text {
+    font-size: 0.82rem;
+    color: #cbd5e1;
+    line-height: 1.4;
+}
+
+/* Tabla Horaria Táctica */
+.metoc-hourly-panel {
+    background: #111622;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.metoc-hourly-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.metoc-table-scroll {
+    overflow-x: auto;
+    width: 100%;
+}
+
+.metoc-hourly-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+    min-width: 620px;
+}
+
+.metoc-hourly-table th {
+    text-align: left;
+    padding: 9px 10px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.73rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #00f0ff;
+    background: rgba(0, 0, 0, 0.45);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.28);
+    white-space: nowrap;
+}
+
+.metoc-hourly-table td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+.metoc-hourly-table tr.is-night-row td {
+    background: rgba(8, 11, 20, 0.65);
+}
+
+.metoc-hourly-table tr.is-current-hour td {
+    background: rgba(0, 240, 255, 0.11);
+    border-top: 1px solid rgba(0, 240, 255, 0.4);
+    border-bottom: 1px solid rgba(0, 240, 255, 0.4);
+}
+
+.metoc-wind-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.07);
+    font-size: 13px;
+    color: #38bdf8;
+}
+
+.metoc-source-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    padding: 3px 9px;
+    border-radius: 4px;
+    font-weight: 700;
+}
+
+.metoc-source-MODELO_DETERMINISTA {
+    background: rgba(46, 204, 113, 0.15);
+    border: 1px solid rgba(46, 204, 113, 0.45);
+    color: #2ecc71;
+}
+
+.metoc-source-REFERENCIA_HISTORICA {
+    background: rgba(245, 158, 11, 0.15);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    color: #fbbf24;
+}
+
+.metoc-source-REGISTRO_REAL,
+.metoc-source-HOY_ZONA {
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.45);
+    color: #38bdf8;
+}
+
+@media (max-width: 640px) {
+    .metoc-header-card {
+        padding: 14px;
+    }
+    .metoc-title {
+        font-size: 1rem;
+    }
+    .metoc-kpi-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    .metoc-kpi-main {
+        font-size: 1.25rem;
+    }
+}
+
+@media (max-width: 420px) {
+    .metoc-kpi-grid {
+        grid-template-columns: 1fr;
+    }
+}
+

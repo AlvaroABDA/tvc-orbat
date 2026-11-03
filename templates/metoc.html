@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Informe Meteorológico Táctico // METOC</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/metoc.css') }}?v=1">
+    <style>
+        :root {
+            --theme-color: {{ hex_color | default('#00f0ff') }};
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #080b12;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            background-image:
+                radial-gradient(circle at 20% 0%, rgba(0, 240, 255, 0.06) 0%, transparent 50%),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 30px 30px, 30px 30px;
+        }
+        .metoc-topbar {
+            background: rgba(11, 16, 26, 0.96);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+        .metoc-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: 1px;
+        }
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 5px;
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            background: rgba(0, 240, 255, 0.1);
+            color: #00f0ff;
+            text-decoration: none;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.82rem;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+        .btn-back:hover {
+            background: rgba(0, 240, 255, 0.22);
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <header class="metoc-topbar">
+        <div class="metoc-brand">
+            <img src="/static/imgs/tvc_blanco.png" alt="TVC" style="height:26px;">
+            <span>TVC ORBAT // CENTRAL METOC</span>
+        </div>
+        <a href="{{ back_url }}" class="btn-back">
+            <span class="material-symbols-outlined" style="font-size:17px;">arrow_back</span>
+            VOLVER AL PORTAL
+        </a>
+    </header>
+
+    <main style="padding: 20px 14px 40px 14px;">
+        <div id="metoc-standalone-root"></div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/metoc.js') }}?v=1"></script>
+    <script src="{{ url_for('static', filename='js/evento_alerta.js') }}?v=1"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.TVC_METOC.load('#metoc-standalone-root', {
+                isAdmin: {{ 'true' if user_role == 'admin' else 'false' }}
+            });
+        });
+    </script>
+</body>
+</html>
+
