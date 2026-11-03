@@ -3037,7 +3037,7 @@ async function loadAnalytics() {
             if(document.getElementById('koronnas-vol-total')) document.getElementById('koronnas-vol-total').innerText = totalVolK.toLocaleString();
         }
 
-        // Cargar auditoría post-mortem de curas vs respawn
+        // Cargar debriefing operativo de curas vs respawn
         if (typeof loadMedicRespawnAnalytics === 'function') {
             loadMedicRespawnAnalytics();
         }
@@ -3048,11 +3048,12 @@ async function loadAnalytics() {
 }
 
 // ==========================================
-// AUDITORÍA POST-MORTEM: CURAS VS RESPAWN
+// DEBRIEFING OPERATIVO: CURAS VS RESPAWN
 // ==========================================
-let allPostMortemTeams = [];
+let allDebriefingTeams = [];
+let allPostMortemTeams = allDebriefingTeams;
 
-function irAPostMortem() {
+function irADebriefing() {
     // 1. Activar la vista de estadísticas
     document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
     document.querySelectorAll('.nav-icon-btn').forEach(b => b.classList.remove('active'));
@@ -3073,18 +3074,20 @@ function irAPostMortem() {
         if (pmPanel) pmPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
 }
-window.irAPostMortem = irAPostMortem;
+window.irADebriefing = irADebriefing;
+window.irAPostMortem = irADebriefing;
 
 async function loadMedicRespawnAnalytics() {
     try {
         const res = await fetch('/api/analytics/medics_respawn');
         const data = await res.json();
         if (data.status !== 'success') {
-            console.error("Error fetching post-mortem data:", data);
+            console.error("Error fetching debriefing data:", data);
             return;
         }
 
-        allPostMortemTeams = data.equipos || [];
+        allDebriefingTeams = data.equipos || [];
+        allPostMortemTeams = allDebriefingTeams;
 
         // 1. Diagnóstico Automático Global
         const diagContainer = document.getElementById('pm-diagnostico-container');
@@ -3220,7 +3223,7 @@ async function loadMedicRespawnAnalytics() {
         }
 
         // 4. Matriz de Escuadras
-        filtrarMatrizPostMortem();
+        filtrarMatrizDebriefing();
 
         // 5. Timeline
         const timeWrapper = document.getElementById('pm-timeline-wrapper');
@@ -3249,13 +3252,13 @@ async function loadMedicRespawnAnalytics() {
         }
 
     } catch (e) {
-        console.error("Error al cargar analítica post-mortem:", e);
+        console.error("Error al cargar debriefing operativo:", e);
         const tbody = document.getElementById('pm-equipos-tbody');
-        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px; color: #ff4444;">Error de conexión al cargar la auditoría post-mortem.</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="10" style="text-align:center; padding: 20px; color: #ff4444;">Error de conexión al cargar el debriefing operativo.</td></tr>';
     }
 }
 
-function filtrarMatrizPostMortem() {
+function filtrarMatrizDebriefing() {
     const tbody = document.getElementById('pm-equipos-tbody');
     if (!tbody) return;
 
@@ -3263,7 +3266,7 @@ function filtrarMatrizPostMortem() {
     const faccionSelect = (document.getElementById('pm-filter-faccion')?.value || '').toLowerCase();
     const soloAnomalias = document.getElementById('pm-filter-solo-anomalias')?.checked || false;
 
-    const filtered = allPostMortemTeams.filter(t => {
+    const filtered = (allDebriefingTeams || allPostMortemTeams).filter(t => {
         const nom = (t.equipo_nombre || '').toLowerCase();
         const fac = (t.faccion_nombre || '').toLowerCase();
         if (searchInput && !nom.includes(searchInput)) return false;
@@ -3346,6 +3349,8 @@ function filtrarMatrizPostMortem() {
         tbody.appendChild(tr);
     });
 }
+window.filtrarMatrizDebriefing = filtrarMatrizDebriefing;
+window.filtrarMatrizPostMortem = filtrarMatrizDebriefing;
 
 
 // Intercept tab changes

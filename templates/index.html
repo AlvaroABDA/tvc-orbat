@@ -288,8 +288,8 @@
                         </button>
                     </div>
 
-                    <button class="btn" id="btn-top-postmortem" onclick="irAPostMortem()" style="padding: 0 1rem; border: 1px solid #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.12); font-weight: 700; font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 12px rgba(0,240,255,0.25); cursor: pointer;" title="Abrir análisis y auditoría post-mortem de curas vs respawns">
-                        <span class="material-symbols-outlined" style="font-size: 1.15rem; color: #00f0ff;">monitor_heart</span> POST-MORTEM
+                    <button class="btn" id="btn-top-postmortem" onclick="irADebriefing()" style="padding: 0 1rem; border: 1px solid #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.12); font-weight: 700; font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 0 12px rgba(0,240,255,0.25); cursor: pointer;" title="Abrir análisis y debriefing de curas vs respawns">
+                        <span class="material-symbols-outlined" style="font-size: 1.15rem; color: #00f0ff;">monitor_heart</span> DEBRIEFING
                     </button>
                     <button class="btn warning" id="btn-mi-expediente" style="padding: 0 1rem;" title="Gestionar miembros y datos de unidad">
                         <span class="material-symbols-outlined" style="font-size: 1.2rem; margin-right: 5px; vertical-align: middle;">groups</span> {{ 'Gestión de Unidades' if user_role == 'admin' else 'Gestionar unidad' }}
@@ -631,20 +631,20 @@
     
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; width: 100%; padding-bottom: 3rem;">
         
-        <!-- ROW 1 (DESTACADO): ANÁLISIS POST-MORTEM (CURAS VS RESPAWN) -->
+        <!-- ROW 1 (DESTACADO): ANÁLISIS Y DEBRIEFING (CURAS VS RESPAWN) -->
         <div id="pm-post-mortem-panel" class="panel management-panel" style="grid-column: 1 / -1; display: flex; flex-direction: column; border-top: 4px solid #00f0ff; box-shadow: 0 0 25px rgba(0,240,255,0.15);">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;">
                 <div>
                     <h3 style="margin: 0; color: #00f0ff; text-transform: uppercase; letter-spacing: 2px; font-size: 1.35rem; display: flex; align-items: center; gap: 8px;">
                         <span class="material-symbols-outlined" style="font-size: 28px; color: #00f0ff;">monitor_heart</span>
-                        AUDITORÍA POST-MORTEM // BALANCE MÉDICO VS RESPAWN
+                        DEBRIEFING OPERATIVO // BALANCE MÉDICO VS RESPAWN
                     </h3>
                     <p style="color: #94a3b8; font-size: 0.88rem; margin: 6px 0 0 0;">
                         Diagnóstico integral de desgaste, asimetría de facciones y trazabilidad entre curaciones de campo y acudidas al punto de despliegue.
                     </p>
                 </div>
                 <button class="btn btn-outline" onclick="loadMedicRespawnAnalytics()" style="font-family: var(--font-mono); font-size: 0.82rem; letter-spacing: 1px; padding: 6px 16px; border-color: #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.08); display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
-                    <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> ACTUALIZAR AUDITORÍA
+                    <span class="material-symbols-outlined" style="font-size: 16px;">refresh</span> ACTUALIZAR DEBRIEFING
                 </button>
             </div>
 
@@ -687,15 +687,15 @@
                     3. Matriz de Rendimiento y Desgaste por Escuadra
                 </h4>
                 <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                    <input type="text" id="pm-filter-search" oninput="filtrarMatrizPostMortem()" placeholder="Filtrar por escuadra..." style="background: #090c12; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 10px; font-size: 0.82rem; border-radius: 4px; width: 170px;">
-                    <select id="pm-filter-faccion" onchange="filtrarMatrizPostMortem()" style="background: #090c12; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 10px; font-size: 0.82rem; border-radius: 4px;">
+                    <input type="text" id="pm-filter-search" oninput="filtrarMatrizDebriefing()" placeholder="Filtrar por escuadra..." style="background: #090c12; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 10px; font-size: 0.82rem; border-radius: 4px; width: 170px;">
+                    <select id="pm-filter-faccion" onchange="filtrarMatrizDebriefing()" style="background: #090c12; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 6px 10px; font-size: 0.82rem; border-radius: 4px;">
                         <option value="">Todas las facciones</option>
                         <option value="Syldavia">Syldavia</option>
                         <option value="Volkovia">Volkovia</option>
                         <option value="Khemed">Khemed</option>
                     </select>
                     <label style="font-size: 0.78rem; color: #ffaa00; cursor: pointer; display: flex; align-items: center; gap: 4px; background: rgba(255,170,0,0.1); padding: 5px 8px; border-radius: 4px; border: 1px solid rgba(255,170,0,0.25);">
-                        <input type="checkbox" id="pm-filter-solo-anomalias" onchange="filtrarMatrizPostMortem()" style="accent-color: #ffaa00;">
+                        <input type="checkbox" id="pm-filter-solo-anomalias" onchange="filtrarMatrizDebriefing()" style="accent-color: #ffaa00;">
                         Solo con anomalías
                     </label>
                 </div>
@@ -718,7 +718,7 @@
                         </tr>
                     </thead>
                     <tbody id="pm-equipos-tbody">
-                        <tr><td colspan="10" style="text-align:center; padding: 20px; color: #888;">Cargando datos post-mortem...</td></tr>
+                        <tr><td colspan="10" style="text-align:center; padding: 20px; color: #888;">Cargando datos de debriefing...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -1125,8 +1125,8 @@
                                 </p>
                             </div>
                             <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-                                <button class="btn btn-sm" onclick="irAPostMortem()" style="font-size: 0.82rem; border: 1px solid #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.12); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.2);" title="Ir al dashboard de análisis de curas vs respawns">
-                                    <span class="material-symbols-outlined" style="font-size: 16px;">monitor_heart</span> AUDITORÍA POST-MORTEM
+                                <button class="btn btn-sm" onclick="irADebriefing()" style="font-size: 0.82rem; border: 1px solid #00f0ff; color: #00f0ff; background: rgba(0,240,255,0.12); font-weight: 700; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; cursor: pointer; box-shadow: 0 0 10px rgba(0,240,255,0.2);" title="Ir al dashboard de análisis y debriefing de curas vs respawns">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">monitor_heart</span> DEBRIEFING OPERATIVO
                                 </button>
                                 <button id="btn-refresh-medicos" class="btn outline btn-sm" onclick="cargarAdminMedicos()" style="font-size: 0.82rem; border-color: #2ecc71; color: #2ecc71; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;">
                                     <span class="material-symbols-outlined" style="font-size: 16px;">sync</span> Actualizar Médicos

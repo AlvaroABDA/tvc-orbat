@@ -142,7 +142,7 @@ def generate_imint_scenario(op_faccion_id=None):
         'opciones': opciones
     }
 
-def confirm_imint_target(source_op_id, faccion_id, equipo_id, is_fake, genera_colateral, image_url=None, intel_text=None, entorno_text=None):
+def confirm_imint_target(source_op_id, faccion_id, equipo_id, is_fake, genera_colateral, image_url=None, intel_text=None, entorno_text=None, azimut=None, distancia_m=None):
     conn = get_db_connection()
     try:
         # Generate primary target coords
@@ -180,9 +180,9 @@ def confirm_imint_target(source_op_id, faccion_id, equipo_id, is_fake, genera_co
         
         conn.execute('''
             INSERT INTO dynamic_targets 
-            (id, faccion_id, lat, lng, grid_reference, bearing, linked_pc_id, source_op_id, status, is_fake, expires_at, image_url, intel_text, entorno_text)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?)
-        ''', (target_id, faccion_id, lat, lng, grid_ref, bearing, linked_pc_id, source_op_id, is_fake, expires_at, image_url, intel_text, entorno_text))
+            (id, faccion_id, lat, lng, grid_reference, bearing, linked_pc_id, source_op_id, status, is_fake, expires_at, image_url, intel_text, entorno_text, equipo_id, azimut, distancia_m)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (target_id, faccion_id, lat, lng, grid_ref, bearing, linked_pc_id, source_op_id, is_fake, expires_at, image_url, intel_text, entorno_text, equipo_id, azimut, distancia_m))
         
         if genera_colateral:
             col_theta = random.uniform(0, 2 * math.pi)

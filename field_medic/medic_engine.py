@@ -916,9 +916,9 @@ def process_respawn_recharge(conn, token_qr, sanitario_id, user_lat=None, user_l
     }, 200
 
 
-def get_post_mortem_analytics(conn):
+def get_debriefing_analytics(conn):
     """
-    Genera el informe analítico post-evento cruzando atenciones médicas (EpisodioMedico)
+    Genera el informe analítico de debriefing post-evento cruzando atenciones médicas (EpisodioMedico)
     con inserciones en base (respawn), evaluando la doctrina táctica y detectando anomalías
     sin necesidad de añadir nuevas tablas a la base de datos.
     """
@@ -992,7 +992,7 @@ def get_post_mortem_analytics(conn):
                 elif fac_id == 2:
                     timeline_map[hora_str]["resp_vol"] += 1
     except Exception as e:
-        print("[Post-Mortem] Error leyendo respawn:", e)
+        print("[Debriefing] Error leyendo respawn:", e)
 
     # 3. Episodios Médicos (Curaciones registradas)
     try:
@@ -1056,7 +1056,7 @@ def get_post_mortem_analytics(conn):
                 elif 'vol' in fac_str:
                     timeline_map[hora_str]["curas_vol"] += 1
     except Exception as e:
-        print("[Post-Mortem] Error leyendo EpisodioMedico:", e)
+        print("[Debriefing] Error leyendo EpisodioMedico:", e)
 
     # 4. Evaluación de Métricas y Detección Automática de Anomalías
     alertas_globales = []
@@ -1201,6 +1201,11 @@ def get_post_mortem_analytics(conn):
             "advertencias": warnings_count
         }
     }
+
+
+# Alias de retrocompatibilidad
+get_post_mortem_analytics = get_debriefing_analytics
+
 
 
 

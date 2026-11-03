@@ -1234,6 +1234,7 @@ def api_aaa_splash():
     })
 
 @app.route('/telemetro_recon')
+@app.route('/telemetro-recon')
 def telemetro_recon():
     if 'role' not in session:
         return redirect(url_for('login'))
@@ -1261,12 +1262,25 @@ def telemetro_recon():
         if eq:
             ultimo_op_usado_id = eq['ultimo_op_usado_id']
 
+    cfg = op_dinamico_engine.get_op_dinamico_config()
+    modo_alternancia = cfg.get('modo_alternancia', 'cooldown')
+
     ops = []
     active_op_id = None
     active_sesion = None
     for r in ops_rows:
         item = dict(r)
-        item['bloqueado'] = (item['id'] == ultimo_op_usado_id)
+        if user_role == 'admin':
+            item['bloqueado'] = False
+            item['cooldown_sec'] = 0
+        elif modo_alternancia == 'strict':
+            item['bloqueado'] = (item['id'] == ultimo_op_usado_id)
+            item['cooldown_sec'] = 0
+        else:
+            cd_sec = op_dinamico_engine.get_op_cooldown_remaining(item['id'], equipo_id, conn)
+            item['cooldown_sec'] = cd_sec
+            item['bloqueado'] = (cd_sec > 0)
+
         ses = op_dinamico_engine.get_active_session(item['id'], conn)
         item['sesion_activa'] = ses is not None
         if ses:
@@ -1274,9 +1288,11 @@ def telemetro_recon():
             active_op_id = item['id']
             active_sesion = ses
         ops.append(item)
-    conn.close()
 
-    cfg = op_dinamico_engine.get_op_dinamico_config()
+    current_target = op_dinamico_engine.get_squad_current_target(equipo_id, fac_id, conn)
+    targets_roster = op_dinamico_engine.get_targets_roster(equipo_id, fac_id, conn)
+    active_targets_count = op_dinamico_engine.get_squad_active_targets_count(equipo_id, fac_id, conn)
+    conn.close()
 
     return render_template('telemetro_recon.html',
                            user_role=user_role,
@@ -1286,7 +1302,11 @@ def telemetro_recon():
                            ops=ops,
                            active_op_id=active_op_id,
                            active_sesion=active_sesion,
-                           config=cfg)
+                           config=cfg,
+                           current_target=current_target,
+                           targets_roster=targets_roster,
+                           active_targets_count=active_targets_count,
+                           max_active_targets=cfg.get('max_targets_activos_escuadra', 2))
 
 @app.route('/api/facciones', methods=['GET'])
 def get_facciones():
@@ -2962,10 +2982,18 @@ def view_target():
         
     # Check Lockout (Only apply to equipos, admins skip lockout for testing)
     if equipo_id and user_role != 'admin':
-        equipo = conn.execute('SELECT ultimo_op_usado_id FROM Equipo WHERE id = ?', (equipo_id,)).fetchone()
-        if equipo and equipo['ultimo_op_usado_id'] == poi['id']:
-            conn.close()
-            return render_template('op_locked.html', poi=poi, active_targets=[], equipo_id=equipo_id)
+        cfg = op_dinamico_engine.get_op_dinamico_config()
+        modo_alternancia = cfg.get('modo_alternancia', 'cooldown')
+        if modo_alternancia == 'strict':
+            equipo = conn.execute('SELECT ultimo_op_usado_id FROM Equipo WHERE id = ?', (equipo_id,)).fetchone()
+            if equipo and equipo['ultimo_op_usado_id'] == poi['id']:
+                conn.close()
+                return render_template('op_locked.html', poi=poi, active_targets=[], equipo_id=equipo_id)
+        else:
+            cd_rem = op_dinamico_engine.get_op_cooldown_remaining(poi['id'], equipo_id, conn)
+            if cd_rem > 0:
+                conn.close()
+                return render_template('op_locked.html', poi=poi, active_targets=[], equipo_id=equipo_id, cooldown_sec=cd_rem)
 
     faccion_id = poi['faccion_id']
     conn.close()
@@ -3051,11 +3079,27 @@ def api_op_dinamico_iniciar():
         f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
         faccion_id = f_row['id'] if f_row else 1
 
+    cfg = op_dinamico_engine.get_op_dinamico_config()
+    modo_alternancia = cfg.get('modo_alternancia', 'cooldown')
+
     if equipo_id and user_role != 'admin':
-        eq = conn.execute("SELECT ultimo_op_usado_id FROM Equipo WHERE id = ?", (equipo_id,)).fetchone()
-        if eq and eq['ultimo_op_usado_id'] == int(source_op_id):
+        if modo_alternancia == 'strict':
+            eq = conn.execute("SELECT ultimo_op_usado_id FROM Equipo WHERE id = ?", (equipo_id,)).fetchone()
+            if eq and eq['ultimo_op_usado_id'] == int(source_op_id):
+                conn.close()
+                return jsonify({'error': 'Sector bloqueado. Mando exige alternar al siguiente Punto de Observación.'}), 403
+        else:
+            cd_rem = op_dinamico_engine.get_op_cooldown_remaining(source_op_id, equipo_id, conn)
+            if cd_rem > 0:
+                conn.close()
+                min_rem = int(math.ceil(cd_rem / 60))
+                return jsonify({'error': f'Sector en enfriamiento táctico ({min_rem} min restantes). Espere a que se disipe la alerta enemiga.'}), 403
+
+        max_active = int(cfg.get('max_targets_activos_escuadra', 2))
+        active_count = op_dinamico_engine.get_squad_active_targets_count(equipo_id, faccion_id, conn)
+        if active_count >= max_active:
             conn.close()
-            return jsonify({'error': 'Sector bloqueado. Mando exige alternar al siguiente Punto de Observación.'}), 403
+            return jsonify({'error': f'Cupo de blancos alcanzado ({active_count}/{max_active}). Espere a que la artillería neutralice los blancos activos o expiren.'}), 403
 
     conn.close()
     try:
@@ -3101,6 +3145,77 @@ def api_op_dinamico_adquirir():
         session.modified = True
 
     return jsonify(res)
+
+@app.route('/api/recon/designar', methods=['POST'])
+def api_recon_designar():
+    if 'role' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    data = request.json or {}
+    token_sesion = data.get('token_sesion')
+    candidate_id = data.get('candidate_id')
+    if not token_sesion or candidate_id is None:
+        return jsonify({'error': 'token_sesion y candidate_id requeridos'}), 400
+
+    equipo_id = session.get('equipo_id')
+    user_faction = session.get('faction')
+    conn = get_db_connection()
+    f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
+    fac_id = f_row['id'] if f_row else None
+    conn.close()
+
+    try:
+        tgt_dict = op_dinamico_engine.designate_target_candidate(
+            token_sesion=token_sesion,
+            candidate_id=candidate_id,
+            equipo_id=equipo_id,
+            faccion_id=fac_id
+        )
+        return jsonify({'status': 'success', 'target': tgt_dict})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/recon/current-target', methods=['GET'])
+def api_recon_current_target():
+    if 'role' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    equipo_id = session.get('equipo_id')
+    user_faction = session.get('faction')
+    conn = get_db_connection()
+    f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
+    fac_id = f_row['id'] if f_row else None
+
+    current_tgt = op_dinamico_engine.get_squad_current_target(equipo_id, fac_id, conn)
+    conn.close()
+    return jsonify({'status': 'success', 'target': current_tgt})
+
+@app.route('/api/recon/targets-roster', methods=['GET'])
+def api_recon_targets_roster():
+    if 'role' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    equipo_id = session.get('equipo_id')
+    user_faction = session.get('faction')
+    conn = get_db_connection()
+    f_row = conn.execute('SELECT id FROM Faccion WHERE nombre = ?', (user_faction,)).fetchone()
+    fac_id = f_row['id'] if f_row else None
+
+    roster = op_dinamico_engine.get_targets_roster(equipo_id, fac_id, conn)
+    conn.close()
+    return jsonify({'status': 'success', 'roster': roster})
+
+@app.route('/api/recon/abort-target', methods=['POST'])
+def api_recon_abort_target():
+    if 'role' not in session:
+        return jsonify({'error': 'No autorizado'}), 401
+    data = request.json or {}
+    target_id = data.get('target_id')
+    if not target_id:
+        return jsonify({'error': 'target_id requerido'}), 400
+
+    conn = get_db_connection()
+    conn.execute("UPDATE dynamic_targets SET status = 'EXPIRED' WHERE id = ? OR id = ?", (target_id, f"{target_id}-COL"))
+    conn.commit()
+    conn.close()
+    return jsonify({'status': 'success', 'message': 'Blanco cancelado/expirado'})
 
 
 @app.route('/api/analytics')
@@ -3212,15 +3327,15 @@ def get_analytics():
 @app.route('/api/analytics/medics_respawn', methods=['GET'])
 def api_analytics_medics_respawn():
     """
-    Endpoint de analítica post-mortem: cruza atenciones médicas con respawns,
+    Endpoint de analítica y debriefing operativo: cruza atenciones médicas con respawns,
     evalúa la doctrina táctica y detecta anomalías sin añadir nuevas tablas.
     """
     conn = get_db_connection()
     try:
-        data = medic_engine.get_post_mortem_analytics(conn)
+        data = medic_engine.get_debriefing_analytics(conn)
         return jsonify(data)
     except Exception as e:
-        print("[Analytics Post-Mortem] Error:", e)
+        print("[Analytics Debriefing] Error:", e)
         return jsonify({'status': 'error', 'message': str(e)}), 500
     finally:
         conn.close()
@@ -3916,6 +4031,26 @@ def patch_db():
             pass # Column already exists or error
         try:
             conn.execute('ALTER TABLE Equipo ADD COLUMN ultimo_op_usado_id INTEGER;')
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute('ALTER TABLE dynamic_targets ADD COLUMN equipo_id INTEGER REFERENCES Equipo(id);')
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute('ALTER TABLE dynamic_targets ADD COLUMN azimut REAL;')
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute('ALTER TABLE dynamic_targets ADD COLUMN distancia_m REAL;')
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute("ALTER TABLE op_secundario_sesion ADD COLUMN targets_json TEXT DEFAULT '[]';")
             conn.commit()
         except Exception:
             pass

@@ -58,10 +58,33 @@
 </head>
 <body>
     <div class="container">
+        {% if cooldown_sec and cooldown_sec > 0 %}
+        <div class="icon">⏳</div>
+        <h1>ENFRIAMIENTO TÁCTICO</h1>
+        <p>Mando: Este sector está en enfriamiento táctico para disipar la sospecha enemiga. Estará operativo nuevamente sin necesidad de desplazarse.</p>
+        <p style="font-size:1.4rem; color:#ffcc00; font-weight:bold; font-family:monospace; margin: 15px 0;" id="lock-cd-display">--:--</p>
+        <script>
+            let remSec = {{ cooldown_sec }};
+            function tickLockCd() {
+                if (remSec > 0) {
+                    remSec--;
+                    let m = Math.floor(remSec / 60);
+                    let s = remSec % 60;
+                    let el = document.getElementById('lock-cd-display');
+                    if (el) el.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+                } else {
+                    window.location.reload();
+                }
+            }
+            setInterval(tickLockCd, 1000);
+            tickLockCd();
+        </script>
+        {% else %}
         <div class="icon">📡❌</div>
         <h1>ENLACE DENEGADO</h1>
         <p>Mando: La inteligencia en este sector se ha agotado. Reubíquense en el siguiente Punto de Observación para recibir nuevas transmisiones.</p>
-        <p style="font-size:0.9rem; color:#777; margin-top:10px;">(Punto bloqueado: {{ poi.nombre }})</p>
+        {% endif %}
+        <p style="font-size:0.9rem; color:#777; margin-top:10px;">(Punto: {{ poi.nombre }})</p>
         
 
         <style>
